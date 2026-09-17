@@ -14,3 +14,32 @@ export interface JwtPayload {
 export interface AuthVariables {
   user: JwtPayload;
 }
+
+// ─────────────────────────────────────────────────────────────
+// DTO autentikasi — dipakai bersama oleh API dan frontend.
+// ─────────────────────────────────────────────────────────────
+
+export interface AuthUser {
+  id: number;
+  username: string;
+  fullName: string | null;
+  role: Role;
+}
+
+export interface StudentProfile {
+  name: string;
+  className: string | null;
+  relationship: string;
+}
+
+export interface LoginResponse {
+  token: string;
+  expiresAt: number;
+  user: AuthUser;
+  student: StudentProfile | null;
+}
+
+export interface ProfileResponse {
+  user: AuthUser;
+  student: StudentProfile | null;
+}

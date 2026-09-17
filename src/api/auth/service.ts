@@ -1,26 +1,15 @@
 import { sign } from "hono/jwt";
 import type { Db } from "../../database/db";
-import type { Role } from "../../types/auth";
+import type { AuthUser, Role, StudentProfile } from "../../types/auth";
 import { hashPassword, verifyPassword } from "../utils/password";
 import { authRepository } from "./repository";
 
-export interface PublicUser {
-  id: number;
-  username: string;
-  fullName: string | null;
-  role: Role;
-}
-
-export interface StudentProfile {
-  name: string;
-  className: string | null;
-  relationship: string;
-}
+export type { AuthUser, StudentProfile };
 
 export interface LoginResult {
   token: string;
   expiresAt: number;
-  user: PublicUser;
+  user: AuthUser;
   /** Profil siswa — hanya ada bila role `parent`. */
   student: StudentProfile | null;
 }
@@ -49,7 +38,7 @@ function toPublicUser(user: {
   username: string;
   fullName: string | null;
   role: string;
-}): PublicUser {
+}): AuthUser {
   return {
     id: user.id,
     username: user.username,

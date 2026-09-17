@@ -11,13 +11,15 @@ html {
 }
 
 body {
-  @apply bg-[#050505] text-white font-sans antialiased;
+  @apply bg-slate-50 text-slate-900 font-sans antialiased;
 }
 
-.glass {
-  @apply bg-white/5 backdrop-blur-xl border border-white/10;
+/* Kartu dasar — dipakai di seluruh halaman aplikasi. */
+.card {
+  @apply bg-white border border-slate-200 rounded-2xl shadow-sm;
 }
 
-.gradient-text {
-  @apply bg-clip-text text-transparent bg-linear-to-r from-emerald-400 to-cyan-400;
+/* Label kecil bertipe huruf besar untuk metadata. */
+.label-muted {
+  @apply text-xs font-medium uppercase tracking-wide text-slate-500;
 }

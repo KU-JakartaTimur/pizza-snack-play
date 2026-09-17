@@ -1,0 +1,26 @@
+import { Hono } from "hono";
+import { requireAuth, type AuthEnv } from "../middleware/auth";
+import { requireRole } from "../middleware/role";
+import { catalogController } from "./controller";
+
+const admin = requireRole("admin");
+
+/**
+ * Baca katalog: tersedia untuk semua user yang sudah login
+ * (orang tua perlu melihat komponen menu pada jadwal).
+ */
+export const categoriesRoute = new Hono<AuthEnv>()
+  .get("/", requireAuth, catalogController.listCategories)
+  .get("/:id", requireAuth, catalogController.getCategory)
+  .post("/", requireAuth, admin, catalogController.createCategory)
+  .put("/:id", requireAuth, admin, catalogController.updateCategory)
+  .delete("/:id", requireAuth, admin, catalogController.deleteCategory);
+
+export const menusRoute = new Hono<AuthEnv>()
+  // Didaftarkan sebelum `/:id` agar tidak tertangkap sebagai ID.
+  .get("/item-types", requireAuth, catalogController.listItemTypes)
+  .get("/", requireAuth, catalogController.listMenus)
+  .get("/:id", requireAuth, catalogController.getMenu)
+  .post("/", requireAuth, admin, catalogController.createMenu)
+  .put("/:id", requireAuth, admin, catalogController.updateMenu)
+  .delete("/:id", requireAuth, admin, catalogController.deleteMenu);

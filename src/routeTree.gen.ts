@@ -9,50 +9,288 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as AppRouteImport } from './routes/_app'
+import { Route as AppIndexRouteImport } from './routes/_app/index'
+import { Route as AppProfilRouteImport } from './routes/_app/profil'
+import { Route as AppOrangTuaRouteImport } from './routes/_app/orang-tua'
+import { Route as AppMingguIniRouteImport } from './routes/_app/minggu-ini'
+import { Route as AppMenuRouteImport } from './routes/_app/menu'
+import { Route as AppKategoriRouteImport } from './routes/_app/kategori'
+import { Route as AppJadwalRouteImport } from './routes/_app/jadwal'
+import { Route as AppHariIniRouteImport } from './routes/_app/hari-ini'
+import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
+import { Route as AppBulanRouteImport } from './routes/_app/bulan'
 
-const IndexRoute = IndexRouteImport.update({
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProfilRoute = AppProfilRouteImport.update({
+  id: '/profil',
+  path: '/profil',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppOrangTuaRoute = AppOrangTuaRouteImport.update({
+  id: '/orang-tua',
+  path: '/orang-tua',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMingguIniRoute = AppMingguIniRouteImport.update({
+  id: '/minggu-ini',
+  path: '/minggu-ini',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMenuRoute = AppMenuRouteImport.update({
+  id: '/menu',
+  path: '/menu',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppKategoriRoute = AppKategoriRouteImport.update({
+  id: '/kategori',
+  path: '/kategori',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppJadwalRoute = AppJadwalRouteImport.update({
+  id: '/jadwal',
+  path: '/jadwal',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppHariIniRoute = AppHariIniRouteImport.update({
+  id: '/hari-ini',
+  path: '/hari-ini',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDashboardRoute = AppDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppBulanRoute = AppBulanRouteImport.update({
+  id: '/bulan',
+  path: '/bulan',
+  getParentRoute: () => AppRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/': typeof AppIndexRoute
+  '/login': typeof LoginRoute
+  '/bulan': typeof AppBulanRoute
+  '/dashboard': typeof AppDashboardRoute
+  '/hari-ini': typeof AppHariIniRoute
+  '/jadwal': typeof AppJadwalRoute
+  '/kategori': typeof AppKategoriRoute
+  '/menu': typeof AppMenuRoute
+  '/minggu-ini': typeof AppMingguIniRoute
+  '/orang-tua': typeof AppOrangTuaRoute
+  '/profil': typeof AppProfilRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/bulan': typeof AppBulanRoute
+  '/dashboard': typeof AppDashboardRoute
+  '/hari-ini': typeof AppHariIniRoute
+  '/jadwal': typeof AppJadwalRoute
+  '/kategori': typeof AppKategoriRoute
+  '/menu': typeof AppMenuRoute
+  '/minggu-ini': typeof AppMingguIniRoute
+  '/orang-tua': typeof AppOrangTuaRoute
+  '/profil': typeof AppProfilRoute
+  '/': typeof AppIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
+  '/_app': typeof AppRouteWithChildren
+  '/login': typeof LoginRoute
+  '/_app/bulan': typeof AppBulanRoute
+  '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/hari-ini': typeof AppHariIniRoute
+  '/_app/jadwal': typeof AppJadwalRoute
+  '/_app/kategori': typeof AppKategoriRoute
+  '/_app/menu': typeof AppMenuRoute
+  '/_app/minggu-ini': typeof AppMingguIniRoute
+  '/_app/orang-tua': typeof AppOrangTuaRoute
+  '/_app/profil': typeof AppProfilRoute
+  '/_app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/bulan'
+    | '/dashboard'
+    | '/hari-ini'
+    | '/jadwal'
+    | '/kategori'
+    | '/menu'
+    | '/minggu-ini'
+    | '/orang-tua'
+    | '/profil'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/login'
+    | '/bulan'
+    | '/dashboard'
+    | '/hari-ini'
+    | '/jadwal'
+    | '/kategori'
+    | '/menu'
+    | '/minggu-ini'
+    | '/orang-tua'
+    | '/profil'
+    | '/'
+  id:
+    | '__root__'
+    | '/_app'
+    | '/login'
+    | '/_app/bulan'
+    | '/_app/dashboard'
+    | '/_app/hari-ini'
+    | '/_app/jadwal'
+    | '/_app/kategori'
+    | '/_app/menu'
+    | '/_app/minggu-ini'
+    | '/_app/orang-tua'
+    | '/_app/profil'
+    | '/_app/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
+  LoginRoute: typeof LoginRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_app/': {
+      id: '/_app/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/profil': {
+      id: '/_app/profil'
+      path: '/profil'
+      fullPath: '/profil'
+      preLoaderRoute: typeof AppProfilRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/orang-tua': {
+      id: '/_app/orang-tua'
+      path: '/orang-tua'
+      fullPath: '/orang-tua'
+      preLoaderRoute: typeof AppOrangTuaRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/minggu-ini': {
+      id: '/_app/minggu-ini'
+      path: '/minggu-ini'
+      fullPath: '/minggu-ini'
+      preLoaderRoute: typeof AppMingguIniRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/menu': {
+      id: '/_app/menu'
+      path: '/menu'
+      fullPath: '/menu'
+      preLoaderRoute: typeof AppMenuRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/kategori': {
+      id: '/_app/kategori'
+      path: '/kategori'
+      fullPath: '/kategori'
+      preLoaderRoute: typeof AppKategoriRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/jadwal': {
+      id: '/_app/jadwal'
+      path: '/jadwal'
+      fullPath: '/jadwal'
+      preLoaderRoute: typeof AppJadwalRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/hari-ini': {
+      id: '/_app/hari-ini'
+      path: '/hari-ini'
+      fullPath: '/hari-ini'
+      preLoaderRoute: typeof AppHariIniRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/dashboard': {
+      id: '/_app/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AppDashboardRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/bulan': {
+      id: '/_app/bulan'
+      path: '/bulan'
+      fullPath: '/bulan'
+      preLoaderRoute: typeof AppBulanRouteImport
+      parentRoute: typeof AppRoute
     }
   }
 }
 
+interface AppRouteChildren {
+  AppBulanRoute: typeof AppBulanRoute
+  AppDashboardRoute: typeof AppDashboardRoute
+  AppHariIniRoute: typeof AppHariIniRoute
+  AppJadwalRoute: typeof AppJadwalRoute
+  AppKategoriRoute: typeof AppKategoriRoute
+  AppMenuRoute: typeof AppMenuRoute
+  AppMingguIniRoute: typeof AppMingguIniRoute
+  AppOrangTuaRoute: typeof AppOrangTuaRoute
+  AppProfilRoute: typeof AppProfilRoute
+  AppIndexRoute: typeof AppIndexRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppBulanRoute: AppBulanRoute,
+  AppDashboardRoute: AppDashboardRoute,
+  AppHariIniRoute: AppHariIniRoute,
+  AppJadwalRoute: AppJadwalRoute,
+  AppKategoriRoute: AppKategoriRoute,
+  AppMenuRoute: AppMenuRoute,
+  AppMingguIniRoute: AppMingguIniRoute,
+  AppOrangTuaRoute: AppOrangTuaRoute,
+  AppProfilRoute: AppProfilRoute,
+  AppIndexRoute: AppIndexRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
+  LoginRoute: LoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

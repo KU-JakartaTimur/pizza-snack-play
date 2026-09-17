@@ -18,22 +18,26 @@ Setiap orang tua memiliki akun login pribadi untuk melihat jadwal menu snack har
 
 ## Tentang Aplikasi
 
-Jadwal piket snack sekolah sebelumnya disusun dalam dokumen teks manual — sulit dicari, tidak ada riwayat, dan orang tua harus bertanya untuk tahu menu hari ini. **Pizza Snack Play** mendigitalkan seluruh proses tersebut: admin mengelola menu & jadwal, orang tua login untuk melihat jadwal, dan koperasi dapat mengekspor daftar persiapan.
+Jadwal piket snack sekolah sebelumnya disusun dalam dokumen teks manual — sulit dicari, tidak ada riwayat, dan orang tua harus bertanya untuk tahu menu hari ini. **Pizza Snack Play** mendigitalkan seluruh proses tersebut: admin mengelola menu & jadwal, orang tua login untuk melihat jadwal harian, mingguan, dan bulanan.
 
 ---
 
-## Fitur Utama
+## Fitur
 
-| Fitur | Deskripsi | Role |
-|-------|-----------|------|
-| **Manajemen Menu** | Buat/edit/hapus menu snack (makanan utama + buah pendamping), dengan katalog untuk dipakai ulang | Admin |
-| **Manajemen Jadwal** | Atur jadwal harian, mingguan, bulanan; duplikasi jadwal antar minggu; override per tanggal | Admin |
-| **Autentikasi Wajib** | Setiap orang tua login dengan akun pribadi yang dibuat admin | Semua |
-| **Role-Based Access** | `admin` (CRUD penuh + kelola akun) vs `parent` (read-only jadwal) | Semua |
-| **Kelola Akun Orang Tua** | Admin membuat, edit, menonaktifkan, dan reset password akun orang tua | Admin |
-| **Kategori & Filter** | Filter menu by kategori (gorengan, kukusan, buah, dll.) | Semua |
-| **Pencarian Menu** | Cari kapan menu/buah tertentu disajikan | Semua |
-| **Ekspor** | PDF jadwal mingguan/bulanan, Excel untuk perencanaan koperasi | Admin, Parent |
+| Fitur | Deskripsi | Role | Status |
+|-------|-----------|------|--------|
+| **Autentikasi Wajib** | Setiap orang tua login dengan akun pribadi yang dibuat admin | Semua | ✅ |
+| **Role-Based Access** | `admin` (CRUD penuh) vs `parent` (read-only jadwal) | Semua | ✅ |
+| **Jadwal Hari Ini** | Menu snack hari ini + ringkasan minggu berjalan | Semua | ✅ |
+| **Jadwal Mingguan** | Senin–Jumat dengan navigasi antar minggu | Semua | ✅ |
+| **Jadwal Bulanan** | Rekap per minggu dengan statistik hari sekolah/libur | Semua | ✅ |
+| **Manajemen Menu** | CRUD menu (makanan utama + buah pendamping) + kategori | Admin | ✅ |
+| **Kelola Jadwal** | Tetapkan menu per tanggal, tandai libur, tambah catatan | Admin | ✅ |
+| **Kelola Hari Libur** | Tambah/hapus hari libur bernama | Admin | ✅ |
+| **Kelola Akun Orang Tua** | Buat, ubah, nonaktifkan, hapus, reset password | Admin | ✅ |
+| **Dashboard** | Ringkasan jumlah akun, menu, jadwal, dan hari libur | Admin | ✅ |
+| **Ubah Password** | Setiap pengguna dapat mengganti password sendiri | Semua | ✅ |
+| **Ekspor PDF/Excel** | Cetak jadwal mingguan/bulanan | Admin, Parent | ⏳ Rencana |
 
 ---
 
@@ -46,13 +50,16 @@ Aplikasi ini dibangun dengan **BHVR** — **B**un + **H**ono + **V**ite + **R**e
 | **Runtime & Package Manager** | [Bun](https://bun.sh/) | Runtime cepat untuk tooling, install, dan script |
 | **Backend API** | [Hono](https://hono.dev/) | Web framework ultrafast, berjalan di Cloudflare Workers |
 | **Build Tool** | [Vite](https://vitejs.dev/) | Dev server dengan HMR instan + build produksi teroptimasi |
-| **Frontend** | [React 19](https://react.dev/) | Library UI + [React Router v7](https://reactrouter.com/) + [TanStack Query](https://tanstack.com/query) |
+| **Frontend** | [React 19](https://react.dev/) | Library UI |
+| **Routing** | [TanStack Router v1](https://tanstack.com/router) | File-based routing + type-safe navigation |
+| **Data Fetching** | [TanStack Query v5](https://tanstack.com/query) | Cache, refetch, dan mutation state |
 | **Styling** | [Tailwind CSS v4](https://tailwindcss.com/) | Utility-first CSS via `@tailwindcss/vite` |
+| **Ikon** | [Lucide React](https://lucide.dev/) | Ikon SVG konsisten |
 | **Database** | [Cloudflare D1](https://developers.cloudflare.com/d1/) | Serverless SQLite terintegrasi dengan Workers |
 | **ORM** | [Drizzle ORM](https://orm.drizzle.team/) | Type-safe ORM (`drizzle-orm/sqlite-core`) |
 | **Deployment** | [Cloudflare Workers](https://workers.cloudflare.com/) | Serverless edge runtime, aset statis dari `./dist/client` |
-| **Validasi** | [Zod](https://zod.dev/) | Schema validation untuk input API |
-| **HTTP Client** | [ky](https://github.com/sindresorhus/ky) | Fetch wrapper untuk service layer frontend |
+| **HTTP Client** | [ky](https://github.com/sindresorhus/ky) | Fetch wrapper dengan injeksi JWT otomatis |
+| **Auth** | `hono/jwt` + Web Crypto | JWT HS256 + PBKDF2-SHA256 (edge-native) |
 
 ---
 
@@ -64,28 +71,47 @@ pizza-snack-play/
 ├── src/
 │   ├── api/                      # Cloudflare Worker — Hono backend
 │   │   ├── index.ts              # Worker entry point (basePath /api)
-│   │   ├── utils/response.ts     # Helper responseOK / responseError
-│   │   ├── auth/                 # (rencana) Login, logout, me, ubah password
-│   │   ├── parents/              # (rencana) CRUD akun orang tua
-│   │   ├── menus/                # (rencana) CRUD menu snack
-│   │   ├── schedules/            # (rencana) CRUD jadwal
-│   │   ├── categories/           # (rencana) CRUD kategori
-│   │   └── reports/              # (rencana) Ekspor PDF/Excel + statistik
+│   │   ├── auth/                 # Login, logout, me, ubah password
+│   │   ├── catalog/              # Menu + kategori (katalog bersama)
+│   │   ├── schedules/            # Jadwal, minggu, hari libur
+│   │   ├── parents/              # CRUD akun orang tua
+│   │   ├── stats/                # Ringkasan dashboard
+│   │   ├── middleware/           # requireAuth, requireRole
+│   │   └── utils/                # response, password, date, slug, params
 │   ├── database/
 │   │   ├── db.ts                 # Inisialisasi Drizzle + D1 binding + tipe Db
-│   │   └── schema.ts             # Drizzle schema (11 tabel) ✅
+│   │   └── schema.ts             # Drizzle schema (11 tabel)
+│   ├── components/               # Komponen UI bersama
+│   │   ├── AppShell.tsx          # Header, navigasi, footer
+│   │   ├── ScheduleDayCard.tsx   # Kartu satu hari jadwal
+│   │   └── ui.tsx                # Button, Card, Input, Modal, Badge, dll.
 │   ├── routes/                   # TanStack Router — halaman frontend
-│   │   ├── __root.tsx            # Root layout
-│   │   ├── index.tsx             # Landing page + cek koneksi ✅
-│   │   ├── login.tsx             # (rencana) Halaman login
-│   │   ├── week.tsx              # (rencana) Jadwal mingguan
-│   │   ├── month.tsx             # (rencana) Jadwal bulanan
-│   │   ├── profile.tsx           # (rencana) Profil — ubah password
-│   │   └── admin/                # (rencana) Dashboard, menu, jadwal, orang tua
-│   ├── services/                 # (rencana) Service layer frontend (API client)
-│   ├── lib/http.ts               # HTTP client (ky) + injeksi JWT
-│   ├── types/apiResponse.ts      # Tipe ApiResponse
-│   ├── assets/                   # SVG / gambar
+│   │   ├── __root.tsx            # Root + AuthProvider
+│   │   ├── login.tsx             # Halaman masuk
+│   │   └── _app/                 # Layout terproteksi (butuh login)
+│   │       ├── index.tsx         # / → redirect ke /hari-ini
+│   │       ├── dashboard.tsx     # Ringkasan (admin)
+│   │       ├── hari-ini.tsx      # Jadwal hari ini
+│   │       ├── minggu-ini.tsx    # Jadwal mingguan
+│   │       ├── bulan.tsx         # Jadwal bulanan
+│   │       ├── menu.tsx          # CRUD menu (admin)
+│   │       ├── kategori.tsx      # CRUD kategori (admin)
+│   │       ├── jadwal.tsx        # Kelola jadwal + hari libur (admin)
+│   │       ├── orang-tua.tsx     # CRUD akun orang tua (admin)
+│   │       └── profil.tsx        # Profil + ubah password
+│   ├── lib/
+│   │   ├── api.ts                # Klien API bertipe (semua endpoint)
+│   │   ├── auth.tsx              # AuthProvider (sesi + verifikasi token)
+│   │   ├── auth-context.ts       # Context + hook useAuth
+│   │   ├── date.ts               # Utilitas tanggal WIB (sisi klien)
+│   │   ├── cn.ts                 # Penggabung class Tailwind
+│   │   └── http.ts               # HTTP client (ky) + injeksi JWT
+│   ├── types/                    # Tipe bersama API ↔ frontend
+│   │   ├── apiResponse.ts        # Envelope { message, data }
+│   │   ├── auth.ts               # Role, JwtPayload, AuthUser, StudentProfile
+│   │   ├── catalog.ts            # CategoryDto, MenuDto, MenuItemDto
+│   │   ├── schedule.ts           # ScheduleDayDto, WeekScheduleDto, dll.
+│   │   └── account.ts            # ParentDto, StatsSummaryDto, PaginatedDto
 │   ├── index.css                 # Global styles (Tailwind)
 │   ├── main.tsx                  # React + Router entry point
 │   └── routeTree.gen.ts          # Auto-generated route tree
@@ -94,7 +120,8 @@ pizza-snack-play/
 ├── drizzle/                      # Migrasi D1 + seed.sql
 ├── scripts/
 │   ├── seed.ts                   # Parser jadwal -> drizzle/seed.sql
-│   └── test-auth.mjs             # Test end-to-end auth
+│   ├── test-auth.mjs             # 26 test end-to-end auth
+│   └── test-api.mjs              # 98 test end-to-end API
 ├── docs/
 │   ├── PRD_Pizza_Snack_Play.md
 │   └── Struktur_Tabel_Pizza_Snack_Play.md
@@ -103,22 +130,6 @@ pizza-snack-play/
 ├── vite.config.ts
 ├── wrangler.json                 # Konfigurasi Cloudflare Worker + D1
 └── package.json
-```
-
-### Struktur Modul Auth
-
-```
-src/api/auth/
-├── route.ts          # POST /login, /logout · GET /me · PUT /password
-├── controller.ts     # Validasi input & bentuk response
-├── service.ts        # Verifikasi kredensial, terbitkan JWT, ubah password
-└── repository.ts     # Query ke tabel users & parents
-
-src/api/middleware/
-├── auth.ts           # requireAuth — verifikasi JWT (HS256)
-└── role.ts           # requireRole('admin') — RBAC
-
-src/api/utils/password.ts   # PBKDF2-SHA256 via Web Crypto (edge-native)
 ```
 
 ### Pola Arsitektur Backend
@@ -132,7 +143,18 @@ route.ts → controller.ts → service.ts → repository.ts
  & method   response      logic         via Drizzle
 ```
 
-Path alias: `@/*` (frontend) dan `@api/*` (backend).
+Middleware dipasang berurutan: `requireAuth` (401 bila tanpa token) lalu
+`requireRole("admin")` (403 bila role tidak sesuai).
+
+**Utilitas bersama:**
+
+| File | Fungsi |
+|------|--------|
+| `utils/response.ts` | `responseOK`, `responseCreated`, `responseBadRequest`, `responseUnauthorized`, `responseForbidden`, `responseConflict`, `responseNotFound`, `responseInternalError` |
+| `utils/password.ts` | PBKDF2-SHA256 via Web Crypto, format `pbkdf2$<iterasi>$<salt>$<hash>` |
+| `utils/date.ts` | Perhitungan tanggal berbasis WIB (UTC+7) |
+| `utils/params.ts` | Parsing ID, validasi rentang tanggal |
+| `utils/slug.ts` | Pembuat slug dari nama kategori |
 
 ---
 
@@ -158,34 +180,78 @@ Detail DDL, Drizzle schema, seed data, dan query contoh: [`docs/Struktur_Tabel_P
 
 ## API Endpoints
 
-Semua endpoint berada di bawah `basePath /api`. Kecuali `POST /api/auth/login`, seluruh endpoint memerlukan JWT.
+Semua endpoint berada di bawah `basePath /api`. Kecuali `POST /api/auth/login`, seluruh endpoint memerlukan header `Authorization: Bearer <token>`.
 
-| Grup | Endpoint | Role |
-|------|----------|------|
-| **Health** | `GET /health` | Public ✅ |
-| **Auth** | `POST /auth/login` (public) · `POST /auth/logout` · `GET /auth/me` · `PUT /auth/password` | Public → Authenticated ✅ |
-| **Parents** | `GET/POST/PUT/DELETE /parents` | Admin |
-| **Menus** | `GET/POST/PUT/DELETE /menus` | Admin (Parent: GET) |
-| **Schedules** | `GET /schedules/today` · `/week` · `/month` · `POST/DELETE` | Admin (Parent: GET) |
-| **Categories** | `GET/POST /categories` | Admin (Parent: GET) |
-| **Reports** | `GET /reports/.../pdf` · `/excel` · `/stats` | Admin, Parent |
+### Publik & Auth
 
-Yang bertanda ✅ sudah diimplementasikan; sisanya masih rencana.
+| Method | Endpoint | Role | Keterangan |
+|--------|----------|------|-----------|
+| `GET` | `/health` | Publik | Cek Worker + binding D1 |
+| `POST` | `/auth/login` | Publik | Terbitkan JWT + profil user |
+| `POST` | `/auth/logout` | Auth | Titik keluar eksplisit (JWT stateless) |
+| `GET` | `/auth/me` | Auth | Profil user + data siswa (bila `parent`) |
+| `PUT` | `/auth/password` | Auth | Ubah password sendiri |
 
-### Detail endpoint auth
+### Jadwal
+
+| Method | Endpoint | Role | Keterangan |
+|--------|----------|------|-----------|
+| `GET` | `/schedules/today` | Auth | Jadwal hari ini (WIB) + minggu berjalan |
+| `GET` | `/schedules/week?date=` | Auth | Senin–Jumat pada minggu tersebut |
+| `GET` | `/schedules/month?year=&month=` | Auth | Rekap bulanan, dikelompokkan per minggu |
+| `GET` | `/schedules/range?from=&to=` | Auth | Rentang bebas (maks. 92 hari) |
+| `GET` | `/schedules/:id` | Auth | Detail satu entri jadwal |
+| `POST` | `/schedules` | Admin | Buat entri jadwal |
+| `PUT` | `/schedules/:id` | Admin | Ubah menu / libur / catatan |
+| `DELETE` | `/schedules/:id` | Admin | Hapus entri jadwal |
+| `GET` | `/weeks?year=&month=` | Auth | Daftar minggu pada bulan tersebut |
+| `GET` | `/holidays?from=&to=` | Auth | Daftar hari libur |
+| `POST` | `/holidays` | Admin | Tambah hari libur |
+| `DELETE` | `/holidays/:id` | Admin | Hapus hari libur |
+
+### Katalog
+
+| Method | Endpoint | Role | Keterangan |
+|--------|----------|------|-----------|
+| `GET` | `/categories` | Auth | Daftar kategori |
+| `GET` | `/categories/:id` | Auth | Detail kategori |
+| `POST` | `/categories` | Admin | Tambah kategori |
+| `PUT` | `/categories/:id` | Admin | Ubah kategori |
+| `DELETE` | `/categories/:id` | Admin | Hapus (409 bila masih dipakai menu) |
+| `GET` | `/menus?search=&active=&archived=` | Auth | Daftar menu + komponen + kategori |
+| `GET` | `/menus/item-types` | Auth | Jenis komponen: `main`, `fruit`, `drink`, `other` |
+| `GET` | `/menus/:id` | Auth | Detail menu |
+| `POST` | `/menus` | Admin | Buat menu (beserta komponen) |
+| `PUT` | `/menus/:id` | Admin | Ubah menu (komponen diganti bila dikirim) |
+| `DELETE` | `/menus/:id?force=` | Admin | Hapus, atau arsipkan bila masih dipakai jadwal |
+
+### Akun & Statistik
+
+| Method | Endpoint | Role | Keterangan |
+|--------|----------|------|-----------|
+| `GET` | `/parents?search=&active=&page=&perPage=` | Admin | Daftar akun orang tua (paginated) |
+| `GET` | `/parents/:id` | Admin | Detail akun |
+| `POST` | `/parents` | Admin | Buat akun + profil siswa |
+| `PUT` | `/parents/:id` | Admin | Ubah akun |
+| `DELETE` | `/parents/:id?hard=` | Admin | Nonaktifkan, atau hapus permanen bila `hard=true` |
+| `POST` | `/parents/:id/reset-password` | Admin | Reset password |
+| `GET` | `/stats/summary` | Admin | Ringkasan dashboard |
+
+### Contoh
 
 ```bash
 # Login — mengembalikan JWT + profil user
-POST /api/auth/login
-{ "username": "sari", "password": "snack123" }
+curl -X POST http://localhost:5173/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"snack123"}'
 
-# Profil user yang sedang login (butuh header Authorization)
-GET /api/auth/me
-Authorization: Bearer <token>
+# Jadwal hari ini
+curl http://localhost:5173/api/schedules/today \
+  -H "Authorization: Bearer <token>"
 
-# Ubah password sendiri
-PUT /api/auth/password
-{ "currentPassword": "snack123", "newPassword": "passwordbaru123" }
+# Jadwal bulan September 2026
+curl "http://localhost:5173/api/schedules/month?year=2026&month=9" \
+  -H "Authorization: Bearer <token>"
 ```
 
 Token JWT berlaku 7 hari (dapat diatur via `JWT_EXPIRES_IN` dalam detik). Algoritma **HS256** via `hono/jwt`.
@@ -199,7 +265,7 @@ Detail lengkap: [`docs/PRD_Pizza_Snack_Play.md`](docs/PRD_Pizza_Snack_Play.md) s
 ### Prasyarat
 
 - [Bun](https://bun.sh/) v1.x — `curl -fsSL https://bun.sh/install | bash`
-- Akun Cloudflare (untuk D1 & deploy)
+- Akun Cloudflare (hanya untuk D1 remote & deploy)
 
 ### Instalasi
 
@@ -209,40 +275,42 @@ bun install
 
 # 2. Salin environment template
 cp .env.example .env
-
-# 3. Buat database D1
-bunx wrangler d1 create pizza-snack-play
 ```
 
-### Konfigurasi D1
+### Migrasi & Seed (lokal — tanpa akun Cloudflare)
 
-Setelah `d1 create`, salin `database_id` ke `wrangler.json`, lalu isi `.env`:
-
-```
-CLOUDFLARE_ACCOUNT_ID=<dari Cloudflare Dashboard → Workers & Pages → Overview>
-CLOUDFLARE_DATABASE_ID=<database_id dari langkah 3>
-CLOUDFLARE_D1_TOKEN=<API token dengan izin D1 edit>
-JWT_SECRET=<random string untuk signing JWT>
-```
-
-> `JWT_SECRET` untuk produksi disimpan sebagai Worker Secret: `bunx wrangler secret put JWT_SECRET`
-
-### Migrasi & Seed
-
-File migrasi (`drizzle/0000_*.sql`) dan seed (`drizzle/seed.sql`) sudah tersedia di repo.
-
-**Untuk development lokal** (D1 lokal via miniflare, tanpa perlu akun Cloudflare):
+D1 lokal berjalan lewat miniflare dan dipakai bersama oleh dev server dan
+`wrangler d1 execute --local`:
 
 ```bash
 bun run db:migrate:local   # buat 11 tabel di D1 lokal
 bun run db:seed:local      # isi data dari data/jadwal_piket_snack.txt
+bun run dev                # http://localhost:5173
 ```
 
-**Untuk D1 remote** (setelah `wrangler d1 create` dan kredensial terisi):
+### D1 Remote (produksi)
 
 ```bash
+# 1. Buat database
+bunx wrangler d1 create pizza-snack-play
+```
+
+Salin `database_id` hasil perintah di atas ke `wrangler.json`, lalu isi `.env`:
+
+```
+CLOUDFLARE_ACCOUNT_ID=<dari Cloudflare Dashboard → Workers & Pages → Overview>
+CLOUDFLARE_DATABASE_ID=<database_id dari langkah 1>
+CLOUDFLARE_D1_TOKEN=<API token dengan izin D1 edit>
+JWT_SECRET=<random string untuk signing JWT>
+```
+
+```bash
+# 2. Terapkan migrasi + seed ke D1 remote
 bunx drizzle-kit migrate
 bunx wrangler d1 execute pizza-snack-play --remote --file=./drizzle/seed.sql
+
+# 3. Simpan JWT_SECRET sebagai Worker Secret
+bunx wrangler secret put JWT_SECRET
 ```
 
 **Regenerate seed** (bila file jadwal diubah):
@@ -257,24 +325,24 @@ bun run db:seed            # tulis ulang drizzle/seed.sql dari data/jadwal_piket
 bun run dev
 ```
 
-Dev server berjalan di **http://localhost:5173** — logika Worker terintegrasi langsung di dalam Vite dev server.
+Dev server berjalan di **http://localhost:5173** — logika Worker terintegrasi langsung di dalam Vite dev server, jadi API dan UI berjalan pada satu port.
 
 ### Test
 
 ```bash
-bun run test:auth          # 26 test end-to-end untuk auth (butuh dev server jalan)
+bun run dev                # test butuh dev server berjalan
+bun run test               # auth (26) + API (98)
+bun run test:auth          # hanya test autentikasi
+bun run test:api           # hanya test API (jadwal, katalog, RBAC, CRUD)
 ```
 
-### Build & Preview
+Test API membuat dan menghapus datanya sendiri, jadi aman dijalankan berulang.
+
+### Build & Deploy
 
 ```bash
 bun run build      # TypeScript check + Vite build
 bun run preview    # Preview hasil build secara lokal
-```
-
-### Deploy
-
-```bash
 bun run deploy     # Build + deploy ke Cloudflare Workers
 ```
 
@@ -305,7 +373,9 @@ bun run lint       # ESLint
 | `db:seed:local` | `wrangler d1 execute ... --local --file=./drizzle/seed.sql` | Seed D1 lokal |
 | `db:push` | `drizzle-kit push` | Push schema langsung (dev) |
 | `db:studio` | `drizzle-kit studio` | GUI inspeksi database |
-| `test:auth` | `bun run scripts/test-auth.mjs` | Test end-to-end auth (26 skenario) |
+| `test` | `test:auth && test:api` | Semua test end-to-end |
+| `test:auth` | `bun run scripts/test-auth.mjs` | Test auth (26 skenario) |
+| `test:api` | `bun run scripts/test-api.mjs` | Test API (98 skenario) |
 
 ---
 
@@ -326,18 +396,22 @@ bun run lint       # ESLint
 
 | Phase | Scope | Status |
 |-------|-------|--------|
-| **1. MVP** | Scaffold project, skema DB (11 tabel), migrasi D1, seed data, autentikasi JWT, RBAC, kelola akun orang tua, backend CRUD menu/jadwal, frontend login + jadwal | Scaffold + skema + migrasi + seed + auth JWT selesai |
-| **2. Admin Dashboard** | Dashboard lengkap, manajemen jadwal mingguan/bulanan, duplikasi jadwal, kategori & tagging, kelola akun orang tua | Pending |
-| **3. Ekspor & Cetak** | Ekspor PDF mingguan/bulanan, Excel, cetak dari browser | Pending |
-| **4. Notifikasi** | Push notification (PWA), WhatsApp broadcast (opsional) | Pending |
+| **1. MVP** | Scaffold, skema DB (11 tabel), migrasi D1, seed data, auth JWT, RBAC, backend CRUD, frontend jadwal + admin | ✅ Selesai |
+| **2. Ekspor & Cetak** | Ekspor PDF mingguan/bulanan, Excel untuk koperasi, cetak dari browser | ⏳ Berikutnya |
+| **3. Pencarian Lanjutan** | "Kapan menu X disajikan?" — pencarian riwayat menu lintas bulan | ⏳ Rencana |
+| **4. Notifikasi** | Push notification (PWA), WhatsApp broadcast (opsional) | ⏳ Rencana |
 
 ---
 
 ## Catatan Teknis
 
-- **Timezone:** Worker berjalan di UTC. Untuk WIB (UTC+7) gunakan `date('now','+7 hours')` atau hitung offset di aplikasi — jangan andalkan `localtime`.
+- **Timezone:** Worker berjalan di UTC, sedangkan sekolah memakai WIB (UTC+7). Semua perhitungan "hari ini" memakai offset +7 (`todayInWib()` di `src/api/utils/date.ts`), bukan waktu server — agar jadwal tidak bergeser satu hari antara pukul 00:00–07:00 WIB. Kolom timestamp database memakai `datetime('now')` (UTC eksplisit, bukan `localtime`).
+- **Pemisahan utilitas tanggal:** `src/api/utils/date.ts` (backend) dan `src/lib/date.ts` (frontend) dipisah karena `tsconfig.app.json` mengecualikan folder `src/api` dari kompilasi frontend. Logikanya dijaga identik.
+- **Tipe bersama:** DTO di `src/types/` diimpor oleh backend maupun frontend, sehingga bentuk response API selalu sinkron dengan yang dipakai UI.
 - **Password hashing:** PBKDF2-SHA256 (100.000 iterasi) via Web Crypto API — edge-native, tanpa dependency native. Format tersimpan: `pbkdf2$<iterations>$<salt>$<hash>`. Lihat `src/api/utils/password.ts`.
 - **JWT:** HS256 via `hono/jwt`. Catatan: pada Hono 4.12+, `verify()` mewajibkan argumen algoritma ketiga — `verify(token, secret, "HS256")`.
+- **Pencegahan N+1:** Menampilkan jadwal sebulan hanya butuh 4 query — jadwal, hari libur, minggu, dan menu dimuat sekali lalu dirakit di memori (`ScheduleService.loadContext`).
+- **Soft delete:** Menghapus menu yang masih dipakai jadwal akan mengarsipkannya (bukan menghapus), agar jadwal lama tidak kehilangan referensi. Akun orang tua dinonaktifkan secara default; hapus permanen butuh `?hard=true`.
 - **Transaksi D1:** Tidak ada transaksi interaktif panjang — gunakan `db.batch([...])`.
 - **Secrets:** `JWT_SECRET` dan token Cloudflare disimpan sebagai Worker Secret, bukan di repo.
 - **Local vs Remote D1:** `wrangler dev` memakai D1 lokal (miniflare) di `.wrangler/state/` — datanya terpisah dari remote, tapi dipakai bersama oleh `wrangler d1 execute --local` dan dev server.

@@ -65,7 +65,9 @@
     "db:seed:local": "wrangler d1 execute pizza-snack-play --local --file=./drizzle/seed.sql",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "test:auth": "bun run scripts/test-auth.mjs"
+    "test:auth": "bun run scripts/test-auth.mjs",
+    "test:api": "bun run scripts/test-api.mjs",
+    "test": "bun run test:auth && bun run test:api"
   },
   "type": "module"
 }

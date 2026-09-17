@@ -2,7 +2,9 @@ import "dotenv/config";
 import { defineConfig } from "drizzle-kit";
 
 export default defineConfig({
-  out: "./drizzle",
+  // Migrasi ditulis ke subfolder agar `drizzle/seed.sql` tidak ikut
+  // terdeteksi wrangler sebagai migrasi (migrations_dir = drizzle/migrations).
+  out: "./drizzle/migrations",
   schema: "./src/database/schema.ts",
   dialect: "sqlite",
   driver: "d1-http",

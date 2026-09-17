@@ -71,7 +71,13 @@ let adminToken = null;
   check("login admin -> 200", r.status === 200, `got ${r.status} ${JSON.stringify(r.json)}`);
   check("ada token", typeof r.json?.data?.token === "string");
   check("role = admin", r.json?.data?.user?.role === "admin");
-  check("student null untuk admin", r.json?.data?.student === null);
+  check(
+    "admin tidak punya anak",
+    Array.isArray(r.json?.data?.user?.students) &&
+      r.json.data.user.students.length === 0,
+    JSON.stringify(r.json?.data?.user?.students),
+  );
+  check("relationship null untuk admin", r.json?.data?.user?.relationship === null);
   adminToken = r.json?.data?.token ?? null;
 }
 
@@ -83,13 +89,40 @@ let parentToken = null;
   });
   check("login sari -> 200", r.status === 200, `got ${r.status} ${JSON.stringify(r.json)}`);
   check("role = parent", r.json?.data?.user?.role === "parent");
+
+  const students = r.json?.data?.user?.students;
   check(
     "profil siswa terisi",
-    r.json?.data?.student?.name === "Aisyah Sari",
-    JSON.stringify(r.json?.data?.student),
+    students?.[0]?.name === "Aisyah Sari",
+    JSON.stringify(students),
   );
-  check("kelas = 1A", r.json?.data?.student?.className === "1A");
+  check("kelas = 1A", students?.[0]?.className === "1A");
+  check("relationship = ibu", r.json?.data?.user?.relationship === "ibu");
   parentToken = r.json?.data?.token ?? null;
+}
+
+console.log("\n=== 5b. Orang tua dengan lebih dari satu anak ===");
+{
+  const r = await call("POST", "/auth/login", {
+    body: { username: "dewi", password: "snack123" },
+  });
+  check("login dewi -> 200", r.status === 200, `got ${r.status}`);
+
+  const students = r.json?.data?.user?.students ?? [];
+  check("dewi punya 2 anak", students.length === 2, `len=${students.length}`);
+  check(
+    "anak pertama = Citra Dewi",
+    students[0]?.name === "Citra Dewi",
+    students[0]?.name,
+  );
+  check("anak kedua = Raka Dewi", students[1]?.name === "Raka Dewi", students[1]?.name);
+  check(
+    "setiap anak punya id & kelas",
+    students.every(
+      (s) => Number.isInteger(s.id) && typeof s.className === "string",
+    ),
+    JSON.stringify(students),
+  );
 }
 
 console.log("\n=== 6. GET /auth/me dengan token ===");
@@ -102,7 +135,8 @@ console.log("\n=== 6. GET /auth/me dengan token ===");
   check("parent /me -> 200", r2.status === 200, `got ${r2.status}`);
   check(
     "parent /me punya data siswa",
-    r2.json?.data?.student?.name === "Aisyah Sari",
+    r2.json?.data?.user?.students?.[0]?.name === "Aisyah Sari",
+    JSON.stringify(r2.json?.data?.user?.students),
   );
 }
 

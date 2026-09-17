@@ -8,6 +8,13 @@
       "when": 1789628273608,
       "tag": "0000_aspiring_mastermind",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1789637603927,
+      "tag": "0001_thick_pet_avengers",
+      "breakpoints": true
     }
   ]
 }

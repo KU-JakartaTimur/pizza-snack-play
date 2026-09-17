@@ -283,6 +283,7 @@ async function main() {
   statements.push("DELETE FROM menu_categories;");
   statements.push("DELETE FROM menus;");
   statements.push("DELETE FROM weeks;");
+  statements.push("DELETE FROM students;");
   statements.push("DELETE FROM parents;");
   statements.push("DELETE FROM users;");
   statements.push("DELETE FROM categories;");
@@ -431,7 +432,29 @@ async function main() {
   );
 
   statements.push(
-    `INSERT INTO parents (user_id, parent_name, student_name, student_class, relationship, phone) VALUES\n  (2, 'Sari Wulandari', 'Aisyah Sari', '1A', 'ibu', '081234567890'),\n  (3, 'Budi Santoso', 'Bagas Budi', '1A', 'ayah', '081234567891'),\n  (4, 'Dewi Lestari', 'Citra Dewi', '1B', 'ibu', '081234567892');`,
+    `INSERT INTO parents (user_id, parent_name, relationship, phone) VALUES\n  (2, 'Sari Wulandari', 'ibu', '081234567890'),\n  (3, 'Budi Santoso', 'ayah', '081234567891'),\n  (4, 'Dewi Lestari', 'ibu', '081234567892');`,
+  );
+
+  // ── students — satu orang tua boleh punya lebih dari satu anak.
+  // `parent_id` diambil lewat subquery agar tidak bergantung pada nilai
+  // AUTOINCREMENT yang bisa berubah setelah DELETE.
+  const parentIdSubquery = (username: string) =>
+    `(SELECT p.id FROM parents p JOIN users u ON u.id = p.user_id WHERE u.username = '${username}')`;
+
+  const studentRows = [
+    ["sari", "Aisyah Sari", "1A"],
+    ["budi", "Bagas Budi", "1A"],
+    ["dewi", "Citra Dewi", "1B"],
+    ["dewi", "Raka Dewi", "2A"],
+  ]
+    .map(
+      ([username, name, className]) =>
+        `  (${parentIdSubquery(username)}, '${name}', '${className}', 1)`,
+    )
+    .join(",\n");
+
+  statements.push(
+    `INSERT INTO students (parent_id, name, class_name, is_active) VALUES\n${studentRows};`,
   );
 
   writeFileSync(OUTPUT_FILE, statements.join("\n\n") + "\n", "utf8");

@@ -10,8 +10,6 @@ export interface LoginResult {
   token: string;
   expiresAt: number;
   user: AuthUser;
-  /** Profil siswa — hanya ada bila role `parent`. */
-  student: StudentProfile | null;
 }
 
 export type LoginFailure = "invalid_credentials" | "inactive";
@@ -33,17 +31,30 @@ export function resolveExpiresIn(raw: string | undefined): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_EXPIRES_IN;
 }
 
-function toPublicUser(user: {
-  id: number;
-  username: string;
-  fullName: string | null;
-  role: string;
-}): AuthUser {
+/** Profil anak & hubungan orang tua — kosong untuk admin. */
+interface ParentProfile {
+  relationship: string | null;
+  students: StudentProfile[];
+}
+
+const EMPTY_PROFILE: ParentProfile = { relationship: null, students: [] };
+
+function toPublicUser(
+  user: {
+    id: number;
+    username: string;
+    fullName: string | null;
+    role: string;
+  },
+  profile: ParentProfile = EMPTY_PROFILE,
+): AuthUser {
   return {
     id: user.id,
     username: user.username,
     fullName: user.fullName,
     role: user.role as Role,
+    relationship: profile.relationship,
+    students: profile.students,
   };
 }
 
@@ -79,24 +90,22 @@ class AuthService {
 
     await authRepository.touchLastLogin(db, user.id);
 
-    const student = await this.studentProfileFor(db, user.id, user.role);
+    const profile = await this.parentProfileFor(db, user.id, user.role);
 
     return {
       token,
       expiresAt,
-      user: toPublicUser(user),
-      student,
+      user: toPublicUser(user, profile),
     };
   }
 
-  /** Profil user yang sedang login, termasuk profil siswa bila `parent`. */
+  /** Profil user yang sedang login, termasuk daftar anak bila `parent`. */
   async getProfile(db: Db, userId: number) {
     const user = await authRepository.findById(db, userId);
     if (!user) return null;
 
     return {
-      user: toPublicUser(user),
-      student: await this.studentProfileFor(db, userId, user.role),
+      user: toPublicUser(user, await this.parentProfileFor(db, userId, user.role)),
     };
   }
 
@@ -120,20 +129,24 @@ class AuthService {
     return true;
   }
 
-  private async studentProfileFor(
+  /** Hubungan + daftar anak untuk role `parent`; kosong untuk role lain. */
+  private async parentProfileFor(
     db: Db,
     userId: number,
     role: string,
-  ): Promise<StudentProfile | null> {
-    if (role !== "parent") return null;
+  ): Promise<ParentProfile> {
+    if (role !== "parent") return EMPTY_PROFILE;
 
-    const profile = await authRepository.findParentProfile(db, userId);
-    if (!profile) return null;
+    const found = await authRepository.findParentWithStudents(db, userId);
+    if (!found) return EMPTY_PROFILE;
 
     return {
-      name: profile.studentName,
-      className: profile.studentClass,
-      relationship: profile.relationship,
+      relationship: found.parent.relationship,
+      students: found.students.map((student) => ({
+        id: student.id,
+        name: student.name,
+        className: student.className,
+      })),
     };
   }
 }

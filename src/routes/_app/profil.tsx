@@ -17,7 +17,7 @@ export const Route = createFileRoute("/_app/profil")({
 });
 
 function ProfilePage() {
-  const { user, student } = useAuth();
+  const { user, students, relationship } = useAuth();
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -72,13 +72,14 @@ function ProfilePage() {
             <Row label="Username" value={user?.username ?? "-"} />
             <Row label="Nama" value={user?.fullName ?? "-"} />
             <Row label="Peran" value={user?.role === "admin" ? "Admin" : "Orang tua"} />
-            {student && (
-              <>
-                <Row label="Nama siswa" value={student.name} />
-                <Row label="Kelas" value={student.className ?? "-"} />
-                <Row label="Hubungan" value={student.relationship} />
-              </>
-            )}
+            {relationship && <Row label="Hubungan" value={relationship} />}
+            {students.map((item) => (
+              <Row
+                key={item.id}
+                label={students.length > 1 ? "Anak" : "Siswa"}
+                value={`${item.name}${item.className ? ` (${item.className})` : ""}`}
+              />
+            ))}
           </dl>
         </Card>
 

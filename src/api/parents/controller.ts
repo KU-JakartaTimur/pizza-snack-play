@@ -28,7 +28,41 @@ function mapError(c: ParentContext, error: ParentError) {
         c,
         `Hubungan harus salah satu dari: ${RELATIONSHIPS.join(", ")}`,
       );
+    case "no_students":
+      return responseBadRequest(c, "Minimal satu anak harus diisi");
   }
+}
+
+/** Validasi daftar anak pada body create/update. */
+function validateStudents(raw: unknown): string | null {
+  if (!Array.isArray(raw)) return "`students` harus berupa array";
+  if (raw.length === 0) return "Minimal satu anak harus diisi";
+
+  for (const [index, item] of raw.entries()) {
+    const label = `Anak ke-${index + 1}`;
+
+    if (typeof item !== "object" || item === null) {
+      return `${label} harus berupa objek`;
+    }
+
+    const student = item as Record<string, unknown>;
+
+    if (typeof student.name !== "string" || !student.name.trim()) {
+      return `Nama ${label.toLowerCase()} wajib diisi`;
+    }
+    if (student.id !== undefined && !Number.isInteger(student.id)) {
+      return `ID ${label.toLowerCase()} harus berupa angka`;
+    }
+    if (
+      student.className !== undefined &&
+      student.className !== null &&
+      typeof student.className !== "string"
+    ) {
+      return `Kelas ${label.toLowerCase()} harus teks`;
+    }
+  }
+
+  return null;
 }
 
 /** Validasi umum untuk create & update. `requireAll` = true saat create. */
@@ -41,9 +75,16 @@ function validateInput(
 
   if (need(body.username)) return "`username` wajib diisi";
   if (need(body.parentName)) return "`parentName` wajib diisi";
-  if (need(body.studentName)) return "`studentName` wajib diisi";
+  if (requireAll && body.students === undefined) {
+    return "`students` wajib diisi";
+  }
   if (requireAll && (typeof body.password !== "string" || !body.password)) {
     return "`password` wajib diisi";
+  }
+
+  if (body.students !== undefined) {
+    const studentError = validateStudents(body.students);
+    if (studentError) return studentError;
   }
 
   if (body.username !== undefined) {
@@ -116,8 +157,11 @@ class ParentController {
       username: body.username!,
       password: body.password!,
       parentName: body.parentName!,
-      studentName: body.studentName!,
-      studentClass: body.studentClass ?? null,
+      students: body.students!.map((student) => ({
+        id: student.id,
+        name: student.name,
+        className: student.className ?? null,
+      })),
       relationship: body.relationship ?? "ibu",
       phone: body.phone ?? null,
       address: body.address ?? null,

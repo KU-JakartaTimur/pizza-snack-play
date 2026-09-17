@@ -179,18 +179,58 @@ section("7. Menu");
 
 section("8. RBAC — orang tua ditolak di endpoint admin");
 {
+  // Seluruh operasi tulis harus ditolak, bukan hanya POST.
   const cases = [
     ["GET", "/parents"],
     ["GET", "/stats/summary"],
     ["POST", "/menus"],
+    ["PUT", "/menus/1"],
+    ["DELETE", "/menus/1"],
     ["POST", "/categories"],
+    ["PUT", "/categories/1"],
+    ["DELETE", "/categories/1"],
     ["POST", "/schedules"],
+    ["PUT", "/schedules/1"],
+    ["DELETE", "/schedules/1"],
+    ["POST", "/schedules/copy"],
     ["POST", "/holidays"],
+    ["DELETE", "/holidays/1"],
+    ["POST", "/parents"],
+    ["PUT", "/parents/1"],
+    ["DELETE", "/parents/1"],
   ];
 
   for (const [method, path] of cases) {
     const r = await call(method, path, { token: parentToken, body: {} });
     check(`${method} ${path} sebagai orang tua -> 403`, r.status === 403, `got ${r.status}`);
+  }
+
+  // Bukti tambahan: percobaan tulis benar-benar tidak mengubah data.
+  const before = await call("GET", "/menus/1", { token: adminToken });
+  await call("PUT", "/menus/1", {
+    token: parentToken,
+    body: { name: "DIUBAH ORANG TUA" },
+  });
+  const after = await call("GET", "/menus/1", { token: adminToken });
+  check(
+    "nama menu tidak berubah setelah percobaan orang tua",
+    before.data?.name === after.data?.name,
+    `${before.data?.name} -> ${after.data?.name}`,
+  );
+
+  const catBefore = await call("GET", "/categories", { token: adminToken });
+  await call("DELETE", "/categories/1", { token: parentToken });
+  const catAfter = await call("GET", "/categories", { token: adminToken });
+  check(
+    "jumlah kategori tidak berubah setelah percobaan orang tua",
+    catBefore.data?.length === catAfter.data?.length,
+    `${catBefore.data?.length} -> ${catAfter.data?.length}`,
+  );
+
+  // Orang tua tetap boleh membaca katalog (dipakai halaman Menu & jadwal).
+  for (const path of ["/menus", "/categories", "/menus/item-types"]) {
+    const r = await call("GET", path, { token: parentToken });
+    check(`GET ${path} sebagai orang tua -> 200`, r.status === 200, `got ${r.status}`);
   }
 }
 
@@ -374,57 +414,214 @@ section("15. CRUD orang tua (admin)");
 {
   const username = `uji${Date.now().toString(36)}`;
 
+  // ── 15a. Satu orang tua, dua anak ───────────────────────────
   const created = await call("POST", "/parents", {
     token: adminToken,
     body: {
       username,
       password: "rahasia123",
       parentName: "Ibu Uji",
-      studentName: "Anak Uji",
-      studentClass: "2A",
+      students: [
+        { name: "Anak Uji A", className: "2A" },
+        { name: "Anak Uji B", className: "3B" },
+      ],
       relationship: "ibu",
     },
   });
   check("POST /parents -> 201", created.status === 201, `got ${created.status}`);
-  check("role akun baru = parent", created.data?.username === username, created.data?.username);
+  check("username akun baru terbaca", created.data?.username === username, created.data?.username);
+  check("dua anak tersimpan", created.data?.students?.length === 2,
+    JSON.stringify(created.data?.students));
+  check("anak pertama lengkap",
+    created.data?.students?.[0]?.name === "Anak Uji A" &&
+      created.data?.students?.[0]?.className === "2A",
+    JSON.stringify(created.data?.students?.[0]));
+  check("anak kedua lengkap",
+    created.data?.students?.[1]?.name === "Anak Uji B" &&
+      created.data?.students?.[1]?.className === "3B",
+    JSON.stringify(created.data?.students?.[1]));
   const parentId = created.data?.id;
+  const firstStudentId = created.data?.students?.[0]?.id;
 
+  // ── 15b. Validasi input ─────────────────────────────────────
   const dup = await call("POST", "/parents", {
     token: adminToken,
     body: {
       username,
       password: "rahasia123",
       parentName: "Duplikat",
-      studentName: "Anak",
+      students: [{ name: "Anak" }],
     },
   });
   check("username duplikat -> 409", dup.status === 409, `got ${dup.status}`);
 
   const badUser = await call("POST", "/parents", {
     token: adminToken,
-    body: { username: "AB", password: "rahasia123", parentName: "x", studentName: "y" },
+    body: {
+      username: "AB",
+      password: "rahasia123",
+      parentName: "x",
+      students: [{ name: "y" }],
+    },
   });
   check("username terlalu pendek -> 400", badUser.status === 400, `got ${badUser.status}`);
 
   const shortPw = await call("POST", "/parents", {
     token: adminToken,
-    body: { username: `p${Date.now().toString(36)}`, password: "123", parentName: "x", studentName: "y" },
+    body: {
+      username: `p${Date.now().toString(36)}`,
+      password: "123",
+      parentName: "x",
+      students: [{ name: "y" }],
+    },
   });
   check("password < 8 karakter -> 400", shortPw.status === 400, `got ${shortPw.status}`);
 
+  const noStudents = await call("POST", "/parents", {
+    token: adminToken,
+    body: { username: `n${Date.now().toString(36)}`, password: "rahasia123", parentName: "x" },
+  });
+  check("`students` tidak dikirim -> 400", noStudents.status === 400, `got ${noStudents.status}`);
+
+  const emptyStudents = await call("POST", "/parents", {
+    token: adminToken,
+    body: {
+      username: `e${Date.now().toString(36)}`,
+      password: "rahasia123",
+      parentName: "x",
+      students: [],
+    },
+  });
+  check("`students` kosong -> 400", emptyStudents.status === 400, `got ${emptyStudents.status}`);
+
+  const blankStudent = await call("POST", "/parents", {
+    token: adminToken,
+    body: {
+      username: `b${Date.now().toString(36)}`,
+      password: "rahasia123",
+      parentName: "x",
+      students: [{ name: "   " }],
+    },
+  });
+  check("nama anak hanya spasi -> 400", blankStudent.status === 400, `got ${blankStudent.status}`);
+
+  const badRelationship = await call("POST", "/parents", {
+    token: adminToken,
+    body: {
+      username: `r${Date.now().toString(36)}`,
+      password: "rahasia123",
+      parentName: "x",
+      students: [{ name: "y" }],
+      relationship: "kakek",
+    },
+  });
+  check("hubungan tidak dikenal -> 400", badRelationship.status === 400, `got ${badRelationship.status}`);
+
+  // ── 15c. Daftar & pencarian ─────────────────────────────────
   const list = await call("GET", `/parents?search=${username}`, { token: adminToken });
   check("pencarian menemukan akun baru", list.data?.items?.length === 1,
     `found=${list.data?.items?.length}`);
   check("total terisi", list.data?.total === 1, `total=${list.data?.total}`);
+  check("daftar memuat kedua anak", list.data?.items?.[0]?.students?.length === 2,
+    JSON.stringify(list.data?.items?.[0]?.students));
 
-  // Akun baru harus bisa login
+  const searchByChild = await call("GET", `/parents?search=${encodeURIComponent("Anak Uji B")}`, {
+    token: adminToken,
+  });
+  check("pencarian lewat nama anak menemukan orang tua",
+    searchByChild.data?.items?.some((item) => item.id === parentId),
+    `found=${searchByChild.data?.items?.length}`);
+  check("tidak ada baris ganda saat cocok 1 anak",
+    searchByChild.data?.items?.filter((item) => item.id === parentId).length === 1,
+    JSON.stringify(searchByChild.data?.items?.map((item) => item.id)));
+
+  const searchByClass = await call("GET", "/parents?search=3B", { token: adminToken });
+  check("pencarian lewat kelas anak berhasil",
+    searchByClass.data?.items?.some((item) => item.id === parentId),
+    `found=${searchByClass.data?.items?.length}`);
+
+  // ── 15d. Login mengembalikan seluruh anak ───────────────────
   const login = await call("POST", "/auth/login", {
     body: { username, password: "rahasia123" },
   });
   check("akun baru bisa login", login.status === 200, `got ${login.status}`);
-  check("profil siswa terbawa", login.data?.student?.className === "2A",
-    JSON.stringify(login.data?.student));
+  check("profil memuat dua anak", login.data?.user?.students?.length === 2,
+    JSON.stringify(login.data?.user?.students));
+  check("hubungan terbawa", login.data?.user?.relationship === "ibu",
+    login.data?.user?.relationship);
 
+  // ── 15e. Update mengganti daftar anak ───────────────────────
+  const updated = await call("PUT", `/parents/${parentId}`, {
+    token: adminToken,
+    body: {
+      parentName: "Ibu Uji Revisi",
+      students: [
+        { id: firstStudentId, name: "Anak Uji A Revisi", className: "4C" },
+        { name: "Anak Uji C", className: "5D" },
+      ],
+    },
+  });
+  check("PUT /parents/:id -> 200", updated.status === 200, `got ${updated.status}`);
+  check("nama orang tua berubah", updated.data?.parentName === "Ibu Uji Revisi",
+    updated.data?.parentName);
+  check("anak lama diperbarui di tempat",
+    updated.data?.students?.[0]?.id === firstStudentId &&
+      updated.data?.students?.[0]?.name === "Anak Uji A Revisi" &&
+      updated.data?.students?.[0]?.className === "4C",
+    JSON.stringify(updated.data?.students?.[0]));
+  check("anak baru ditambahkan",
+    updated.data?.students?.[1]?.name === "Anak Uji C" &&
+      updated.data?.students?.[1]?.className === "5D",
+    JSON.stringify(updated.data?.students?.[1]));
+  check("anak yang tidak disebut lagi terhapus", updated.data?.students?.length === 2,
+    JSON.stringify(updated.data?.students));
+
+  // Ganti daftar jadi satu anak saja → anak kedua harus hilang.
+  const narrowed = await call("PUT", `/parents/${parentId}`, {
+    token: adminToken,
+    body: { students: [{ id: firstStudentId, name: "Anak Uji A Revisi", className: "4C" }] },
+  });
+  check("menyusutkan daftar anak -> 200", narrowed.status === 200, `got ${narrowed.status}`);
+  check("daftar anak jadi satu", narrowed.data?.students?.length === 1,
+    JSON.stringify(narrowed.data?.students));
+
+  const detail = await call("GET", `/parents/${parentId}`, { token: adminToken });
+  check("detail konsisten dengan hasil update", detail.data?.students?.length === 1,
+    JSON.stringify(detail.data?.students));
+
+  // ── 15f. ID anak milik orang tua lain tidak bisa dibajak ────
+  const victimStudentId = parentLogin.data?.user?.students?.[0]?.id;
+  const victimName = parentLogin.data?.user?.students?.[0]?.name;
+
+  const hijack = await call("PUT", `/parents/${parentId}`, {
+    token: adminToken,
+    body: {
+      students: [
+        { id: firstStudentId, name: "Anak Uji A Revisi", className: "4C" },
+        { id: victimStudentId, name: "Anak Curian", className: "6Z" },
+      ],
+    },
+  });
+  check("ID anak orang lain ditolak sebagai update -> 200 (dibuat baru)",
+    hijack.status === 200, `got ${hijack.status}`);
+  check("ID anak orang lain tidak tercatat di akun ini",
+    !hijack.data?.students?.some((student) => student.id === victimStudentId),
+    JSON.stringify(hijack.data?.students?.map((student) => student.id)));
+
+  const victimAfter = await call("POST", "/auth/login", { body: PARENT });
+  check("data anak orang tua lain tidak berubah",
+    victimAfter.data?.user?.students?.[0]?.id === victimStudentId &&
+      victimAfter.data?.user?.students?.[0]?.name === victimName,
+    JSON.stringify(victimAfter.data?.user?.students?.[0]));
+
+  // ── 15g. Update tidak boleh mengosongkan daftar anak ────────
+  const emptied = await call("PUT", `/parents/${parentId}`, {
+    token: adminToken,
+    body: { students: [{ name: "   " }] },
+  });
+  check("update dengan anak kosong -> 400", emptied.status === 400, `got ${emptied.status}`);
+
+  // ── 15h. Reset password & nonaktifkan ───────────────────────
   const reset = await call("POST", `/parents/${parentId}/reset-password`, {
     token: adminToken,
     body: { newPassword: "baru12345" },

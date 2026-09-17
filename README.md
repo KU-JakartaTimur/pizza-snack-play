@@ -36,7 +36,7 @@ Jadwal piket snack sekolah sebelumnya disusun dalam dokumen teks manual — suli
 | **Salin Jadwal Antar Minggu** | Duplikasi jadwal Senin–Jumat ke minggu lain, opsional timpa | Admin | ✅ |
 | **Kelola Hari Libur** | Tambah/hapus hari libur bernama | Admin | ✅ |
 | **Pencarian Riwayat Menu** | "Kapan jeruk pernah disajikan?" — cari menu/komponen lintas bulan | Semua | ✅ |
-| **Kelola Akun Orang Tua** | Buat, ubah, nonaktifkan, hapus, reset password | Admin | ✅ |
+| **Kelola Akun Orang Tua** | Buat, ubah, nonaktifkan, hapus, reset password — satu akun boleh punya **lebih dari satu anak** | Admin | ✅ |
 | **Dashboard** | Ringkasan jumlah akun, menu, jadwal, dan hari libur | Admin | ✅ |
 | **Ubah Password** | Setiap pengguna dapat mengganti password sendiri | Semua | ✅ |
 | **Ekspor PDF/Excel** | Cetak jadwal mingguan/bulanan | Admin, Parent | ⏳ Rencana |
@@ -121,11 +121,13 @@ pizza-snack-play/
 │   └── routeTree.gen.ts          # Auto-generated route tree
 ├── data/
 │   └── jadwal_piket_snack.txt    # Sumber data jadwal (Agustus & September 2026)
-├── drizzle/                      # Migrasi D1 + seed.sql
+├── drizzle/
+│   ├── migrations/               # Migrasi D1 (drizzle-kit generate)
+│   └── seed.sql                  # Seed SQL (di luar folder migrations)
 ├── scripts/
 │   ├── seed.ts                   # Parser jadwal -> drizzle/seed.sql
-│   ├── test-auth.mjs             # 26 test end-to-end auth
-│   └── test-api.mjs              # 140 test end-to-end API
+│   ├── test-auth.mjs             # 33 test end-to-end auth
+│   └── test-api.mjs              # 180 test end-to-end API
 ├── docs/
 │   ├── PRD_Pizza_Snack_Play.md
 │   └── Struktur_Tabel_Pizza_Snack_Play.md
@@ -163,7 +165,7 @@ Middleware dipasang berurutan: `requireAuth` (401 bila tanpa token) lalu
 
 ---
 
-## Database Schema (11 Tabel)
+## Database Schema (12 Tabel)
 
 | Tabel | Peran |
 |-------|-------|
@@ -175,7 +177,8 @@ Middleware dipasang berurutan: `requireAuth` (401 bila tanpa token) lalu
 | `schedules` | Tabel inti — tanggal → menu, dengan flag `is_holiday` |
 | `holidays` | Daftar hari libur nasional/sekolah |
 | `users` | Akun login (admin & orang tua), JWT auth, password hashing |
-| `parents` | Profil orang tua (nama, nama siswa, kelas, hubungan) |
+| `parents` | Profil orang tua (nama, hubungan, kontak) — 1 baris per orang tua |
+| `students` | Anak dari orang tua (nama + kelas) — **satu orang tua boleh punya banyak anak** |
 | `settings` | Konfigurasi global (nama sekolah, tahun ajaran) |
 | `import_logs` | Audit trail impor data dari file teks |
 
@@ -236,10 +239,10 @@ Semua endpoint berada di bawah `basePath /api`. Kecuali `POST /api/auth/login`, 
 
 | Method | Endpoint | Role | Keterangan |
 |--------|----------|------|-----------|
-| `GET` | `/parents?search=&active=&page=&perPage=` | Admin | Daftar akun orang tua (paginated) |
-| `GET` | `/parents/:id` | Admin | Detail akun |
-| `POST` | `/parents` | Admin | Buat akun + profil siswa |
-| `PUT` | `/parents/:id` | Admin | Ubah akun |
+| `GET` | `/parents?search=&active=&page=&perPage=` | Admin | Daftar akun orang tua (paginated); `search` juga mencocokkan nama/kelas anak |
+| `GET` | `/parents/:id` | Admin | Detail akun + daftar anak |
+| `POST` | `/parents` | Admin | Buat akun + profil orang tua + daftar anak (min. 1) |
+| `PUT` | `/parents/:id` | Admin | Ubah akun; daftar anak **menggantikan** yang lama bila dikirim |
 | `DELETE` | `/parents/:id?hard=` | Admin | Nonaktifkan, atau hapus permanen bila `hard=true` |
 | `POST` | `/parents/:id/reset-password` | Admin | Reset password |
 | `GET` | `/stats/summary` | Admin | Ringkasan dashboard |
@@ -268,6 +271,20 @@ curl "http://localhost:5173/api/schedules/search?q=jeruk&from=2026-03-21&to=2026
 curl -X POST http://localhost:5173/api/schedules/copy \
   -H "Authorization: Bearer <token>" -H "Content-Type: application/json" \
   -d '{"fromDate":"2026-09-14","toDate":"2026-09-21"}'
+
+# Buat akun orang tua dengan dua anak sekaligus
+curl -X POST http://localhost:5173/api/parents \
+  -H "Authorization: Bearer <token>" -H "Content-Type: application/json" \
+  -d '{
+    "username": "rina",
+    "password": "rahasia123",
+    "parentName": "Ibu Rina",
+    "relationship": "ibu",
+    "students": [
+      { "name": "Dita Rina", "className": "1A" },
+      { "name": "Damar Rina", "className": "3B" }
+    ]
+  }'
 ```
 
 Token JWT berlaku 7 hari (dapat diatur via `JWT_EXPIRES_IN` dalam detik). Algoritma **HS256** via `hono/jwt`.
@@ -299,7 +316,7 @@ D1 lokal berjalan lewat miniflare dan dipakai bersama oleh dev server dan
 `wrangler d1 execute --local`:
 
 ```bash
-bun run db:migrate:local   # buat 11 tabel di D1 lokal
+bun run db:migrate:local   # buat 12 tabel di D1 lokal
 bun run db:seed:local      # isi data dari data/jadwal_piket_snack.txt
 bun run dev                # http://localhost:5173
 ```
@@ -390,8 +407,8 @@ bun run lint       # ESLint
 | `db:push` | `drizzle-kit push` | Push schema langsung (dev) |
 | `db:studio` | `drizzle-kit studio` | GUI inspeksi database |
 | `test` | `test:auth && test:api` | Semua test end-to-end |
-| `test:auth` | `bun run scripts/test-auth.mjs` | Test auth (26 skenario) |
-| `test:api` | `bun run scripts/test-api.mjs` | Test API (140 skenario) |
+| `test:auth` | `bun run scripts/test-auth.mjs` | Test auth (33 skenario) |
+| `test:api` | `bun run scripts/test-api.mjs` | Test API (180 skenario) |
 
 ---
 
@@ -412,7 +429,7 @@ bun run lint       # ESLint
 
 | Phase | Scope | Status |
 |-------|-------|--------|
-| **1. MVP** | Scaffold, skema DB (11 tabel), migrasi D1, seed data, auth JWT, RBAC, backend CRUD, frontend jadwal + admin | ✅ Selesai |
+| **1. MVP** | Scaffold, skema DB (12 tabel), migrasi D1, seed data, auth JWT, RBAC, backend CRUD, frontend jadwal + admin | ✅ Selesai |
 | **2. Pencarian & Duplikasi** | Pencarian riwayat menu lintas bulan, salin jadwal antar minggu | ✅ Selesai |
 | **3. Ekspor & Cetak** | Halaman cetak ramah printer + ekspor CSV mingguan/bulanan | ⏳ Berikutnya |
 | **4. Notifikasi** | Push notification (PWA), WhatsApp broadcast (opsional) | ⏳ Rencana |
@@ -438,7 +455,7 @@ bun run lint       # ESLint
 
 ## Dokumentasi
 
-- [PRD — Product Requirements Document v1.3](docs/PRD_Pizza_Snack_Play.md)
+- [PRD — Product Requirements Document v1.4](docs/PRD_Pizza_Snack_Play.md)
 - [Struktur Tabel — DDL + Drizzle + Seed + Queries](docs/Struktur_Tabel_Pizza_Snack_Play.md)
 
 ## Sumber Data
@@ -451,7 +468,7 @@ Salinan file sumber ada di repo: [`data/jadwal_piket_snack.txt`](data/jadwal_pik
 
 Setiap hari kerja (Senin–Jumat): **makanan utama + buah pendamping**.
 
-`scripts/seed.ts` mem-parse file ini dan menghasilkan **10 minggu, 42 menu, 84 menu item, 43 jadwal** (1 hari libur: 17 Agustus 2026).
+`scripts/seed.ts` mem-parse file ini dan menghasilkan **10 minggu, 42 menu, 84 menu item, 43 jadwal, 3 orang tua, 4 anak** (1 hari libur: 17 Agustus 2026).
 
 **Cara kerja parser:** setiap blok minggu dibaca sebagai rentang tanggal, lalu setiap tanggal dalam rentang dicocokkan dengan nama harinya (Senin–Jumat) — jadi tanggal tidak perlu ditulis eksplisit di file sumber.
 

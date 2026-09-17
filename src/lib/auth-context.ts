@@ -6,7 +6,13 @@ export const TOKEN_KEY = "psp_token";
 
 export interface AuthContextValue {
   user: AuthUser | null;
-  student: StudentProfile | null;
+  /**
+   * Anak dari orang tua yang sedang login. Selalu array —
+   * satu orang tua dapat memiliki lebih dari satu anak.
+   */
+  students: StudentProfile[];
+  /** Hubungan orang tua dengan siswa (`ibu` | `ayah` | `wali`). */
+  relationship: string | null;
   token: string | null;
   /** `false` selama sesi tersimpan masih diverifikasi ke server. */
   isReady: boolean;

@@ -24,22 +24,27 @@ export interface AuthUser {
   username: string;
   fullName: string | null;
   role: Role;
+  /** Hubungan dengan siswa (`ibu` | `ayah` | `wali`). Null untuk admin. */
+  relationship: string | null;
+  /**
+   * Anak dari orang tua ini. Kosong untuk admin.
+   * Satu orang tua dapat memiliki lebih dari satu anak.
+   */
+  students: StudentProfile[];
 }
 
 export interface StudentProfile {
+  id: number;
   name: string;
   className: string | null;
-  relationship: string;
 }
 
 export interface LoginResponse {
   token: string;
   expiresAt: number;
   user: AuthUser;
-  student: StudentProfile | null;
 }
 
 export interface ProfileResponse {
   user: AuthUser;
-  student: StudentProfile | null;
 }

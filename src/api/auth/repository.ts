@@ -1,6 +1,6 @@
-import { eq, sql } from "drizzle-orm";
-import { parents, users } from "../../database/schema";
-import type { Parent, User } from "../../database/schema";
+import { and, asc, eq, sql } from "drizzle-orm";
+import { parents, students, users } from "../../database/schema";
+import type { Parent, Student, User } from "../../database/schema";
 import type { Db } from "../../database/db";
 
 class AuthRepository {
@@ -18,14 +18,30 @@ class AuthRepository {
     return rows[0];
   }
 
-  /** Profil orang tua (nama siswa, kelas) bila user ber-role `parent`. */
-  async findParentProfile(db: Db, userId: number): Promise<Parent | undefined> {
+  /**
+   * Profil orang tua beserta seluruh anaknya bila user ber-role `parent`.
+   * Anak nonaktif tidak disertakan.
+   */
+  async findParentWithStudents(
+    db: Db,
+    userId: number,
+  ): Promise<{ parent: Parent; students: Student[] } | undefined> {
     const rows = await db
       .select()
       .from(parents)
       .where(eq(parents.userId, userId))
       .limit(1);
-    return rows[0];
+
+    const parent = rows[0];
+    if (!parent) return undefined;
+
+    const studentRows = await db
+      .select()
+      .from(students)
+      .where(and(eq(students.parentId, parent.id), eq(students.isActive, 1)))
+      .orderBy(asc(students.id));
+
+    return { parent, students: studentRows };
   }
 
   async touchLastLogin(db: Db, id: number): Promise<void> {

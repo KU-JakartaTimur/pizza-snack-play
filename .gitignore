@@ -202,3 +202,6 @@ dist
 .github/copilot-instructions.md
 
 .tanstack
+
+### Artefak verifikasi lokal (skrip + screenshot) ###
+outputs/

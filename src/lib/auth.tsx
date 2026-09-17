@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import type { AuthUser, StudentProfile } from "@/types/auth";
+import type { AuthUser } from "@/types/auth";
 import { api } from "./api";
 import { AuthContext, TOKEN_KEY, type AuthContextValue } from "./auth-context";
 
 interface AuthState {
   token: string | null;
   user: AuthUser | null;
-  student: StudentProfile | null;
   /** `false` selama token tersimpan masih diverifikasi ke server. */
   isReady: boolean;
 }
@@ -22,12 +21,15 @@ function readStoredToken(): string | null {
  */
 function initialState(): AuthState {
   const token = readStoredToken();
-  return { token, user: null, student: null, isReady: token === null };
+  return { token, user: null, isReady: token === null };
 }
 
 /**
  * Menyimpan sesi login di `localStorage` dan memverifikasinya ke server
  * saat aplikasi dimuat ulang (token bisa saja sudah kedaluwarsa).
+ *
+ * Profil anak (`students`) menempel pada `user`, bukan state terpisah —
+ * satu orang tua dapat memiliki lebih dari satu anak.
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>(initialState);
@@ -42,18 +44,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .me()
       .then((profile) => {
         if (cancelled) return;
-        setState({
-          token,
-          user: profile.user,
-          student: profile.student,
-          isReady: true,
-        });
+        setState({ token, user: profile.user, isReady: true });
       })
       .catch(() => {
         // Token tidak valid / kedaluwarsa — bersihkan sesi.
         if (cancelled) return;
         localStorage.removeItem(TOKEN_KEY);
-        setState({ token: null, user: null, student: null, isReady: true });
+        setState({ token: null, user: null, isReady: true });
       });
 
     return () => {
@@ -65,25 +62,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data } = await api.auth.login({ username, password });
     localStorage.setItem(TOKEN_KEY, data.token);
     // Sesi sudah lengkap — tidak perlu verifikasi ulang.
-    setState({
-      token: data.token,
-      user: data.user,
-      student: data.student,
-      isReady: true,
-    });
+    setState({ token: data.token, user: data.user, isReady: true });
   }, []);
 
   const logout = useCallback(() => {
     // JWT stateless — cukup buang token; panggilan server hanya untuk audit.
     void api.auth.logout().catch(() => undefined);
     localStorage.removeItem(TOKEN_KEY);
-    setState({ token: null, user: null, student: null, isReady: true });
+    setState({ token: null, user: null, isReady: true });
   }, []);
 
   const value = useMemo<AuthContextValue>(
     () => ({
       user: state.user,
-      student: state.student,
+      students: state.user?.students ?? [],
+      relationship: state.user?.relationship ?? null,
       token: state.token,
       isReady: state.isReady,
       isAdmin: state.user?.role === "admin",

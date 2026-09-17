@@ -194,6 +194,9 @@ export const users = sqliteTable(
 // ─────────────────────────────────────────────────────────────
 // Profil orang tua — terhubung ke akun users.
 // relationship: 'ibu' | 'ayah' | 'wali'
+//
+// Satu orang tua dapat memiliki lebih dari satu anak; daftar anak
+// disimpan pada tabel `students` (relasi satu-ke-banyak).
 // ─────────────────────────────────────────────────────────────
 export const parents = sqliteTable(
   "parents",
@@ -203,8 +206,6 @@ export const parents = sqliteTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     parentName: text("parent_name").notNull(),
-    studentName: text("student_name").notNull(),
-    studentClass: text("student_class"),
     relationship: text("relationship").notNull().default("ibu"),
     phone: text("phone"),
     address: text("address"),
@@ -214,8 +215,29 @@ export const parents = sqliteTable(
   },
   (table) => [
     index("idx_parents_user_id").on(table.userId),
-    index("idx_parents_class").on(table.studentClass),
     index("idx_parents_active").on(table.isActive),
+  ],
+);
+
+// ─────────────────────────────────────────────────────────────
+// Anak dari seorang orang tua (satu orang tua → banyak anak).
+// ─────────────────────────────────────────────────────────────
+export const students = sqliteTable(
+  "students",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    parentId: integer("parent_id")
+      .notNull()
+      .references(() => parents.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    className: text("class_name"),
+    isActive: integer("is_active").notNull().default(1),
+    createdAt: text("created_at").notNull().default(now),
+    updatedAt: text("updated_at").notNull().default(now),
+  },
+  (table) => [
+    index("idx_students_parent_id").on(table.parentId),
+    index("idx_students_class").on(table.className),
   ],
 );
 
@@ -275,6 +297,9 @@ export type NewUser = typeof users.$inferInsert;
 
 export type Parent = typeof parents.$inferSelect;
 export type NewParent = typeof parents.$inferInsert;
+
+export type Student = typeof students.$inferSelect;
+export type NewStudent = typeof students.$inferInsert;
 
 export type Setting = typeof settings.$inferSelect;
 export type NewSetting = typeof settings.$inferInsert;

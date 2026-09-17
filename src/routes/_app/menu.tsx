@@ -17,6 +17,7 @@ import {
   Textarea,
 } from "@/components/ui";
 import { ApiError, api } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import type { MenuDto, MenuInput, MenuItemType } from "@/types/catalog";
 
 export const Route = createFileRoute("/_app/menu")({
@@ -53,6 +54,9 @@ const EMPTY_FORM: MenuForm = {
 
 function MenusPage() {
   const queryClient = useQueryClient();
+  // Orang tua hanya boleh membaca katalog; seluruh kontrol ubah data
+  // disembunyikan agar tidak menyesatkan (API tetap menolak dengan 403).
+  const { isAdmin } = useAuth();
 
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
@@ -194,12 +198,18 @@ function MenusPage() {
     <>
       <PageHeader
         title="Menu Snack"
-        description="Katalog menu — makanan utama beserta buah pendamping."
+        description={
+          isAdmin
+            ? "Katalog menu — makanan utama beserta buah pendamping."
+            : "Daftar menu snack beserta komponennya. Hanya admin yang dapat mengubah katalog ini."
+        }
         action={
-          <Button onClick={openCreate}>
-            <Plus className="h-4 w-4" />
-            Menu baru
-          </Button>
+          isAdmin ? (
+            <Button onClick={openCreate}>
+              <Plus className="h-4 w-4" />
+              Menu baru
+            </Button>
+          ) : undefined
         }
       />
 
@@ -245,7 +255,9 @@ function MenusPage() {
                 : "Tambahkan menu beserta komponennya."
             }
             action={
-              !search ? <Button onClick={openCreate}>Tambah menu</Button> : undefined
+              !search && isAdmin ? (
+                <Button onClick={openCreate}>Tambah menu</Button>
+              ) : undefined
             }
           />
         )}
@@ -294,29 +306,31 @@ function MenusPage() {
                     )}
                   </div>
 
-                  <div className="flex shrink-0 gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openEdit(menu)}
-                      title="Ubah"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-red-600 hover:bg-red-50"
-                      onClick={() => {
-                        if (confirm(`Hapus menu "${menu.name}"?`)) {
-                          deleteMutation.mutate(menu.id);
-                        }
-                      }}
-                      title="Hapus"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  {isAdmin && (
+                    <div className="flex shrink-0 gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openEdit(menu)}
+                        title="Ubah"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:bg-red-50"
+                        onClick={() => {
+                          if (confirm(`Hapus menu "${menu.name}"?`)) {
+                            deleteMutation.mutate(menu.id);
+                          }
+                        }}
+                        title="Hapus"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </li>
             ))}
@@ -325,7 +339,7 @@ function MenusPage() {
       </Card>
 
       <Modal
-        open={modalOpen}
+        open={isAdmin && modalOpen}
         title={editing ? "Ubah menu" : "Menu baru"}
         onClose={() => setModalOpen(false)}
         footer={

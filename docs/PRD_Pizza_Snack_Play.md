@@ -90,10 +90,11 @@ Saat ini jadwal piket snack disusun dalam format teks manual (lihat lampiran), d
 ### F3b: Autentikasi Orang Tua
 - **Login** — halaman login dengan username & password.
 - **Akun pribadi** — setiap orang tua memiliki akun yang diberikan oleh admin sekolah.
-- **Manajemen akun (Admin)** — admin dapat membuat, edit, dan nonaktifkan akun orang tua.
-- **Profil** — orang tua dapat melihat profil dan ubah password sendiri.
+- **Satu akun, banyak anak** — seorang orang tua boleh memiliki lebih dari satu anak; setiap anak punya nama dan kelas sendiri. Profil menampilkan seluruh anak, dan daftar akun di halaman admin menampilkan semua anak dalam satu baris.
+- **Manajemen akun (Admin)** — admin dapat membuat, edit, dan nonaktifkan akun orang tua beserta daftar anaknya (tambah/hapus anak di dalam satu formulir).
+- **Profil** — orang tua dapat melihat profil (termasuk daftar anak) dan ubah password sendiri.
 - **Session/Token** — login menghasilkan JWT token dengan masa berlaku tertentu, disimpan di cookie/localStorage.
-- **Role-based access** — role `parent` hanya dapat melihat jadwal (read-only), role `admin` dapat CRUD.
+- **Role-based access** — role `parent` hanya dapat melihat jadwal (read-only), role `admin` dapat CRUD. Pembatasan dilakukan **dua lapis**: API menolak dengan `403` (`requireRole("admin")`), dan UI menyembunyikan tombol tambah/ubah/hapus pada halaman menu, kategori, jadwal, dan orang tua.
 
 ### F4: Kategori & Filtering
 - **Filter by kategori** — mis. "menu gorengan saja minggu ini".
@@ -145,19 +146,19 @@ Bulan → Minggu (rentang tanggal) → Hari → Menu (makanan utama + buah)
 | **B**un | Runtime & Package Manager | Runtime JavaScript/TypeScript cepat; dipakai untuk install, script, dan tooling. Bukan runtime server produksi. |
 | **H**ono | Backend API | Web framework ultrafast, middleware-based. Berjalan di atas **Cloudflare Workers**. |
 | **V**ite | Build Tool | Dev server dengan HMR instan + build produksi teroptimasi. |
-| **R**eact | Frontend | React 19 + **React Router v7** untuk routing + **TanStack Query** untuk data fetching/caching. |
+| **R**eact | Frontend | React 19 + **TanStack Router v7** untuk routing + **TanStack Query** untuk data fetching/caching. |
 | **Database** | Cloudflare D1 | Serverless SQLite yang terintegrasi dengan Workers, diakses via **Drizzle ORM**. |
 | **Styling** | Tailwind CSS v4 | Utility-first CSS, via `@tailwindcss/vite` plugin. |
 | **Deployment** | Cloudflare Workers | Serverless edge runtime, aset statis disajikan dari `./dist/client` dengan SPA fallback. |
 
-**Penting — koreksi dari v1.1:** Dokumen versi sebelumnya menyebut frontend **Vue 3** dan database **bun:sqlite lokal**. Setelah template `bhvr-template` di-scaffold, stack sebenarnya adalah **React 19** dan **Cloudflare D1**. Skema database (11 tabel) tetap berlaku karena D1 adalah SQLite — hanya lapisan akses dan deployment yang berubah.
+**Penting — koreksi dari v1.1:** Dokumen versi sebelumnya menyebut frontend **Vue 3** dan database **bun:sqlite lokal**. Setelah template `bhvr-template` di-scaffold, stack sebenarnya adalah **React 19** dan **Cloudflare D1**. Skema database tetap berlaku karena D1 adalah SQLite — hanya lapisan akses dan deployment yang berubah. Sejak v1.4 jumlah tabel menjadi **12** setelah tabel `students` dipisahkan dari `parents`.
 
 ### 6.2 Arsitektur Sistem
 
 ```
 ┌─────────────────────────────────────────────┐
 │              Browser / Client                │
-│   React 19 + React Router v7 + TanStack     │
+│   React 19 + TanStack Router v7 + TanStack     │
 │              Query (Vite build)             │
 └──────────────────┬──────────────────────────┘
                    │ HTTP / JSON API
@@ -182,75 +183,60 @@ Bulan → Minggu (rentang tanggal) → Hari → Menu (makanan utama + buah)
 └─────────────────────────────────────────────┘
 ```
 
-### 6.3 Struktur Folder Proyek (Sesuai Template)
+### 6.3 Struktur Folder Proyek (Aktual)
 
 ```
 pizza-snack-play/
-├── public/                       # Static assets (favicon, screenshot)
+├── public/                       # Static assets
 ├── src/
 │   ├── api/                      # Cloudflare Worker — Hono backend
 │   │   ├── index.ts              # Worker entry point (basePath /api)
-│   │   ├── auth/                 # Fitur auth (BARU)
-│   │   │   ├── route.ts
-│   │   │   ├── controller.ts
-│   │   │   ├── service.ts
-│   │   │   └── repository.ts
-│   │   ├── parents/              # Fitur kelola orang tua (BARU)
-│   │   │   ├── route.ts
-│   │   │   ├── controller.ts
-│   │   │   ├── service.ts
-│   │   │   └── repository.ts
-│   │   ├── menus/                # Fitur menu snack (BARU)
-│   │   ├── schedules/            # Fitur jadwal (BARU)
-│   │   ├── categories/           # Fitur kategori (BARU)
-│   │   ├── reports/              # Ekspor PDF/Excel (BARU)
-│   │   └── utils/
-│   │       └── response.ts       # Helper responseOK / responseError
+│   │   ├── auth/                 # Login, logout, me, ubah password
+│   │   ├── catalog/              # Menu + kategori
+│   │   ├── schedules/            # Jadwal, minggu, hari libur
+│   │   ├── parents/              # CRUD akun orang tua + daftar anak
+│   │   ├── stats/                # Ringkasan dashboard
+│   │   ├── middleware/           # requireAuth, requireRole
+│   │   └── utils/                # response, password, date, slug, params, sql
 │   ├── database/
 │   │   ├── db.ts                 # Inisialisasi Drizzle + D1 binding + tipe Db
-│   │   └── schema.ts             # Drizzle schema (11 tabel) ✅
+│   │   └── schema.ts             # Drizzle schema (12 tabel)
+│   ├── components/               # AppShell, ScheduleDayCard, ui.tsx
 │   ├── routes/                   # TanStack Router — halaman frontend
-│   │   ├── __root.tsx            # Root layout
-│   │   ├── index.tsx             # Landing page + cek koneksi ✅
-│   │   ├── login.tsx             # Halaman login (BARU)
-│   │   ├── week.tsx              # Jadwal mingguan (BARU)
-│   │   ├── month.tsx             # Jadwal bulanan (BARU)
-│   │   ├── profile.tsx           # Profil orang tua — ubah password (BARU)
-│   │   └── admin/                # Halaman admin (BARU)
-│   │       ├── dashboard.tsx
-│   │       ├── menus.tsx
-│   │       ├── schedules.tsx
-│   │       └── parents.tsx       # Kelola akun orang tua
-│   ├── services/                 # Service layer frontend (API client)
-│   │   ├── authService.tsx       # (BARU)
-│   │   ├── menuService.tsx       # (BARU)
-│   │   └── scheduleService.tsx   # (BARU)
-│   ├── lib/
-│   │   └── http.ts               # HTTP client (ky) + injeksi JWT
-│   ├── types/
-│   │   └── apiResponse.ts        # Tipe ApiResponse
-│   ├── assets/                   # SVG / gambar
+│   │   ├── __root.tsx            # Root + AuthProvider
+│   │   ├── login.tsx             # Halaman login
+│   │   └── _app/                 # Layout terproteksi
+│   │       ├── index.tsx         # / → redirect ke /hari-ini
+│   │       ├── dashboard.tsx     # Ringkasan (admin)
+│   │       ├── hari-ini.tsx      # Jadwal hari ini
+│   │       ├── minggu-ini.tsx    # Jadwal mingguan
+│   │       ├── bulan.tsx         # Jadwal bulanan
+│   │       ├── pencarian.tsx     # Cari riwayat menu
+│   │       ├── menu.tsx          # CRUD menu (admin)
+│   │       ├── kategori.tsx      # CRUD kategori (admin)
+│   │       ├── jadwal.tsx        # Kelola jadwal + hari libur (admin)
+│   │       ├── orang-tua.tsx     # CRUD akun orang tua + anak (admin)
+│   │       └── profil.tsx        # Profil + daftar anak + ubah password
+│   ├── lib/                      # api.ts, auth.tsx, auth-context.ts, date.ts, ...
+│   ├── types/                    # auth.ts, catalog.ts, schedule.ts, account.ts
 │   ├── index.css                 # Global styles (Tailwind)
 │   ├── main.tsx                  # React + Router entry point
 │   └── routeTree.gen.ts          # Auto-generated route tree
-├── drizzle/                      # Folder migrasi D1 (drizzle-kit)
+├── data/jadwal_piket_snack.txt   # Sumber data jadwal
+├── drizzle/
+│   ├── migrations/               # Migrasi D1 (drizzle-kit)
+│   └── seed.sql                  # Seed SQL (di luar folder migrations)
+├── scripts/                      # seed.ts, test-auth.mjs, test-api.mjs
 ├── docs/
 │   ├── PRD_Pizza_Snack_Play.md
 │   └── Struktur_Tabel_Pizza_Snack_Play.md
-├── .env.example                  # CLOUDFLARE_ACCOUNT_ID, DATABASE_ID, D1_TOKEN
-├── bun.lock
 ├── drizzle.config.ts
-├── eslint.config.js
-├── index.html
-├── package.json
-├── tsconfig.json                 # Project references
-├── tsconfig.app.json             # Frontend (DOM, React)
-├── tsconfig.worker.json          # Backend (Cloudflare, Node compat)
-├── tsconfig.node.json            # Build tools
-├── vite.config.ts                # Cloudflare + Tailwind + path alias
-├── worker-configuration.d.ts     # Tipe binding auto-generated
-└── wrangler.json                 # Konfigurasi Cloudflare Worker + D1
+├── vite.config.ts
+├── wrangler.json                 # Konfigurasi Cloudflare Worker + D1
+└── package.json
 ```
+
+> Struktur lengkap beserta keterangan tiap file ada di [`README.md`](../README.md).
 
 ### 6.4 Pola Arsitektur Backend (N-Layered)
 
@@ -302,28 +288,33 @@ JWT_SECRET=              # (BARU) untuk signing JWT
 
 ---
 
-## 7. API Endpoints (Rencana)
+## 7. API Endpoints
 
 ### 7.1 Auth Endpoints
 | Method | Path | Deskripsi | Role |
 |--------|------|-----------|------|
-| POST | `/api/auth/login` | Login (username + password) → JWT token | Public |
-| POST | `/api/auth/logout` | Logout (invalidate token) | Authenticated |
-| GET | `/api/auth/me` | Profil user yang sedang login | Authenticated |
+| POST | `/api/auth/login` | Login (username + password) → JWT token + profil user | Public |
+| POST | `/api/auth/logout` | Logout (titik keluar eksplisit; JWT stateless) | Authenticated |
+| GET | `/api/auth/me` | Profil user yang sedang login + daftar anak (bila `parent`) | Authenticated |
 | PUT | `/api/auth/password` | Ubah password sendiri | Authenticated |
 
 ### 7.2 Parent (Orang Tua) Endpoints — Admin Only
 | Method | Path | Deskripsi | Role |
 |--------|------|-----------|------|
-| GET | `/api/parents` | List semua akun orang tua | Admin |
-| POST | `/api/parents` | Buat akun orang tua baru | Admin |
-| PUT | `/api/parents/:id` | Edit akun orang tua | Admin |
-| DELETE | `/api/parents/:id` | Nonaktifkan akun orang tua (soft delete) | Admin |
+| GET | `/api/parents` | List akun orang tua + seluruh anaknya (paginated, `search` mencocokkan nama/kelas anak) | Admin |
+| GET | `/api/parents/:id` | Detail akun + daftar anak | Admin |
+| POST | `/api/parents` | Buat akun + profil + daftar anak (`students[]`, min. 1) | Admin |
+| PUT | `/api/parents/:id` | Edit akun; `students[]` menggantikan daftar lama bila dikirim | Admin |
+| DELETE | `/api/parents/:id?hard=` | Nonaktifkan akun (soft delete), atau hapus permanen | Admin |
+| POST | `/api/parents/:id/reset-password` | Reset password akun orang tua | Admin |
+
+> **Bentuk `students`:** array objek `{ id?, name, className? }`. Saat `PUT`, entri yang menyertakan `id` akan **diperbarui**, entri tanpa `id` **dibuat baru**, dan entri yang tidak disebut lagi **dihapus**. `id` hanya dipercaya bila anak tersebut memang milik orang tua itu.
 
 ### 7.3 Menu Endpoints
 | Method | Path | Deskripsi | Role |
 |--------|------|-----------|------|
-| GET | `/api/menus` | List semua menu (paginated) | Admin |
+| GET | `/api/menus` | List semua menu (paginated) | Admin, Parent |
+| GET | `/api/menus/item-types` | Jenis komponen menu (`main`, `fruit`, `drink`, `other`) | Admin, Parent |
 | GET | `/api/menus/:id` | Detail menu | Admin, Parent |
 | POST | `/api/menus` | Tambah menu baru | Admin |
 | PUT | `/api/menus/:id` | Edit menu | Admin |
@@ -391,13 +382,15 @@ JWT_SECRET=              # (BARU) untuk signing JWT
 6. Hari libur ikut tersalin (tanpa menu); hari tanpa jadwal di minggu sumber dilewati
 7. Minggu sumber = minggu tujuan ditolak dengan pesan "Minggu sumber dan tujuan sama"
 
-### 8.4 Admin: Kelola Akun Orang Tua
+### 8.4 Admin: Kelola Akun Orang Tua — ✅ Terimplementasi
 1. Dashboard → "Kelola Orang Tua"
-2. Lihat list akun orang tua yang sudah dibuat
-3. Klik "Tambah Akun" → input nama, username, password sementara
-4. Simpan → akun dibuat, orang tua dapat login
-5. Bisa edit/nonaktifkan akun kapan saja
-6. Reset password jika orang tua lupa password
+2. Lihat daftar akun orang tua; kolom **Anak** menampilkan seluruh anak dalam satu baris
+3. Klik "Tambah Akun" → isi username, password sementara, nama orang tua, hubungan
+4. Isi bagian **Anak** — boleh lebih dari satu. Tombol **"Tambah anak"** menambah baris baru; ikon `x` menghapus baris. Minimal satu nama anak wajib diisi.
+5. Simpan → akun dibuat, orang tua dapat login dan melihat seluruh anaknya di halaman profil & beranda
+6. Bisa edit akun kapan saja — mengubah daftar anak akan **menggantikan** daftar lama (anak yang dihapus dari formulir ikut terhapus dari database)
+7. Nonaktifkan (default) atau hapus permanen; reset password bila orang tua lupa password
+8. Pencarian pada daftar akun juga mencocokkan **nama anak** dan **kelas anak**
 
 ### 8.5 Semua Role: Cari Riwayat Menu — ✅ Terimplementasi
 1. Klik **"Cari Menu"** di navigasi (tersedia untuk admin *dan* orang tua)
@@ -468,17 +461,31 @@ JWT_SECRET=              # (BARU) untuk signing JWT
 
 ### 9.4 Admin: Kelola Akun Orang Tua
 ```
+┌───────────────────────────────────────────────────────┐
+│  Kelola Orang Tua                        [Logout]      │
+├───────────────────────────────────────────────────────┤
+│  [+ Tambah Akun]                                       │
+├──────────┬──────────┬────────────────────────┬─────────┤
+│ Nama     │ Username │ Anak                   │ Aksi    │
+│──────────┼──────────┼────────────────────────┼─────────│
+│ Sari     │ sari     │ Aisyah Sari (1A)       │Edit|Hps │
+│ Budi     │ budi     │ Bagas Budi (1A)        │Edit|Hps │
+│ Dewi     │ dewi     │ Citra Dewi (1B),       │Edit|Hps │
+│          │          │ Raka Dewi (2A)         │         │
+└──────────┴──────────┴────────────────────────┴─────────┘
+
+Formulir tambah/ubah akun:
 ┌──────────────────────────────────────────┐
-│  Kelola Orang Tua         [Logout]        │
-├──────────────────────────────────────────┤
-│  [+ Tambah Akun]                          │
-├──────────┬──────────┬────────┬──────────┤
-│ Nama     │ Username  │ Status │ Aksi     │
-│──────────┼──────────┼────────┼──────────│
-│ Sari     │ sari      │ Aktif  │Edit|Hapus│
-│ Budi     │ budi      │ Aktif  │Edit|Hapus│
-│ Dewi     │ dewi      │ Nonaktif│Edit|Hapus│
-└──────────┴──────────┴────────┴──────────┘
+│  Username        [_______________]        │
+│  Password        [_______________]        │
+│  Nama Orang Tua  [_______________]        │
+│  Hubungan        [ibu ▾]                  │
+│  ── Anak — boleh lebih dari satu ──       │
+│  1. Nama [___________] Kelas [___]  [x]   │
+│  2. Nama [___________] Kelas [___]  [x]   │
+│  [+ Tambah anak]                          │
+│                       [Batal] [Simpan]    │
+└──────────────────────────────────────────┘
 ```
 
 ---
@@ -572,24 +579,24 @@ bunx wrangler secret put JWT_SECRET
 
 ### Phase 1: MVP (Core) — ✅ SELESAI
 - [x] Scaffold project dari `bhvr-template` (Bun + Hono + Vite + React + D1)
-- [x] Skema database 11 tabel di `src/database/schema.ts` (lihat dokumen Struktur Tabel)
-- [x] File migrasi Drizzle ter-generate (`drizzle/0000_*.sql`) & diterapkan ke D1 lokal
+- [x] Skema database di `src/database/schema.ts` (11 tabel saat MVP; **12** sejak v1.4 setelah `students` dipisah dari `parents`)
+- [x] File migrasi Drizzle ter-generate (`drizzle/migrations/0000_*.sql`) & diterapkan ke D1 lokal
 - [x] Health check endpoint `GET /api/health`
-- [x] Seed data dari file jadwal Agustus & September 2026 (`scripts/seed.ts`) — 10 minggu, 42 menu, 43 jadwal
+- [x] Seed data dari file jadwal Agustus & September 2026 (`scripts/seed.ts`) — 10 minggu, 42 menu, 43 jadwal, 3 orang tua, 4 anak
 - [x] Autentikasi login (admin + orang tua) dengan JWT (`hono/jwt`, HS256)
 - [x] Password hashing PBKDF2-SHA256 via Web Crypto (edge-native)
 - [x] Endpoint auth: `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`, `PUT /auth/password`
 - [x] Middleware `requireAuth` + RBAC `requireRole('admin' | 'parent')`
-- [x] Test end-to-end auth — 26 skenario lolos
+- [x] Test end-to-end auth — 33 skenario lolos
 - [x] Backend: CRUD menu + kategori (pola Route → Controller → Service → Repository)
 - [x] Backend: CRUD jadwal + hari libur (`/schedules`, `/weeks`, `/holidays`)
-- [x] Backend: kelola akun orang tua (`/parents`) — create, update, nonaktifkan, hapus, reset password
+- [x] Backend: kelola akun orang tua (`/parents`) — create, update, nonaktifkan, hapus, reset password, daftar anak (`students[]`)
 - [x] Backend: statistik dashboard (`/stats/summary`)
 - [x] Frontend: halaman login + layout terproteksi (TanStack Router)
 - [x] Frontend: halaman "Hari Ini", "Minggu Ini", dan "Bulanan"
 - [x] Frontend: halaman admin (dashboard, menu, kategori, kelola jadwal, akun orang tua)
 - [x] Frontend: halaman profil + ubah password
-- [x] Test end-to-end API — 140 skenario lolos (total 166 dengan auth)
+- [x] Test end-to-end API — 180 skenario lolos (total 213 dengan auth)
 - [x] Verifikasi browser: alur login admin & orang tua, pembatas role
 - [ ] Buat D1 database remote + isi kredensial produksi
 - [ ] Deploy ke Cloudflare Workers
@@ -601,6 +608,8 @@ bunx wrangler secret put JWT_SECRET
 - [x] Kelola akun orang tua
 - [x] Duplikasi jadwal antar minggu (`POST /schedules/copy` + dialog di `/jadwal`)
 - [x] Pencarian riwayat menu ("kapan jeruk disajikan?") — `GET /schedules/search` + halaman `/pencarian`
+- [x] Satu orang tua boleh punya **lebih dari satu anak** — tabel `students` + migrasi berpindah data (`0001_*.sql`)
+- [x] RBAC digerbangi juga di UI — orang tua tidak melihat tombol CRUD menu/kategori/jadwal/orang tua
 - [ ] Bulk import akun orang tua (CSV/Excel)
 
 ### Phase 3: Ekspor & Cetak
@@ -626,16 +635,19 @@ bunx wrangler secret put JWT_SECRET
 | AC6 | Sistem dapat menyimpan jadwal untuk minimal 12 bulan ke depan | ✅ Done — tanpa batas periode; query rentang maks 92 hari |
 | AC7 | Pencarian menu "jeruk" menampilkan semua tanggal di mana jeruk disajikan | ✅ Done — `/pencarian` + `GET /schedules/search` (cocokkan nama menu *dan* komponen, dikelompokkan per bulan) |
 | AC8 | Ekspor PDF bulanan menampilkan semua jadwal dalam format yang dapat dicetak | Pending — Phase 3 |
-| AC9 | Data seed dari file jadwal Agustus & September 2026 terinput dengan benar | ✅ Done — 10 minggu, 42 menu, 43 jadwal |
-| AC10 | Schema 11 tabel berhasil dimigrasi ke Cloudflare D1 tanpa error | ✅ Done (D1 lokal) |
+| AC9 | Data seed dari file jadwal Agustus & September 2026 terinput dengan benar | ✅ Done — 10 minggu, 42 menu, 43 jadwal, 3 orang tua, 4 anak |
+| AC10 | Schema 12 tabel berhasil dimigrasi ke Cloudflare D1 tanpa error | ✅ Done (D1 lokal) |
 | AC11 | Aplikasi berhasil di-build dan di-deploy ke Cloudflare Workers (`bun run deploy`) | Sebagian — build OK, deploy butuh kredensial |
 | AC12 | `bun run dev` menjalankan dev server lokal tanpa error | ✅ Done |
-| AC13 | Autentikasi JWT menolak akses tanpa token / token invalid dengan 401 | ✅ Done — terverifikasi 166 test |
+| AC13 | Autentikasi JWT menolak akses tanpa token / token invalid dengan 401 | ✅ Done — terverifikasi 213 test |
 | AC14 | Password tersimpan sebagai hash PBKDF2, bukan plain text | ✅ Done |
-| AC15 | Orang tua TIDAK dapat mengakses endpoint admin (403) | ✅ Done — `requireRole('admin')`, diuji di 8 endpoint |
-| AC16 | Orang tua TIDAK melihat menu admin di navigasi maupun halaman admin | ✅ Done — navigasi sadar-role + pembatas `AdminOnly` |
+| AC15 | Orang tua TIDAK dapat mengakses endpoint admin (403) | ✅ Done — `requireRole('admin')`, diuji di 17 operasi tulis + 2 bukti data tidak berubah |
+| AC16 | Orang tua TIDAK melihat menu admin di navigasi maupun halaman admin | ✅ Done — navigasi sadar-role + pembatas `AdminOnly` + gerbang `isAdmin` pada halaman menu/kategori/jadwal/orang-tua |
 | AC17 | Admin dapat menyalin jadwal satu minggu ke minggu lain tanpa menimpa hari yang sudah terisi | ✅ Done — `POST /schedules/copy` + dialog "Salin minggu" di `/jadwal` |
 | AC18 | Pencarian aman dari wildcard SQL — `%` dan `_` diperlakukan literal | ✅ Done — `escapeLike()` di `utils/sql.ts`, diuji di 2 skenario |
+| AC19 | Satu akun orang tua dapat memiliki **lebih dari satu anak** | ✅ Done — tabel `students` (relasi 1 ── n); `dewi` di-seed dengan 2 anak; diuji di `test-auth` (section 5b) & `test-api` (section 15) |
+| AC20 | Admin dapat menambah/menghapus anak pada satu akun tanpa membuat akun baru | ✅ Done — bagian "Anak — boleh lebih dari satu" di formulir `/orang-tua`; `students[]` pada `POST`/`PUT /parents` |
+| AC21 | Orang tua tidak melihat tombol tambah/ubah/hapus pada halaman menu & kategori | ✅ Done — gerbang `isAdmin` dari `useAuth()`; tombol Edit/Hapus tidak dirender untuk `parent` |
 
 ---
 
@@ -668,7 +680,7 @@ bunx wrangler secret put JWT_SECRET
 | Hono | Web framework ultrafast yang berjalan di Cloudflare Workers |
 | Vite | Build tool & dev server dengan HMR instan |
 | React | Library UI (versi 19) untuk frontend |
-| React Router | Library routing client-side (v7) |
+| TanStack Router | Library routing client-side (v7) — file-based di `src/routes/`, route tree auto-generate |
 | TanStack Query | Library data fetching & caching untuk React |
 | Tailwind CSS | Utility-first CSS framework (v4) |
 | Cloudflare Workers | Serverless edge runtime tempat backend berjalan |
@@ -679,6 +691,7 @@ bunx wrangler secret put JWT_SECRET
 | JWT | JSON Web Token — standar untuk autentikasi stateless |
 | RBAC | Role-Based Access Control — pembagian hak akses berdasarkan peran |
 | Orang Tua / Parent | Role user dengan akses read-only ke jadwal setelah login |
+| Anak / Student | Data anak milik seorang orang tua (nama + kelas). Satu orang tua boleh punya lebih dari satu — tabel `students` |
 | Admin / Guru Piket | Role user dengan akses CRUD penuh + kelola akun orang tua |
 
 ---

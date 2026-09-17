@@ -1,12 +1,25 @@
-import { and, asc, eq, like, or, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, like, notInArray, or, sql } from "drizzle-orm";
 import type { Db } from "../../database/db";
-import { parents, users } from "../../database/schema";
-import type { Parent, User } from "../../database/schema";
+import { parents, students, users } from "../../database/schema";
+import type { Parent, Student, User } from "../../database/schema";
 import { likePattern } from "../utils/sql";
 
 export interface ParentRow {
   parent: Parent;
   user: User;
+  /** Anak-anak dari orang tua ini — bisa lebih dari satu. */
+  students: Student[];
+}
+
+/** Kelompokkan anak berdasarkan `parent_id` agar tidak terjadi N+1. */
+function groupByParent(rows: Student[]): Map<number, Student[]> {
+  const byParent = new Map<number, Student[]>();
+  for (const row of rows) {
+    const list = byParent.get(row.parentId);
+    if (list) list.push(row);
+    else byParent.set(row.parentId, [row]);
+  }
+  return byParent;
 }
 
 class ParentRepository {
@@ -23,12 +36,17 @@ class ParentRepository {
 
     if (options.search) {
       const term = likePattern(options.search);
+      // Pencarian juga menjangkau nama/kelas anak lewat subquery EXISTS,
+      // supaya satu orang tua tidak terduplikasi di hasil paginasi.
       filters.push(
         or(
           like(parents.parentName, term),
-          like(parents.studentName, term),
-          like(parents.studentClass, term),
           like(users.username, term),
+          sql`exists (
+            select 1 from ${students}
+            where ${students.parentId} = ${parents.id}
+              and (${students.name} like ${term} or ${students.className} like ${term})
+          )`,
         ),
       );
     }
@@ -54,7 +72,25 @@ class ParentRepository {
       .limit(options.perPage)
       .offset((options.page - 1) * options.perPage);
 
-    return { rows, total: totalRows[0]?.count ?? 0 };
+    // Satu query tambahan untuk seluruh anak pada halaman ini.
+    const parentIds = rows.map((row) => row.parent.id);
+    const studentRows = parentIds.length
+      ? await db
+          .select()
+          .from(students)
+          .where(inArray(students.parentId, parentIds))
+          .orderBy(asc(students.id))
+      : [];
+
+    const byParent = groupByParent(studentRows);
+
+    return {
+      rows: rows.map((row) => ({
+        ...row,
+        students: byParent.get(row.parent.id) ?? [],
+      })),
+      total: totalRows[0]?.count ?? 0,
+    };
   }
 
   async findById(db: Db, id: number): Promise<ParentRow | undefined> {
@@ -64,7 +100,11 @@ class ParentRepository {
       .innerJoin(users, eq(parents.userId, users.id))
       .where(eq(parents.id, id))
       .limit(1);
-    return rows[0];
+
+    const row = rows[0];
+    if (!row) return undefined;
+
+    return { ...row, students: await this.findStudentsByParentId(db, row.parent.id) };
   }
 
   async findByUserId(db: Db, userId: number): Promise<ParentRow | undefined> {
@@ -74,7 +114,11 @@ class ParentRepository {
       .innerJoin(users, eq(parents.userId, users.id))
       .where(eq(parents.userId, userId))
       .limit(1);
-    return rows[0];
+
+    const row = rows[0];
+    if (!row) return undefined;
+
+    return { ...row, students: await this.findStudentsByParentId(db, row.parent.id) };
   }
 
   /** Cek ketersediaan username (dipakai sebelum membuat akun baru). */
@@ -134,7 +178,8 @@ class ParentRepository {
   }
 
   async deleteUser(db: Db, id: number): Promise<void> {
-    // `parents.user_id` memakai ON DELETE CASCADE, profil ikut terhapus.
+    // `parents.user_id` dan `students.parent_id` memakai ON DELETE CASCADE,
+    // sehingga profil orang tua beserta anak-anaknya ikut terhapus.
     await db.delete(users).where(eq(users.id, id));
   }
 
@@ -143,8 +188,6 @@ class ParentRepository {
     values: {
       userId: number;
       parentName: string;
-      studentName: string;
-      studentClass: string | null;
       relationship: string;
       phone: string | null;
       address: string | null;
@@ -160,8 +203,6 @@ class ParentRepository {
     id: number,
     values: Partial<{
       parentName: string;
-      studentName: string;
-      studentClass: string | null;
       relationship: string;
       phone: string | null;
       address: string | null;
@@ -172,6 +213,58 @@ class ParentRepository {
       .update(parents)
       .set({ ...values, updatedAt: sql`(datetime('now'))` })
       .where(eq(parents.id, id));
+  }
+
+  // ── Anak ────────────────────────────────────────────────────
+
+  async findStudentsByParentId(
+    db: Db,
+    parentId: number,
+  ): Promise<Student[]> {
+    return db
+      .select()
+      .from(students)
+      .where(eq(students.parentId, parentId))
+      .orderBy(asc(students.id));
+  }
+
+  async insertStudent(
+    db: Db,
+    values: { parentId: number; name: string; className: string | null },
+  ): Promise<Student> {
+    const rows = await db
+      .insert(students)
+      .values({ ...values, isActive: 1 })
+      .returning();
+    return rows[0];
+  }
+
+  async updateStudent(
+    db: Db,
+    id: number,
+    values: Partial<{ name: string; className: string | null }>,
+  ): Promise<void> {
+    await db
+      .update(students)
+      .set({ ...values, updatedAt: sql`(datetime('now'))` })
+      .where(eq(students.id, id));
+  }
+
+  async deleteStudent(db: Db, id: number): Promise<void> {
+    await db.delete(students).where(eq(students.id, id));
+  }
+
+  /** Hapus anak milik `parentId` yang id-nya tidak ada di `keepIds`. */
+  async deleteStudentsExcept(
+    db: Db,
+    parentId: number,
+    keepIds: number[],
+  ): Promise<void> {
+    const filters = [eq(students.parentId, parentId)];
+    if (keepIds.length > 0) {
+      filters.push(notInArray(students.id, keepIds));
+    }
+    await db.delete(students).where(and(...filters));
   }
 
   async countAll(db: Db): Promise<{ total: number; active: number }> {

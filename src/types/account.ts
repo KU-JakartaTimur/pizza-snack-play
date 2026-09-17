@@ -2,13 +2,20 @@
 
 export type ParentRelationship = "ibu" | "ayah" | "wali";
 
+/** Seorang anak dari orang tua. */
+export interface StudentDto {
+  id: number;
+  name: string;
+  className: string | null;
+}
+
 export interface ParentDto {
   id: number;
   userId: number;
   username: string;
   parentName: string;
-  studentName: string;
-  studentClass: string | null;
+  /** Bisa berisi lebih dari satu anak. */
+  students: StudentDto[];
   relationship: ParentRelationship;
   phone: string | null;
   address: string | null;
@@ -18,12 +25,22 @@ export interface ParentDto {
   createdAt: string;
 }
 
+/**
+ * Satu anak pada input pembuatan/perubahan akun.
+ * `id` diisi bila mengubah anak yang sudah ada; kosongkan untuk menambah anak baru.
+ */
+export interface StudentInput {
+  id?: number;
+  name: string;
+  className?: string | null;
+}
+
 export interface ParentInput {
   username: string;
   password?: string;
   parentName: string;
-  studentName: string;
-  studentClass?: string | null;
+  /** Minimal satu anak. Daftar ini menggantikan daftar anak sebelumnya. */
+  students: StudentInput[];
   relationship?: ParentRelationship;
   phone?: string | null;
   address?: string | null;

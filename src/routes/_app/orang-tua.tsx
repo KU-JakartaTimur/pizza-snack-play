@@ -9,6 +9,7 @@ import {
   Trash2,
   UserX,
   Users,
+  X,
 } from "lucide-react";
 import { AdminOnly } from "@/components/AdminOnly";
 import { PageHeader } from "@/components/AppShell";
@@ -39,24 +40,32 @@ const RELATIONSHIP_OPTIONS: { value: ParentRelationship; label: string }[] = [
 
 const PER_PAGE = 20;
 
+interface FormStudent {
+  /** Ada bila anak sudah tersimpan (mode ubah); kosong = anak baru. */
+  id?: number;
+  name: string;
+  className: string;
+}
+
 interface ParentForm {
   username: string;
   password: string;
   parentName: string;
-  studentName: string;
-  studentClass: string;
   relationship: ParentRelationship;
+  /** Satu orang tua boleh punya lebih dari satu anak. */
+  students: FormStudent[];
   phone: string;
   email: string;
 }
+
+const EMPTY_STUDENT: FormStudent = { name: "", className: "" };
 
 const EMPTY_FORM: ParentForm = {
   username: "",
   password: "",
   parentName: "",
-  studentName: "",
-  studentClass: "",
   relationship: "ibu",
+  students: [{ ...EMPTY_STUDENT }],
   phone: "",
   email: "",
 };
@@ -105,8 +114,14 @@ function ParentsContent() {
     mutationFn: async () => {
       const base = {
         parentName: form.parentName.trim(),
-        studentName: form.studentName.trim(),
-        studentClass: form.studentClass.trim() || null,
+        students: form.students
+          .filter((student) => student.name.trim())
+          .map((student) => ({
+            // `id` hanya dikirim untuk anak yang sudah tersimpan.
+            ...(student.id !== undefined ? { id: student.id } : {}),
+            name: student.name.trim(),
+            className: student.className.trim() || null,
+          })),
         relationship: form.relationship,
         phone: form.phone.trim() || null,
         email: form.email.trim() || null,
@@ -180,9 +195,15 @@ function ParentsContent() {
       username: parent.username,
       password: "",
       parentName: parent.parentName,
-      studentName: parent.studentName,
-      studentClass: parent.studentClass ?? "",
       relationship: parent.relationship,
+      students:
+        parent.students.length > 0
+          ? parent.students.map((student) => ({
+              id: student.id,
+              name: student.name,
+              className: student.className ?? "",
+            }))
+          : [{ ...EMPTY_STUDENT }],
       phone: parent.phone ?? "",
       email: parent.email ?? "",
     });
@@ -190,13 +211,35 @@ function ParentsContent() {
     setFormOpen(true);
   };
 
+  const addStudent = () =>
+    setForm((current) => ({
+      ...current,
+      students: [...current.students, { ...EMPTY_STUDENT }],
+    }));
+
+  const updateStudent = (index: number, patch: Partial<FormStudent>) =>
+    setForm((current) => ({
+      ...current,
+      students: current.students.map((student, i) =>
+        i === index ? { ...student, ...patch } : student,
+      ),
+    }));
+
+  const removeStudent = (index: number) =>
+    setForm((current) => ({
+      ...current,
+      students: current.students.filter((_, i) => i !== index),
+    }));
+
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     setFormError(null);
 
     if (!form.username.trim()) return setFormError("Username wajib diisi");
     if (!form.parentName.trim()) return setFormError("Nama orang tua wajib diisi");
-    if (!form.studentName.trim()) return setFormError("Nama siswa wajib diisi");
+    if (!form.students.some((student) => student.name.trim())) {
+      return setFormError("Minimal satu nama anak wajib diisi");
+    }
 
     if (!editing) {
       if (!form.password) return setFormError("Password wajib diisi");
@@ -281,8 +324,7 @@ function ParentsContent() {
                 <tr className="border-b border-slate-200 text-left">
                   <th className="px-5 py-3 font-medium text-slate-500">Username</th>
                   <th className="px-5 py-3 font-medium text-slate-500">Orang tua</th>
-                  <th className="px-5 py-3 font-medium text-slate-500">Siswa</th>
-                  <th className="px-5 py-3 font-medium text-slate-500">Kelas</th>
+                  <th className="px-5 py-3 font-medium text-slate-500">Anak</th>
                   <th className="px-5 py-3 font-medium text-slate-500">Status</th>
                   <th className="px-5 py-3" />
                 </tr>
@@ -299,11 +341,23 @@ function ParentsContent() {
                         ({parent.relationship})
                       </span>
                     </td>
-                    <td className="px-5 py-3 text-slate-800">
-                      {parent.studentName}
-                    </td>
-                    <td className="px-5 py-3 text-slate-600">
-                      {parent.studentClass ?? "—"}
+                    <td className="px-5 py-3">
+                      {parent.students.length === 0 ? (
+                        <span className="text-slate-400">—</span>
+                      ) : (
+                        <ul className="space-y-0.5">
+                          {parent.students.map((student) => (
+                            <li key={student.id} className="text-slate-800">
+                              {student.name}
+                              {student.className && (
+                                <span className="ml-1.5 text-xs text-slate-400">
+                                  {student.className}
+                                </span>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </td>
                     <td className="px-5 py-3">
                       {parent.isActive ? (
@@ -471,26 +525,6 @@ function ParentsContent() {
               </Select>
             </Field>
 
-            <Field label="Nama siswa">
-              <Input
-                value={form.studentName}
-                onChange={(event) =>
-                  setForm({ ...form, studentName: event.target.value })
-                }
-                placeholder="mis. Aisyah Sari"
-              />
-            </Field>
-
-            <Field label="Kelas">
-              <Input
-                value={form.studentClass}
-                onChange={(event) =>
-                  setForm({ ...form, studentClass: event.target.value })
-                }
-                placeholder="mis. 1A"
-              />
-            </Field>
-
             <Field label="No. HP" hint="Opsional.">
               <Input
                 value={form.phone}
@@ -507,6 +541,54 @@ function ParentsContent() {
                 placeholder="nama@contoh.com"
               />
             </Field>
+          </div>
+
+          <div>
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <span className="text-sm font-medium text-slate-700">
+                Anak
+                <span className="ml-1.5 text-xs font-normal text-slate-400">
+                  boleh lebih dari satu
+                </span>
+              </span>
+              <Button variant="ghost" size="sm" type="button" onClick={addStudent}>
+                <Plus className="h-3.5 w-3.5" />
+                Tambah anak
+              </Button>
+            </div>
+
+            <div className="space-y-2">
+              {form.students.map((student, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <Input
+                    value={student.name}
+                    onChange={(event) =>
+                      updateStudent(index, { name: event.target.value })
+                    }
+                    placeholder={`Nama anak ${index + 1}`}
+                  />
+                  <Input
+                    value={student.className}
+                    onChange={(event) =>
+                      updateStudent(index, { className: event.target.value })
+                    }
+                    placeholder="Kelas"
+                    className="w-28 shrink-0"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    type="button"
+                    className="shrink-0 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                    onClick={() => removeStudent(index)}
+                    disabled={form.students.length === 1}
+                    title="Hapus anak"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
           </div>
 
           {formError && (

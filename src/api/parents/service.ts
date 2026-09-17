@@ -1,9 +1,12 @@
 import type { Db } from "../../database/db";
+import type { Student } from "../../database/schema";
 import type {
   PaginatedDto,
   ParentDto,
   ParentInput,
   ParentRelationship,
+  StudentDto,
+  StudentInput,
 } from "../../types/account";
 import { hashPassword } from "../utils/password";
 import { parentRepository, type ParentRow } from "./repository";
@@ -11,22 +14,30 @@ import { parentRepository, type ParentRow } from "./repository";
 export type ParentError =
   | "not_found"
   | "duplicate_username"
-  | "invalid_relationship";
+  | "invalid_relationship"
+  | "no_students";
 
 export const RELATIONSHIPS: ParentRelationship[] = ["ibu", "ayah", "wali"];
 
 const DEFAULT_PER_PAGE = 20;
 const MAX_PER_PAGE = 100;
 
+function toStudentDto(student: Student): StudentDto {
+  return {
+    id: student.id,
+    name: student.name,
+    className: student.className,
+  };
+}
+
 function toParentDto(row: ParentRow): ParentDto {
-  const { parent, user } = row;
+  const { parent, user, students } = row;
   return {
     id: parent.id,
     userId: parent.userId,
     username: user.username,
     parentName: parent.parentName,
-    studentName: parent.studentName,
-    studentClass: parent.studentClass,
+    students: students.map(toStudentDto),
     relationship: parent.relationship as ParentRelationship,
     phone: parent.phone,
     address: parent.address,
@@ -85,6 +96,11 @@ class ParentService {
     const relationship = input.relationship ?? "ibu";
     if (!RELATIONSHIPS.includes(relationship)) return "invalid_relationship";
 
+    // Minimal satu anak, dan tidak boleh hanya berisi spasi.
+    if (!input.students.some((student) => student.name.trim())) {
+      return "no_students";
+    }
+
     const isActive = input.isActive === false ? 0 : 1;
     const passwordHash = await hashPassword(input.password!);
 
@@ -100,15 +116,15 @@ class ParentService {
     const parent = await parentRepository.insertParent(db, {
       userId: user.id,
       parentName: input.parentName.trim(),
-      studentName: input.studentName.trim(),
-      studentClass: input.studentClass ?? null,
       relationship,
       phone: input.phone ?? null,
       address: input.address ?? null,
       isActive,
     });
 
-    return toParentDto({ parent, user });
+    const studentRows = await this.syncStudents(db, parent.id, input.students);
+
+    return toParentDto({ parent, user, students: studentRows });
   }
 
   async update(
@@ -121,6 +137,14 @@ class ParentService {
 
     if (input.relationship && !RELATIONSHIPS.includes(input.relationship)) {
       return "invalid_relationship";
+    }
+
+    // Daftar anak boleh dikirim sebagian, tapi tidak boleh jadi kosong.
+    if (
+      input.students !== undefined &&
+      !input.students.some((student) => student.name.trim())
+    ) {
+      return "no_students";
     }
 
     if (input.username) {
@@ -151,18 +175,60 @@ class ParentService {
 
     await parentRepository.updateParent(db, id, {
       ...(input.parentName ? { parentName: input.parentName.trim() } : {}),
-      ...(input.studentName ? { studentName: input.studentName.trim() } : {}),
-      ...(input.studentClass !== undefined
-        ? { studentClass: input.studentClass }
-        : {}),
       ...(input.relationship ? { relationship: input.relationship } : {}),
       ...(input.phone !== undefined ? { phone: input.phone } : {}),
       ...(input.address !== undefined ? { address: input.address } : {}),
       ...(isActive !== undefined ? { isActive } : {}),
     });
 
+    // Daftar anak bersifat menggantikan: yang tidak disebut lagi akan dihapus.
+    if (input.students !== undefined) {
+      await this.syncStudents(db, id, input.students);
+    }
+
     const updated = await parentRepository.findById(db, id);
     return updated ? toParentDto(updated) : "not_found";
+  }
+
+  /**
+   * Selaraskan daftar anak dengan input: perbarui yang menyertakan `id`,
+   * tambahkan yang baru, lalu hapus yang tidak lagi disebutkan.
+   *
+   * `id` hanya dipercaya bila anak itu memang milik `parentId` ini,
+   * sehingga id milik orang tua lain tidak bisa dibajak.
+   */
+  private async syncStudents(
+    db: Db,
+    parentId: number,
+    inputs: StudentInput[],
+  ): Promise<Student[]> {
+    const existing = await parentRepository.findStudentsByParentId(db, parentId);
+    const existingIds = new Set(existing.map((student) => student.id));
+    const keepIds: number[] = [];
+
+    for (const input of inputs) {
+      const name = input.name.trim();
+      if (!name) continue;
+
+      const className = input.className?.trim() || null;
+
+      if (input.id !== undefined && existingIds.has(input.id)) {
+        await parentRepository.updateStudent(db, input.id, { name, className });
+        keepIds.push(input.id);
+        continue;
+      }
+
+      const created = await parentRepository.insertStudent(db, {
+        parentId,
+        name,
+        className,
+      });
+      keepIds.push(created.id);
+    }
+
+    await parentRepository.deleteStudentsExcept(db, parentId, keepIds);
+
+    return parentRepository.findStudentsByParentId(db, parentId);
   }
 
   /**

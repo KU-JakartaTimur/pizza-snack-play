@@ -4,10 +4,12 @@
 **Stack:** Bun + Hono + Vite + React (Cloudflare Workers)
 **Database:** Cloudflare D1 (Serverless SQLite)
 **ORM:** Drizzle ORM (`drizzle-orm/sqlite-core`)
-**Binding:** `bhvr` (lihat `wrangler.json`)
-**Migrations:** folder `drizzle/` via `drizzle-kit`
+**Binding:** `DB` (lihat `wrangler.json`)
+**Migrations:** folder `drizzle/migrations/` via `drizzle-kit` (seed di `drizzle/seed.sql`)
 
-> **Catatan versi:** Dokumen ini awalnya ditulis untuk `bun:sqlite` lokal. Setelah template `bhvr-template` di-scaffold, database target adalah **Cloudflare D1**. DDL di bawah tetap valid karena D1 adalah SQLite — yang berubah hanya cara koneksi (`drizzle(env.bhvr)`) dan cara migrasi (`drizzle-kit` + `wrangler d1`).
+> **Catatan versi:** Dokumen ini awalnya ditulis untuk `bun:sqlite` lokal. Setelah template `bhvr-template` di-scaffold, database target adalah **Cloudflare D1**. DDL di bawah tetap valid karena D1 adalah SQLite — yang berubah hanya cara koneksi (`drizzle(env.DB)`) dan cara migrasi (`drizzle-kit` + `wrangler d1`).
+>
+> **Revisi terakhir:** tabel `students` ditambahkan agar **satu orang tua dapat memiliki lebih dari satu anak**. Kolom `parents.student_name` / `parents.student_class` dihapus setelah datanya dipindahkan. Jumlah tabel kini **12**.
 
 ---
 
@@ -19,11 +21,11 @@ import { drizzle } from "drizzle-orm/d1";
 import * as schema from "./schema";
 
 export interface Env {
-  bhvr: D1Database;   // binding D1 dari wrangler.json
+  DB: D1Database;   // binding D1 dari wrangler.json
 }
 
 export function createDb(env: Env) {
-  return drizzle(env.bhvr, { schema });
+  return drizzle(env.DB, { schema });
 }
 ```
 
@@ -75,22 +77,29 @@ export default app;
 │ id (PK)          │◄──┐   │ id (PK)          │       │ id (PK)          │
 │ username (UQ)    │   │   │ user_id (FK)     │       │ date (UQ)        │
 │ password_hash    │   │   │ parent_name      │       │ name             │
-│ full_name        │   └──►│ student_name     │       │ description      │
-│ role             │       │ student_class    │       │ created_at       │
-│ is_active        │       │ relationship     │       └──────────────────┘
+│ full_name        │   └──►│ relationship     │       │ description      │
+│ role             │       │ phone            │       │ created_at       │
+│ is_active        │       │ address          │       └──────────────────┘
 │ last_login_at    │       │ is_active        │
 │ created_at       │       │ created_at       │
 └──────────────────┘       └──────────────────┘
-                       │
-                       │  ┌──────────────────┐
-                       └──│  schedule_items  │
-                          ├──────────────────┤
-                          │ id (PK)          │
-                          │ schedule_id (FK) │
-                          │ menu_item_id(FK) │
-                          │ serving_order    │
-                          └──────────────────┘
+                                   │
+                                   │ 1 ──── n
+                                   ▼
+                           ┌──────────────────┐
+                           │     students     │
+                           ├──────────────────┤
+                           │ id (PK)          │
+                           │ parent_id (FK)   │
+                           │ name             │
+                           │ class_name       │
+                           │ is_active        │
+                           │ created_at       │
+                           │ updated_at       │
+                           └──────────────────┘
 ```
+
+> Satu orang tua boleh memiliki **lebih dari satu anak** — relasi `parents 1 ── n students`.
 
 ---
 
@@ -245,15 +254,13 @@ CREATE INDEX IF NOT EXISTS idx_users_active  ON users(is_active);
 ```
 
 ### 2.9 Tabel: `parents` (Profil Orang Tua)
-Profil detail orang tua yang terhubung ke akun `users`. Berisi informasi siswa/anak.
+Profil detail orang tua yang terhubung ke akun `users`. Daftar anak **tidak** disimpan di sini, melainkan di tabel `students` (relasi 1 ── n) agar satu orang tua bisa memiliki lebih dari satu anak.
 
 ```sql
 CREATE TABLE IF NOT EXISTS parents (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id       INTEGER NOT NULL,                  -- FK ke users
     parent_name   TEXT NOT NULL,                     -- nama orang tua
-    student_name  TEXT NOT NULL,                     -- nama siswa/anak
-    student_class TEXT,                               -- kelas siswa (mis. "1A", "2B")
     relationship  TEXT NOT NULL DEFAULT 'ibu',       -- 'ibu' | 'ayah' | 'wali'
     phone         TEXT,
     address       TEXT,
@@ -264,12 +271,33 @@ CREATE TABLE IF NOT EXISTS parents (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_parents_user_id   ON parents(user_id);
-CREATE INDEX IF NOT EXISTS idx_parents_class     ON parents(student_class);
-CREATE INDEX IF NOT EXISTS idx_parents_active   ON parents(is_active);
+CREATE INDEX IF NOT EXISTS idx_parents_user_id ON parents(user_id);
+CREATE INDEX IF NOT EXISTS idx_parents_active  ON parents(is_active);
 ```
 
-### 2.10 Tabel: `settings` (Konfigurasi Aplikasi)
+### 2.10 Tabel: `students` (Anak dari Orang Tua)
+Menyimpan setiap anak milik seorang orang tua. Satu orang tua boleh punya **banyak** anak; setiap anak punya nama dan kelas sendiri. Menghapus orang tua akan menghapus anak-anaknya (`ON DELETE CASCADE`).
+
+```sql
+CREATE TABLE IF NOT EXISTS students (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    parent_id   INTEGER NOT NULL,                    -- FK ke parents
+    name        TEXT NOT NULL,                       -- nama anak
+    class_name  TEXT,                                -- kelas (mis. "1A", "2B")
+    is_active   INTEGER NOT NULL DEFAULT 1,
+    created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+
+    FOREIGN KEY (parent_id) REFERENCES parents(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_students_parent_id ON students(parent_id);
+CREATE INDEX IF NOT EXISTS idx_students_class     ON students(class_name);
+```
+
+> **Migrasi dari skema lama:** kolom `parents.student_name` / `parents.student_class` dipindahkan ke tabel `students` sebelum kolomnya dihapus — lihat `drizzle/migrations/0001_*.sql`. Setiap baris `parents` yang punya `student_name` tidak kosong menghasilkan satu baris `students` dengan `parent_id` yang sama.
+
+### 2.11 Tabel: `settings` (Konfigurasi Aplikasi)
 Pengaturan global (nama sekolah, tahun ajaran aktif, dll.).
 
 ```sql
@@ -281,7 +309,7 @@ CREATE TABLE IF NOT EXISTS settings (
 );
 ```
 
-### 2.11 Tabel: `import_logs` (Audit Trail)
+### 2.12 Tabel: `import_logs` (Audit Trail)
 Mencatat impor data dari file teks manual.
 
 ```sql
@@ -308,8 +336,9 @@ CREATE TABLE IF NOT EXISTS import_logs (
 | `schedules` | `weeks` | Many-to-One (opsional) | `week_id` |
 | `schedules` | `menus` | Many-to-One (opsional) | `menu_id` |
 | `parents` | `users` | Many-to-One | `user_id` |
-| `schedule_items` | `schedules` | Many-to-One | `schedule_id` |
-| `schedule_items` | `menu_items` | Many-to-One | `menu_item_id` |
+| `students` | `parents` | Many-to-One | `parent_id` |
+
+> **Catatan:** tabel `schedule_items` tidak dipakai pada implementasi ini. Komponen menu disimpan di `menu_items` (terikat ke `menus`), sedangkan `schedules` hanya menyimpan `menu_id` + `is_holiday` + `note`.
 
 ---
 
@@ -388,24 +417,31 @@ INSERT INTO holidays (date, name, description) VALUES
 ('2026-08-17', 'Hari Kemerdekaan RI', 'Libur nasional — jadwal snack skip');
 ```
 
-### 4.5 Sample Users & Parents (Orang Tua)
+### 4.5 Sample Users, Parents & Students (Orang Tua)
 
 ```sql
 -- Admin account
 INSERT INTO users (username, password_hash, full_name, role, is_active) VALUES
-('admin',   '$2b$10$xxxhashxxx', 'Bu Guru Sari', 'admin', 1);
+('admin', 'pbkdf2$100000$<salt>$<hash>', 'Bu Guru Sari', 'admin', 1);
 
 -- Parent accounts
 INSERT INTO users (username, password_hash, full_name, role, is_active) VALUES
-('sari',    '$2b$10$xxxhashxxx', 'Ibu Sari',     'parent', 1),
-('budi',    '$2b$10$xxxhashxxx', 'Pak Budi',     'parent', 1),
-('dewi',    '$2b$10$xxxhashxxx', 'Ibu Dewi',     'parent', 1);
+('sari', 'pbkdf2$100000$<salt>$<hash>', 'Ibu Sari', 'parent', 1),
+('budi', 'pbkdf2$100000$<salt>$<hash>', 'Pak Budi', 'parent', 1),
+('dewi', 'pbkdf2$100000$<salt>$<hash>', 'Ibu Dewi', 'parent', 1);
 
--- Parent profiles (linked to users)
-INSERT INTO parents (user_id, parent_name, student_name, student_class, relationship, phone) VALUES
-(2, 'Sari Wulandari',   'Aisyah Sari',  '1A', 'ibu',  '081234567890'),
-(3, 'Budi Santoso',     'Bagas Budi',   '1A', 'ayah', '081234567891'),
-(4, 'Dewi Lestari',     'Citra Dewi',   '1B', 'ibu',  '081234567892');
+-- Parent profiles (linked to users) — TANPA data anak
+INSERT INTO parents (user_id, parent_name, relationship, phone) VALUES
+(2, 'Sari Wulandari', 'ibu',  '081234567890'),
+(3, 'Budi Santoso',   'ayah', '081234567891'),
+(4, 'Dewi Lestari',   'ibu',  '081234567892');
+
+-- Anak-anak (1 orang tua boleh >1 anak) — dewi punya dua anak
+INSERT INTO students (parent_id, name, class_name, is_active) VALUES
+((SELECT p.id FROM parents p JOIN users u ON u.id = p.user_id WHERE u.username = 'sari'), 'Aisyah Sari', '1A', 1),
+((SELECT p.id FROM parents p JOIN users u ON u.id = p.user_id WHERE u.username = 'budi'), 'Bagas Budi',  '1A', 1),
+((SELECT p.id FROM parents p JOIN users u ON u.id = p.user_id WHERE u.username = 'dewi'), 'Citra Dewi',  '1B', 1),
+((SELECT p.id FROM parents p JOIN users u ON u.id = p.user_id WHERE u.username = 'dewi'), 'Raka Dewi',   '2A', 1);
 ```
 
 > **Catatan hashing di Cloudflare Workers:** Runtime Worker tidak menyediakan `bcrypt` native.
@@ -547,33 +583,59 @@ SELECT
     u.role,
     u.is_active,
     p.parent_name,
-    p.student_name,
-    p.student_class
+    p.relationship
 FROM users u
 LEFT JOIN parents p ON p.user_id = u.id
 WHERE u.username = 'sari'
   AND u.is_active = 1;
--- Password hash diverifikasi di aplikasi (bcrypt/argon2), bukan di SQL
+-- Password hash diverifikasi di aplikasi (PBKDF2-SHA256), bukan di SQL
+
+-- Lalu ambil seluruh anak milik orang tua tersebut
+SELECT st.id, st.name, st.class_name
+FROM students st
+JOIN parents p ON p.id = st.parent_id
+JOIN users u ON u.id = p.user_id
+WHERE u.username = 'sari'
+  AND st.is_active = 1
+ORDER BY st.id;
 ```
 
 ### 5.7 Daftar Akun Orang Tua (Admin View)
 
+Karena satu orang tua bisa punya banyak anak, baris orang tua **tidak** boleh di-`JOIN` langsung ke `students` tanpa agregasi — kalau tidak, hasilnya berisi baris ganda. Dua pendekatan yang dipakai aplikasi:
+
 ```sql
+-- (a) Agregasi anak jadi satu kolom
 SELECT
     u.id,
     u.username,
     u.full_name,
     p.parent_name,
-    p.student_name,
-    p.student_class,
     p.relationship,
+    COALESCE(GROUP_CONCAT(st.name || ' (' || COALESCE(st.class_name, '-') || ')', ', '), '-') AS anak,
     u.is_active,
     u.last_login_at
 FROM users u
 LEFT JOIN parents p ON p.user_id = u.id
+LEFT JOIN students st ON st.parent_id = p.id
 WHERE u.role = 'parent'
-ORDER BY p.student_class, p.student_name;
+GROUP BY u.id
+ORDER BY p.parent_name;
+
+-- (b) Cari lewat nama/kelas anak tanpa baris ganda (dipakai `/parents?search=`)
+SELECT u.id, u.username, p.parent_name
+FROM users u
+JOIN parents p ON p.user_id = u.id
+WHERE u.role = 'parent'
+  AND EXISTS (
+      SELECT 1 FROM students st
+      WHERE st.parent_id = p.id
+        AND (st.name LIKE '%Uji%' OR st.class_name LIKE '%Uji%')
+  )
+ORDER BY p.parent_name;
 ```
+
+> Implementasi sebenarnya mengambil baris orang tua dulu, lalu **satu** query `WHERE parent_id IN (...)` untuk semua anak sekaligus, dan mengelompokkannya di memori — menghindari N+1 sekaligus menghindari baris ganda.
 
 ---
 
@@ -678,8 +740,6 @@ export const parents = sqliteTable('parents', {
   id:           integer('id').primaryKey({ autoIncrement: true }),
   userId:       integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   parentName:   text('parent_name').notNull(),
-  studentName:  text('student_name').notNull(),
-  studentClass: text('student_class'),
   relationship: text('relationship').notNull().default('ibu'), // 'ibu' | 'ayah' | 'wali'
   phone:        text('phone'),
   address:      text('address'),
@@ -687,6 +747,25 @@ export const parents = sqliteTable('parents', {
   createdAt:    text('created_at').notNull().default(sql`(datetime('now'))`),
   updatedAt:    text('updated_at').notNull().default(sql`(datetime('now'))`),
 });
+
+// ─── students (Anak — satu orang tua boleh banyak) ───
+export const students = sqliteTable(
+  'students',
+  {
+    id:        integer('id').primaryKey({ autoIncrement: true }),
+    parentId:  integer('parent_id').notNull()
+                 .references(() => parents.id, { onDelete: 'cascade' }),
+    name:      text('name').notNull(),
+    className: text('class_name'),
+    isActive:  integer('is_active').notNull().default(1),
+    createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
+  },
+  (table) => [
+    index('idx_students_parent_id').on(table.parentId),
+    index('idx_students_class').on(table.className),
+  ],
+);
 
 // ─── settings ────────────────────────────────────────
 export const settings = sqliteTable('settings', {
@@ -762,8 +841,9 @@ For each month block in file:
 | `users` | `role` | `idx_users_role` | Filter user by role (admin/parent) |
 | `users` | `is_active` | `idx_users_active` | Filter user aktif/nonaktif |
 | `parents` | `user_id` | `idx_parents_user_id` | Join parent → user |
-| `parents` | `student_class` | `idx_parents_class` | Filter parent by kelas siswa |
 | `parents` | `is_active` | `idx_parents_active` | Filter parent aktif/nonaktif |
+| `students` | `parent_id` | `idx_students_parent_id` | Ambil semua anak satu orang tua (menghindari N+1) |
+| `students` | `class_name` | `idx_students_class` | Filter/pencarian berdasarkan kelas anak |
 
 ---
 
@@ -790,7 +870,12 @@ CLOUDFLARE_D1_TOKEN=<API token dengan izin D1 edit>
 bunx drizzle-kit generate
 ```
 
-Perintah ini membaca `src/database/schema.ts` dan menghasilkan file SQL di folder `drizzle/`.
+Perintah ini membaca `src/database/schema.ts` dan menghasilkan file SQL di folder `drizzle/migrations/`.
+
+> **Penting:** `drizzle.config.ts` mengarahkan `out` ke `./drizzle/migrations` dan `wrangler.json`
+> memakai `migrations_dir: "drizzle/migrations"`. `drizzle/seed.sql` **harus tetap di luar** folder
+> itu — wrangler mengeksekusi setiap file `.sql` di dalam `migrations_dir` sebagai migrasi, sehingga
+> seed yang diletakkan di sana akan ikut dijalankan sebagai migrasi dan gagal.
 
 ### Step 3: Terapkan Migrasi ke D1
 

@@ -12,7 +12,7 @@ export const Route = createFileRoute("/_app/hari-ini")({
 });
 
 function TodayPage() {
-  const { user, student } = useAuth();
+  const { user, students, relationship } = useAuth();
 
   const todayQuery = useQuery({
     queryKey: ["schedules", "today"],
@@ -44,14 +44,39 @@ function TodayPage() {
           </div>
 
           <div className="space-y-4">
-            {student && (
+            {students.length > 0 && (
               <Card>
-                <CardHeader title="Data Siswa" />
-                <dl className="divide-y divide-slate-100 px-5">
-                  <Row label="Nama" value={student.name} />
-                  <Row label="Kelas" value={student.className ?? "-"} />
-                  <Row label="Hubungan" value={student.relationship} />
-                </dl>
+                <CardHeader
+                  title="Data Siswa"
+                  description={
+                    students.length > 1
+                      ? `${students.length} anak terdaftar pada akun ini`
+                      : undefined
+                  }
+                />
+                <ul className="divide-y divide-slate-100">
+                  {students.map((item) => (
+                    <li
+                      key={item.id}
+                      className="flex items-start gap-3 px-5 py-3"
+                    >
+                      <GraduationCap className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-slate-800">
+                          {item.name}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          Kelas {item.className ?? "—"}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+                {relationship && (
+                  <p className="border-t border-slate-100 px-5 py-2.5 text-xs text-slate-500">
+                    Hubungan dengan siswa: {relationship}
+                  </p>
+                )}
               </Card>
             )}
 
@@ -99,7 +124,7 @@ function TodayPage() {
               </ul>
             </Card>
 
-            {!student && user?.role !== "admin" && (
+            {students.length === 0 && user?.role !== "admin" && (
               <Card>
                 <CardHeader title="Profil siswa" />
                 <p className="flex items-start gap-2 px-5 py-4 text-sm text-slate-500">

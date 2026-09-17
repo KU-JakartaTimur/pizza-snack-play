@@ -35,11 +35,23 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const { user, student, isAdmin, logout } = useAuth();
+  const { user, students, isAdmin, logout } = useAuth();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
 
   const items = NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin);
+
+  // Ringkas daftar anak agar muat di header; rinciannya lewat tooltip.
+  const studentLabel =
+    students.length === 0
+      ? ""
+      : students.length === 1
+        ? ` · ${students[0].name}`
+        : ` · ${students.length} anak`;
+
+  const studentTooltip = students
+    .map((s) => `${s.name}${s.className ? ` (${s.className})` : ""}`)
+    .join(", ");
 
   const handleLogout = () => {
     logout();
@@ -70,9 +82,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <p className="text-sm font-medium text-slate-800 leading-tight">
                   {user?.fullName ?? user?.username}
                 </p>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-500" title={studentTooltip || undefined}>
                   {isAdmin ? "Admin" : "Orang tua"}
-                  {student?.name ? ` · ${student.name}` : ""}
+                  {studentLabel}
                 </p>
               </div>
               <Link

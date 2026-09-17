@@ -10,6 +10,8 @@ DELETE FROM menus;
 
 DELETE FROM weeks;
 
+DELETE FROM students;
+
 DELETE FROM parents;
 
 DELETE FROM users;
@@ -226,12 +228,18 @@ INSERT INTO settings (key, value) VALUES
   ('active_month', '2026-09');
 
 INSERT INTO users (id, username, password_hash, full_name, role, is_active) VALUES
-  (1, 'admin', 'pbkdf2$100000$MVnBBic0zWCMkOe91S3WsQ$NgveLR995dhg27y2pZK_JZaQ83pyMLF-q-GRWbL5FlE', 'Bu Guru Sari', 'admin', 1),
-  (2, 'sari', 'pbkdf2$100000$nmJxUcpcdmjZSfSPzDh0Eg$Z7l_IR5ZHWefPrWeoU5c5mQeEneTFaBuSDTeVJVorc4', 'Ibu Sari', 'parent', 1),
-  (3, 'budi', 'pbkdf2$100000$nmJxUcpcdmjZSfSPzDh0Eg$Z7l_IR5ZHWefPrWeoU5c5mQeEneTFaBuSDTeVJVorc4', 'Pak Budi', 'parent', 1),
-  (4, 'dewi', 'pbkdf2$100000$nmJxUcpcdmjZSfSPzDh0Eg$Z7l_IR5ZHWefPrWeoU5c5mQeEneTFaBuSDTeVJVorc4', 'Ibu Dewi', 'parent', 1);
+  (1, 'admin', 'pbkdf2$100000$sGCaV5LLYAoslaPocQeWVg$C30QlzZ5MPCBahiZlblF24pNx8E3gthRhIFeCIbr3Ls', 'Bu Guru Sari', 'admin', 1),
+  (2, 'sari', 'pbkdf2$100000$M9-geevGbAhoErDazj3wGw$FUFkzPhdN-QNnZXU-tP-b5iWfMHqsk8I_KTaAjq-SP4', 'Ibu Sari', 'parent', 1),
+  (3, 'budi', 'pbkdf2$100000$M9-geevGbAhoErDazj3wGw$FUFkzPhdN-QNnZXU-tP-b5iWfMHqsk8I_KTaAjq-SP4', 'Pak Budi', 'parent', 1),
+  (4, 'dewi', 'pbkdf2$100000$M9-geevGbAhoErDazj3wGw$FUFkzPhdN-QNnZXU-tP-b5iWfMHqsk8I_KTaAjq-SP4', 'Ibu Dewi', 'parent', 1);
 
-INSERT INTO parents (user_id, parent_name, student_name, student_class, relationship, phone) VALUES
-  (2, 'Sari Wulandari', 'Aisyah Sari', '1A', 'ibu', '081234567890'),
-  (3, 'Budi Santoso', 'Bagas Budi', '1A', 'ayah', '081234567891'),
-  (4, 'Dewi Lestari', 'Citra Dewi', '1B', 'ibu', '081234567892');
+INSERT INTO parents (user_id, parent_name, relationship, phone) VALUES
+  (2, 'Sari Wulandari', 'ibu', '081234567890'),
+  (3, 'Budi Santoso', 'ayah', '081234567891'),
+  (4, 'Dewi Lestari', 'ibu', '081234567892');
+
+INSERT INTO students (parent_id, name, class_name, is_active) VALUES
+  ((SELECT p.id FROM parents p JOIN users u ON u.id = p.user_id WHERE u.username = 'sari'), 'Aisyah Sari', '1A', 1),
+  ((SELECT p.id FROM parents p JOIN users u ON u.id = p.user_id WHERE u.username = 'budi'), 'Bagas Budi', '1A', 1),
+  ((SELECT p.id FROM parents p JOIN users u ON u.id = p.user_id WHERE u.username = 'dewi'), 'Citra Dewi', '1B', 1),
+  ((SELECT p.id FROM parents p JOIN users u ON u.id = p.user_id WHERE u.username = 'dewi'), 'Raka Dewi', '2A', 1);

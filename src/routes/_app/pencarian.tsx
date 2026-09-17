@@ -14,6 +14,7 @@ import {
   Spinner,
 } from "@/components/ui";
 import { api } from "@/lib/api";
+import { useActiveClass } from "@/lib/active-class";
 import {
   addDays,
   formatIndonesianDate,
@@ -60,7 +61,7 @@ function Highlight({ text, term }: { text: string; term: string }) {
     parts.push(
       <mark
         key={key}
-        className="rounded bg-amber-100 px-0.5 font-semibold text-amber-900"
+        className="rounded bg-highlight-100 px-0.5 font-semibold text-highlight-900"
       >
         {text.slice(index, index + needle.length)}
       </mark>,
@@ -76,6 +77,7 @@ function Highlight({ text, term }: { text: string; term: string }) {
 
 function SearchPage() {
   const today = todayInWib();
+  const activeClass = useActiveClass();
 
   const [term, setTerm] = useState("");
   const [from, setFrom] = useState(() => addDays(todayInWib(), -180));
@@ -90,9 +92,15 @@ function SearchPage() {
       submitted?.q,
       submitted?.from,
       submitted?.to,
+      activeClass,
     ],
     queryFn: () =>
-      api.schedules.search(submitted!.q, submitted!.from, submitted!.to),
+      api.schedules.search(
+        submitted!.q,
+        submitted!.from,
+        submitted!.to,
+        activeClass,
+      ),
     enabled: submitted !== null,
   });
 
@@ -236,12 +244,14 @@ function SearchPage() {
                   {result.totalMatches} hari
                 </strong>{" "}
                 yang cocok dengan{" "}
-                <strong className="text-slate-900">“{result.query}”</strong>.
+                <strong className="text-slate-900">“{result.query}”</strong>
+                {activeClass ? ` di kelas ${activeClass}` : ""}.
               </>
             ) : (
               <>
                 Tidak ada jadwal yang cocok dengan{" "}
-                <strong className="text-slate-900">“{result.query}”</strong>.
+                <strong className="text-slate-900">“{result.query}”</strong>
+                {activeClass ? ` di kelas ${activeClass}` : ""}.
               </>
             )}
           </p>
@@ -282,7 +292,7 @@ function SearchPage() {
 
                           <div className="min-w-0 flex-1 space-y-2">
                             <p className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                              <UtensilsCrossed className="h-4 w-4 shrink-0 text-emerald-600" />
+                              <UtensilsCrossed className="h-4 w-4 shrink-0 text-brand-600" />
                               <Highlight
                                 text={match.menuName}
                                 term={highlightTerm}
@@ -297,7 +307,7 @@ function SearchPage() {
                                       text={item.name}
                                       term={highlightTerm}
                                     />
-                                    <span className="text-emerald-600/70">
+                                    <span className="text-brand-600/70">
                                       · {ITEM_TYPE_LABELS[item.itemType]}
                                     </span>
                                   </Badge>

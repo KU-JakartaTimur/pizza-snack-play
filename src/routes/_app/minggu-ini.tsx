@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/AppShell";
 import { ScheduleDayCard } from "@/components/ScheduleDayCard";
 import { Button, Card, ErrorState, Spinner } from "@/components/ui";
+import { useActiveClass } from "@/lib/active-class";
 import { api } from "@/lib/api";
 import { addDays, formatWeekLabel, todayInWib } from "@/lib/date";
 
@@ -15,19 +16,26 @@ export const Route = createFileRoute("/_app/minggu-ini")({
 function WeekPage() {
   // `anchor` adalah tanggal mana pun dalam minggu yang sedang dilihat.
   const [anchor, setAnchor] = useState(todayInWib);
+  const activeClass = useActiveClass();
 
   const weekQuery = useQuery({
-    queryKey: ["schedules", "week", anchor],
-    queryFn: () => api.schedules.week(anchor),
+    queryKey: ["schedules", "week", anchor, activeClass],
+    queryFn: () => api.schedules.week(anchor, activeClass),
   });
 
   const shift = (weeks: number) => setAnchor((current) => addDays(current, weeks * 7));
+
+  const shownClass = weekQuery.data?.className ?? activeClass;
 
   return (
     <>
       <PageHeader
         title="Jadwal Mingguan"
-        description="Menu snack Senin–Jumat untuk minggu yang dipilih."
+        description={
+          shownClass
+            ? `Menu snack Senin–Jumat untuk kelas ${shownClass}.`
+            : "Menu snack Senin–Jumat untuk minggu yang dipilih."
+        }
       />
 
       <Card className="mb-6">
@@ -60,7 +68,7 @@ function WeekPage() {
             <button
               type="button"
               onClick={() => setAnchor(todayInWib())}
-              className="text-xs text-emerald-600 hover:text-emerald-700 hover:underline"
+              className="text-xs text-brand-600 hover:text-brand-700 hover:underline"
             >
               Kembali ke minggu ini
             </button>

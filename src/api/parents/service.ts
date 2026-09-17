@@ -1,6 +1,7 @@
 import type { Db } from "../../database/db";
 import type { Student } from "../../database/schema";
 import type {
+  ManagedRole,
   PaginatedDto,
   ParentDto,
   ParentInput,
@@ -15,9 +16,14 @@ export type ParentError =
   | "not_found"
   | "duplicate_username"
   | "invalid_relationship"
-  | "no_students";
+  | "no_students"
+  | "invalid_role"
+  | "class_required";
 
 export const RELATIONSHIPS: ParentRelationship[] = ["ibu", "ayah", "wali"];
+
+/** Role yang boleh dikelola lewat modul ini. */
+export const MANAGED_ROLES: ManagedRole[] = ["parent", "korlas"];
 
 const DEFAULT_PER_PAGE = 20;
 const MAX_PER_PAGE = 100;
@@ -39,6 +45,9 @@ function toParentDto(row: ParentRow): ParentDto {
     parentName: parent.parentName,
     students: students.map(toStudentDto),
     relationship: parent.relationship as ParentRelationship,
+    // Role tak dikenal dinormalkan ke `parent` agar UI tidak bingung.
+    role: user.role === "korlas" ? "korlas" : "parent",
+    className: user.className,
     phone: parent.phone,
     address: parent.address,
     email: user.email,
@@ -101,6 +110,13 @@ class ParentService {
       return "no_students";
     }
 
+    const role = input.role ?? "parent";
+    if (!MANAGED_ROLES.includes(role)) return "invalid_role";
+
+    // Korlas tanpa kelas tidak punya cakupan apa pun — tolak sejak awal.
+    const className = input.className?.trim() || null;
+    if (role === "korlas" && !className) return "class_required";
+
     const isActive = input.isActive === false ? 0 : 1;
     const passwordHash = await hashPassword(input.password!);
 
@@ -110,6 +126,8 @@ class ParentService {
       fullName: input.parentName.trim(),
       email: input.email ?? null,
       phone: input.phone ?? null,
+      role,
+      className: role === "korlas" ? className : null,
       isActive,
     });
 
@@ -164,6 +182,27 @@ class ParentService {
       ? await hashPassword(input.password)
       : undefined;
 
+    // Role & kelas yang dikoordinasi. Bila dikembalikan ke `parent`,
+    // kelasnya ikut dibersihkan agar tidak menyisakan cakupan hantu.
+    const requestedRole = input.role as string | undefined;
+    if (
+      requestedRole !== undefined &&
+      !MANAGED_ROLES.includes(requestedRole as ManagedRole)
+    ) {
+      return "invalid_role";
+    }
+
+    const nextRole: ManagedRole =
+      (requestedRole as ManagedRole | undefined) ??
+      (row.user.role === "korlas" ? "korlas" : "parent");
+
+    const nextClassName =
+      input.className === undefined
+        ? row.user.className
+        : input.className?.trim() || null;
+
+    if (nextRole === "korlas" && !nextClassName) return "class_required";
+
     await parentRepository.updateUser(db, row.user.id, {
       ...(input.username ? { username: input.username.trim().toLowerCase() } : {}),
       ...(input.parentName ? { fullName: input.parentName.trim() } : {}),
@@ -171,6 +210,8 @@ class ParentService {
       ...(input.phone !== undefined ? { phone: input.phone } : {}),
       ...(isActive !== undefined ? { isActive } : {}),
       ...(passwordHash ? { passwordHash } : {}),
+      role: nextRole,
+      className: nextRole === "korlas" ? nextClassName : null,
     });
 
     await parentRepository.updateParent(db, id, {

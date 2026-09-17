@@ -71,6 +71,23 @@ const CATEGORY_KEYWORDS: Array<[RegExp, string]> = [
   [/bihun|urap|kroket/i, "lainnya"],
 ];
 
+/**
+ * Anak per orang tua: `[username orang tua, nama anak, kelas]`.
+ * Satu orang tua boleh punya lebih dari satu anak.
+ */
+const STUDENTS: Array<[string, string, string]> = [
+  ["sari", "Aisyah Sari", "1A"],
+  ["budi", "Bagas Budi", "1A"],
+  ["dewi", "Citra Dewi", "1B"],
+  ["dewi", "Raka Dewi", "2A"],
+];
+
+/**
+ * Kelas yang dikenal seed. Jadwal digandakan ke setiap kelas ini karena
+ * `schedules` kini menyimpan satu baris per (tanggal × kelas).
+ */
+const CLASSES = [...new Set(STUDENTS.map(([, , className]) => className))].sort();
+
 // ─────────────────────────────────────────────────────────────
 // Tipe hasil parsing
 // ─────────────────────────────────────────────────────────────
@@ -350,9 +367,12 @@ async function main() {
         if (!parsed) {
           // Libur
           holidayCount++;
-          scheduleRows.push(
-            `(${weekId}, ${sqlString(cursor)}, ${dayIdx}, NULL, 1, ${sqlString(menuText)})`,
-          );
+          // Satu baris per kelas — jadwal kini disimpan per (tanggal × kelas).
+          for (const className of CLASSES) {
+            scheduleRows.push(
+              `(${weekId}, ${sqlString(cursor)}, ${dayIdx}, ${sqlString(className)}, NULL, 1, ${sqlString(menuText)})`,
+            );
+          }
         } else {
           const key = menuKey(parsed);
           let menuId = menuIdByKey.get(key);
@@ -382,9 +402,11 @@ async function main() {
             }
           }
 
-          scheduleRows.push(
-            `(${weekId}, ${sqlString(cursor)}, ${dayIdx}, ${menuId}, 0, ${sqlString(parsed.notes)})`,
-          );
+          for (const className of CLASSES) {
+            scheduleRows.push(
+              `(${weekId}, ${sqlString(cursor)}, ${dayIdx}, ${sqlString(className)}, ${menuId}, 0, ${sqlString(parsed.notes)})`,
+            );
+          }
         }
       }
 
@@ -410,7 +432,7 @@ async function main() {
   }
 
   statements.push(
-    `INSERT INTO schedules (week_id, schedule_date, day_of_week, menu_id, is_holiday, notes) VALUES\n  ${scheduleRows.join(",\n  ")};`,
+    `INSERT INTO schedules (week_id, schedule_date, day_of_week, class_name, menu_id, is_holiday, notes) VALUES\n  ${scheduleRows.join(",\n  ")};`,
   );
 
   // ── holidays
@@ -427,8 +449,10 @@ async function main() {
   const adminHash = await hashPassword(DEFAULT_PASSWORD);
   const parentHash = await hashPassword(DEFAULT_PASSWORD);
 
+  // `budi` sengaja dijadikan korlas kelas 1A sebagai contoh peran baru:
+  // ia tetap orang tua murid, tetapi boleh mengubah jadwal kelas 1A.
   statements.push(
-    `INSERT INTO users (id, username, password_hash, full_name, role, is_active) VALUES\n  (1, 'admin', ${sqlString(adminHash)}, 'Bu Guru Sari', 'admin', 1),\n  (2, 'sari', ${sqlString(parentHash)}, 'Ibu Sari', 'parent', 1),\n  (3, 'budi', ${sqlString(parentHash)}, 'Pak Budi', 'parent', 1),\n  (4, 'dewi', ${sqlString(parentHash)}, 'Ibu Dewi', 'parent', 1);`,
+    `INSERT INTO users (id, username, password_hash, full_name, role, class_name, is_active) VALUES\n  (1, 'admin', ${sqlString(adminHash)}, 'Bu Guru Sari', 'admin', NULL, 1),\n  (2, 'sari', ${sqlString(parentHash)}, 'Ibu Sari', 'parent', NULL, 1),\n  (3, 'budi', ${sqlString(parentHash)}, 'Pak Budi', 'korlas', '1A', 1),\n  (4, 'dewi', ${sqlString(parentHash)}, 'Ibu Dewi', 'parent', NULL, 1);`,
   );
 
   statements.push(
@@ -441,17 +465,10 @@ async function main() {
   const parentIdSubquery = (username: string) =>
     `(SELECT p.id FROM parents p JOIN users u ON u.id = p.user_id WHERE u.username = '${username}')`;
 
-  const studentRows = [
-    ["sari", "Aisyah Sari", "1A"],
-    ["budi", "Bagas Budi", "1A"],
-    ["dewi", "Citra Dewi", "1B"],
-    ["dewi", "Raka Dewi", "2A"],
-  ]
-    .map(
-      ([username, name, className]) =>
-        `  (${parentIdSubquery(username)}, '${name}', '${className}', 1)`,
-    )
-    .join(",\n");
+  const studentRows = STUDENTS.map(
+    ([username, name, className]) =>
+      `  (${parentIdSubquery(username)}, '${name}', '${className}', 1)`,
+  ).join(",\n");
 
   statements.push(
     `INSERT INTO students (parent_id, name, class_name, is_active) VALUES\n${studentRows};`,
@@ -465,8 +482,11 @@ async function main() {
   console.log(`  Minggu       : ${weekRows.length}`);
   console.log(`  Menu unik    : ${menuRows.length}`);
   console.log(`  Menu item    : ${menuItemRows.length}`);
-  console.log(`  Jadwal       : ${scheduleRows.length} (${holidayCount} libur)`);
-  console.log(`  Users        : 4 (1 admin, 3 orang tua)`);
+  console.log(`  Kelas        : ${CLASSES.join(", ")}`);
+  console.log(
+    `  Jadwal       : ${scheduleRows.length} baris (${holidayCount} hari libur × ${CLASSES.length} kelas)`,
+  );
+  console.log("  Users        : 4 (1 admin, 1 korlas 1A, 2 orang tua)");
   console.log(`  Password     : ${DEFAULT_PASSWORD}`);
 }
 

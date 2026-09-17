@@ -27,7 +27,8 @@ export function ScheduleDayCard({
     <div
       className={cn(
         "card overflow-hidden transition-shadow",
-        isToday && "ring-2 ring-emerald-500 ring-offset-1",
+        // "Hari ini" disorot persik agar langsung tertangkap mata.
+        isToday && "ring-2 ring-highlight-400 ring-offset-1",
         !isToday && "hover:shadow-md",
       )}
     >
@@ -35,7 +36,7 @@ export function ScheduleDayCard({
         className={cn(
           "flex items-center justify-between gap-3 border-b px-4 py-3",
           isToday
-            ? "border-emerald-200 bg-emerald-50"
+            ? "border-highlight-200 bg-highlight-50"
             : "border-slate-200 bg-slate-50",
         )}
       >
@@ -43,7 +44,7 @@ export function ScheduleDayCard({
           <p
             className={cn(
               "font-semibold leading-tight",
-              isToday ? "text-emerald-900" : "text-slate-900",
+              isToday ? "text-highlight-900" : "text-slate-900",
             )}
           >
             {day.dayName}
@@ -52,26 +53,26 @@ export function ScheduleDayCard({
             {formatIndonesianDate(day.date)}
           </p>
         </div>
-        <Badge tone={isToday ? "success" : "neutral"}>
+        <Badge tone={isToday ? "highlight" : "neutral"}>
           {isToday ? "Hari ini" : relativeDayLabel(day.date)}
         </Badge>
       </div>
 
       <div className="px-4 py-3.5">
         {day.isHoliday ? (
-          <div className="flex items-center gap-2.5 text-amber-700">
+          <div className="flex items-center gap-2.5 text-highlight-700">
             <CalendarOff className="h-4 w-4 shrink-0" />
             <div>
               <p className="text-sm font-medium">
                 {day.holidayName ?? "Libur"}
               </p>
-              <p className="text-xs text-amber-600">Tidak ada jadwal snack</p>
+              <p className="text-xs text-highlight-700">Tidak ada jadwal snack</p>
             </div>
           </div>
         ) : day.menu ? (
           <div className="space-y-3">
             <div className="flex items-start gap-2.5">
-              <UtensilsCrossed className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+              <UtensilsCrossed className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-slate-900">
                   {day.menu.name}
@@ -94,7 +95,7 @@ export function ScheduleDayCard({
                     {group.names.map((name) => (
                       <span
                         key={name}
-                        className="rounded-md bg-slate-100 px-2 py-0.5 text-xs text-slate-700"
+                        className="rounded-md border border-accent-200 bg-accent-50 px-2 py-0.5 text-xs text-accent-800"
                       >
                         {name}
                       </span>
@@ -111,7 +112,7 @@ export function ScheduleDayCard({
         )}
 
         {day.notes && (
-          <div className="mt-3 flex items-start gap-2 rounded-lg bg-amber-50 px-2.5 py-2 text-xs text-amber-800">
+          <div className="mt-3 flex items-start gap-2 rounded-lg border border-highlight-200 bg-highlight-50 px-2.5 py-2 text-xs text-highlight-800">
             <StickyNote className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <span>{day.notes}</span>
           </div>

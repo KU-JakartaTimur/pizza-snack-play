@@ -125,6 +125,11 @@ export const weeks = sqliteTable(
 // Jadwal harian — tabel inti.
 // day_of_week: 1=Senin .. 5=Jumat
 // menu_id NULL + is_holiday=1 berarti libur.
+//
+// Jadwal bersifat PER KELAS: setiap kelas punya barisnya sendiri untuk
+// satu tanggal, sehingga korlas kelas 1A bisa menyusun menu yang berbeda
+// dari kelas 1B. Karena itu keunikannya komposit (tanggal + kelas),
+// bukan tanggal saja seperti sebelumnya.
 // ─────────────────────────────────────────────────────────────
 export const schedules = sqliteTable(
   "schedules",
@@ -135,6 +140,8 @@ export const schedules = sqliteTable(
     }),
     scheduleDate: text("schedule_date").notNull(),
     dayOfWeek: integer("day_of_week").notNull(),
+    /** Kelas pemilik baris ini, mis. `"1A"`. Wajib diisi. */
+    className: text("class_name").notNull(),
     menuId: integer("menu_id").references(() => menus.id, {
       onDelete: "set null",
     }),
@@ -144,9 +151,13 @@ export const schedules = sqliteTable(
     updatedAt: text("updated_at").notNull().default(now),
   },
   (table) => [
-    uniqueIndex("idx_schedules_date").on(table.scheduleDate),
+    uniqueIndex("idx_schedules_date_class").on(
+      table.scheduleDate,
+      table.className,
+    ),
     index("idx_schedules_week").on(table.weekId),
     index("idx_schedules_menu").on(table.menuId),
+    index("idx_schedules_class").on(table.className),
   ],
 );
 
@@ -166,8 +177,12 @@ export const holidays = sqliteTable(
 );
 
 // ─────────────────────────────────────────────────────────────
-// Akun login — admin & orang tua.
-// role: 'admin' | 'parent'
+// Akun login — admin, korlas, & orang tua.
+// role: 'admin' | 'korlas' | 'parent'
+//
+// `class_name` hanya dipakai role `korlas`: kelas yang dikoordinasinya
+// (mis. `"1A"`). Korlas hanya boleh mengubah jadwal kelas tersebut.
+// Untuk role lain kolom ini NULL.
 // ─────────────────────────────────────────────────────────────
 export const users = sqliteTable(
   "users",
@@ -179,6 +194,8 @@ export const users = sqliteTable(
     email: text("email"),
     phone: text("phone"),
     role: text("role").notNull().default("parent"),
+    /** Kelas yang dikoordinasi — hanya untuk role `korlas`. */
+    className: text("class_name"),
     isActive: integer("is_active").notNull().default(1),
     lastLoginAt: text("last_login_at"),
     createdAt: text("created_at").notNull().default(now),

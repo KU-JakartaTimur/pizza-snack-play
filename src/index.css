@@ -8,10 +8,59 @@ html {
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* ── Palet aplikasi ──────────────────────────────────────────
+     Tiga warna dasar:
+       brand     #51277C  ungu tua   — struktur, navigasi, aksi utama
+       accent    #AFC440  hijau limau — status positif, hari sekolah, buah
+       highlight #F3B26C  oranye persik — sorotan, hari ini, libur, catatan
+     Setiap skala dibuat turunannya agar teks tetap memenuhi kontras AA. */
+
+  /* Ungu tua — brand utama */
+  --color-brand-50: #f7f4fb;
+  --color-brand-100: #efe8f7;
+  --color-brand-200: #ded0ee;
+  --color-brand-300: #c4ade0;
+  --color-brand-400: #a482ce;
+  --color-brand-500: #8659b9;
+  --color-brand-600: #51277c;
+  --color-brand-700: #46206b;
+  --color-brand-800: #3a1a58;
+  --color-brand-900: #2f1547;
+  --color-brand-950: #1e0c2f;
+
+  /* Hijau limau — aksen */
+  --color-accent-50: #f9fcee;
+  --color-accent-100: #f1f8d6;
+  --color-accent-200: #e4efae;
+  --color-accent-300: #d2e37c;
+  --color-accent-400: #c0d353;
+  --color-accent-500: #afc440;
+  --color-accent-600: #8fa332;
+  --color-accent-700: #6e7e28;
+  --color-accent-800: #576420;
+  --color-accent-900: #45501e;
+  --color-accent-950: #242c0c;
+
+  /* Oranye persik — sorotan */
+  --color-highlight-50: #fef9f2;
+  --color-highlight-100: #fdf1e1;
+  --color-highlight-200: #fbdfbd;
+  --color-highlight-300: #f8c894;
+  --color-highlight-400: #f3b26c;
+  --color-highlight-500: #ec9a45;
+  --color-highlight-600: #d97f2f;
+  --color-highlight-700: #a85a22;
+  --color-highlight-800: #8a4a1e;
+  --color-highlight-900: #6f3c1c;
+  --color-highlight-950: #3c1e0c;
+
+  /* Latar aplikasi — putih dengan tint ungu sangat tipis */
+  --color-canvas: #f7f6fa;
 }
 
 body {
-  @apply bg-slate-50 text-slate-900 font-sans antialiased;
+  @apply bg-canvas text-slate-900 font-sans antialiased;
 }
 
 /* Kartu dasar — dipakai di seluruh halaman aplikasi. */
@@ -22,4 +71,19 @@ body {
 /* Label kecil bertipe huruf besar untuk metadata. */
 .label-muted {
   @apply text-xs font-medium uppercase tracking-wide text-slate-500;
+}
+
+/* Garis aksen tiga warna — elemen tanda tangan aplikasi. */
+.brand-stripe {
+  @apply h-1 w-full bg-linear-to-r from-brand-600 via-accent-500 to-highlight-400;
+}
+
+/* Latar gradien lembut untuk halaman tanpa header (mis. login). */
+.brand-canvas {
+  @apply bg-linear-to-br from-brand-50 via-canvas to-highlight-50;
+}
+
+/* Teks bergradien — dipakai untuk judul besar. */
+.brand-text-gradient {
+  @apply bg-linear-to-r from-brand-700 via-brand-600 to-highlight-600 bg-clip-text text-transparent;
 }

@@ -56,7 +56,7 @@ function MenusPage() {
   const queryClient = useQueryClient();
   // Orang tua hanya boleh membaca katalog; seluruh kontrol ubah data
   // disembunyikan agar tidak menyesatkan (API tetap menolak dengan 403).
-  const { isAdmin } = useAuth();
+  const { canManageCatalog } = useAuth();
 
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
@@ -199,12 +199,12 @@ function MenusPage() {
       <PageHeader
         title="Menu Snack"
         description={
-          isAdmin
+          canManageCatalog
             ? "Katalog menu — makanan utama beserta buah pendamping."
             : "Daftar menu snack beserta komponennya. Hanya admin yang dapat mengubah katalog ini."
         }
         action={
-          isAdmin ? (
+          canManageCatalog ? (
             <Button onClick={openCreate}>
               <Plus className="h-4 w-4" />
               Menu baru
@@ -217,7 +217,7 @@ function MenusPage() {
         <div
           className={`mb-4 rounded-lg border px-4 py-3 text-sm ${
             banner.kind === "ok"
-              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+              ? "border-brand-200 bg-brand-50 text-brand-700"
               : "border-red-200 bg-red-50 text-red-700"
           }`}
         >
@@ -255,7 +255,7 @@ function MenusPage() {
                 : "Tambahkan menu beserta komponennya."
             }
             action={
-              !search && isAdmin ? (
+              !search && canManageCatalog ? (
                 <Button onClick={openCreate}>Tambah menu</Button>
               ) : undefined
             }
@@ -284,7 +284,7 @@ function MenusPage() {
                       {menu.items.map((item) => (
                         <span
                           key={item.id}
-                          className="rounded-md bg-slate-100 px-2 py-0.5 text-xs text-slate-700"
+                          className="rounded-md border border-accent-200 bg-accent-50 px-2 py-0.5 text-xs text-accent-800"
                           title={
                             ITEM_TYPE_OPTIONS.find((o) => o.value === item.itemType)
                               ?.label
@@ -306,7 +306,7 @@ function MenusPage() {
                     )}
                   </div>
 
-                  {isAdmin && (
+                  {canManageCatalog && (
                     <div className="flex shrink-0 gap-2">
                       <Button
                         variant="ghost"
@@ -339,7 +339,7 @@ function MenusPage() {
       </Card>
 
       <Modal
-        open={isAdmin && modalOpen}
+        open={canManageCatalog && modalOpen}
         title={editing ? "Ubah menu" : "Menu baru"}
         onClose={() => setModalOpen(false)}
         footer={
@@ -443,7 +443,7 @@ function MenusPage() {
                       onClick={() => toggleCategory(category.id)}
                       className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
                         checked
-                          ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                          ? "border-brand-300 bg-brand-50 text-brand-700"
                           : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
                       }`}
                     >
@@ -462,7 +462,7 @@ function MenusPage() {
               onChange={(event) =>
                 setForm({ ...form, isActive: event.target.checked })
               }
-              className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+              className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
             />
             Menu aktif (bisa dipakai pada jadwal)
           </label>

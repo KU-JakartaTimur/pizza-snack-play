@@ -149,13 +149,14 @@ class ParentRepository {
       fullName: string;
       email: string | null;
       phone: string | null;
+      /** `parent` atau `korlas` — ditentukan pemanggil, bukan hardcode. */
+      role: string;
+      /** Kelas yang dikoordinasi; hanya diisi untuk korlas. */
+      className: string | null;
       isActive: number;
     },
   ): Promise<User> {
-    const rows = await db
-      .insert(users)
-      .values({ ...values, role: "parent" })
-      .returning();
+    const rows = await db.insert(users).values(values).returning();
     return rows[0];
   }
 
@@ -167,6 +168,8 @@ class ParentRepository {
       fullName: string | null;
       email: string | null;
       phone: string | null;
+      role: string;
+      className: string | null;
       isActive: number;
       passwordHash: string;
     }>,

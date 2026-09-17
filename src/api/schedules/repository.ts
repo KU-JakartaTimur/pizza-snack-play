@@ -24,30 +24,55 @@ export interface MenuHistoryRow {
 class ScheduleRepository {
   // ── Jadwal ──────────────────────────────────────────────────
 
+  /** Jadwal satu kelas pada rentang tanggal, urut tanggal. */
   async findSchedulesBetween(
     db: Db,
     from: string,
     to: string,
+    className: string,
   ): Promise<Schedule[]> {
     return db
       .select()
       .from(schedules)
       .where(
-        and(gte(schedules.scheduleDate, from), lte(schedules.scheduleDate, to)),
+        and(
+          eq(schedules.className, className),
+          gte(schedules.scheduleDate, from),
+          lte(schedules.scheduleDate, to),
+        ),
       )
       .orderBy(asc(schedules.scheduleDate));
   }
 
+  /** Baris jadwal satu kelas pada satu tanggal. */
   async findScheduleByDate(
     db: Db,
     date: string,
+    className: string,
   ): Promise<Schedule | undefined> {
     const rows = await db
       .select()
       .from(schedules)
-      .where(eq(schedules.scheduleDate, date))
+      .where(
+        and(
+          eq(schedules.scheduleDate, date),
+          eq(schedules.className, className),
+        ),
+      )
       .limit(1);
     return rows[0];
+  }
+
+  /**
+   * Semua baris jadwal pada satu tanggal, lintas kelas.
+   * Dipakai statistik dashboard yang merangkum seluruh sekolah.
+   */
+  async findSchedulesByDate(db: Db, date: string): Promise<Schedule[]> {
+    return db
+      .select()
+      .from(schedules)
+      .where(eq(schedules.scheduleDate, date))
+      .orderBy(asc(schedules.className));
   }
 
   async findScheduleById(db: Db, id: number): Promise<Schedule | undefined> {
@@ -65,6 +90,7 @@ class ScheduleRepository {
       weekId: number | null;
       scheduleDate: string;
       dayOfWeek: number;
+      className: string;
       menuId: number | null;
       isHoliday: number;
       notes: string | null;
@@ -114,6 +140,7 @@ class ScheduleRepository {
     query: string,
     from: string,
     to: string,
+    className: string,
   ): Promise<MenuHistoryRow[]> {
     const term = likePattern(query);
 
@@ -131,6 +158,7 @@ class ScheduleRepository {
       .leftJoin(menuItems, eq(menuItems.menuId, menus.id))
       .where(
         and(
+          eq(schedules.className, className),
           eq(schedules.isHoliday, 0),
           gte(schedules.scheduleDate, from),
           lte(schedules.scheduleDate, to),

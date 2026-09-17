@@ -12,6 +12,7 @@ import type {
   MenuInput,
   MenuItemType,
 } from "@/types/catalog";
+import type { ClassListDto } from "@/types/class";
 import type {
   CopyWeekInput,
   CopyWeekResultDto,
@@ -105,26 +106,47 @@ export const api = {
       unwrapFull<null>(http.put("auth/password", { json: body })),
   },
 
+  /**
+   * Daftar kelas yang boleh diakses user — sudah dipersempit sesuai role.
+   * Dipakai untuk mengisi pemilih kelas.
+   */
+  classes: {
+    list: () => unwrap<ClassListDto>(http.get("classes")),
+  },
+
   schedules: {
-    today: () => unwrap<TodayScheduleDto>(http.get("schedules/today")),
-
-    week: (date?: string) =>
-      unwrap<WeekScheduleDto>(http.get(`schedules/week${query({ date })}`)),
-
-    month: (year: number, month: number) =>
-      unwrap<MonthScheduleDto>(
-        http.get(`schedules/month${query({ year, month })}`),
+    today: (className?: string | null) =>
+      unwrap<TodayScheduleDto>(
+        http.get(`schedules/today${query({ class: className ?? undefined })}`),
       ),
 
-    range: (from: string, to: string) =>
+    week: (date?: string, className?: string | null) =>
+      unwrap<WeekScheduleDto>(
+        http.get(
+          `schedules/week${query({ date, class: className ?? undefined })}`,
+        ),
+      ),
+
+    month: (year: number, month: number, className?: string | null) =>
+      unwrap<MonthScheduleDto>(
+        http.get(
+          `schedules/month${query({ year, month, class: className ?? undefined })}`,
+        ),
+      ),
+
+    range: (from: string, to: string, className?: string | null) =>
       unwrap<ScheduleDayDto[]>(
-        http.get(`schedules/range${query({ from, to })}`),
+        http.get(
+          `schedules/range${query({ from, to, class: className ?? undefined })}`,
+        ),
       ),
 
     /** Cari kapan sebuah menu/komponen pernah dijadwalkan. */
-    search: (q: string, from: string, to: string) =>
+    search: (q: string, from: string, to: string, className?: string | null) =>
       unwrap<MenuHistoryDto>(
-        http.get(`schedules/search${query({ q, from, to })}`),
+        http.get(
+          `schedules/search${query({ q, from, to, class: className ?? undefined })}`,
+        ),
       ),
 
     detail: (id: number) =>

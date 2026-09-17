@@ -4,6 +4,7 @@ import { CalendarRange, GraduationCap } from "lucide-react";
 import { PageHeader } from "@/components/AppShell";
 import { ScheduleDayCard } from "@/components/ScheduleDayCard";
 import { Card, CardHeader, ErrorState, Spinner } from "@/components/ui";
+import { useActiveClass } from "@/lib/active-class";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 
@@ -13,10 +14,11 @@ export const Route = createFileRoute("/_app/hari-ini")({
 
 function TodayPage() {
   const { user, students, relationship } = useAuth();
+  const activeClass = useActiveClass();
 
   const todayQuery = useQuery({
-    queryKey: ["schedules", "today"],
-    queryFn: api.schedules.today,
+    queryKey: ["schedules", "today", activeClass],
+    queryFn: () => api.schedules.today(activeClass),
   });
 
   return (
@@ -60,7 +62,7 @@ function TodayPage() {
                       key={item.id}
                       className="flex items-start gap-3 px-5 py-3"
                     >
-                      <GraduationCap className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                      <GraduationCap className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-slate-800">
                           {item.name}
@@ -80,13 +82,20 @@ function TodayPage() {
               </Card>
             )}
 
-            {user?.role === "admin" && (
+            {user && user.role !== "parent" && (
               <Card>
                 <CardHeader title="Akun" />
                 <dl className="divide-y divide-slate-100 px-5">
                   <Row label="Username" value={user.username} />
                   <Row label="Nama" value={user.fullName ?? "-"} />
-                  <Row label="Peran" value="Admin" />
+                  <Row
+                    label="Peran"
+                    value={
+                      user.role === "admin"
+                        ? "Admin"
+                        : `Korlas ${user.className ?? ""}`.trim()
+                    }
+                  />
                 </dl>
               </Card>
             )}
@@ -107,7 +116,7 @@ function TodayPage() {
                       <span
                         className={
                           day.isToday
-                            ? "font-semibold text-emerald-700"
+                            ? "font-semibold text-highlight-700"
                             : "text-slate-600"
                         }
                       >

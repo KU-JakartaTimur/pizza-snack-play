@@ -6,7 +6,7 @@ import type {
   TextareaHTMLAttributes,
 } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
-import { cn } from "@/lib/cn";
+import { cn, cnControl } from "@/lib/cn";
 
 // ── Button ────────────────────────────────────────────────────
 
@@ -15,10 +15,10 @@ type ButtonSize = "sm" | "md";
 
 const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
   primary:
-    "bg-emerald-600 text-white hover:bg-emerald-700 focus-visible:outline-emerald-600",
+    "bg-brand-600 text-white hover:bg-brand-700 focus-visible:outline-brand-600 shadow-sm",
   secondary:
-    "bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 focus-visible:outline-slate-400",
-  ghost: "text-slate-600 hover:bg-slate-100 focus-visible:outline-slate-400",
+    "bg-white text-slate-700 border border-slate-300 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 focus-visible:outline-brand-400",
+  ghost: "text-slate-600 hover:bg-slate-100 hover:text-brand-700 focus-visible:outline-brand-400",
   danger:
     "bg-red-600 text-white hover:bg-red-700 focus-visible:outline-red-600",
 };
@@ -127,18 +127,23 @@ export function Field({
 
 const CONTROL_CLASS =
   "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 " +
-  "placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 " +
+  "placeholder:text-slate-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25 " +
   "focus:outline-none disabled:bg-slate-50 disabled:text-slate-500";
 
 export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...props} className={cn(CONTROL_CLASS, className)} />;
+  return <input {...props} className={cnControl(CONTROL_CLASS, className)} />;
 }
 
 export function Textarea({
   className,
   ...props
 }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea {...props} className={cn(CONTROL_CLASS, "resize-y", className)} />;
+  return (
+    <textarea
+      {...props}
+      className={cnControl(`${CONTROL_CLASS} resize-y`, className)}
+    />
+  );
 }
 
 export function Select({
@@ -147,7 +152,7 @@ export function Select({
   ...props
 }: SelectHTMLAttributes<HTMLSelectElement>) {
   return (
-    <select {...props} className={cn(CONTROL_CLASS, "pr-8", className)}>
+    <select {...props} className={cnControl(`${CONTROL_CLASS} pr-8`, className)}>
       {children}
     </select>
   );
@@ -155,14 +160,27 @@ export function Select({
 
 // ── Badge ─────────────────────────────────────────────────────
 
-type BadgeTone = "neutral" | "success" | "warning" | "danger" | "info";
+type BadgeTone =
+  | "neutral"
+  | "success"
+  | "warning"
+  | "danger"
+  | "info"
+  | "brand"
+  | "highlight";
 
 const BADGE_TONES: Record<BadgeTone, string> = {
   neutral: "bg-slate-100 text-slate-700 border-slate-200",
-  success: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  warning: "bg-amber-50 text-amber-700 border-amber-200",
+  // Hijau limau — status positif (aktif, hari sekolah, komponen menu).
+  success: "bg-accent-50 text-accent-800 border-accent-200",
+  // Oranye persik — perlu perhatian (libur, nonaktif).
+  warning: "bg-highlight-50 text-highlight-800 border-highlight-200",
   danger: "bg-red-50 text-red-700 border-red-200",
-  info: "bg-sky-50 text-sky-700 border-sky-200",
+  // Ungu tua — penanda struktural (kategori, label admin).
+  info: "bg-brand-50 text-brand-700 border-brand-200",
+  brand: "bg-brand-600 text-white border-brand-600",
+  // Persik lebih tegas — dipakai untuk "Hari ini".
+  highlight: "bg-highlight-100 text-highlight-900 border-highlight-300",
 };
 
 export function Badge({
@@ -271,14 +289,15 @@ export function Modal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/40 p-4 sm:p-8">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-brand-950/45 p-4 sm:p-8">
       <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl border border-slate-200 my-auto">
+        <div className="brand-stripe rounded-t-2xl" />
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
           <h3 className="font-semibold text-slate-900">{title}</h3>
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 text-xl leading-none px-1"
+            className="text-slate-400 hover:text-brand-700 text-xl leading-none px-1"
             aria-label="Tutup"
           >
             ×
@@ -286,7 +305,7 @@ export function Modal({
         </div>
         <div className="px-5 py-4 space-y-4">{children}</div>
         {footer && (
-          <div className="flex justify-end gap-2 px-5 py-4 border-t border-slate-200 bg-slate-50 rounded-b-2xl">
+          <div className="flex justify-end gap-2 px-5 py-4 border-t border-slate-200 bg-brand-50/50 rounded-b-2xl">
             {footer}
           </div>
         )}

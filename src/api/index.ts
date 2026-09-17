@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import type { Env } from "../database/db";
 import authRoute from "./auth/route";
 import { categoriesRoute, menusRoute } from "./catalog/route";
+import { classesRoute } from "./classes/route";
 import { parentsRoute } from "./parents/route";
 import {
   holidaysRoute,
@@ -25,6 +26,7 @@ app.get("/health", (c) =>
 );
 
 app.route("/auth", authRoute);
+app.route("/classes", classesRoute);
 app.route("/schedules", schedulesRoute);
 app.route("/weeks", weeksRoute);
 app.route("/holidays", holidaysRoute);

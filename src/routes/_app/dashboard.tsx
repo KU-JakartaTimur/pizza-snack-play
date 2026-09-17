@@ -57,24 +57,28 @@ function DashboardContent() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard
           icon={<Users className="h-5 w-5" />}
+          tone="brand"
           label="Akun orang tua"
           value={stats.parents.total}
           hint={`${stats.parents.active} aktif`}
         />
         <MetricCard
           icon={<UtensilsCrossed className="h-5 w-5" />}
+          tone="accent"
           label="Menu"
           value={stats.menus.total}
           hint={`${stats.menus.active} aktif`}
         />
         <MetricCard
           icon={<CalendarCheck className="h-5 w-5" />}
+          tone="highlight"
           label="Entri jadwal"
           value={stats.schedules.total}
           hint="sepanjang periode"
         />
         <MetricCard
           icon={<CalendarOff className="h-5 w-5" />}
+          tone="neutral"
           label="Hari libur"
           value={stats.schedules.holidays}
           hint="tercatat"
@@ -83,16 +87,28 @@ function DashboardContent() {
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Card>
-          <CardHeader title="Hari Ini" description={formatIndonesianDate(stats.today.date)} />
+          <CardHeader
+            title="Hari Ini"
+            description={`${formatIndonesianDate(stats.today.date)} · ${stats.today.classCount} kelas terjadwal`}
+          />
           <div className="px-5 py-4">
             {stats.today.isHoliday ? (
-              <p className="text-sm font-medium text-amber-700">
+              <p className="text-sm font-medium text-highlight-700">
                 Hari libur — tidak ada jadwal snack
               </p>
-            ) : stats.today.menuName ? (
+            ) : stats.today.menuNames.length === 1 ? (
               <p className="text-lg font-semibold text-slate-900">
-                {stats.today.menuName}
+                {stats.today.menuNames[0]}
               </p>
+            ) : stats.today.menuNames.length > 1 ? (
+              <div>
+                <p className="text-lg font-semibold text-slate-900">
+                  {stats.today.menuNames.length} menu berbeda
+                </p>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  {stats.today.menuNames.join(" · ")}
+                </p>
+              </div>
             ) : (
               <p className="text-sm text-slate-500">
                 Belum ada menu untuk hari ini
@@ -125,13 +141,23 @@ function DashboardContent() {
   );
 }
 
+/** Warna ikon kartu metrik — memakai tiga warna palet aplikasi. */
+const METRIC_TONES = {
+  brand: "bg-brand-50 text-brand-600",
+  accent: "bg-accent-50 text-accent-700",
+  highlight: "bg-highlight-50 text-highlight-700",
+  neutral: "bg-slate-100 text-slate-500",
+} as const;
+
 function MetricCard({
   icon,
+  tone = "brand",
   label,
   value,
   hint,
 }: {
   icon: ReactNode;
+  tone?: keyof typeof METRIC_TONES;
   label: string;
   value: number;
   hint?: string;
@@ -139,7 +165,9 @@ function MetricCard({
   return (
     <Card className="p-5">
       <div className="flex items-start justify-between">
-        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+        <span
+          className={`flex h-10 w-10 items-center justify-center rounded-xl ${METRIC_TONES[tone]}`}
+        >
           {icon}
         </span>
       </div>

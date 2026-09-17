@@ -9,7 +9,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
-import { AdminOnly } from "@/components/AdminOnly";
+import { RoleGate } from "@/components/AdminOnly";
 import { PageHeader } from "@/components/AppShell";
 import {
   Badge,
@@ -23,6 +23,8 @@ import {
   Spinner,
 } from "@/components/ui";
 import { ApiError, api } from "@/lib/api";
+import { useActiveClass } from "@/lib/active-class";
+import { useAuth } from "@/lib/auth-context";
 import {
   addDays,
   endOfWeek,
@@ -42,17 +44,28 @@ export const Route = createFileRoute("/_app/jadwal")({
 
 const NO_MENU = "";
 
+/**
+ * Halaman kelola jadwal — admin dan korlas.
+ *
+ * Admin memilih kelas lewat pemilih kelas di header; korlas terkunci ke
+ * kelas yang dikoordinasinya (pembatasan sebenarnya tetap di API).
+ */
 function ScheduleAdminPage() {
   return (
-    <AdminOnly>
+    <RoleGate need="schedule">
       <ScheduleAdminContent />
-    </AdminOnly>
+    </RoleGate>
   );
 }
 
 function ScheduleAdminContent() {
   const queryClient = useQueryClient();
   const today = todayInWib();
+  const { isAdmin, korlasClass } = useAuth();
+  const activeClass = useActiveClass();
+
+  // Korlas selalu memakai kelasnya sendiri, apa pun pilihan di header.
+  const className = isAdmin ? activeClass : (korlasClass ?? activeClass);
 
   const [year, setYear] = useState(() => yearOf(today));
   const [month, setMonth] = useState(() => monthOf(today));
@@ -74,8 +87,10 @@ function ScheduleAdminContent() {
   }));
 
   const monthQuery = useQuery({
-    queryKey: ["schedules", "month", year, month],
-    queryFn: () => api.schedules.month(year, month),
+    queryKey: ["schedules", "month", year, month, className],
+    queryFn: () => api.schedules.month(year, month, className),
+    // Tanpa kelas terpilih belum ada jadwal yang bisa ditampilkan.
+    enabled: Boolean(className),
   });
 
   const menusQuery = useQuery({
@@ -105,6 +120,7 @@ function ScheduleAdminContent() {
       }
       return api.schedules.create({
         scheduleDate: vars.day.date,
+        className: className!,
         menuId: vars.patch.menuId ?? null,
         isHoliday: vars.patch.isHoliday ?? false,
         notes: vars.patch.notes ?? null,
@@ -172,6 +188,7 @@ function ScheduleAdminContent() {
       api.schedules.copy({
         fromDate: copyForm.fromDate,
         toDate: copyForm.toDate,
+        className: className!,
         overwrite: copyForm.overwrite,
       }),
     onSuccess: async (result) => {
@@ -220,26 +237,46 @@ function ScheduleAdminContent() {
     <>
       <PageHeader
         title="Kelola Jadwal"
-        description="Tetapkan menu, tandai hari libur, dan tambahkan catatan per hari."
+        description={
+          className
+            ? `Tetapkan menu, tandai libur kelas, dan tambahkan catatan untuk kelas ${className}.`
+            : "Tetapkan menu dan catatan per hari."
+        }
         action={
           <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" onClick={() => setCopyModalOpen(true)}>
+            <Button
+              variant="secondary"
+              disabled={!className}
+              onClick={() => setCopyModalOpen(true)}
+            >
               <Copy className="h-4 w-4" />
               Salin minggu
             </Button>
-            <Button variant="secondary" onClick={() => setHolidayModalOpen(true)}>
-              <Plus className="h-4 w-4" />
-              Hari libur
-            </Button>
+            {/* Hari libur di tabel `holidays` bersifat global (semua kelas). */}
+            {isAdmin && (
+              <Button variant="secondary" onClick={() => setHolidayModalOpen(true)}>
+                <Plus className="h-4 w-4" />
+                Hari libur
+              </Button>
+            )}
           </div>
         }
       />
+
+      {!className && (
+        <Card className="mb-6">
+          <p className="px-5 py-6 text-sm text-slate-500">
+            Belum ada kelas terpilih. Tambahkan data siswa terlebih dahulu, atau
+            pilih kelas pada pemilih di bagian atas halaman.
+          </p>
+        </Card>
+      )}
 
       {banner && (
         <div
           className={`mb-4 rounded-lg border px-4 py-3 text-sm ${
             banner.kind === "ok"
-              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+              ? "border-brand-200 bg-brand-50 text-brand-700"
               : "border-red-200 bg-red-50 text-red-700"
           }`}
         >
@@ -268,7 +305,7 @@ function ScheduleAdminContent() {
         </div>
       </Card>
 
-      {monthQuery.isPending && <Spinner />}
+      {className && monthQuery.isPending && <Spinner />}
 
       {monthQuery.isError && (
         <Card className="mb-6">
@@ -291,7 +328,7 @@ function ScheduleAdminContent() {
                   <div className="w-32 shrink-0">
                     <p
                       className={`text-sm font-medium ${
-                        day.isToday ? "text-emerald-700" : "text-slate-800"
+                        day.isToday ? "text-highlight-700" : "text-slate-800"
                       }`}
                     >
                       {day.dayName}
@@ -358,11 +395,15 @@ function ScheduleAdminContent() {
                           patch: { isHoliday: !day.isHoliday },
                         })
                       }
-                      title={day.isHoliday ? "Batalkan libur" : "Tandai libur"}
+                      title={
+                        day.isHoliday
+                          ? `Batalkan libur kelas ${className ?? ""}`.trim()
+                          : `Tandai libur kelas ${className ?? ""}`.trim()
+                      }
                     >
                       <CalendarOff
                         className={`h-4 w-4 ${
-                          day.isHoliday ? "text-amber-600" : "text-slate-400"
+                          day.isHoliday ? "text-highlight-700" : "text-slate-400"
                         }`}
                       />
                     </Button>
@@ -390,45 +431,47 @@ function ScheduleAdminContent() {
         ))}
       </div>
 
-      <Card className="mt-6">
-        <CardHeader
-          title="Hari Libur"
-          description="Tanggal yang ditandai libur akan muncul di semua halaman jadwal."
-        />
-        {holidaysQuery.data && holidaysQuery.data.length > 0 ? (
-          <ul className="divide-y divide-slate-100">
-            {holidaysQuery.data.map((holiday) => (
-              <li
-                key={holiday.id}
-                className="flex items-center justify-between gap-4 px-5 py-3"
-              >
-                <div>
-                  <p className="text-sm font-medium text-slate-800">
-                    {holiday.name}
-                  </p>
-                  <p className="text-xs text-slate-400">
-                    {formatCompactDate(holiday.date)}
-                    {holiday.description ? ` · ${holiday.description}` : ""}
-                  </p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-red-600 hover:bg-red-50"
-                  onClick={() => deleteHolidayMutation.mutate(holiday.id)}
-                  title="Hapus"
+      {isAdmin && (
+        <Card className="mt-6">
+          <CardHeader
+            title="Hari Libur"
+            description="Tanggal yang ditandai libur berlaku untuk semua kelas dan muncul di semua halaman jadwal."
+          />
+          {holidaysQuery.data && holidaysQuery.data.length > 0 ? (
+            <ul className="divide-y divide-slate-100">
+              {holidaysQuery.data.map((holiday) => (
+                <li
+                  key={holiday.id}
+                  className="flex items-center justify-between gap-4 px-5 py-3"
                 >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="px-5 py-4 text-sm text-slate-500">
-            Belum ada hari libur khusus.
-          </p>
-        )}
-      </Card>
+                  <div>
+                    <p className="text-sm font-medium text-slate-800">
+                      {holiday.name}
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      {formatCompactDate(holiday.date)}
+                      {holiday.description ? ` · ${holiday.description}` : ""}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-600 hover:bg-red-50"
+                    onClick={() => deleteHolidayMutation.mutate(holiday.id)}
+                    title="Hapus"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="px-5 py-4 text-sm text-slate-500">
+              Belum ada hari libur khusus.
+            </p>
+          )}
+        </Card>
+      )}
 
       <Modal
         open={holidayModalOpen}
@@ -540,7 +583,7 @@ function ScheduleAdminContent() {
         </Field>
 
         {copySameWeek && (
-          <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          <p className="rounded-lg border border-highlight-200 bg-highlight-50 px-3 py-2 text-xs text-highlight-800">
             Minggu sumber dan tujuan sama — pilih tanggal di minggu yang berbeda.
           </p>
         )}
@@ -548,7 +591,7 @@ function ScheduleAdminContent() {
         <label className="flex items-start gap-2.5 rounded-lg border border-slate-200 px-3 py-2.5">
           <input
             type="checkbox"
-            className="mt-0.5 h-4 w-4 accent-emerald-600"
+            className="mt-0.5 h-4 w-4 accent-brand-600"
             checked={copyForm.overwrite}
             onChange={(event) =>
               setCopyForm({ ...copyForm, overwrite: event.target.checked })

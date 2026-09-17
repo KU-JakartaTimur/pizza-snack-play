@@ -6,8 +6,14 @@ import { scheduleController } from "./controller";
 const admin = requireRole("admin");
 
 /**
- * Jadwal — dibaca oleh admin maupun orang tua.
- * Perubahan data hanya untuk admin.
+ * Penulis jadwal: admin (semua kelas) dan korlas (kelasnya sendiri saja —
+ * pembatasan kelasnya ditegakkan di controller, bukan di middleware).
+ */
+const scheduleWriters = requireRole("admin", "korlas");
+
+/**
+ * Jadwal — dibaca oleh semua role, dengan cakupan kelas yang dipersempit
+ * sesuai role (lihat `resolveReadClass`).
  *
  * Rute statis (`/today`, `/week`, `/month`, `/range`, `/search`) didaftarkan
  * sebelum `/:id` agar tidak tertangkap sebagai parameter ID.
@@ -19,10 +25,10 @@ export const schedulesRoute = new Hono<AuthEnv>()
   .get("/range", requireAuth, scheduleController.range)
   .get("/search", requireAuth, scheduleController.search)
   .get("/:id", requireAuth, scheduleController.detail)
-  .post("/", requireAuth, admin, scheduleController.create)
-  .post("/copy", requireAuth, admin, scheduleController.copy)
-  .put("/:id", requireAuth, admin, scheduleController.update)
-  .delete("/:id", requireAuth, admin, scheduleController.remove);
+  .post("/", requireAuth, scheduleWriters, scheduleController.create)
+  .post("/copy", requireAuth, scheduleWriters, scheduleController.copy)
+  .put("/:id", requireAuth, scheduleWriters, scheduleController.update)
+  .delete("/:id", requireAuth, scheduleWriters, scheduleController.remove);
 
 export const weeksRoute = new Hono<AuthEnv>().get(
   "/",

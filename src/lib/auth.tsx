@@ -72,19 +72,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState({ token: null, user: null, isReady: true });
   }, []);
 
-  const value = useMemo<AuthContextValue>(
-    () => ({
+  const value = useMemo<AuthContextValue>(() => {
+    const role = state.user?.role;
+    const isAdmin = role === "admin";
+    const isKorlas = role === "korlas";
+
+    return {
       user: state.user,
       students: state.user?.students ?? [],
       relationship: state.user?.relationship ?? null,
       token: state.token,
       isReady: state.isReady,
-      isAdmin: state.user?.role === "admin",
+      isAdmin,
+      isKorlas,
+      korlasClass: isKorlas ? (state.user?.className ?? null) : null,
+      // Korlas boleh mengubah jadwal, tetapi hanya kelasnya — pembatasan
+      // itu ditegakkan API, bukan di sini.
+      canManageSchedule: isAdmin || isKorlas,
+      canManageCatalog: isAdmin || isKorlas,
       login,
       logout,
-    }),
-    [state, login, logout],
-  );
+    };
+  }, [state, login, logout]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

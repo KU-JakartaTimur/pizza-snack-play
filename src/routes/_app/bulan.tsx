@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/AppShell";
 import { ScheduleDayCard } from "@/components/ScheduleDayCard";
 import { Button, Card, ErrorState, Spinner } from "@/components/ui";
+import { useActiveClass } from "@/lib/active-class";
 import { api } from "@/lib/api";
 import { indonesianMonthName, monthOf, yearOf, todayInWib } from "@/lib/date";
 
@@ -16,10 +17,11 @@ function MonthPage() {
   const today = todayInWib();
   const [year, setYear] = useState(() => yearOf(today));
   const [month, setMonth] = useState(() => monthOf(today));
+  const activeClass = useActiveClass();
 
   const monthQuery = useQuery({
-    queryKey: ["schedules", "month", year, month],
-    queryFn: () => api.schedules.month(year, month),
+    queryKey: ["schedules", "month", year, month, activeClass],
+    queryFn: () => api.schedules.month(year, month, activeClass),
   });
 
   const shift = (delta: number) => {
@@ -52,7 +54,11 @@ function MonthPage() {
     <>
       <PageHeader
         title="Jadwal Bulanan"
-        description="Rekap menu snack per minggu dalam satu bulan."
+        description={
+          (monthQuery.data?.className ?? activeClass)
+            ? `Rekap menu snack kelas ${monthQuery.data?.className ?? activeClass} per minggu dalam satu bulan.`
+            : "Rekap menu snack per minggu dalam satu bulan."
+        }
       />
 
       <Card className="mb-6">
@@ -105,7 +111,7 @@ function MonthPage() {
           {monthQuery.data.weeks.map((week) => (
             <section key={week.startDate}>
               <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                <span className="h-1.5 w-1.5 rounded-full bg-accent-500" />
                 {week.label}
               </h2>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
@@ -132,9 +138,9 @@ function Stat({
 }) {
   const toneClass =
     tone === "success"
-      ? "text-emerald-600"
+      ? "text-accent-700"
       : tone === "warning"
-        ? "text-amber-600"
+        ? "text-highlight-700"
         : "text-slate-700";
 
   return (

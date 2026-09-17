@@ -31,10 +31,13 @@ export type ScheduleError =
   | "not_found"
   | "duplicate_date"
   | "menu_not_found"
-  | "same_week";
+  | "same_week"
+  | "forbidden_class";
 
 /** Data pendukung yang dimuat sekali untuk sebuah rentang tanggal. */
 interface ScheduleContext {
+  /** Kelas yang sedang dilihat; `null` bila user belum punya kelas sama sekali. */
+  className: string | null;
   schedulesByDate: Map<string, Schedule>;
   holidaysByDate: Map<string, Holiday>;
   weeksByStart: Map<string, Week>;
@@ -57,14 +60,20 @@ class ScheduleService {
   /**
    * Muat semua data yang dibutuhkan untuk merender satu rentang tanggal
    * dalam 4 query — menghindari N+1 saat menampilkan jadwal sebulan.
+   *
+   * `className` menentukan kelas yang dibaca; `null` berarti user belum
+   * punya kelas, sehingga jadwalnya dikosongkan tanpa menyentuh database.
    */
   private async loadContext(
     db: Db,
     from: string,
     to: string,
+    className: string | null,
   ): Promise<ScheduleContext> {
     const [scheduleRows, holidayRows, weekRows] = await Promise.all([
-      scheduleRepository.findSchedulesBetween(db, from, to),
+      className
+        ? scheduleRepository.findSchedulesBetween(db, from, to, className)
+        : Promise.resolve<Schedule[]>([]),
       scheduleRepository.findHolidaysBetween(db, from, to),
       scheduleRepository.findWeeksOverlapping(db, from, to),
     ]);
@@ -77,6 +86,7 @@ class ScheduleService {
     );
 
     return {
+      className,
       schedulesByDate: new Map(scheduleRows.map((row) => [row.scheduleDate, row])),
       holidaysByDate: new Map(holidayRows.map((row) => [row.date, row])),
       weeksByStart: new Map(weekRows.map((row) => [row.weekStartDate, row])),
@@ -89,12 +99,14 @@ class ScheduleService {
     const schedule = ctx.schedulesByDate.get(date);
     const holiday = ctx.holidaysByDate.get(date);
 
+    // Hari libur tetap berlaku global (tabel `holidays`), apa pun kelasnya.
     const isHoliday = schedule?.isHoliday === 1 || Boolean(holiday);
 
     return {
       date,
       dayOfWeek: dayOfWeek(date),
       dayName: indonesianDayName(date),
+      className: ctx.className,
       isToday: date === ctx.today,
       isHoliday,
       holidayName: holiday?.name ?? null,
@@ -113,6 +125,7 @@ class ScheduleService {
 
     return {
       week: week ? toWeekDto(week) : null,
+      className: ctx.className,
       startDate: weekStart,
       endDate: weekEnd,
       label: formatWeekLabel(weekStart, weekEnd),
@@ -124,10 +137,10 @@ class ScheduleService {
 
   // ── Pembacaan ───────────────────────────────────────────────
 
-  async getToday(db: Db): Promise<TodayScheduleDto> {
+  async getToday(db: Db, className: string | null): Promise<TodayScheduleDto> {
     const today = todayInWib();
     const weekStart = startOfWeek(today);
-    const ctx = await this.loadContext(db, weekStart, endOfWeek(today));
+    const ctx = await this.loadContext(db, weekStart, endOfWeek(today), className);
 
     return {
       day: this.buildDay(today, ctx),
@@ -136,11 +149,15 @@ class ScheduleService {
   }
 
   /** Jadwal mingguan. `date` opsional — default hari ini (WIB). */
-  async getWeek(db: Db, date?: string): Promise<WeekScheduleDto> {
+  async getWeek(
+    db: Db,
+    className: string | null,
+    date?: string,
+  ): Promise<WeekScheduleDto> {
     const anchor = date ?? todayInWib();
     const weekStart = startOfWeek(anchor);
     const weekEnd = endOfWeek(anchor);
-    const ctx = await this.loadContext(db, weekStart, weekEnd);
+    const ctx = await this.loadContext(db, weekStart, weekEnd, className);
 
     return this.buildWeek(weekStart, ctx);
   }
@@ -149,7 +166,12 @@ class ScheduleService {
    * Jadwal bulanan, dikelompokkan per minggu (Senin–Jumat) seperti
    * struktur dokumen sumber.
    */
-  async getMonth(db: Db, year: number, month: number): Promise<MonthScheduleDto> {
+  async getMonth(
+    db: Db,
+    year: number,
+    month: number,
+    className: string | null,
+  ): Promise<MonthScheduleDto> {
     const { start, end } = monthRange(year, month);
 
     const weekStarts: string[] = [];
@@ -159,19 +181,25 @@ class ScheduleService {
 
     const from = weekStarts[0] ?? start;
     const to = addDays(weekStarts[weekStarts.length - 1] ?? start, 4);
-    const ctx = await this.loadContext(db, from, to);
+    const ctx = await this.loadContext(db, from, to, className);
 
     return {
       year,
       month,
       monthName: indonesianMonthName(month),
+      className,
       weeks: weekStarts.map((weekStart) => this.buildWeek(weekStart, ctx)),
     };
   }
 
   /** Jadwal pada rentang bebas. Maksimum 92 hari untuk membatasi beban query. */
-  async getRange(db: Db, from: string, to: string): Promise<ScheduleDayDto[]> {
-    const ctx = await this.loadContext(db, from, to);
+  async getRange(
+    db: Db,
+    from: string,
+    to: string,
+    className: string | null,
+  ): Promise<ScheduleDayDto[]> {
+    const ctx = await this.loadContext(db, from, to, className);
     const days: ScheduleDayDto[] = [];
 
     for (let cursor = from; cursor <= to; cursor = addDays(cursor, 1)) {
@@ -181,6 +209,7 @@ class ScheduleService {
     return days;
   }
 
+  /** Detail satu baris jadwal — kelasnya mengikuti baris itu sendiri. */
   async getById(db: Db, id: number): Promise<ScheduleDayDto | null> {
     const schedule = await scheduleRepository.findScheduleById(db, id);
     if (!schedule) return null;
@@ -189,6 +218,7 @@ class ScheduleService {
       db,
       schedule.scheduleDate,
       schedule.scheduleDate,
+      schedule.className,
     );
     return this.buildDay(schedule.scheduleDate, ctx);
   }
@@ -213,14 +243,12 @@ class ScheduleService {
     query: string,
     from: string,
     to: string,
+    className: string | null,
   ): Promise<MenuHistoryDto> {
     const trimmed = query.trim();
-    const rows = await scheduleRepository.searchMenuHistory(
-      db,
-      trimmed,
-      from,
-      to,
-    );
+    const rows = className
+      ? await scheduleRepository.searchMenuHistory(db, trimmed, from, to, className)
+      : [];
 
     const term = trimmed.toLowerCase();
     const byDate = new Map<string, MenuHistoryMatchDto>();
@@ -267,15 +295,21 @@ class ScheduleService {
     };
   }
 
-  // ── Penulisan (admin) ───────────────────────────────────────
+  // ── Penulisan (admin & korlas) ──────────────────────────────
 
+  /**
+   * Buat satu baris jadwal untuk satu kelas.
+   * Keunikan (tanggal, kelas) dijaga di sini agar pesannya ramah.
+   */
   async createSchedule(
     db: Db,
+    className: string,
     input: ScheduleInput,
   ): Promise<ScheduleDayDto | ScheduleError> {
     const existing = await scheduleRepository.findScheduleByDate(
       db,
       input.scheduleDate,
+      className,
     );
     if (existing) return "duplicate_date";
 
@@ -290,6 +324,7 @@ class ScheduleService {
       weekId: week.id,
       scheduleDate: input.scheduleDate,
       dayOfWeek: dayOfWeek(input.scheduleDate),
+      className,
       menuId: input.isHoliday ? null : (input.menuId ?? null),
       isHoliday: input.isHoliday ? 1 : 0,
       notes: input.notes ?? null,
@@ -333,13 +368,14 @@ class ScheduleService {
   }
 
   /**
-   * Salin jadwal Senin–Jumat dari satu minggu ke minggu lain.
+   * Salin jadwal Senin–Jumat dari satu minggu ke minggu lain **untuk satu kelas**.
    *
    * Hari yang sudah punya jadwal di minggu tujuan dilewati, kecuali
    * `overwrite` diaktifkan. Hari tanpa jadwal di minggu sumber ikut dilewati.
    */
   async copyWeek(
     db: Db,
+    className: string,
     input: CopyWeekInput,
   ): Promise<CopyWeekResultDto | ScheduleError> {
     const sourceStart = startOfWeek(input.fromDate);
@@ -352,6 +388,7 @@ class ScheduleService {
       db,
       sourceStart,
       sourceEnd,
+      className,
     );
     const sourceByDate = new Map(
       sourceSchedules.map((row) => [row.scheduleDate, row]),
@@ -374,6 +411,7 @@ class ScheduleService {
       const existing = await scheduleRepository.findScheduleByDate(
         db,
         targetDate,
+        className,
       );
 
       if (existing) {
@@ -396,6 +434,7 @@ class ScheduleService {
         weekId: week.id,
         scheduleDate: targetDate,
         dayOfWeek: dayOfWeek(targetDate),
+        className,
         menuId: source.menuId,
         isHoliday: source.isHoliday,
         notes: source.notes,

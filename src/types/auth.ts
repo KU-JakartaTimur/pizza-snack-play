@@ -1,4 +1,12 @@
-export type Role = "admin" | "parent";
+/**
+ * Role pengguna.
+ *
+ * - `admin`  — akses penuh: jadwal semua kelas, katalog, akun, hari libur.
+ * - `korlas` — koordinator kelas (orang tua yang ditunjuk): boleh mengubah
+ *              jadwal **kelasnya sendiri** serta mengelola katalog menu.
+ * - `parent` — orang tua biasa: hanya membaca jadwal kelas anaknya.
+ */
+export type Role = "admin" | "korlas" | "parent";
 
 /** Payload yang disimpan di dalam JWT. */
 export interface JwtPayload {
@@ -6,6 +14,8 @@ export interface JwtPayload {
   sub: number;
   username: string;
   role: Role;
+  /** Kelas yang dikoordinasi — hanya terisi untuk role `korlas`. */
+  className?: string | null;
   /** Unix timestamp (detik) — wajib untuk hono/jwt */
   exp: number;
 }
@@ -24,6 +34,11 @@ export interface AuthUser {
   username: string;
   fullName: string | null;
   role: Role;
+  /**
+   * Kelas yang dikoordinasi. Terisi hanya untuk role `korlas`,
+   * mis. `"1A"`. Dipakai UI untuk mengunci pilihan kelas.
+   */
+  className: string | null;
   /** Hubungan dengan siswa (`ibu` | `ayah` | `wali`). Null untuk admin. */
   relationship: string | null;
   /**

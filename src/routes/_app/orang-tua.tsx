@@ -26,7 +26,7 @@ import {
   Spinner,
 } from "@/components/ui";
 import { ApiError, api } from "@/lib/api";
-import type { ParentDto, ParentRelationship } from "@/types/account";
+import type { ManagedRole, ParentDto, ParentRelationship } from "@/types/account";
 
 export const Route = createFileRoute("/_app/orang-tua")({
   component: ParentsPage,
@@ -36,6 +36,11 @@ const RELATIONSHIP_OPTIONS: { value: ParentRelationship; label: string }[] = [
   { value: "ibu", label: "Ibu" },
   { value: "ayah", label: "Ayah" },
   { value: "wali", label: "Wali" },
+];
+
+const ROLE_OPTIONS: { value: ManagedRole; label: string }[] = [
+  { value: "parent", label: "Orang tua" },
+  { value: "korlas", label: "Korlas (koordinator kelas)" },
 ];
 
 const PER_PAGE = 20;
@@ -54,6 +59,10 @@ interface ParentForm {
   relationship: ParentRelationship;
   /** Satu orang tua boleh punya lebih dari satu anak. */
   students: FormStudent[];
+  /** `parent` biasa, atau `korlas` (koordinator kelas). */
+  role: ManagedRole;
+  /** Kelas yang dikoordinasi — hanya dipakai bila role `korlas`. */
+  className: string;
   phone: string;
   email: string;
 }
@@ -66,6 +75,8 @@ const EMPTY_FORM: ParentForm = {
   parentName: "",
   relationship: "ibu",
   students: [{ ...EMPTY_STUDENT }],
+  role: "parent",
+  className: "",
   phone: "",
   email: "",
 };
@@ -123,6 +134,10 @@ function ParentsContent() {
             className: student.className.trim() || null,
           })),
         relationship: form.relationship,
+        // `className` hanya bermakna untuk korlas — backend mengabaikannya
+        // untuk role `parent` dan membersihkannya saat role diturunkan.
+        role: form.role,
+        className: form.role === "korlas" ? form.className.trim() || null : null,
         phone: form.phone.trim() || null,
         email: form.email.trim() || null,
       };
@@ -196,6 +211,8 @@ function ParentsContent() {
       password: "",
       parentName: parent.parentName,
       relationship: parent.relationship,
+      role: parent.role,
+      className: parent.className ?? "",
       students:
         parent.students.length > 0
           ? parent.students.map((student) => ({
@@ -241,6 +258,11 @@ function ParentsContent() {
       return setFormError("Minimal satu nama anak wajib diisi");
     }
 
+    // Korlas tanpa kelas tidak punya cakupan apa pun.
+    if (form.role === "korlas" && !form.className.trim()) {
+      return setFormError("Kelas yang dikoordinasi wajib diisi untuk korlas");
+    }
+
     if (!editing) {
       if (!form.password) return setFormError("Password wajib diisi");
       if (form.password.length < 8) {
@@ -273,7 +295,7 @@ function ParentsContent() {
         <div
           className={`mb-4 rounded-lg border px-4 py-3 text-sm ${
             banner.kind === "ok"
-              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+              ? "border-brand-200 bg-brand-50 text-brand-700"
               : "border-red-200 bg-red-50 text-red-700"
           }`}
         >
@@ -340,6 +362,11 @@ function ParentsContent() {
                       <span className="ml-2 text-xs text-slate-400">
                         ({parent.relationship})
                       </span>
+                      {parent.role === "korlas" && (
+                        <Badge tone="brand" className="ml-2">
+                          Korlas {parent.className ?? "—"}
+                        </Badge>
+                      )}
                     </td>
                     <td className="px-5 py-3">
                       {parent.students.length === 0 ? (
@@ -390,7 +417,7 @@ function ParentsContent() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-amber-600 hover:bg-amber-50"
+                          className="text-highlight-700 hover:bg-highlight-50"
                           disabled={busy}
                           onClick={() => {
                             if (confirm(`Nonaktifkan akun "${parent.username}"?`)) {
@@ -525,6 +552,39 @@ function ParentsContent() {
               </Select>
             </Field>
 
+            <Field
+              label="Peran"
+              hint="Korlas boleh mengubah jadwal kelasnya sendiri dan mengelola katalog menu."
+            >
+              <Select
+                value={form.role}
+                onChange={(event) =>
+                  setForm({ ...form, role: event.target.value as ManagedRole })
+                }
+              >
+                {ROLE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+
+            {form.role === "korlas" && (
+              <Field
+                label="Kelas yang dikoordinasi"
+                hint="Mis. 1A. Korlas hanya dapat mengubah jadwal kelas ini."
+              >
+                <Input
+                  value={form.className}
+                  onChange={(event) =>
+                    setForm({ ...form, className: event.target.value })
+                  }
+                  placeholder="1A"
+                />
+              </Field>
+            )}
+
             <Field label="No. HP" hint="Opsional.">
               <Input
                 value={form.phone}
@@ -566,6 +626,7 @@ function ParentsContent() {
                       updateStudent(index, { name: event.target.value })
                     }
                     placeholder={`Nama anak ${index + 1}`}
+                    className="min-w-0 flex-1"
                   />
                   <Input
                     value={student.className}

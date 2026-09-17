@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Pizza } from "lucide-react";import { Button, Card, Field, Input } from "@/components/ui";
+import { Pizza } from "lucide-react";
+import { Button, Card, Field, Input } from "@/components/ui";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 
@@ -45,20 +46,38 @@ function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-10">
-      <div className="w-full max-w-sm">
+    <div className="brand-canvas relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10">
+      {/* Ornamen latar — tiga warna palet sebagai blob lembut. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-brand-300/30 blur-3xl"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -bottom-28 -right-20 h-80 w-80 rounded-full bg-accent-300/35 blur-3xl"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute top-1/3 -right-16 h-56 w-56 rounded-full bg-highlight-300/35 blur-3xl"
+      />
+
+      <div className="relative w-full max-w-sm">
         <div className="mb-6 text-center">
-          <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-600 text-white">
+          <span className="relative mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-brand-600 to-brand-800 text-white shadow-md">
             <Pizza className="h-6 w-6" />
+            <span className="absolute -right-1 -bottom-1 h-3.5 w-3.5 rounded-full border-2 border-white bg-accent-500" />
           </span>
-          <h1 className="text-xl font-bold text-slate-900">Pizza Snack Play</h1>
+          <h1 className="brand-text-gradient text-xl font-bold">
+            Pizza Snack Play
+          </h1>
           <p className="mt-1 text-sm text-slate-500">
             Masuk untuk melihat jadwal snack
           </p>
         </div>
 
-        <Card className="p-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <Card className="overflow-hidden">
+          <div className="brand-stripe" />
+          <form onSubmit={handleSubmit} className="space-y-4 p-6">
             <Field label="Username">
               <Input
                 value={username}

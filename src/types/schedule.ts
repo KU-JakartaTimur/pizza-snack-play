@@ -14,11 +14,16 @@ export interface WeekDto {
 /**
  * Satu hari pada jadwal. `scheduleId` null berarti belum ada entri jadwal
  * untuk tanggal tersebut (mis. akhir pekan atau data belum diimpor).
+ *
+ * Jadwal bersifat per kelas, jadi setiap hari selalu menyertakan kelas mana
+ * yang sedang dilihat.
  */
 export interface ScheduleDayDto {
   date: string;
   dayOfWeek: number;
   dayName: string;
+  /** Kelas yang sedang dilihat. `null` bila user belum punya kelas. */
+  className: string | null;
   isToday: boolean;
   isHoliday: boolean;
   holidayName: string | null;
@@ -29,6 +34,7 @@ export interface ScheduleDayDto {
 
 export interface WeekScheduleDto {
   week: WeekDto | null;
+  className: string | null;
   startDate: string;
   endDate: string;
   label: string;
@@ -39,6 +45,7 @@ export interface MonthScheduleDto {
   year: number;
   month: number;
   monthName: string;
+  className: string | null;
   weeks: WeekScheduleDto[];
 }
 
@@ -50,6 +57,11 @@ export interface TodayScheduleDto {
 
 export interface ScheduleInput {
   scheduleDate: string;
+  /**
+   * Kelas pemilik jadwal. Wajib untuk admin; untuk korlas diisi otomatis
+   * dari kelas yang dikoordinasinya (bila dikirim, harus sama).
+   */
+  className?: string;
   menuId?: number | null;
   isHoliday?: boolean;
   notes?: string | null;
@@ -93,6 +105,8 @@ export interface CopyWeekInput {
   fromDate: string;
   /** Tanggal mana pun pada minggu tujuan. */
   toDate: string;
+  /** Kelas yang disalin. Wajib untuk admin; korlas diisi otomatis. */
+  className?: string;
   /** Timpa jadwal yang sudah ada di minggu tujuan (default: lewati). */
   overwrite?: boolean;
 }

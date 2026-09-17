@@ -1,6 +1,10 @@
 import type { Context } from "hono";
 import { getDb } from "../../database/db";
-import type { ParentInput, ParentRelationship } from "../../types/account";
+import type {
+  ManagedRole,
+  ParentInput,
+  ParentRelationship,
+} from "../../types/account";
 import type { AuthEnv } from "../middleware/auth";
 import { parseId } from "../utils/params";
 import {
@@ -10,7 +14,12 @@ import {
   responseNotFound,
   responseOK,
 } from "../utils/response";
-import { RELATIONSHIPS, parentService, type ParentError } from "./service";
+import {
+  MANAGED_ROLES,
+  RELATIONSHIPS,
+  parentService,
+  type ParentError,
+} from "./service";
 
 type ParentContext = Context<AuthEnv>;
 
@@ -30,6 +39,16 @@ function mapError(c: ParentContext, error: ParentError) {
       );
     case "no_students":
       return responseBadRequest(c, "Minimal satu anak harus diisi");
+    case "invalid_role":
+      return responseBadRequest(
+        c,
+        `Role harus salah satu dari: ${MANAGED_ROLES.join(", ")}`,
+      );
+    case "class_required":
+      return responseBadRequest(
+        c,
+        "Korlas wajib memiliki kelas yang dikoordinasi",
+      );
   }
 }
 
@@ -108,6 +127,23 @@ function validateInput(
     return `Hubungan harus salah satu dari: ${RELATIONSHIPS.join(", ")}`;
   }
 
+  if (body.role !== undefined && !MANAGED_ROLES.includes(body.role as ManagedRole)) {
+    return `Role harus salah satu dari: ${MANAGED_ROLES.join(", ")}`;
+  }
+
+  if (
+    body.className !== undefined &&
+    body.className !== null &&
+    typeof body.className !== "string"
+  ) {
+    return "`className` harus teks";
+  }
+
+  // Korlas tanpa kelas tidak punya cakupan apa pun.
+  if (body.role === "korlas" && !body.className?.trim()) {
+    return "Korlas wajib memiliki kelas yang dikoordinasi";
+  }
+
   if (body.isActive !== undefined && typeof body.isActive !== "boolean") {
     return "`isActive` harus boolean";
   }
@@ -163,6 +199,8 @@ class ParentController {
         className: student.className ?? null,
       })),
       relationship: body.relationship ?? "ibu",
+      role: body.role ?? "parent",
+      className: body.className ?? null,
       phone: body.phone ?? null,
       address: body.address ?? null,
       email: body.email ?? null,

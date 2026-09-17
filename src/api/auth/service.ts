@@ -45,6 +45,7 @@ function toPublicUser(
     username: string;
     fullName: string | null;
     role: string;
+    className: string | null;
   },
   profile: ParentProfile = EMPTY_PROFILE,
 ): AuthUser {
@@ -53,6 +54,7 @@ function toPublicUser(
     username: user.username,
     fullName: user.fullName,
     role: user.role as Role,
+    className: user.className,
     relationship: profile.relationship,
     students: profile.students,
   };
@@ -83,6 +85,9 @@ class AuthService {
         sub: user.id,
         username: user.username,
         role: user.role,
+        // Korlas membawa kelasnya di token; API memakainya untuk membatasi
+        // jadwal yang boleh diubah. Mengubah kelas/role butuh login ulang.
+        className: user.className,
         exp: expiresAt,
       },
       input.secret,
@@ -129,13 +134,16 @@ class AuthService {
     return true;
   }
 
-  /** Hubungan + daftar anak untuk role `parent`; kosong untuk role lain. */
+  /**
+   * Hubungan + daftar anak untuk role `parent` dan `korlas` — korlas tetap
+   * orang tua murid, jadi anaknya ikut ditampilkan. Kosong untuk admin.
+   */
   private async parentProfileFor(
     db: Db,
     userId: number,
     role: string,
   ): Promise<ParentProfile> {
-    if (role !== "parent") return EMPTY_PROFILE;
+    if (role !== "parent" && role !== "korlas") return EMPTY_PROFILE;
 
     const found = await authRepository.findParentWithStudents(db, userId);
     if (!found) return EMPTY_PROFILE;

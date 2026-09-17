@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Plus, Tags, Trash2 } from "lucide-react";
-import { AdminOnly } from "@/components/AdminOnly";
+import { RoleGate } from "@/components/AdminOnly";
 import { PageHeader } from "@/components/AppShell";
 import {
   Badge,
@@ -26,9 +26,9 @@ const EMPTY_FORM = { name: "", color: "#10B981" };
 
 function CategoriesPage() {
   return (
-    <AdminOnly>
+    <RoleGate need="catalog">
       <CategoriesContent />
-    </AdminOnly>
+    </RoleGate>
   );
 }
 
@@ -123,7 +123,7 @@ function CategoriesContent() {
         <div
           className={`mb-4 rounded-lg border px-4 py-3 text-sm ${
             banner.kind === "ok"
-              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+              ? "border-brand-200 bg-brand-50 text-brand-700"
               : "border-red-200 bg-red-50 text-red-700"
           }`}
         >

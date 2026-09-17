@@ -15,6 +15,13 @@
       "when": 1789637603927,
       "tag": "0001_thick_pet_avengers",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1789640820029,
+      "tag": "0002_closed_red_ghost",
+      "breakpoints": true
     }
   ]
 }

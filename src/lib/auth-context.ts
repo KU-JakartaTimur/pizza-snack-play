@@ -17,6 +17,17 @@ export interface AuthContextValue {
   /** `false` selama sesi tersimpan masih diverifikasi ke server. */
   isReady: boolean;
   isAdmin: boolean;
+  /** `true` bila user adalah korlas (koordinator kelas). */
+  isKorlas: boolean;
+  /**
+   * Kelas yang dikoordinasi — hanya terisi untuk korlas.
+   * Dipakai untuk mengunci pemilih kelas di halaman kelola jadwal.
+   */
+  korlasClass: string | null;
+  /** Boleh mengubah jadwal: admin (semua kelas) atau korlas (kelasnya). */
+  canManageSchedule: boolean;
+  /** Boleh mengelola katalog menu & kategori: admin atau korlas. */
+  canManageCatalog: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
 }

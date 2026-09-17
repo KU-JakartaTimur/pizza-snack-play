@@ -26,12 +26,26 @@ class StatsService {
       today,
       today,
     );
-    const todaySchedule = await scheduleRepository.findScheduleByDate(db, today);
 
-    const todayMenu =
-      todaySchedule?.menuId != null
-        ? await catalogRepository.findMenuById(db, todaySchedule.menuId)
-        : undefined;
+    // Jadwal kini per kelas, jadi "menu hari ini" dirangkum lintas kelas.
+    const [todaySchedules, globalHoliday] = await Promise.all([
+      scheduleRepository.findSchedulesByDate(db, today),
+      scheduleRepository.findHolidayByDate(db, today),
+    ]);
+
+    const menuIds = [
+      ...new Set(
+        todaySchedules
+          .map((row) => row.menuId)
+          .filter((id): id is number => id !== null),
+      ),
+    ];
+
+    const menusById = await catalogRepository.loadMenusByIds(db, menuIds);
+
+    const menuNames = menuIds
+      .map((id) => menusById.get(id)?.name)
+      .filter((name): name is string => Boolean(name));
 
     return {
       parents: parentCounts,
@@ -51,8 +65,13 @@ class StatsService {
           },
       today: {
         date: today,
-        menuName: todayMenu?.name ?? null,
-        isHoliday: todaySchedule?.isHoliday === 1,
+        menuNames,
+        classCount: todaySchedules.length,
+        // Libur bila tanggalnya libur nasional, atau seluruh kelas diliburkan.
+        isHoliday:
+          Boolean(globalHoliday) ||
+          (todaySchedules.length > 0 &&
+            todaySchedules.every((row) => row.isHoliday === 1)),
       },
     };
   }

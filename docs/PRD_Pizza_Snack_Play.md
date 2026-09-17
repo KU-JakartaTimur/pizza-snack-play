@@ -203,36 +203,29 @@ pizza-snack-play/
 │   │   ├── schedules/            # Fitur jadwal (BARU)
 │   │   ├── categories/           # Fitur kategori (BARU)
 │   │   ├── reports/              # Ekspor PDF/Excel (BARU)
-│   │   ├── user/                 # Contoh fitur dari template
-│   │   │   ├── route.ts
-│   │   │   ├── controller.ts
-│   │   │   ├── service.ts
-│   │   │   └── repository.ts
 │   │   └── utils/
 │   │       └── response.ts       # Helper responseOK / responseError
 │   ├── database/
-│   │   ├── db.ts                 # Inisialisasi Drizzle + D1 binding
-│   │   └── schema.ts             # Drizzle schema (11 tabel)
-│   ├── routes/                   # React Router — halaman frontend
+│   │   ├── db.ts                 # Inisialisasi Drizzle + D1 binding + tipe Db
+│   │   └── schema.ts             # Drizzle schema (11 tabel) ✅
+│   ├── routes/                   # TanStack Router — halaman frontend
 │   │   ├── __root.tsx            # Root layout
-│   │   ├── index.tsx             # Halaman utama (menu hari ini)
+│   │   ├── index.tsx             # Landing page + cek koneksi ✅
 │   │   ├── login.tsx             # Halaman login (BARU)
 │   │   ├── week.tsx              # Jadwal mingguan (BARU)
 │   │   ├── month.tsx             # Jadwal bulanan (BARU)
 │   │   ├── profile.tsx           # Profil orang tua — ubah password (BARU)
-│   │   ├── admin/                # Halaman admin (BARU)
-│   │   │   ├── dashboard.tsx
-│   │   │   ├── menus.tsx
-│   │   │   ├── schedules.tsx
-│   │   │   └── parents.tsx       # Kelola akun orang tua
-│   │   └── user.tsx              # Contoh route dari template
+│   │   └── admin/                # Halaman admin (BARU)
+│   │       ├── dashboard.tsx
+│   │       ├── menus.tsx
+│   │       ├── schedules.tsx
+│   │       └── parents.tsx       # Kelola akun orang tua
 │   ├── services/                 # Service layer frontend (API client)
 │   │   ├── authService.tsx       # (BARU)
 │   │   ├── menuService.tsx       # (BARU)
-│   │   ├── scheduleService.tsx   # (BARU)
-│   │   └── userService.tsx       # Contoh dari template
+│   │   └── scheduleService.tsx   # (BARU)
 │   ├── lib/
-│   │   └── http.ts               # HTTP client (ky) wrapper
+│   │   └── http.ts               # HTTP client (ky) + injeksi JWT
 │   ├── types/
 │   │   └── apiResponse.ts        # Tipe ApiResponse
 │   ├── assets/                   # SVG / gambar
@@ -558,14 +551,16 @@ bunx wrangler secret put JWT_SECRET
 
 ### Phase 1: MVP (Core)
 - [x] Scaffold project dari `bhvr-template` (Bun + Hono + Vite + React + D1)
-- [x] Skema database (lihat dokumen Struktur Tabel)
-- [ ] Buat D1 database + konfigurasi `.env` & `wrangler.json`
-- [ ] Migrasi schema ke D1 (`drizzle-kit generate` + `migrate`)
+- [x] Skema database 11 tabel di `src/database/schema.ts` (lihat dokumen Struktur Tabel)
+- [x] File migrasi Drizzle ter-generate (`drizzle/0000_*.sql`)
+- [x] Health check endpoint `GET /api/health` + landing page cek koneksi
+- [ ] Buat D1 database + isi kredensial di `.env` & `wrangler.json`
+- [ ] Terapkan migrasi ke D1 (`drizzle-kit migrate` / `wrangler d1 migrations apply`)
 - [ ] Backend: CRUD menu + jadwal (pola Route → Controller → Service → Repository)
 - [ ] Autentikasi login (admin + orang tua) dengan JWT (`hono/jwt`)
 - [ ] Middleware RBAC (admin vs parent)
 - [ ] Admin: kelola akun orang tua (CRUD)
-- [ ] Frontend: halaman login + halaman "Hari Ini" + "Minggu Ini" (React Router v7)
+- [ ] Frontend: halaman login + halaman "Hari Ini" + "Minggu Ini" (TanStack Router)
 - [ ] Seed data dari file jadwal Agustus & September 2026
 
 ### Phase 2: Admin Dashboard

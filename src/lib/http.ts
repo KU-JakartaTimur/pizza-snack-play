@@ -1,19 +1,27 @@
 import ky from "ky";
 
-export const api = {
-  users: {
-    getAll: "users",
-    getOne: (id: number) => `users/${id}`,
-    create: "users",
-    update: (id: number) => `users/${id}`,
-    delete: (id: number) => `users/${id}`,
-  },
-};
-
+/**
+ * HTTP client untuk memanggil API Hono.
+ * `prefixUrl: "/api"` — jadi `http.get("health")` memanggil `/api/health`.
+ */
 export const http = ky.create({
   prefixUrl: "/api",
   headers: {
     "Content-Type": "application/json",
   },
-  hooks: {},
+  retry: 0,
+  hooks: {
+    beforeRequest: [
+      (request) => {
+        // Sisipkan JWT dari localStorage bila ada.
+        const token =
+          typeof localStorage !== "undefined"
+            ? localStorage.getItem("psp_token")
+            : null;
+        if (token) {
+          request.headers.set("Authorization", `Bearer ${token}`);
+        }
+      },
+    ],
+  },
 });

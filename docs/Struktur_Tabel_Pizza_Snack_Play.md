@@ -105,8 +105,8 @@ CREATE TABLE IF NOT EXISTS categories (
     name        TEXT NOT NULL UNIQUE,
     slug        TEXT NOT NULL UNIQUE,
     color       TEXT DEFAULT '#CCCCCC',   -- untuk UI badge
-    created_at  TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
-    updated_at  TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+    created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_categories_slug ON categories(slug);
@@ -122,8 +122,8 @@ CREATE TABLE IF NOT EXISTS menus (
     description TEXT,                              -- catatan opsional
     is_active   INTEGER NOT NULL DEFAULT 1,       -- 1=aktif, 0=arsip
     is_archived INTEGER NOT NULL DEFAULT 0,        -- soft delete
-    created_at  TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
-    updated_at  TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+    created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_menus_name ON menus(name);
@@ -140,8 +140,8 @@ CREATE TABLE IF NOT EXISTS menu_items (
     name         TEXT NOT NULL,                    -- mis. "Roti isi coklat", "Jeruk"
     item_type    TEXT NOT NULL DEFAULT 'main',     -- 'main' | 'fruit' | 'drink' | 'other'
     category_id  INTEGER,                          -- FK opsional ke categories
-    created_at   TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
-    updated_at   TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+    created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at   TEXT NOT NULL DEFAULT (datetime('now')),
 
     FOREIGN KEY (menu_id)     REFERENCES menus(id) ON DELETE CASCADE,
     FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
@@ -177,7 +177,7 @@ CREATE TABLE IF NOT EXISTS weeks (
     month           INTEGER NOT NULL,               -- 1–12
     year            INTEGER NOT NULL,               -- mis. 2026
     label           TEXT,                           -- mis. "Minggu 1 September 2026"
-    created_at      TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+    created_at      TEXT NOT NULL DEFAULT (datetime('now')),
 
     UNIQUE(week_start_date, week_end_date)
 );
@@ -197,8 +197,8 @@ CREATE TABLE IF NOT EXISTS schedules (
     menu_id        INTEGER,                          -- FK ke menus (NULL jika libur)
     is_holiday     INTEGER NOT NULL DEFAULT 0,       -- 1=libur, 0=ada snack
     notes          TEXT,                             -- catatan khusus
-    created_at     TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
-    updated_at     TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+    created_at     TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at     TEXT NOT NULL DEFAULT (datetime('now')),
 
     FOREIGN KEY (week_id) REFERENCES weeks(id) ON DELETE SET NULL,
     FOREIGN KEY (menu_id) REFERENCES menus(id) ON DELETE SET NULL
@@ -218,7 +218,7 @@ CREATE TABLE IF NOT EXISTS holidays (
     date        TEXT NOT NULL UNIQUE,                -- YYYY-MM-DD
     name        TEXT NOT NULL,                        -- mis. "Hari Kemerdekaan RI"
     description TEXT,
-    created_at  TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+    created_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
 ```
 
@@ -236,8 +236,8 @@ CREATE TABLE IF NOT EXISTS users (
     role          TEXT NOT NULL DEFAULT 'parent',    -- 'admin' | 'parent'
     is_active     INTEGER NOT NULL DEFAULT 1,         -- 1=aktif, 0=nonaktif
     last_login_at TEXT,                               -- timestamp login terakhir
-    created_at    TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
-    updated_at    TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+    created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_role    ON users(role);
@@ -258,8 +258,8 @@ CREATE TABLE IF NOT EXISTS parents (
     phone         TEXT,
     address       TEXT,
     is_active     INTEGER NOT NULL DEFAULT 1,
-    created_at    TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
-    updated_at    TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+    created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at    TEXT NOT NULL DEFAULT (datetime('now')),
 
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
@@ -277,7 +277,7 @@ CREATE TABLE IF NOT EXISTS settings (
     id    INTEGER PRIMARY KEY AUTOINCREMENT,
     key   TEXT NOT NULL UNIQUE,
     value TEXT,
-    updated_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 ```
 
@@ -291,7 +291,7 @@ CREATE TABLE IF NOT EXISTS import_logs (
     records_added INTEGER NOT NULL DEFAULT 0,
     status        TEXT NOT NULL DEFAULT 'success',   -- 'success' | 'partial' | 'failed'
     error_message TEXT,
-    imported_at   TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+    imported_at   TEXT NOT NULL DEFAULT (datetime('now'))
 );
 ```
 
@@ -593,8 +593,8 @@ export const categories = sqliteTable('categories', {
   name:      text('name').notNull().unique(),
   slug:      text('slug').notNull().unique(),
   color:     text('color').default('#CCCCCC'),
-  createdAt: text('created_at').notNull().default(sql`(datetime('now', 'localtime'))`),
-  updatedAt: text('updated_at').notNull().default(sql`(datetime('now', 'localtime'))`),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+  updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
 });
 
 // ─── menus ───────────────────────────────────────────
@@ -604,8 +604,8 @@ export const menus = sqliteTable('menus', {
   description: text('description'),
   isActive:    integer('is_active').notNull().default(1),
   isArchived:  integer('is_archived').notNull().default(0),
-  createdAt:   text('created_at').notNull().default(sql`(datetime('now', 'localtime'))`),
-  updatedAt:   text('updated_at').notNull().default(sql`(datetime('now', 'localtime'))`),
+  createdAt:   text('created_at').notNull().default(sql`(datetime('now'))`),
+  updatedAt:   text('updated_at').notNull().default(sql`(datetime('now'))`),
 });
 
 // ─── menu_items ──────────────────────────────────────
@@ -615,8 +615,8 @@ export const menuItems = sqliteTable('menu_items', {
   name:        text('name').notNull(),
   itemType:    text('item_type').notNull().default('main'), // 'main' | 'fruit' | 'drink' | 'other'
   categoryId:  integer('category_id').references(() => categories.id, { onDelete: 'set null' }),
-  createdAt:   text('created_at').notNull().default(sql`(datetime('now', 'localtime'))`),
-  updatedAt:   text('updated_at').notNull().default(sql`(datetime('now', 'localtime'))`),
+  createdAt:   text('created_at').notNull().default(sql`(datetime('now'))`),
+  updatedAt:   text('updated_at').notNull().default(sql`(datetime('now'))`),
 });
 
 // ─── menu_categories (M2M) ───────────────────────────
@@ -633,7 +633,7 @@ export const weeks = sqliteTable('weeks', {
   month:         integer('month').notNull(),
   year:          integer('year').notNull(),
   label:         text('label'),
-  createdAt:     text('created_at').notNull().default(sql`(datetime('now', 'localtime'))`),
+  createdAt:     text('created_at').notNull().default(sql`(datetime('now'))`),
 });
 
 // ─── schedules ───────────────────────────────────────
@@ -645,8 +645,8 @@ export const schedules = sqliteTable('schedules', {
   menuId:       integer('menu_id').references(() => menus.id, { onDelete: 'set null' }),
   isHoliday:    integer('is_holiday').notNull().default(0),
   notes:        text('notes'),
-  createdAt:    text('created_at').notNull().default(sql`(datetime('now', 'localtime'))`),
-  updatedAt:    text('updated_at').notNull().default(sql`(datetime('now', 'localtime'))`),
+  createdAt:    text('created_at').notNull().default(sql`(datetime('now'))`),
+  updatedAt:    text('updated_at').notNull().default(sql`(datetime('now'))`),
 });
 
 // ─── holidays ────────────────────────────────────────
@@ -655,7 +655,7 @@ export const holidays = sqliteTable('holidays', {
   date:        text('date').notNull().unique(),
   name:        text('name').notNull(),
   description: text('description'),
-  createdAt:   text('created_at').notNull().default(sql`(datetime('now', 'localtime'))`),
+  createdAt:   text('created_at').notNull().default(sql`(datetime('now'))`),
 });
 
 // ─── users (Admin & Orang Tua) ──────────────────────
@@ -669,8 +669,8 @@ export const users = sqliteTable('users', {
   role:         text('role').notNull().default('parent'), // 'admin' | 'parent'
   isActive:     integer('is_active').notNull().default(1),
   lastLoginAt:  text('last_login_at'),
-  createdAt:    text('created_at').notNull().default(sql`(datetime('now', 'localtime'))`),
-  updatedAt:    text('updated_at').notNull().default(sql`(datetime('now', 'localtime'))`),
+  createdAt:    text('created_at').notNull().default(sql`(datetime('now'))`),
+  updatedAt:    text('updated_at').notNull().default(sql`(datetime('now'))`),
 });
 
 // ─── parents (Profil Orang Tua) ─────────────────────
@@ -684,8 +684,8 @@ export const parents = sqliteTable('parents', {
   phone:        text('phone'),
   address:      text('address'),
   isActive:     integer('is_active').notNull().default(1),
-  createdAt:    text('created_at').notNull().default(sql`(datetime('now', 'localtime'))`),
-  updatedAt:    text('updated_at').notNull().default(sql`(datetime('now', 'localtime'))`),
+  createdAt:    text('created_at').notNull().default(sql`(datetime('now'))`),
+  updatedAt:    text('updated_at').notNull().default(sql`(datetime('now'))`),
 });
 
 // ─── settings ────────────────────────────────────────
@@ -693,7 +693,7 @@ export const settings = sqliteTable('settings', {
   id:        integer('id').primaryKey({ autoIncrement: true }),
   key:       text('key').notNull().unique(),
   value:     text('value'),
-  updatedAt: text('updated_at').notNull().default(sql`(datetime('now', 'localtime'))`),
+  updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
 });
 
 // ─── import_logs ─────────────────────────────────────
@@ -703,7 +703,7 @@ export const importLogs = sqliteTable('import_logs', {
   recordsAdded: integer('records_added').notNull().default(0),
   status:       text('status').notNull().default('success'),
   errorMessage: text('error_message'),
-  importedAt:   text('imported_at').notNull().default(sql`(datetime('now', 'localtime'))`),
+  importedAt:   text('imported_at').notNull().default(sql`(datetime('now'))`),
 });
 ```
 

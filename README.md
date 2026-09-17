@@ -64,27 +64,26 @@ pizza-snack-play/
 ├── src/
 │   ├── api/                      # Cloudflare Worker — Hono backend
 │   │   ├── index.ts              # Worker entry point (basePath /api)
-│   │   ├── auth/                 # Login, logout, me, ubah password
-│   │   ├── parents/              # CRUD akun orang tua
-│   │   ├── menus/                # CRUD menu snack
-│   │   ├── schedules/            # CRUD jadwal
-│   │   ├── categories/           # CRUD kategori
-│   │   ├── reports/              # Ekspor PDF/Excel + statistik
-│   │   ├── user/                 # Contoh fitur dari template
-│   │   └── utils/response.ts     # Helper responseOK / responseError
+│   │   ├── utils/response.ts     # Helper responseOK / responseError
+│   │   ├── auth/                 # (rencana) Login, logout, me, ubah password
+│   │   ├── parents/              # (rencana) CRUD akun orang tua
+│   │   ├── menus/                # (rencana) CRUD menu snack
+│   │   ├── schedules/            # (rencana) CRUD jadwal
+│   │   ├── categories/           # (rencana) CRUD kategori
+│   │   └── reports/              # (rencana) Ekspor PDF/Excel + statistik
 │   ├── database/
-│   │   ├── db.ts                 # Inisialisasi Drizzle + D1 binding
-│   │   └── schema.ts             # Drizzle schema (11 tabel)
-│   ├── routes/                   # React Router — halaman frontend
+│   │   ├── db.ts                 # Inisialisasi Drizzle + D1 binding + tipe Db
+│   │   └── schema.ts             # Drizzle schema (11 tabel) ✅
+│   ├── routes/                   # TanStack Router — halaman frontend
 │   │   ├── __root.tsx            # Root layout
-│   │   ├── index.tsx             # Menu hari ini
-│   │   ├── login.tsx             # Halaman login
-│   │   ├── week.tsx              # Jadwal mingguan
-│   │   ├── month.tsx             # Jadwal bulanan
-│   │   ├── profile.tsx           # Profil — ubah password
-│   │   └── admin/                # Dashboard, menu, jadwal, kelola orang tua
-│   ├── services/                 # Service layer frontend (API client)
-│   ├── lib/http.ts               # HTTP client (ky) wrapper
+│   │   ├── index.tsx             # Landing page + cek koneksi ✅
+│   │   ├── login.tsx             # (rencana) Halaman login
+│   │   ├── week.tsx              # (rencana) Jadwal mingguan
+│   │   ├── month.tsx             # (rencana) Jadwal bulanan
+│   │   ├── profile.tsx           # (rencana) Profil — ubah password
+│   │   └── admin/                # (rencana) Dashboard, menu, jadwal, orang tua
+│   ├── services/                 # (rencana) Service layer frontend (API client)
+│   ├── lib/http.ts               # HTTP client (ky) + injeksi JWT
 │   ├── types/apiResponse.ts      # Tipe ApiResponse
 │   ├── assets/                   # SVG / gambar
 │   ├── index.css                 # Global styles (Tailwind)
@@ -142,12 +141,15 @@ Semua endpoint berada di bawah `basePath /api`. Kecuali `POST /api/auth/login`, 
 
 | Grup | Endpoint | Role |
 |------|----------|------|
+| **Health** | `GET /health` | Public ✅ |
 | **Auth** | `POST /auth/login` · `POST /auth/logout` · `GET /auth/me` · `PUT /auth/password` | Public → Authenticated |
 | **Parents** | `GET/POST/PUT/DELETE /parents` | Admin |
 | **Menus** | `GET/POST/PUT/DELETE /menus` | Admin (Parent: GET) |
 | **Schedules** | `GET /schedules/today` · `/week` · `/month` · `POST/DELETE` | Admin (Parent: GET) |
 | **Categories** | `GET/POST /categories` | Admin (Parent: GET) |
 | **Reports** | `GET /reports/.../pdf` · `/excel` · `/stats` | Admin, Parent |
+
+Yang bertanda ✅ sudah diimplementasikan; sisanya masih rencana.
 
 Detail lengkap: [`docs/PRD_Pizza_Snack_Play.md`](docs/PRD_Pizza_Snack_Play.md) section 7.
 
@@ -264,7 +266,7 @@ bun run lint       # ESLint
 
 | Phase | Scope | Status |
 |-------|-------|--------|
-| **1. MVP** | Scaffold project, skema DB, migrasi D1, backend CRUD, autentikasi JWT, RBAC, kelola akun orang tua, frontend login + jadwal, seed data | Scaffold & skema selesai |
+| **1. MVP** | Scaffold project, skema DB (11 tabel), migrasi D1, backend CRUD, autentikasi JWT, RBAC, kelola akun orang tua, frontend login + jadwal, seed data | Scaffold + skema + migrasi file selesai |
 | **2. Admin Dashboard** | Dashboard lengkap, manajemen jadwal mingguan/bulanan, duplikasi jadwal, kategori & tagging | Pending |
 | **3. Ekspor & Cetak** | Ekspor PDF mingguan/bulanan, Excel, cetak dari browser | Pending |
 | **4. Notifikasi** | Push notification (PWA), WhatsApp broadcast (opsional) | Pending |

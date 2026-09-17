@@ -450,6 +450,285 @@ section("15. CRUD orang tua (admin)");
   check("aksi = deleted", hard.data?.action === "deleted", hard.data?.action);
 }
 
+// ── 6. Pencarian riwayat menu ─────────────────────────────────
+
+section("16. Pencarian riwayat menu");
+{
+  const iso = (date) => date.toISOString().slice(0, 10);
+  const from = iso(new Date(Date.now() - 180 * 86_400_000));
+  const to = iso(new Date());
+  const range = `from=${from}&to=${to}`;
+
+  const noQuery = await call("GET", `/schedules/search?${range}`, {
+    token: adminToken,
+  });
+  check("tanpa `q` -> 400", noQuery.status === 400, `got ${noQuery.status}`);
+
+  const blankQuery = await call("GET", `/schedules/search?q=%20&${range}`, {
+    token: adminToken,
+  });
+  check("`q` hanya spasi -> 400", blankQuery.status === 400, `got ${blankQuery.status}`);
+
+  const noRange = await call("GET", "/schedules/search?q=jeruk", {
+    token: adminToken,
+  });
+  check("tanpa rentang -> 400", noRange.status === 400, `got ${noRange.status}`);
+
+  const reversed = await call(
+    "GET",
+    "/schedules/search?q=jeruk&from=2026-12-31&to=2026-01-01",
+    { token: adminToken },
+  );
+  check("rentang terbalik -> 400", reversed.status === 400, `got ${reversed.status}`);
+
+  const tooWide = await call(
+    "GET",
+    "/schedules/search?q=jeruk&from=2020-01-01&to=2026-01-01",
+    { token: adminToken },
+  );
+  check("rentang > 400 hari -> 400", tooWide.status === 400, `got ${tooWide.status}`);
+
+  const hit = await call("GET", `/schedules/search?q=jeruk&${range}`, {
+    token: adminToken,
+  });
+  check("GET /schedules/search -> 200", hit.status === 200, `got ${hit.status}`);
+  check("query di-echo", hit.data?.query === "jeruk", hit.data?.query);
+  check(
+    "ada hasil untuk 'jeruk'",
+    (hit.data?.totalMatches ?? 0) > 0,
+    `total=${hit.data?.totalMatches}`,
+  );
+  check(
+    "totalMatches cocok dengan panjang matches",
+    hit.data?.totalMatches === hit.data?.matches?.length,
+    `total=${hit.data?.totalMatches} len=${hit.data?.matches?.length}`,
+  );
+  check(
+    "hasil terurut menaik",
+    (hit.data?.matches ?? []).every(
+      (m, i, arr) => i === 0 || arr[i - 1].date <= m.date,
+    ),
+  );
+  check(
+    "satu tanggal hanya muncul sekali",
+    new Set((hit.data?.matches ?? []).map((m) => m.date)).size ===
+      hit.data?.matches?.length,
+  );
+  check(
+    "setiap hasil membawa nama menu",
+    (hit.data?.matches ?? []).every((m) => typeof m.menuName === "string"),
+  );
+  check(
+    "'jeruk' terdeteksi sebagai komponen",
+    (hit.data?.matches ?? []).some((m) =>
+      m.matchedItems.some((item) => item.name.toLowerCase().includes("jeruk")),
+    ),
+  );
+  check(
+    "komponen hasil punya itemType valid",
+    (hit.data?.matches ?? []).every((m) =>
+      m.matchedItems.every((item) =>
+        ["main", "fruit", "drink", "other"].includes(item.itemType),
+      ),
+    ),
+  );
+
+  const miss = await call("GET", `/schedules/search?q=zzz-tidak-ada&${range}`, {
+    token: adminToken,
+  });
+  check(
+    "kata kunci tanpa hasil -> totalMatches 0",
+    miss.data?.totalMatches === 0,
+    `total=${miss.data?.totalMatches}`,
+  );
+
+  // Wildcard LIKE harus diperlakukan sebagai karakter literal.
+  const wildcard = await call("GET", `/schedules/search?q=%25&${range}`, {
+    token: adminToken,
+  });
+  check(
+    "'%' diperlakukan literal -> 0 hasil",
+    wildcard.data?.totalMatches === 0,
+    `total=${wildcard.data?.totalMatches}`,
+  );
+
+  const underscore = await call("GET", `/schedules/search?q=_&${range}`, {
+    token: adminToken,
+  });
+  check(
+    "'_' diperlakukan literal -> 0 hasil",
+    underscore.data?.totalMatches === 0,
+    `total=${underscore.data?.totalMatches}`,
+  );
+
+  const asParent = await call("GET", `/schedules/search?q=jeruk&${range}`, {
+    token: parentToken,
+  });
+  check("orang tua boleh mencari -> 200", asParent.status === 200, `got ${asParent.status}`);
+
+  const noToken = await call("GET", `/schedules/search?q=jeruk&${range}`);
+  check("tanpa token -> 401", noToken.status === 401, `got ${noToken.status}`);
+}
+
+// ── 7. Duplikasi jadwal antar minggu ──────────────────────────
+
+section("17. Duplikasi jadwal antar minggu");
+{
+  const isoDate = (date) => date.toISOString().slice(0, 10);
+
+  /** Senin dari minggu yang memuat `base`, digeser `weeks` minggu. */
+  function mondayOf(base, weeks) {
+    const date = new Date(`${base}T00:00:00Z`);
+    const dow = date.getUTCDay(); // 0 = Minggu
+    date.setUTCDate(date.getUTCDate() + (dow === 0 ? 1 : 1 - dow) + weeks * 7);
+    return isoDate(date);
+  }
+
+  const addDays = (value, days) =>
+    isoDate(new Date(new Date(`${value}T00:00:00Z`).getTime() + days * 86_400_000));
+
+  // Tanggal jauh di masa depan agar tidak bertabrakan dengan data seed.
+  const source = mondayOf("2031-06-15", 0);
+  const target = mondayOf("2031-06-15", 1);
+
+  /** Hapus semua jadwal pada minggu yang memuat `date` — agar uji idempoten. */
+  async function clearWeek(date) {
+    const week = await call("GET", `/schedules/week?date=${date}`, {
+      token: adminToken,
+    });
+    for (const day of week.data?.days ?? []) {
+      if (day.scheduleId) {
+        await call("DELETE", `/schedules/${day.scheduleId}`, { token: adminToken });
+      }
+    }
+  }
+
+  await clearWeek(source);
+  await clearWeek(target);
+
+  const menus = await call("GET", "/menus?active=true", { token: adminToken });
+  const menuId = menus.data?.[0]?.id;
+  check("ada menu aktif untuk diuji", Number.isInteger(menuId), `menuId=${menuId}`);
+
+  // Sumber: Senin & Selasa saja.
+  const createdA = await call("POST", "/schedules", {
+    token: adminToken,
+    body: { scheduleDate: source, menuId },
+  });
+  const createdB = await call("POST", "/schedules", {
+    token: adminToken,
+    body: { scheduleDate: addDays(source, 1), menuId },
+  });
+  check("siapkan jadwal sumber Senin -> 201", createdA.status === 201, `got ${createdA.status}`);
+  check("siapkan jadwal sumber Selasa -> 201", createdB.status === 201, `got ${createdB.status}`);
+
+  const sameWeek = await call("POST", "/schedules/copy", {
+    token: adminToken,
+    body: { fromDate: source, toDate: addDays(source, 2) },
+  });
+  check("minggu sumber = tujuan -> 400", sameWeek.status === 400, `got ${sameWeek.status}`);
+
+  const badDate = await call("POST", "/schedules/copy", {
+    token: adminToken,
+    body: { fromDate: "bukan-tanggal", toDate: target },
+  });
+  check("`fromDate` tidak valid -> 400", badDate.status === 400, `got ${badDate.status}`);
+
+  const asParentCopy = await call("POST", "/schedules/copy", {
+    token: parentToken,
+    body: { fromDate: source, toDate: target },
+  });
+  check("orang tua ditolak -> 403", asParentCopy.status === 403, `got ${asParentCopy.status}`);
+
+  // Salin pertama: 2 dibuat, 3 dilewati (Rabu–Jumat tanpa sumber).
+  const copy1 = await call("POST", "/schedules/copy", {
+    token: adminToken,
+    body: { fromDate: source, toDate: target },
+  });
+  check("POST /schedules/copy -> 201", copy1.status === 201, `got ${copy1.status}`);
+  check("created = 2", copy1.data?.created === 2, `created=${copy1.data?.created}`);
+  check("updated = 0", copy1.data?.updated === 0, `updated=${copy1.data?.updated}`);
+  check("skipped = 3", copy1.data?.skipped === 3, `skipped=${copy1.data?.skipped}`);
+  check("ada label sumber & tujuan", Boolean(copy1.data?.sourceLabel && copy1.data?.targetLabel));
+
+  const targetWeek = await call("GET", `/schedules/week?date=${target}`, {
+    token: adminToken,
+  });
+  check(
+    "Senin tujuan terisi menu sumber",
+    targetWeek.data?.days?.[0]?.menu?.id === menuId,
+    `menuId=${targetWeek.data?.days?.[0]?.menu?.id}`,
+  );
+  check(
+    "Selasa tujuan terisi menu sumber",
+    targetWeek.data?.days?.[1]?.menu?.id === menuId,
+    `menuId=${targetWeek.data?.days?.[1]?.menu?.id}`,
+  );
+  check(
+    "Rabu tujuan tetap kosong",
+    targetWeek.data?.days?.[2]?.scheduleId === null,
+    `scheduleId=${targetWeek.data?.days?.[2]?.scheduleId}`,
+  );
+
+  // Salin kedua tanpa overwrite: semuanya dilewati.
+  const copy2 = await call("POST", "/schedules/copy", {
+    token: adminToken,
+    body: { fromDate: source, toDate: target },
+  });
+  check("salin ulang tanpa overwrite -> created 0", copy2.data?.created === 0, `created=${copy2.data?.created}`);
+  check("salin ulang tanpa overwrite -> skipped 5", copy2.data?.skipped === 5, `skipped=${copy2.data?.skipped}`);
+
+  // Salin ketiga dengan overwrite.
+  const copy3 = await call("POST", "/schedules/copy", {
+    token: adminToken,
+    body: { fromDate: source, toDate: target, overwrite: true },
+  });
+  check("overwrite -> updated 2", copy3.data?.updated === 2, `updated=${copy3.data?.updated}`);
+  check("overwrite -> created 0", copy3.data?.created === 0, `created=${copy3.data?.created}`);
+
+  // Hari libur ikut tersalin, tetapi tanpa menu.
+  const holidayDate = addDays(source, 2);
+  await call("POST", "/schedules", {
+    token: adminToken,
+    body: { scheduleDate: holidayDate, isHoliday: true, notes: "Libur uji" },
+  });
+  const copy4 = await call("POST", "/schedules/copy", {
+    token: adminToken,
+    body: { fromDate: source, toDate: target },
+  });
+  check("hari libur ikut tersalin -> created 1", copy4.data?.created === 1, `created=${copy4.data?.created}`);
+
+  const afterHoliday = await call("GET", `/schedules/week?date=${target}`, {
+    token: adminToken,
+  });
+  check(
+    "Rabu tujuan jadi libur",
+    afterHoliday.data?.days?.[2]?.isHoliday === true,
+    `isHoliday=${afterHoliday.data?.days?.[2]?.isHoliday}`,
+  );
+  check(
+    "hari libur tidak menyimpan menu",
+    afterHoliday.data?.days?.[2]?.menu === null,
+    JSON.stringify(afterHoliday.data?.days?.[2]?.menu),
+  );
+  check(
+    "catatan ikut tersalin",
+    afterHoliday.data?.days?.[2]?.notes === "Libur uji",
+    afterHoliday.data?.days?.[2]?.notes,
+  );
+
+  // Bersihkan jejak uji.
+  await clearWeek(source);
+  await clearWeek(target);
+  const cleaned = await call("GET", `/schedules/week?date=${target}`, {
+    token: adminToken,
+  });
+  check(
+    "pembersihan berhasil",
+    (cleaned.data?.days ?? []).every((day) => day.scheduleId === null),
+  );
+}
+
 // ── Ringkasan ─────────────────────────────────────────────────
 
 console.log(`\n=== HASIL: ${pass} pass, ${fail} fail ===`);

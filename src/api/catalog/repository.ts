@@ -8,6 +8,7 @@ import {
   schedules,
 } from "../../database/schema";
 import type { Category, Menu, MenuItem } from "../../database/schema";
+import { likePattern } from "../utils/sql";
 import type {
   CategoryDto,
   MenuDto,
@@ -124,7 +125,7 @@ class CatalogRepository {
     const filters = [];
 
     if (options.search) {
-      const term = `%${options.search}%`;
+      const term = likePattern(options.search);
       filters.push(
         or(like(menus.name, term), like(menus.description, term)),
       );

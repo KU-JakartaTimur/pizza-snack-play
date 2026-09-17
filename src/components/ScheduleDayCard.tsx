@@ -2,25 +2,16 @@ import { CalendarOff, StickyNote, UtensilsCrossed } from "lucide-react";
 import { Badge } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { formatIndonesianDate, relativeDayLabel } from "@/lib/date";
+import { ITEM_TYPE_LABELS, ITEM_TYPE_ORDER } from "@/lib/item-types";
 import type { MenuItemType } from "@/types/catalog";
 import type { ScheduleDayDto } from "@/types/schedule";
 
-const ITEM_TYPE_LABELS: Record<MenuItemType, string> = {
-  main: "Makanan utama",
-  fruit: "Buah",
-  drink: "Minuman",
-  other: "Pelengkap",
-};
-
 /** Kelompokkan komponen menu berdasarkan jenisnya, urutan tetap. */
 function groupItems(items: { itemType: MenuItemType; name: string }[]) {
-  const order: MenuItemType[] = ["main", "fruit", "drink", "other"];
-  return order
-    .map((type) => ({
-      type,
-      names: items.filter((item) => item.itemType === type).map((i) => i.name),
-    }))
-    .filter((group) => group.names.length > 0);
+  return ITEM_TYPE_ORDER.map((type) => ({
+    type,
+    names: items.filter((item) => item.itemType === type).map((i) => i.name),
+  })).filter((group) => group.names.length > 0);
 }
 
 export function ScheduleDayCard({

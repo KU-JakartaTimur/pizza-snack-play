@@ -6,13 +6,14 @@
 | Field | Value |
 |-------|-------|
 | **Nama Produk** | Pizza Snack Play |
-| **Versi Dokumen** | 1.2 |
+| **Versi Dokumen** | 1.3 |
 | **Tanggal** | 17 September 2026 |
 | **Stack Teknologi** | BHVR — Bun + Hono + Vite + React (Cloudflare Workers + D1) |
 | **Status** | Draft for Review |
 | **Sumber Data** | Jadwal Piket Snack — Sekolah (Sept 2026 & Agustus 2026) |
 | **Perubahan v1.1** | Akses orang tua diubah dari publik (tanpa login) menjadi wajib login (autentikasi) |
 | **Perubahan v1.2** | Stack disesuaikan dengan template `bhvr-template` yang sebenarnya: React 19 (bukan Vue 3), Cloudflare Workers + D1 (bukan bun:sqlite lokal) |
+| **Perubahan v1.3** | Phase 2 selesai: pencarian riwayat menu (`/schedules/search`) & duplikasi jadwal antar minggu (`/schedules/copy`); daftar endpoint diselaraskan dengan implementasi |
 
 ---
 
@@ -331,13 +332,20 @@ JWT_SECRET=              # (BARU) untuk signing JWT
 ### 7.4 Schedule Endpoints
 | Method | Path | Deskripsi | Role |
 |--------|------|-----------|------|
-| GET | `/api/schedules/today` | Jadwal hari ini | Admin, Parent |
-| GET | `/api/schedules/week?date=YYYY-MM-DD` | Jadwal minggu ini | Admin, Parent |
-| GET | `/api/schedules/month?month=YYYY-MM` | Jadwal bulanan | Admin, Parent |
-| POST | `/api/schedules` | Set jadwal untuk tanggal | Admin |
-| POST | `/api/schedules/week` | Set jadwal untuk rentang minggu | Admin |
-| POST | `/api/schedules/duplicate` | Duplikasi jadwal minggu ke minggu lain | Admin |
+| GET | `/api/schedules/today` | Jadwal hari ini (WIB) + minggu berjalan | Admin, Parent |
+| GET | `/api/schedules/week?date=YYYY-MM-DD` | Jadwal Senin–Jumat pada minggu tersebut | Admin, Parent |
+| GET | `/api/schedules/month?year=YYYY&month=M` | Jadwal bulanan, dikelompokkan per minggu | Admin, Parent |
+| GET | `/api/schedules/range?from=&to=` | Rentang bebas (maks. 92 hari) | Admin, Parent |
+| GET | `/api/schedules/search?q=&from=&to=` | Cari tanggal di mana menu/komponen pernah dijadwalkan (maks. 400 hari) | Admin, Parent |
+| GET | `/api/schedules/:id` | Detail satu entri jadwal | Admin, Parent |
+| POST | `/api/schedules` | Set jadwal untuk satu tanggal | Admin |
+| POST | `/api/schedules/copy` | Salin jadwal Senin–Jumat ke minggu lain (`overwrite` opsional) | Admin |
+| PUT | `/api/schedules/:id` | Ubah menu / libur / catatan | Admin |
 | DELETE | `/api/schedules/:id` | Hapus jadwal | Admin |
+| GET | `/api/weeks?year=&month=` | Daftar minggu pada bulan tersebut | Admin, Parent |
+| GET | `/api/holidays?from=&to=` | Daftar hari libur | Admin, Parent |
+| POST | `/api/holidays` | Tambah hari libur | Admin |
+| DELETE | `/api/holidays/:id` | Hapus hari libur | Admin |
 
 ### 7.5 Category Endpoints
 | Method | Path | Deskripsi | Role |
@@ -373,11 +381,15 @@ JWT_SECRET=              # (BARU) untuk signing JWT
 6. Bisa lihat "Bulan Ini" dan cari menu
 7. Bisa ubah password sendiri di halaman profil
 
-### 8.3 Admin: Duplikasi Jadwal
-1. Dashboard → "Duplikasi Jadwal"
-2. Pilih minggu sumber (mis. minggu 1 September)
-3. Pilih minggu tujuan (mis. minggu 8 September)
-4. Konfirmasi → sistem copy semua jadwal, geser tanggal sesuai selisih
+### 8.3 Admin: Duplikasi Jadwal — ✅ Terimplementasi
+1. Buka `/jadwal` → klik **"Salin minggu"** di kanan atas
+2. Dialog terbuka dengan default: minggu berjalan → minggu berikutnya
+3. Ubah tanggal bila perlu; label minggu (mis. `14 - 18 September 2026`) tampil langsung di bawah input
+4. Opsional: centang **"Timpa jadwal yang sudah ada"** — bila tidak dicentang, hari yang sudah terisi di minggu tujuan dilewati
+5. Klik **"Salin sekarang"** → banner menampilkan ringkasan:
+   `Disalin 14 - 18 September 2026 → 21 - 25 September 2026: 2 dibuat, 0 diperbarui, 3 dilewati.`
+6. Hari libur ikut tersalin (tanpa menu); hari tanpa jadwal di minggu sumber dilewati
+7. Minggu sumber = minggu tujuan ditolak dengan pesan "Minggu sumber dan tujuan sama"
 
 ### 8.4 Admin: Kelola Akun Orang Tua
 1. Dashboard → "Kelola Orang Tua"
@@ -386,6 +398,15 @@ JWT_SECRET=              # (BARU) untuk signing JWT
 4. Simpan → akun dibuat, orang tua dapat login
 5. Bisa edit/nonaktifkan akun kapan saja
 6. Reset password jika orang tua lupa password
+
+### 8.5 Semua Role: Cari Riwayat Menu — ✅ Terimplementasi
+1. Klik **"Cari Menu"** di navigasi (tersedia untuk admin *dan* orang tua)
+2. Masukkan kata kunci (mis. `jeruk`) — pencarian mencocokkan **nama menu** maupun **komponennya**
+3. Atur rentang tanggal, atau pakai tombol rentang cepat: **1 bulan / 3 bulan / 6 bulan / 1 tahun** (default: 6 bulan terakhir)
+4. Klik **"Cari"** → ringkasan `Ditemukan 4 hari yang cocok dengan "jeruk".`
+5. Hasil dikelompokkan per bulan (mis. `Agustus 2026 — 2 hari`), tiap baris menampilkan hari, tanggal, nama menu, dan badge komponen yang cocok beserta jenisnya (`jeruk · Buah`)
+6. Kata kunci yang cocok disorot (highlight kuning) pada nama menu maupun nama komponen
+7. Catatan harian ikut ditampilkan bila ada (mis. `Catatan: outing`)
 
 ---
 
@@ -568,24 +589,24 @@ bunx wrangler secret put JWT_SECRET
 - [x] Frontend: halaman "Hari Ini", "Minggu Ini", dan "Bulanan"
 - [x] Frontend: halaman admin (dashboard, menu, kategori, kelola jadwal, akun orang tua)
 - [x] Frontend: halaman profil + ubah password
-- [x] Test end-to-end API — 98 skenario lolos (total 124 dengan auth)
+- [x] Test end-to-end API — 140 skenario lolos (total 166 dengan auth)
 - [x] Verifikasi browser: alur login admin & orang tua, pembatas role
 - [ ] Buat D1 database remote + isi kredensial produksi
 - [ ] Deploy ke Cloudflare Workers
 
-### Phase 2: Admin Dashboard (lanjutan)
+### Phase 2: Admin Dashboard (lanjutan) — ✅ SELESAI
 - [x] Dashboard admin dengan ringkasan data
 - [x] Manajemen jadwal bulanan (tetapkan menu, tandai libur, catatan per hari)
 - [x] Kategori & tagging menu
 - [x] Kelola akun orang tua
-- [ ] Duplikasi jadwal antar minggu
+- [x] Duplikasi jadwal antar minggu (`POST /schedules/copy` + dialog di `/jadwal`)
+- [x] Pencarian riwayat menu ("kapan jeruk disajikan?") — `GET /schedules/search` + halaman `/pencarian`
 - [ ] Bulk import akun orang tua (CSV/Excel)
 
 ### Phase 3: Ekspor & Cetak
 - [ ] Ekspor PDF jadwal mingguan/bulanan
 - [ ] Ekspor Excel
 - [ ] Cetak langsung dari browser
-- [ ] Pencarian riwayat menu ("kapan jeruk disajikan?")
 
 ### Phase 4: Notifikasi (Opsional)
 - [ ] Push notification (PWA)
@@ -603,16 +624,18 @@ bunx wrangler secret put JWT_SECRET
 | AC4 | Admin dapat membuat, edit, dan menonaktifkan akun orang tua | ✅ Done — `/orang-tua` + API `/parents` |
 | AC5 | Orang tua dapat mengubah password sendiri dari halaman profil | ✅ Done — `/profil` + `PUT /auth/password` |
 | AC6 | Sistem dapat menyimpan jadwal untuk minimal 12 bulan ke depan | ✅ Done — tanpa batas periode; query rentang maks 92 hari |
-| AC7 | Pencarian menu "jeruk" menampilkan semua tanggal di mana jeruk disajikan | Pending — Phase 3 |
+| AC7 | Pencarian menu "jeruk" menampilkan semua tanggal di mana jeruk disajikan | ✅ Done — `/pencarian` + `GET /schedules/search` (cocokkan nama menu *dan* komponen, dikelompokkan per bulan) |
 | AC8 | Ekspor PDF bulanan menampilkan semua jadwal dalam format yang dapat dicetak | Pending — Phase 3 |
 | AC9 | Data seed dari file jadwal Agustus & September 2026 terinput dengan benar | ✅ Done — 10 minggu, 42 menu, 43 jadwal |
 | AC10 | Schema 11 tabel berhasil dimigrasi ke Cloudflare D1 tanpa error | ✅ Done (D1 lokal) |
 | AC11 | Aplikasi berhasil di-build dan di-deploy ke Cloudflare Workers (`bun run deploy`) | Sebagian — build OK, deploy butuh kredensial |
 | AC12 | `bun run dev` menjalankan dev server lokal tanpa error | ✅ Done |
-| AC13 | Autentikasi JWT menolak akses tanpa token / token invalid dengan 401 | ✅ Done — terverifikasi 124 test |
+| AC13 | Autentikasi JWT menolak akses tanpa token / token invalid dengan 401 | ✅ Done — terverifikasi 166 test |
 | AC14 | Password tersimpan sebagai hash PBKDF2, bukan plain text | ✅ Done |
-| AC15 | Orang tua TIDAK dapat mengakses endpoint admin (403) | ✅ Done — `requireRole('admin')`, diuji di 6 endpoint |
+| AC15 | Orang tua TIDAK dapat mengakses endpoint admin (403) | ✅ Done — `requireRole('admin')`, diuji di 8 endpoint |
 | AC16 | Orang tua TIDAK melihat menu admin di navigasi maupun halaman admin | ✅ Done — navigasi sadar-role + pembatas `AdminOnly` |
+| AC17 | Admin dapat menyalin jadwal satu minggu ke minggu lain tanpa menimpa hari yang sudah terisi | ✅ Done — `POST /schedules/copy` + dialog "Salin minggu" di `/jadwal` |
+| AC18 | Pencarian aman dari wildcard SQL — `%` dan `_` diperlakukan literal | ✅ Done — `escapeLike()` di `utils/sql.ts`, diuji di 2 skenario |
 
 ---
 

@@ -1,6 +1,6 @@
 /** DTO jadwal — dipakai bersama oleh API dan frontend. */
 
-import type { MenuDto } from "./catalog";
+import type { MenuDto, MenuItemType } from "./catalog";
 
 export interface WeekDto {
   id: number;
@@ -53,4 +53,54 @@ export interface ScheduleInput {
   menuId?: number | null;
   isHoliday?: boolean;
   notes?: string | null;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Pencarian riwayat menu — "kapan jeruk disajikan?"
+// ─────────────────────────────────────────────────────────────
+
+export interface MenuHistoryItemMatch {
+  name: string;
+  itemType: MenuItemType;
+}
+
+export interface MenuHistoryMatchDto {
+  date: string;
+  dayName: string;
+  menuId: number;
+  menuName: string;
+  /** Komponen menu yang cocok dengan kata kunci. */
+  matchedItems: MenuHistoryItemMatch[];
+  /** `true` bila nama menu itu sendiri yang cocok, bukan hanya komponennya. */
+  menuNameMatched: boolean;
+  notes: string | null;
+}
+
+export interface MenuHistoryDto {
+  query: string;
+  from: string;
+  to: string;
+  totalMatches: number;
+  matches: MenuHistoryMatchDto[];
+}
+
+// ─────────────────────────────────────────────────────────────
+// Duplikasi jadwal antar minggu
+// ─────────────────────────────────────────────────────────────
+
+export interface CopyWeekInput {
+  /** Tanggal mana pun pada minggu sumber. */
+  fromDate: string;
+  /** Tanggal mana pun pada minggu tujuan. */
+  toDate: string;
+  /** Timpa jadwal yang sudah ada di minggu tujuan (default: lewati). */
+  overwrite?: boolean;
+}
+
+export interface CopyWeekResultDto {
+  sourceLabel: string;
+  targetLabel: string;
+  created: number;
+  updated: number;
+  skipped: number;
 }

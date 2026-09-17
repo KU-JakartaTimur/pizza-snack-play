@@ -33,7 +33,9 @@ Jadwal piket snack sekolah sebelumnya disusun dalam dokumen teks manual — suli
 | **Jadwal Bulanan** | Rekap per minggu dengan statistik hari sekolah/libur | Semua | ✅ |
 | **Manajemen Menu** | CRUD menu (makanan utama + buah pendamping) + kategori | Admin | ✅ |
 | **Kelola Jadwal** | Tetapkan menu per tanggal, tandai libur, tambah catatan | Admin | ✅ |
+| **Salin Jadwal Antar Minggu** | Duplikasi jadwal Senin–Jumat ke minggu lain, opsional timpa | Admin | ✅ |
 | **Kelola Hari Libur** | Tambah/hapus hari libur bernama | Admin | ✅ |
+| **Pencarian Riwayat Menu** | "Kapan jeruk pernah disajikan?" — cari menu/komponen lintas bulan | Semua | ✅ |
 | **Kelola Akun Orang Tua** | Buat, ubah, nonaktifkan, hapus, reset password | Admin | ✅ |
 | **Dashboard** | Ringkasan jumlah akun, menu, jadwal, dan hari libur | Admin | ✅ |
 | **Ubah Password** | Setiap pengguna dapat mengganti password sendiri | Semua | ✅ |
@@ -94,6 +96,7 @@ pizza-snack-play/
 │   │       ├── hari-ini.tsx      # Jadwal hari ini
 │   │       ├── minggu-ini.tsx    # Jadwal mingguan
 │   │       ├── bulan.tsx         # Jadwal bulanan
+│   │       ├── pencarian.tsx     # Cari riwayat menu (semua role)
 │   │       ├── menu.tsx          # CRUD menu (admin)
 │   │       ├── kategori.tsx      # CRUD kategori (admin)
 │   │       ├── jadwal.tsx        # Kelola jadwal + hari libur (admin)
@@ -104,6 +107,7 @@ pizza-snack-play/
 │   │   ├── auth.tsx              # AuthProvider (sesi + verifikasi token)
 │   │   ├── auth-context.ts       # Context + hook useAuth
 │   │   ├── date.ts               # Utilitas tanggal WIB (sisi klien)
+│   │   ├── item-types.ts         # Label & urutan jenis komponen menu
 │   │   ├── cn.ts                 # Penggabung class Tailwind
 │   │   └── http.ts               # HTTP client (ky) + injeksi JWT
 │   ├── types/                    # Tipe bersama API ↔ frontend
@@ -121,7 +125,7 @@ pizza-snack-play/
 ├── scripts/
 │   ├── seed.ts                   # Parser jadwal -> drizzle/seed.sql
 │   ├── test-auth.mjs             # 26 test end-to-end auth
-│   └── test-api.mjs              # 98 test end-to-end API
+│   └── test-api.mjs              # 140 test end-to-end API
 ├── docs/
 │   ├── PRD_Pizza_Snack_Play.md
 │   └── Struktur_Tabel_Pizza_Snack_Play.md
@@ -154,6 +158,7 @@ Middleware dipasang berurutan: `requireAuth` (401 bila tanpa token) lalu
 | `utils/password.ts` | PBKDF2-SHA256 via Web Crypto, format `pbkdf2$<iterasi>$<salt>$<hash>` |
 | `utils/date.ts` | Perhitungan tanggal berbasis WIB (UTC+7) |
 | `utils/params.ts` | Parsing ID, validasi rentang tanggal |
+| `utils/sql.ts` | `escapeLike` / `likePattern` — membuat pola `LIKE` aman dari wildcard user |
 | `utils/slug.ts` | Pembuat slug dari nama kategori |
 
 ---
@@ -200,8 +205,10 @@ Semua endpoint berada di bawah `basePath /api`. Kecuali `POST /api/auth/login`, 
 | `GET` | `/schedules/week?date=` | Auth | Senin–Jumat pada minggu tersebut |
 | `GET` | `/schedules/month?year=&month=` | Auth | Rekap bulanan, dikelompokkan per minggu |
 | `GET` | `/schedules/range?from=&to=` | Auth | Rentang bebas (maks. 92 hari) |
+| `GET` | `/schedules/search?q=&from=&to=` | Auth | Cari tanggal di mana menu/komponen pernah dijadwalkan (maks. 400 hari) |
 | `GET` | `/schedules/:id` | Auth | Detail satu entri jadwal |
 | `POST` | `/schedules` | Admin | Buat entri jadwal |
+| `POST` | `/schedules/copy` | Admin | Salin jadwal Senin–Jumat antar minggu |
 | `PUT` | `/schedules/:id` | Admin | Ubah menu / libur / catatan |
 | `DELETE` | `/schedules/:id` | Admin | Hapus entri jadwal |
 | `GET` | `/weeks?year=&month=` | Auth | Daftar minggu pada bulan tersebut |
@@ -252,6 +259,15 @@ curl http://localhost:5173/api/schedules/today \
 # Jadwal bulan September 2026
 curl "http://localhost:5173/api/schedules/month?year=2026&month=9" \
   -H "Authorization: Bearer <token>"
+
+# Kapan "jeruk" pernah disajikan? (6 bulan terakhir)
+curl "http://localhost:5173/api/schedules/search?q=jeruk&from=2026-03-21&to=2026-09-17" \
+  -H "Authorization: Bearer <token>"
+
+# Salin jadwal minggu 14–18 Sep ke minggu 21–25 Sep (lewati hari yang sudah terisi)
+curl -X POST http://localhost:5173/api/schedules/copy \
+  -H "Authorization: Bearer <token>" -H "Content-Type: application/json" \
+  -d '{"fromDate":"2026-09-14","toDate":"2026-09-21"}'
 ```
 
 Token JWT berlaku 7 hari (dapat diatur via `JWT_EXPIRES_IN` dalam detik). Algoritma **HS256** via `hono/jwt`.
@@ -331,7 +347,7 @@ Dev server berjalan di **http://localhost:5173** — logika Worker terintegrasi 
 
 ```bash
 bun run dev                # test butuh dev server berjalan
-bun run test               # auth (26) + API (98)
+bun run test               # auth (26) + API (140)
 bun run test:auth          # hanya test autentikasi
 bun run test:api           # hanya test API (jadwal, katalog, RBAC, CRUD)
 ```
@@ -375,7 +391,7 @@ bun run lint       # ESLint
 | `db:studio` | `drizzle-kit studio` | GUI inspeksi database |
 | `test` | `test:auth && test:api` | Semua test end-to-end |
 | `test:auth` | `bun run scripts/test-auth.mjs` | Test auth (26 skenario) |
-| `test:api` | `bun run scripts/test-api.mjs` | Test API (98 skenario) |
+| `test:api` | `bun run scripts/test-api.mjs` | Test API (140 skenario) |
 
 ---
 
@@ -397,8 +413,8 @@ bun run lint       # ESLint
 | Phase | Scope | Status |
 |-------|-------|--------|
 | **1. MVP** | Scaffold, skema DB (11 tabel), migrasi D1, seed data, auth JWT, RBAC, backend CRUD, frontend jadwal + admin | ✅ Selesai |
-| **2. Ekspor & Cetak** | Ekspor PDF mingguan/bulanan, Excel untuk koperasi, cetak dari browser | ⏳ Berikutnya |
-| **3. Pencarian Lanjutan** | "Kapan menu X disajikan?" — pencarian riwayat menu lintas bulan | ⏳ Rencana |
+| **2. Pencarian & Duplikasi** | Pencarian riwayat menu lintas bulan, salin jadwal antar minggu | ✅ Selesai |
+| **3. Ekspor & Cetak** | Halaman cetak ramah printer + ekspor CSV mingguan/bulanan | ⏳ Berikutnya |
 | **4. Notifikasi** | Push notification (PWA), WhatsApp broadcast (opsional) | ⏳ Rencana |
 
 ---
@@ -410,7 +426,9 @@ bun run lint       # ESLint
 - **Tipe bersama:** DTO di `src/types/` diimpor oleh backend maupun frontend, sehingga bentuk response API selalu sinkron dengan yang dipakai UI.
 - **Password hashing:** PBKDF2-SHA256 (100.000 iterasi) via Web Crypto API — edge-native, tanpa dependency native. Format tersimpan: `pbkdf2$<iterations>$<salt>$<hash>`. Lihat `src/api/utils/password.ts`.
 - **JWT:** HS256 via `hono/jwt`. Catatan: pada Hono 4.12+, `verify()` mewajibkan argumen algoritma ketiga — `verify(token, secret, "HS256")`.
-- **Pencegahan N+1:** Menampilkan jadwal sebulan hanya butuh 4 query — jadwal, hari libur, minggu, dan menu dimuat sekali lalu dirakit di memori (`ScheduleService.loadContext`).
+- **Pencegahan N+1:** Menampilkan jadwal sebulan hanya butuh 4 query — jadwal, hari libur, minggu, dan menu dimuat sekali lalu dirakit di memori (`ScheduleService.loadContext`). Pencarian riwayat hanya 1 query ber-`JOIN` yang hasilnya dikelompokkan per tanggal di memori.
+- **Pencarian aman wildcard:** `%` dan `_` pada kata kunci pencarian di-escape (`utils/sql.ts`) sehingga diperlakukan sebagai karakter literal, bukan pola `LIKE`. Rentang pencarian dibatasi 400 hari (satu tahun ajaran) untuk membatasi beban query.
+- **Duplikasi minggu:** `POST /schedules/copy` menyalin Senin–Jumat berdasarkan **offset hari**, bukan tanggal absolut. Hari di minggu tujuan yang sudah terisi dilewati kecuali `overwrite: true`. Hari libur ikut tersalin tanpa menu.
 - **Soft delete:** Menghapus menu yang masih dipakai jadwal akan mengarsipkannya (bukan menghapus), agar jadwal lama tidak kehilangan referensi. Akun orang tua dinonaktifkan secara default; hapus permanen butuh `?hard=true`.
 - **Transaksi D1:** Tidak ada transaksi interaktif panjang — gunakan `db.batch([...])`.
 - **Secrets:** `JWT_SECRET` dan token Cloudflare disimpan sebagai Worker Secret, bukan di repo.
@@ -420,7 +438,7 @@ bun run lint       # ESLint
 
 ## Dokumentasi
 
-- [PRD — Product Requirements Document v1.2](docs/PRD_Pizza_Snack_Play.md)
+- [PRD — Product Requirements Document v1.3](docs/PRD_Pizza_Snack_Play.md)
 - [Struktur Tabel — DDL + Drizzle + Seed + Queries](docs/Struktur_Tabel_Pizza_Snack_Play.md)
 
 ## Sumber Data

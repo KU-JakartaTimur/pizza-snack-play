@@ -13,6 +13,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppProfilRouteImport } from './routes/_app/profil'
+import { Route as AppPencarianRouteImport } from './routes/_app/pencarian'
 import { Route as AppOrangTuaRouteImport } from './routes/_app/orang-tua'
 import { Route as AppMingguIniRouteImport } from './routes/_app/minggu-ini'
 import { Route as AppMenuRouteImport } from './routes/_app/menu'
@@ -39,6 +40,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
 const AppProfilRoute = AppProfilRouteImport.update({
   id: '/profil',
   path: '/profil',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPencarianRoute = AppPencarianRouteImport.update({
+  id: '/pencarian',
+  path: '/pencarian',
   getParentRoute: () => AppRoute,
 } as any)
 const AppOrangTuaRoute = AppOrangTuaRouteImport.update({
@@ -93,6 +99,7 @@ export interface FileRoutesByFullPath {
   '/menu': typeof AppMenuRoute
   '/minggu-ini': typeof AppMingguIniRoute
   '/orang-tua': typeof AppOrangTuaRoute
+  '/pencarian': typeof AppPencarianRoute
   '/profil': typeof AppProfilRoute
 }
 export interface FileRoutesByTo {
@@ -105,6 +112,7 @@ export interface FileRoutesByTo {
   '/menu': typeof AppMenuRoute
   '/minggu-ini': typeof AppMingguIniRoute
   '/orang-tua': typeof AppOrangTuaRoute
+  '/pencarian': typeof AppPencarianRoute
   '/profil': typeof AppProfilRoute
   '/': typeof AppIndexRoute
 }
@@ -120,6 +128,7 @@ export interface FileRoutesById {
   '/_app/menu': typeof AppMenuRoute
   '/_app/minggu-ini': typeof AppMingguIniRoute
   '/_app/orang-tua': typeof AppOrangTuaRoute
+  '/_app/pencarian': typeof AppPencarianRoute
   '/_app/profil': typeof AppProfilRoute
   '/_app/': typeof AppIndexRoute
 }
@@ -136,6 +145,7 @@ export interface FileRouteTypes {
     | '/menu'
     | '/minggu-ini'
     | '/orang-tua'
+    | '/pencarian'
     | '/profil'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -148,6 +158,7 @@ export interface FileRouteTypes {
     | '/menu'
     | '/minggu-ini'
     | '/orang-tua'
+    | '/pencarian'
     | '/profil'
     | '/'
   id:
@@ -162,6 +173,7 @@ export interface FileRouteTypes {
     | '/_app/menu'
     | '/_app/minggu-ini'
     | '/_app/orang-tua'
+    | '/_app/pencarian'
     | '/_app/profil'
     | '/_app/'
   fileRoutesById: FileRoutesById
@@ -199,6 +211,13 @@ declare module '@tanstack/react-router' {
       path: '/profil'
       fullPath: '/profil'
       preLoaderRoute: typeof AppProfilRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/pencarian': {
+      id: '/_app/pencarian'
+      path: '/pencarian'
+      fullPath: '/pencarian'
+      preLoaderRoute: typeof AppPencarianRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/orang-tua': {
@@ -269,6 +288,7 @@ interface AppRouteChildren {
   AppMenuRoute: typeof AppMenuRoute
   AppMingguIniRoute: typeof AppMingguIniRoute
   AppOrangTuaRoute: typeof AppOrangTuaRoute
+  AppPencarianRoute: typeof AppPencarianRoute
   AppProfilRoute: typeof AppProfilRoute
   AppIndexRoute: typeof AppIndexRoute
 }
@@ -282,6 +302,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppMenuRoute: AppMenuRoute,
   AppMingguIniRoute: AppMingguIniRoute,
   AppOrangTuaRoute: AppOrangTuaRoute,
+  AppPencarianRoute: AppPencarianRoute,
   AppProfilRoute: AppProfilRoute,
   AppIndexRoute: AppIndexRoute,
 }

@@ -2,15 +2,11 @@ import { and, asc, eq, like, or, sql } from "drizzle-orm";
 import type { Db } from "../../database/db";
 import { parents, users } from "../../database/schema";
 import type { Parent, User } from "../../database/schema";
+import { likePattern } from "../utils/sql";
 
 export interface ParentRow {
   parent: Parent;
   user: User;
-}
-
-/** Netralkan wildcard `LIKE` agar pencarian tidak bisa disalahgunakan. */
-function escapeLike(value: string): string {
-  return value.replace(/[%_\\]/g, (match) => `\\${match}`);
 }
 
 class ParentRepository {
@@ -26,7 +22,7 @@ class ParentRepository {
     const filters = [];
 
     if (options.search) {
-      const term = `%${escapeLike(options.search)}%`;
+      const term = likePattern(options.search);
       filters.push(
         or(
           like(parents.parentName, term),

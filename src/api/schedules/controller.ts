@@ -1,9 +1,9 @@
 import type { Context } from "hono";
 import { getDb } from "../../database/db";
-import type { ScheduleInput } from "../../types/schedule";
+import type { CopyWeekInput, ScheduleInput } from "../../types/schedule";
 import type { AuthEnv } from "../middleware/auth";
 import { isIsoDate } from "../utils/date";
-import { parseId, validateRange } from "../utils/params";
+import { MAX_SEARCH_DAYS, parseId, validateRange } from "../utils/params";
 import {
   responseBadRequest,
   responseConflict,
@@ -23,6 +23,8 @@ function mapError(c: ScheduleContext, error: ScheduleError) {
       return responseConflict(c, "Sudah ada jadwal pada tanggal tersebut");
     case "menu_not_found":
       return responseBadRequest(c, "Menu tidak ditemukan");
+    case "same_week":
+      return responseBadRequest(c, "Minggu sumber dan tujuan sama");
   }
 }
 
@@ -93,6 +95,31 @@ class ScheduleController {
     return responseOK(c, "Daftar minggu", data);
   };
 
+  /**
+   * Cari tanggal di mana sebuah menu/komponen pernah dijadwalkan.
+   * `GET /schedules/search?q=jeruk&from=…&to=…`
+   */
+  search = async (c: ScheduleContext) => {
+    const query = c.req.query("q");
+    const from = c.req.query("from");
+    const to = c.req.query("to");
+
+    if (query === undefined || !query.trim()) {
+      return responseBadRequest(c, "Parameter `q` wajib diisi");
+    }
+
+    const error = validateRange(from, to, MAX_SEARCH_DAYS);
+    if (error) return responseBadRequest(c, error);
+
+    const data = await scheduleService.searchMenuHistory(
+      getDb(c.env),
+      query,
+      from!,
+      to!,
+    );
+    return responseOK(c, "Riwayat menu", data);
+  };
+
   // ── Penulisan (admin) ───────────────────────────────────────
 
   create = async (c: ScheduleContext) => {
@@ -154,6 +181,35 @@ class ScheduleController {
     if (!removed) return responseNotFound(c, "Jadwal tidak ditemukan");
 
     return responseOK(c, "Jadwal berhasil dihapus");
+  };
+
+  /**
+   * Salin jadwal Senin–Jumat dari satu minggu ke minggu lain.
+   * `POST /schedules/copy` dengan `{ fromDate, toDate, overwrite? }`
+   */
+  copy = async (c: ScheduleContext) => {
+    let body: Partial<CopyWeekInput>;
+    try {
+      body = await c.req.json<Partial<CopyWeekInput>>();
+    } catch {
+      return responseBadRequest(c, "Body harus berupa JSON");
+    }
+
+    if (!isIsoDate(body.fromDate)) {
+      return responseBadRequest(c, "`fromDate` wajib format YYYY-MM-DD");
+    }
+    if (!isIsoDate(body.toDate)) {
+      return responseBadRequest(c, "`toDate` wajib format YYYY-MM-DD");
+    }
+
+    const result = await scheduleService.copyWeek(getDb(c.env), {
+      fromDate: body.fromDate,
+      toDate: body.toDate,
+      overwrite: body.overwrite === true,
+    });
+
+    if (typeof result === "string") return mapError(c, result);
+    return responseCreated(c, "Jadwal berhasil disalin", result);
   };
 
   // ── Hari libur ──────────────────────────────────────────────

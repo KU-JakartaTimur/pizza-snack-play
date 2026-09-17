@@ -5,6 +5,7 @@ import {
   CalendarOff,
   ChevronLeft,
   ChevronRight,
+  Copy,
   Plus,
   Trash2,
 } from "lucide-react";
@@ -23,9 +24,13 @@ import {
 } from "@/components/ui";
 import { ApiError, api } from "@/lib/api";
 import {
+  addDays,
+  endOfWeek,
   formatCompactDate,
+  formatWeekLabel,
   indonesianMonthName,
   monthOf,
+  startOfWeek,
   todayInWib,
   yearOf,
 } from "@/lib/date";
@@ -60,6 +65,13 @@ function ScheduleAdminContent() {
     name: "",
     description: "",
   });
+  const [copyModalOpen, setCopyModalOpen] = useState(false);
+  // Default: salin minggu ini ke minggu depan.
+  const [copyForm, setCopyForm] = useState(() => ({
+    fromDate: startOfWeek(today),
+    toDate: addDays(startOfWeek(today), 7),
+    overwrite: false,
+  }));
 
   const monthQuery = useQuery({
     queryKey: ["schedules", "month", year, month],
@@ -155,6 +167,33 @@ function ScheduleAdminContent() {
       }),
   });
 
+  const copyMutation = useMutation({
+    mutationFn: () =>
+      api.schedules.copy({
+        fromDate: copyForm.fromDate,
+        toDate: copyForm.toDate,
+        overwrite: copyForm.overwrite,
+      }),
+    onSuccess: async (result) => {
+      const { created, updated, skipped, sourceLabel, targetLabel } = result.data;
+      setBanner({
+        kind: "ok",
+        text: `Disalin ${sourceLabel} → ${targetLabel}: ${created} dibuat, ${updated} diperbarui, ${skipped} dilewati.`,
+      });
+      setCopyModalOpen(false);
+      await invalidate();
+    },
+    onError: (error) =>
+      setBanner({
+        kind: "error",
+        text: error instanceof ApiError ? error.message : "Gagal menyalin jadwal",
+      }),
+  });
+
+  // Minggu sumber & tujuan dianggap sama bila Senin-nya sama.
+  const copySameWeek =
+    startOfWeek(copyForm.fromDate) === startOfWeek(copyForm.toDate);
+
   const shift = (delta: number) => {
     const next = month + delta;
     if (next < 1) {
@@ -183,10 +222,16 @@ function ScheduleAdminContent() {
         title="Kelola Jadwal"
         description="Tetapkan menu, tandai hari libur, dan tambahkan catatan per hari."
         action={
-          <Button variant="secondary" onClick={() => setHolidayModalOpen(true)}>
-            <Plus className="h-4 w-4" />
-            Hari libur
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" onClick={() => setCopyModalOpen(true)}>
+              <Copy className="h-4 w-4" />
+              Salin minggu
+            </Button>
+            <Button variant="secondary" onClick={() => setHolidayModalOpen(true)}>
+              <Plus className="h-4 w-4" />
+              Hari libur
+            </Button>
+          </div>
         }
       />
 
@@ -436,6 +481,88 @@ function ScheduleAdminContent() {
             />
           </Field>
         </form>
+      </Modal>
+
+      <Modal
+        open={copyModalOpen}
+        title="Salin jadwal antar minggu"
+        onClose={() => setCopyModalOpen(false)}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setCopyModalOpen(false)}>
+              Batal
+            </Button>
+            <Button
+              onClick={() => copyMutation.mutate()}
+              loading={copyMutation.isPending}
+              disabled={copySameWeek}
+            >
+              Salin sekarang
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm text-slate-600">
+          Menyalin menu Senin–Jumat dari minggu sumber ke minggu tujuan. Hari di
+          minggu tujuan yang belum punya jadwal akan dibuatkan otomatis.
+        </p>
+
+        <Field
+          label="Minggu sumber"
+          hint={formatWeekLabel(
+            startOfWeek(copyForm.fromDate),
+            endOfWeek(copyForm.fromDate),
+          )}
+        >
+          <Input
+            type="date"
+            value={copyForm.fromDate}
+            onChange={(event) =>
+              setCopyForm({ ...copyForm, fromDate: event.target.value })
+            }
+          />
+        </Field>
+
+        <Field
+          label="Minggu tujuan"
+          hint={formatWeekLabel(
+            startOfWeek(copyForm.toDate),
+            endOfWeek(copyForm.toDate),
+          )}
+        >
+          <Input
+            type="date"
+            value={copyForm.toDate}
+            onChange={(event) =>
+              setCopyForm({ ...copyForm, toDate: event.target.value })
+            }
+          />
+        </Field>
+
+        {copySameWeek && (
+          <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            Minggu sumber dan tujuan sama — pilih tanggal di minggu yang berbeda.
+          </p>
+        )}
+
+        <label className="flex items-start gap-2.5 rounded-lg border border-slate-200 px-3 py-2.5">
+          <input
+            type="checkbox"
+            className="mt-0.5 h-4 w-4 accent-emerald-600"
+            checked={copyForm.overwrite}
+            onChange={(event) =>
+              setCopyForm({ ...copyForm, overwrite: event.target.checked })
+            }
+          />
+          <span>
+            <span className="block text-sm font-medium text-slate-800">
+              Timpa jadwal yang sudah ada
+            </span>
+            <span className="block text-xs text-slate-500">
+              Bila tidak dicentang, hari yang sudah punya jadwal akan dilewati.
+            </span>
+          </span>
+        </label>
       </Modal>
     </>
   );

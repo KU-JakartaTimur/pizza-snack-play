@@ -10,12 +10,19 @@ export function parseId(raw: string | undefined | null): number | null {
 export const MAX_RANGE_DAYS = 92;
 
 /**
+ * Batas lebih longgar untuk pencarian riwayat — satu tahun ajaran
+ * (~13 bulan) agar pencarian lintas semester tetap mungkin.
+ */
+export const MAX_SEARCH_DAYS = 400;
+
+/**
  * Validasi rentang tanggal `from`–`to` (format `YYYY-MM-DD`).
  * Mengembalikan pesan error, atau `null` bila valid.
  */
 export function validateRange(
   from: string | undefined,
   to: string | undefined,
+  maxDays: number = MAX_RANGE_DAYS,
 ): string | null {
   if (!from || !to) return "Parameter `from` dan `to` wajib diisi";
   if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
@@ -26,8 +33,8 @@ export function validateRange(
   const days =
     (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) /
     86_400_000;
-  if (days > MAX_RANGE_DAYS) {
-    return `Rentang maksimum ${MAX_RANGE_DAYS} hari`;
+  if (days > maxDays) {
+    return `Rentang maksimum ${maxDays} hari`;
   }
 
   return null;

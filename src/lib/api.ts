@@ -13,6 +13,9 @@ import type {
   MenuItemType,
 } from "@/types/catalog";
 import type {
+  CopyWeekInput,
+  CopyWeekResultDto,
+  MenuHistoryDto,
   MonthScheduleDto,
   ScheduleDayDto,
   ScheduleInput,
@@ -118,6 +121,12 @@ export const api = {
         http.get(`schedules/range${query({ from, to })}`),
       ),
 
+    /** Cari kapan sebuah menu/komponen pernah dijadwalkan. */
+    search: (q: string, from: string, to: string) =>
+      unwrap<MenuHistoryDto>(
+        http.get(`schedules/search${query({ q, from, to })}`),
+      ),
+
     detail: (id: number) =>
       unwrap<ScheduleDayDto>(http.get(`schedules/${id}`)),
 
@@ -129,6 +138,12 @@ export const api = {
 
     remove: (id: number) =>
       unwrapFull<null>(http.delete(`schedules/${id}`)),
+
+    /** Salin jadwal Senin–Jumat dari satu minggu ke minggu lain. */
+    copy: (body: CopyWeekInput) =>
+      unwrapFull<CopyWeekResultDto>(
+        http.post("schedules/copy", { json: body }),
+      ),
 
     weeks: (year: number, month: number) =>
       unwrap<WeekDto[]>(http.get(`weeks${query({ year, month })}`)),

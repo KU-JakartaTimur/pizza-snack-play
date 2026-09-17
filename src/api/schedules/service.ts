@@ -1,7 +1,11 @@
 import type { Db } from "../../database/db";
 import type { Holiday, Schedule, Week } from "../../database/schema";
-import type { MenuDto } from "../../types/catalog";
+import type { MenuDto, MenuItemType } from "../../types/catalog";
 import type {
+  CopyWeekInput,
+  CopyWeekResultDto,
+  MenuHistoryDto,
+  MenuHistoryMatchDto,
   MonthScheduleDto,
   ScheduleDayDto,
   ScheduleInput,
@@ -23,7 +27,11 @@ import {
 } from "../utils/date";
 import { scheduleRepository } from "./repository";
 
-export type ScheduleError = "not_found" | "duplicate_date" | "menu_not_found";
+export type ScheduleError =
+  | "not_found"
+  | "duplicate_date"
+  | "menu_not_found"
+  | "same_week";
 
 /** Data pendukung yang dimuat sekali untuk sebuah rentang tanggal. */
 interface ScheduleContext {
@@ -194,6 +202,71 @@ class ScheduleService {
     return scheduleRepository.findHolidaysBetween(db, from, to);
   }
 
+  /**
+   * Cari tanggal di mana sebuah menu atau komponennya pernah dijadwalkan.
+   *
+   * Hasil dikelompokkan per tanggal; satu tanggal muncul sekali meskipun
+   * beberapa komponennya cocok.
+   */
+  async searchMenuHistory(
+    db: Db,
+    query: string,
+    from: string,
+    to: string,
+  ): Promise<MenuHistoryDto> {
+    const trimmed = query.trim();
+    const rows = await scheduleRepository.searchMenuHistory(
+      db,
+      trimmed,
+      from,
+      to,
+    );
+
+    const term = trimmed.toLowerCase();
+    const byDate = new Map<string, MenuHistoryMatchDto>();
+
+    for (const row of rows) {
+      let entry = byDate.get(row.scheduleDate);
+
+      if (!entry) {
+        entry = {
+          date: row.scheduleDate,
+          dayName: indonesianDayName(row.scheduleDate),
+          menuId: row.menuId,
+          menuName: row.menuName,
+          matchedItems: [],
+          menuNameMatched: row.menuName.toLowerCase().includes(term),
+          notes: row.notes,
+        };
+        byDate.set(row.scheduleDate, entry);
+      }
+
+      if (row.itemName && row.itemName.toLowerCase().includes(term)) {
+        const alreadyAdded = entry.matchedItems.some(
+          (item) => item.name === row.itemName,
+        );
+        if (!alreadyAdded) {
+          entry.matchedItems.push({
+            name: row.itemName,
+            itemType: (row.itemType ?? "other") as MenuItemType,
+          });
+        }
+      }
+    }
+
+    const matches = [...byDate.values()].sort((a, b) =>
+      a.date.localeCompare(b.date),
+    );
+
+    return {
+      query: trimmed,
+      from,
+      to,
+      totalMatches: matches.length,
+      matches,
+    };
+  }
+
   // ── Penulisan (admin) ───────────────────────────────────────
 
   async createSchedule(
@@ -257,6 +330,86 @@ class ScheduleService {
 
     await scheduleRepository.deleteSchedule(db, id);
     return true;
+  }
+
+  /**
+   * Salin jadwal Senin–Jumat dari satu minggu ke minggu lain.
+   *
+   * Hari yang sudah punya jadwal di minggu tujuan dilewati, kecuali
+   * `overwrite` diaktifkan. Hari tanpa jadwal di minggu sumber ikut dilewati.
+   */
+  async copyWeek(
+    db: Db,
+    input: CopyWeekInput,
+  ): Promise<CopyWeekResultDto | ScheduleError> {
+    const sourceStart = startOfWeek(input.fromDate);
+    const targetStart = startOfWeek(input.toDate);
+
+    if (sourceStart === targetStart) return "same_week";
+
+    const sourceEnd = endOfWeek(input.fromDate);
+    const sourceSchedules = await scheduleRepository.findSchedulesBetween(
+      db,
+      sourceStart,
+      sourceEnd,
+    );
+    const sourceByDate = new Map(
+      sourceSchedules.map((row) => [row.scheduleDate, row]),
+    );
+
+    let created = 0;
+    let updated = 0;
+    let skipped = 0;
+
+    for (let offset = 0; offset < 5; offset += 1) {
+      const sourceDate = addDays(sourceStart, offset);
+      const targetDate = addDays(targetStart, offset);
+      const source = sourceByDate.get(sourceDate);
+
+      if (!source) {
+        skipped += 1;
+        continue;
+      }
+
+      const existing = await scheduleRepository.findScheduleByDate(
+        db,
+        targetDate,
+      );
+
+      if (existing) {
+        if (!input.overwrite) {
+          skipped += 1;
+          continue;
+        }
+
+        await scheduleRepository.updateSchedule(db, existing.id, {
+          menuId: source.menuId,
+          isHoliday: source.isHoliday,
+          notes: source.notes,
+        });
+        updated += 1;
+        continue;
+      }
+
+      const week = await scheduleRepository.ensureWeek(db, targetDate);
+      await scheduleRepository.insertSchedule(db, {
+        weekId: week.id,
+        scheduleDate: targetDate,
+        dayOfWeek: dayOfWeek(targetDate),
+        menuId: source.menuId,
+        isHoliday: source.isHoliday,
+        notes: source.notes,
+      });
+      created += 1;
+    }
+
+    return {
+      sourceLabel: formatWeekLabel(sourceStart, sourceEnd),
+      targetLabel: formatWeekLabel(targetStart, endOfWeek(input.toDate)),
+      created,
+      updated,
+      skipped,
+    };
   }
 
   async createHoliday(

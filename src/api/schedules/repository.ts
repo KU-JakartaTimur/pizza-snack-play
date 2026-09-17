@@ -1,8 +1,25 @@
-import { and, asc, eq, gte, lte, sql } from "drizzle-orm";
+import { and, asc, eq, gte, like, lte, or, sql } from "drizzle-orm";
 import type { Db } from "../../database/db";
-import { holidays, schedules, weeks } from "../../database/schema";
+import {
+  holidays,
+  menuItems,
+  menus,
+  schedules,
+  weeks,
+} from "../../database/schema";
 import type { Holiday, Schedule, Week } from "../../database/schema";
 import { endOfWeek, monthOf, startOfWeek, yearOf } from "../utils/date";
+import { likePattern } from "../utils/sql";
+
+/** Baris mentah hasil pencarian riwayat menu. */
+export interface MenuHistoryRow {
+  scheduleDate: string;
+  menuId: number;
+  menuName: string;
+  itemName: string | null;
+  itemType: string | null;
+  notes: string | null;
+}
 
 class ScheduleRepository {
   // ── Jadwal ──────────────────────────────────────────────────
@@ -84,6 +101,43 @@ class ScheduleRepository {
       .select({ count: sql<number>`count(*)` })
       .from(schedules);
     return rows[0]?.count ?? 0;
+  }
+
+  /**
+   * Cari tanggal di mana sebuah menu atau komponennya pernah dijadwalkan.
+   *
+   * Mengembalikan satu baris per (jadwal × komponen yang cocok), sehingga
+   * pemanggil dapat mengelompokkannya per tanggal. Hari libur dikecualikan.
+   */
+  async searchMenuHistory(
+    db: Db,
+    query: string,
+    from: string,
+    to: string,
+  ): Promise<MenuHistoryRow[]> {
+    const term = likePattern(query);
+
+    return db
+      .select({
+        scheduleDate: schedules.scheduleDate,
+        menuId: menus.id,
+        menuName: menus.name,
+        itemName: menuItems.name,
+        itemType: menuItems.itemType,
+        notes: schedules.notes,
+      })
+      .from(schedules)
+      .innerJoin(menus, eq(schedules.menuId, menus.id))
+      .leftJoin(menuItems, eq(menuItems.menuId, menus.id))
+      .where(
+        and(
+          eq(schedules.isHoliday, 0),
+          gte(schedules.scheduleDate, from),
+          lte(schedules.scheduleDate, to),
+          or(like(menus.name, term), like(menuItems.name, term)),
+        ),
+      )
+      .orderBy(asc(schedules.scheduleDate), asc(menuItems.id));
   }
 
   // ── Minggu ──────────────────────────────────────────────────

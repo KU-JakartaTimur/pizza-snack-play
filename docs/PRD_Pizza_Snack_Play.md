@@ -549,32 +549,43 @@ bunx wrangler secret put JWT_SECRET
 
 ## 12. Fase Pengembangan (Roadmap)
 
-### Phase 1: MVP (Core)
+### Phase 1: MVP (Core) — ✅ SELESAI
 - [x] Scaffold project dari `bhvr-template` (Bun + Hono + Vite + React + D1)
 - [x] Skema database 11 tabel di `src/database/schema.ts` (lihat dokumen Struktur Tabel)
 - [x] File migrasi Drizzle ter-generate (`drizzle/0000_*.sql`) & diterapkan ke D1 lokal
-- [x] Health check endpoint `GET /api/health` + landing page cek koneksi
+- [x] Health check endpoint `GET /api/health`
 - [x] Seed data dari file jadwal Agustus & September 2026 (`scripts/seed.ts`) — 10 minggu, 42 menu, 43 jadwal
 - [x] Autentikasi login (admin + orang tua) dengan JWT (`hono/jwt`, HS256)
 - [x] Password hashing PBKDF2-SHA256 via Web Crypto (edge-native)
 - [x] Endpoint auth: `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`, `PUT /auth/password`
 - [x] Middleware `requireAuth` + RBAC `requireRole('admin' | 'parent')`
 - [x] Test end-to-end auth — 26 skenario lolos
+- [x] Backend: CRUD menu + kategori (pola Route → Controller → Service → Repository)
+- [x] Backend: CRUD jadwal + hari libur (`/schedules`, `/weeks`, `/holidays`)
+- [x] Backend: kelola akun orang tua (`/parents`) — create, update, nonaktifkan, hapus, reset password
+- [x] Backend: statistik dashboard (`/stats/summary`)
+- [x] Frontend: halaman login + layout terproteksi (TanStack Router)
+- [x] Frontend: halaman "Hari Ini", "Minggu Ini", dan "Bulanan"
+- [x] Frontend: halaman admin (dashboard, menu, kategori, kelola jadwal, akun orang tua)
+- [x] Frontend: halaman profil + ubah password
+- [x] Test end-to-end API — 98 skenario lolos (total 124 dengan auth)
+- [x] Verifikasi browser: alur login admin & orang tua, pembatas role
 - [ ] Buat D1 database remote + isi kredensial produksi
-- [ ] Backend: CRUD menu + jadwal (pola Route → Controller → Service → Repository)
-- [ ] Admin: kelola akun orang tua (CRUD)
-- [ ] Frontend: halaman login + halaman "Hari Ini" + "Minggu Ini" (TanStack Router)
+- [ ] Deploy ke Cloudflare Workers
 
-### Phase 2: Admin Dashboard
-- [ ] Dashboard admin lengkap
-- [ ] Manajemen jadwal mingguan/bulanan
-- [ ] Duplikasi jadwal
-- [ ] Kategori & tagging menu
+### Phase 2: Admin Dashboard (lanjutan)
+- [x] Dashboard admin dengan ringkasan data
+- [x] Manajemen jadwal bulanan (tetapkan menu, tandai libur, catatan per hari)
+- [x] Kategori & tagging menu
+- [x] Kelola akun orang tua
+- [ ] Duplikasi jadwal antar minggu
+- [ ] Bulk import akun orang tua (CSV/Excel)
 
 ### Phase 3: Ekspor & Cetak
 - [ ] Ekspor PDF jadwal mingguan/bulanan
 - [ ] Ekspor Excel
 - [ ] Cetak langsung dari browser
+- [ ] Pencarian riwayat menu ("kapan jeruk disajikan?")
 
 ### Phase 4: Notifikasi (Opsional)
 - [ ] Push notification (PWA)
@@ -586,20 +597,22 @@ bunx wrangler secret put JWT_SECRET
 
 | ID | Kriteria | Status |
 |----|----------|--------|
-| AC1 | Admin dapat input jadwal snack untuk satu minggu (5 hari kerja) dalam < 2 menit | Pending |
-| AC2 | Orang tua dapat login dengan username & password yang diberikan admin | ✅ Done (API) |
-| AC3 | Orang tua yang belum login TIDAK dapat melihat jadwal — hanya melihat halaman login | Sebagian — endpoint terlindungi; halaman login belum ada |
-| AC4 | Admin dapat membuat, edit, dan menonaktifkan akun orang tua | Pending |
-| AC5 | Orang tua dapat mengubah password sendiri dari halaman profil | ✅ Done (API) |
-| AC6 | Sistem dapat menyimpan jadwal untuk minimal 12 bulan ke depan | Pending |
-| AC7 | Pencarian menu "jeruk" menampilkan semua tanggal di mana jeruk disajikan | Pending |
-| AC8 | Ekspor PDF bulanan menampilkan semua jadwal dalam format yang dapat dicetak | Pending |
+| AC1 | Admin dapat input jadwal snack untuk satu minggu (5 hari kerja) dalam < 2 menit | ✅ Done — dropdown menu per hari di `/jadwal` |
+| AC2 | Orang tua dapat login dengan username & password yang diberikan admin | ✅ Done — API + halaman login |
+| AC3 | Orang tua yang belum login TIDAK dapat melihat jadwal — hanya melihat halaman login | ✅ Done — halaman `/login` + guard route; endpoint 401 tanpa token |
+| AC4 | Admin dapat membuat, edit, dan menonaktifkan akun orang tua | ✅ Done — `/orang-tua` + API `/parents` |
+| AC5 | Orang tua dapat mengubah password sendiri dari halaman profil | ✅ Done — `/profil` + `PUT /auth/password` |
+| AC6 | Sistem dapat menyimpan jadwal untuk minimal 12 bulan ke depan | ✅ Done — tanpa batas periode; query rentang maks 92 hari |
+| AC7 | Pencarian menu "jeruk" menampilkan semua tanggal di mana jeruk disajikan | Pending — Phase 3 |
+| AC8 | Ekspor PDF bulanan menampilkan semua jadwal dalam format yang dapat dicetak | Pending — Phase 3 |
 | AC9 | Data seed dari file jadwal Agustus & September 2026 terinput dengan benar | ✅ Done — 10 minggu, 42 menu, 43 jadwal |
 | AC10 | Schema 11 tabel berhasil dimigrasi ke Cloudflare D1 tanpa error | ✅ Done (D1 lokal) |
-| AC11 | Aplikasi berhasil di-build dan di-deploy ke Cloudflare Workers (`bun run deploy`) | Pending — build OK, deploy butuh kredensial |
+| AC11 | Aplikasi berhasil di-build dan di-deploy ke Cloudflare Workers (`bun run deploy`) | Sebagian — build OK, deploy butuh kredensial |
 | AC12 | `bun run dev` menjalankan dev server lokal tanpa error | ✅ Done |
-| AC13 | Autentikasi JWT menolak akses tanpa token / token invalid dengan 401 | ✅ Done — terverifikasi 26 test |
+| AC13 | Autentikasi JWT menolak akses tanpa token / token invalid dengan 401 | ✅ Done — terverifikasi 124 test |
 | AC14 | Password tersimpan sebagai hash PBKDF2, bukan plain text | ✅ Done |
+| AC15 | Orang tua TIDAK dapat mengakses endpoint admin (403) | ✅ Done — `requireRole('admin')`, diuji di 6 endpoint |
+| AC16 | Orang tua TIDAK melihat menu admin di navigasi maupun halaman admin | ✅ Done — navigasi sadar-role + pembatas `AdminOnly` |
 
 ---
 

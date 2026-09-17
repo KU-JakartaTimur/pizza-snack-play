@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import type { Env } from "../database/db";
+import authRoute from "./auth/route";
 import { responseOK } from "./utils/response";
 
 const app = new Hono<{ Bindings: Env }>().basePath("/api");
@@ -14,5 +15,7 @@ app.get("/health", (c) =>
     timestamp: new Date().toISOString(),
   }),
 );
+
+app.route("/auth", authRoute);
 
 export default app;

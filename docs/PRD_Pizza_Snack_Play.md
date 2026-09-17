@@ -475,8 +475,8 @@ JWT_SECRET=              # (BARU) untuk signing JWT
 - **Role-based access control (RBAC)** — role `admin` (CRUD penuh) dan role `parent` (read-only jadwal + ubah password sendiri).
 - **Orang tua wajib login** — sebelum login, hanya melihat halaman login. Setelah login, dapat melihat jadwal.
 - **Admin mengelola akun orang tua** — admin membuat, edit, dan nonaktifkan akun orang tua. Orang tua tidak bisa registrasi mandiri.
-- **Password hashing** — password disimpan sebagai hash. Gunakan **Web Crypto API** (`crypto.subtle`, PBKDF2) yang edge-native, atau `bcryptjs` dengan flag `nodejs_compat`.
-- **JWT token** — signing via `hono/jwt` (HS256) dengan `JWT_SECRET` dari environment variable. Masa berlaku token mis. 7 hari.
+- **Password hashing** — **PBKDF2-SHA256, 100.000 iterasi** via Web Crypto API (`crypto.subtle`) yang edge-native, tanpa dependency native. Format tersimpan: `pbkdf2$<iterations>$<salt>$<hash>`. Perbandingan hash memakai constant-time compare. Implementasi: `src/api/utils/password.ts`.
+- **JWT token** — signing **HS256** via `hono/jwt` dengan `JWT_SECRET` dari environment variable. Masa berlaku default 7 hari (`JWT_EXPIRES_IN`, dalam detik). Catatan: pada Hono 4.12+, `verify()` mewajibkan argumen algoritma ketiga.
 - **Secrets** — `JWT_SECRET` dan token Cloudflare disimpan sebagai Worker Secret (`wrangler secret put`), bukan di repo.
 - Input validation via **Zod** schema (sudah tersedia di dependency template).
 - SQL injection prevention via Drizzle ORM parameterized queries.
@@ -552,16 +552,18 @@ bunx wrangler secret put JWT_SECRET
 ### Phase 1: MVP (Core)
 - [x] Scaffold project dari `bhvr-template` (Bun + Hono + Vite + React + D1)
 - [x] Skema database 11 tabel di `src/database/schema.ts` (lihat dokumen Struktur Tabel)
-- [x] File migrasi Drizzle ter-generate (`drizzle/0000_*.sql`)
+- [x] File migrasi Drizzle ter-generate (`drizzle/0000_*.sql`) & diterapkan ke D1 lokal
 - [x] Health check endpoint `GET /api/health` + landing page cek koneksi
-- [ ] Buat D1 database + isi kredensial di `.env` & `wrangler.json`
-- [ ] Terapkan migrasi ke D1 (`drizzle-kit migrate` / `wrangler d1 migrations apply`)
+- [x] Seed data dari file jadwal Agustus & September 2026 (`scripts/seed.ts`) — 10 minggu, 42 menu, 43 jadwal
+- [x] Autentikasi login (admin + orang tua) dengan JWT (`hono/jwt`, HS256)
+- [x] Password hashing PBKDF2-SHA256 via Web Crypto (edge-native)
+- [x] Endpoint auth: `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`, `PUT /auth/password`
+- [x] Middleware `requireAuth` + RBAC `requireRole('admin' | 'parent')`
+- [x] Test end-to-end auth — 26 skenario lolos
+- [ ] Buat D1 database remote + isi kredensial produksi
 - [ ] Backend: CRUD menu + jadwal (pola Route → Controller → Service → Repository)
-- [ ] Autentikasi login (admin + orang tua) dengan JWT (`hono/jwt`)
-- [ ] Middleware RBAC (admin vs parent)
 - [ ] Admin: kelola akun orang tua (CRUD)
 - [ ] Frontend: halaman login + halaman "Hari Ini" + "Minggu Ini" (TanStack Router)
-- [ ] Seed data dari file jadwal Agustus & September 2026
 
 ### Phase 2: Admin Dashboard
 - [ ] Dashboard admin lengkap
@@ -585,17 +587,19 @@ bunx wrangler secret put JWT_SECRET
 | ID | Kriteria | Status |
 |----|----------|--------|
 | AC1 | Admin dapat input jadwal snack untuk satu minggu (5 hari kerja) dalam < 2 menit | Pending |
-| AC2 | Orang tua dapat login dengan username & password yang diberikan admin | Pending |
-| AC3 | Orang tua yang belum login TIDAK dapat melihat jadwal — hanya melihat halaman login | Pending |
+| AC2 | Orang tua dapat login dengan username & password yang diberikan admin | ✅ Done (API) |
+| AC3 | Orang tua yang belum login TIDAK dapat melihat jadwal — hanya melihat halaman login | Sebagian — endpoint terlindungi; halaman login belum ada |
 | AC4 | Admin dapat membuat, edit, dan menonaktifkan akun orang tua | Pending |
-| AC5 | Orang tua dapat mengubah password sendiri dari halaman profil | Pending |
+| AC5 | Orang tua dapat mengubah password sendiri dari halaman profil | ✅ Done (API) |
 | AC6 | Sistem dapat menyimpan jadwal untuk minimal 12 bulan ke depan | Pending |
 | AC7 | Pencarian menu "jeruk" menampilkan semua tanggal di mana jeruk disajikan | Pending |
 | AC8 | Ekspor PDF bulanan menampilkan semua jadwal dalam format yang dapat dicetak | Pending |
-| AC9 | Data seed dari file jadwal Agustus & September 2026 terinput dengan benar | Pending |
-| AC10 | Schema 11 tabel berhasil dimigrasi ke Cloudflare D1 tanpa error | Pending |
-| AC11 | Aplikasi berhasil di-build dan di-deploy ke Cloudflare Workers (`bun run deploy`) | Pending |
+| AC9 | Data seed dari file jadwal Agustus & September 2026 terinput dengan benar | ✅ Done — 10 minggu, 42 menu, 43 jadwal |
+| AC10 | Schema 11 tabel berhasil dimigrasi ke Cloudflare D1 tanpa error | ✅ Done (D1 lokal) |
+| AC11 | Aplikasi berhasil di-build dan di-deploy ke Cloudflare Workers (`bun run deploy`) | Pending — build OK, deploy butuh kredensial |
 | AC12 | `bun run dev` menjalankan dev server lokal tanpa error | ✅ Done |
+| AC13 | Autentikasi JWT menolak akses tanpa token / token invalid dengan 401 | ✅ Done — terverifikasi 26 test |
+| AC14 | Password tersimpan sebagai hash PBKDF2, bukan plain text | ✅ Done |
 
 ---
 

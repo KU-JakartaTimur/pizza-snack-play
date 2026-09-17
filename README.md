@@ -89,7 +89,12 @@ pizza-snack-play/
 │   ├── index.css                 # Global styles (Tailwind)
 │   ├── main.tsx                  # React + Router entry point
 │   └── routeTree.gen.ts          # Auto-generated route tree
-├── drizzle/                      # Folder migrasi D1
+├── data/
+│   └── jadwal_piket_snack.txt    # Sumber data jadwal (Agustus & September 2026)
+├── drizzle/                      # Migrasi D1 + seed.sql
+├── scripts/
+│   ├── seed.ts                   # Parser jadwal -> drizzle/seed.sql
+│   └── test-auth.mjs             # Test end-to-end auth
 ├── docs/
 │   ├── PRD_Pizza_Snack_Play.md
 │   └── Struktur_Tabel_Pizza_Snack_Play.md
@@ -98,6 +103,22 @@ pizza-snack-play/
 ├── vite.config.ts
 ├── wrangler.json                 # Konfigurasi Cloudflare Worker + D1
 └── package.json
+```
+
+### Struktur Modul Auth
+
+```
+src/api/auth/
+├── route.ts          # POST /login, /logout · GET /me · PUT /password
+├── controller.ts     # Validasi input & bentuk response
+├── service.ts        # Verifikasi kredensial, terbitkan JWT, ubah password
+└── repository.ts     # Query ke tabel users & parents
+
+src/api/middleware/
+├── auth.ts           # requireAuth — verifikasi JWT (HS256)
+└── role.ts           # requireRole('admin') — RBAC
+
+src/api/utils/password.ts   # PBKDF2-SHA256 via Web Crypto (edge-native)
 ```
 
 ### Pola Arsitektur Backend
@@ -142,7 +163,7 @@ Semua endpoint berada di bawah `basePath /api`. Kecuali `POST /api/auth/login`, 
 | Grup | Endpoint | Role |
 |------|----------|------|
 | **Health** | `GET /health` | Public ✅ |
-| **Auth** | `POST /auth/login` · `POST /auth/logout` · `GET /auth/me` · `PUT /auth/password` | Public → Authenticated |
+| **Auth** | `POST /auth/login` (public) · `POST /auth/logout` · `GET /auth/me` · `PUT /auth/password` | Public → Authenticated ✅ |
 | **Parents** | `GET/POST/PUT/DELETE /parents` | Admin |
 | **Menus** | `GET/POST/PUT/DELETE /menus` | Admin (Parent: GET) |
 | **Schedules** | `GET /schedules/today` · `/week` · `/month` · `POST/DELETE` | Admin (Parent: GET) |
@@ -150,6 +171,24 @@ Semua endpoint berada di bawah `basePath /api`. Kecuali `POST /api/auth/login`, 
 | **Reports** | `GET /reports/.../pdf` · `/excel` · `/stats` | Admin, Parent |
 
 Yang bertanda ✅ sudah diimplementasikan; sisanya masih rencana.
+
+### Detail endpoint auth
+
+```bash
+# Login — mengembalikan JWT + profil user
+POST /api/auth/login
+{ "username": "sari", "password": "snack123" }
+
+# Profil user yang sedang login (butuh header Authorization)
+GET /api/auth/me
+Authorization: Bearer <token>
+
+# Ubah password sendiri
+PUT /api/auth/password
+{ "currentPassword": "snack123", "newPassword": "passwordbaru123" }
+```
+
+Token JWT berlaku 7 hari (dapat diatur via `JWT_EXPIRES_IN` dalam detik). Algoritma **HS256** via `hono/jwt`.
 
 Detail lengkap: [`docs/PRD_Pizza_Snack_Play.md`](docs/PRD_Pizza_Snack_Play.md) section 7.
 
@@ -190,15 +229,26 @@ JWT_SECRET=<random string untuk signing JWT>
 
 ### Migrasi & Seed
 
+File migrasi (`drizzle/0000_*.sql`) dan seed (`drizzle/seed.sql`) sudah tersedia di repo.
+
+**Untuk development lokal** (D1 lokal via miniflare, tanpa perlu akun Cloudflare):
+
 ```bash
-# Generate file migrasi dari Drizzle schema
-bunx drizzle-kit generate
+bun run db:migrate:local   # buat 11 tabel di D1 lokal
+bun run db:seed:local      # isi data dari data/jadwal_piket_snack.txt
+```
 
-# Terapkan ke D1
+**Untuk D1 remote** (setelah `wrangler d1 create` dan kredensial terisi):
+
+```bash
 bunx drizzle-kit migrate
-
-# Seed data awal
 bunx wrangler d1 execute pizza-snack-play --remote --file=./drizzle/seed.sql
+```
+
+**Regenerate seed** (bila file jadwal diubah):
+
+```bash
+bun run db:seed            # tulis ulang drizzle/seed.sql dari data/jadwal_piket_snack.txt
 ```
 
 ### Development
@@ -208,6 +258,12 @@ bun run dev
 ```
 
 Dev server berjalan di **http://localhost:5173** — logika Worker terintegrasi langsung di dalam Vite dev server.
+
+### Test
+
+```bash
+bun run test:auth          # 26 test end-to-end untuk auth (butuh dev server jalan)
+```
 
 ### Build & Preview
 
@@ -243,9 +299,13 @@ bun run lint       # ESLint
 | `lint` | `eslint .` | Cek kualitas kode |
 | `cf-typegen` | `wrangler types` | Generate tipe dari binding |
 | `db:generate` | `drizzle-kit generate` | Generate migrasi |
-| `db:migrate` | `drizzle-kit migrate` | Terapkan migrasi |
+| `db:migrate` | `drizzle-kit migrate` | Terapkan migrasi ke D1 remote |
+| `db:migrate:local` | `wrangler d1 migrations apply pizza-snack-play --local` | Terapkan migrasi ke D1 lokal |
+| `db:seed` | `bun run scripts/seed.ts` | Regenerate `drizzle/seed.sql` dari file jadwal |
+| `db:seed:local` | `wrangler d1 execute ... --local --file=./drizzle/seed.sql` | Seed D1 lokal |
 | `db:push` | `drizzle-kit push` | Push schema langsung (dev) |
 | `db:studio` | `drizzle-kit studio` | GUI inspeksi database |
+| `test:auth` | `bun run scripts/test-auth.mjs` | Test end-to-end auth (26 skenario) |
 
 ---
 
@@ -266,8 +326,8 @@ bun run lint       # ESLint
 
 | Phase | Scope | Status |
 |-------|-------|--------|
-| **1. MVP** | Scaffold project, skema DB (11 tabel), migrasi D1, backend CRUD, autentikasi JWT, RBAC, kelola akun orang tua, frontend login + jadwal, seed data | Scaffold + skema + migrasi file selesai |
-| **2. Admin Dashboard** | Dashboard lengkap, manajemen jadwal mingguan/bulanan, duplikasi jadwal, kategori & tagging | Pending |
+| **1. MVP** | Scaffold project, skema DB (11 tabel), migrasi D1, seed data, autentikasi JWT, RBAC, kelola akun orang tua, backend CRUD menu/jadwal, frontend login + jadwal | Scaffold + skema + migrasi + seed + auth JWT selesai |
+| **2. Admin Dashboard** | Dashboard lengkap, manajemen jadwal mingguan/bulanan, duplikasi jadwal, kategori & tagging, kelola akun orang tua | Pending |
 | **3. Ekspor & Cetak** | Ekspor PDF mingguan/bulanan, Excel, cetak dari browser | Pending |
 | **4. Notifikasi** | Push notification (PWA), WhatsApp broadcast (opsional) | Pending |
 
@@ -276,10 +336,11 @@ bun run lint       # ESLint
 ## Catatan Teknis
 
 - **Timezone:** Worker berjalan di UTC. Untuk WIB (UTC+7) gunakan `date('now','+7 hours')` atau hitung offset di aplikasi — jangan andalkan `localtime`.
-- **Password hashing:** Gunakan Web Crypto API (PBKDF2) yang edge-native, atau `bcryptjs` dengan flag `nodejs_compat`.
+- **Password hashing:** PBKDF2-SHA256 (100.000 iterasi) via Web Crypto API — edge-native, tanpa dependency native. Format tersimpan: `pbkdf2$<iterations>$<salt>$<hash>`. Lihat `src/api/utils/password.ts`.
+- **JWT:** HS256 via `hono/jwt`. Catatan: pada Hono 4.12+, `verify()` mewajibkan argumen algoritma ketiga — `verify(token, secret, "HS256")`.
 - **Transaksi D1:** Tidak ada transaksi interaktif panjang — gunakan `db.batch([...])`.
 - **Secrets:** `JWT_SECRET` dan token Cloudflare disimpan sebagai Worker Secret, bukan di repo.
-- **Local vs Remote D1:** `wrangler dev` memakai D1 lokal (miniflare) yang datanya terpisah dari remote.
+- **Local vs Remote D1:** `wrangler dev` memakai D1 lokal (miniflare) di `.wrangler/state/` — datanya terpisah dari remote, tapi dipakai bersama oleh `wrangler d1 execute --local` dan dev server.
 
 ---
 
@@ -290,12 +351,17 @@ bun run lint       # ESLint
 
 ## Sumber Data
 
-Jadwal piket snack berasal dari `D:\WORKS\1pis\sekolahku\jadwal_piket_snack_pizza_snack_play.txt`:
+Salinan file sumber ada di repo: [`data/jadwal_piket_snack.txt`](data/jadwal_piket_snack.txt)
+(asal: `D:\WORKS\1pis\sekolahku\jadwal_piket_snack_pizza_snack_play.txt`).
 
 - **Agustus 2026** — 5 minggu (3–31 Agustus 2026)
 - **September 2026** — 5 minggu (1–30 September 2026)
 
 Setiap hari kerja (Senin–Jumat): **makanan utama + buah pendamping**.
+
+`scripts/seed.ts` mem-parse file ini dan menghasilkan **10 minggu, 42 menu, 84 menu item, 43 jadwal** (1 hari libur: 17 Agustus 2026).
+
+**Cara kerja parser:** setiap blok minggu dibaca sebagai rentang tanggal, lalu setiap tanggal dalam rentang dicocokkan dengan nama harinya (Senin–Jumat) — jadi tanggal tidak perlu ditulis eksplisit di file sumber.
 
 ---
 

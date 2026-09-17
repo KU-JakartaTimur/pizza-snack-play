@@ -60,8 +60,12 @@
     "dev:prod": "tsc -b && vite build && wrangler dev --remote",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:migrate:local": "wrangler d1 migrations apply pizza-snack-play --local",
+    "db:seed": "bun run scripts/seed.ts",
+    "db:seed:local": "wrangler d1 execute pizza-snack-play --local --file=./drizzle/seed.sql",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "test:auth": "bun run scripts/test-auth.mjs"
   },
   "type": "module"
 }

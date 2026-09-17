@@ -42,6 +42,24 @@ export const responseNotFound = (c: Context, message: string = "Not found") => {
   return sendResponse(c, 404, message);
 };
 
+export const responseUnauthorized = (
+  c: Context,
+  message: string = "Unauthorized",
+) => {
+  return sendResponse(c, 401, message);
+};
+
+export const responseForbidden = (
+  c: Context,
+  message: string = "Forbidden",
+) => {
+  return sendResponse(c, 403, message);
+};
+
+export const responseConflict = (c: Context, message: string = "Conflict") => {
+  return sendResponse(c, 409, message);
+};
+
 export const responseInternalError = (
   c: Context,
   message: string = "Internal server error",

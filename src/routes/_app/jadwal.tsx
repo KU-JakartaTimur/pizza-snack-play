@@ -8,6 +8,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
+import { AdminOnly } from "@/components/AdminOnly";
 import { PageHeader } from "@/components/AppShell";
 import {
   Badge,
@@ -37,6 +38,14 @@ export const Route = createFileRoute("/_app/jadwal")({
 const NO_MENU = "";
 
 function ScheduleAdminPage() {
+  return (
+    <AdminOnly>
+      <ScheduleAdminContent />
+    </AdminOnly>
+  );
+}
+
+function ScheduleAdminContent() {
   const queryClient = useQueryClient();
   const today = todayInWib();
 
@@ -207,7 +216,9 @@ function ScheduleAdminPage() {
             </Button>
           </div>
           <p className="text-xs text-slate-500">
-            {menus.length} menu aktif tersedia
+            {menusQuery.isPending
+              ? "Memuat menu…"
+              : `${menus.length} menu aktif tersedia`}
           </p>
         </div>
       </Card>

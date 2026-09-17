@@ -8,6 +8,7 @@ import {
   Users,
   UtensilsCrossed,
 } from "lucide-react";
+import { AdminOnly } from "@/components/AdminOnly";
 import { PageHeader } from "@/components/AppShell";
 import { Card, CardHeader, ErrorState, Spinner } from "@/components/ui";
 import { api } from "@/lib/api";
@@ -18,6 +19,14 @@ export const Route = createFileRoute("/_app/dashboard")({
 });
 
 function DashboardPage() {
+  return (
+    <AdminOnly>
+      <DashboardContent />
+    </AdminOnly>
+  );
+}
+
+function DashboardContent() {
   const statsQuery = useQuery({
     queryKey: ["stats", "summary"],
     queryFn: api.stats.summary,

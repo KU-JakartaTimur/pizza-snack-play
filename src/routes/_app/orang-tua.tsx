@@ -10,6 +10,7 @@ import {
   UserX,
   Users,
 } from "lucide-react";
+import { AdminOnly } from "@/components/AdminOnly";
 import { PageHeader } from "@/components/AppShell";
 import {
   Badge,
@@ -61,6 +62,14 @@ const EMPTY_FORM: ParentForm = {
 };
 
 function ParentsPage() {
+  return (
+    <AdminOnly>
+      <ParentsContent />
+    </AdminOnly>
+  );
+}
+
+function ParentsContent() {
   const queryClient = useQueryClient();
 
   const [search, setSearch] = useState("");

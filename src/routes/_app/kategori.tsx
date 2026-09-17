@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Plus, Tags, Trash2 } from "lucide-react";
+import { AdminOnly } from "@/components/AdminOnly";
 import { PageHeader } from "@/components/AppShell";
 import {
   Badge,
@@ -24,6 +25,14 @@ export const Route = createFileRoute("/_app/kategori")({
 const EMPTY_FORM = { name: "", color: "#10B981" };
 
 function CategoriesPage() {
+  return (
+    <AdminOnly>
+      <CategoriesContent />
+    </AdminOnly>
+  );
+}
+
+function CategoriesContent() {
   const queryClient = useQueryClient();
 
   const [editing, setEditing] = useState<CategoryDto | null>(null);

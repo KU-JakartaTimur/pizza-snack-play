@@ -1,6 +1,6 @@
 import type { Context } from "hono";
 import { getDb } from "../../database/db";
-import type { CopyWeekInput, ScheduleInput } from "../../types/schedule";
+import type { CopyWeekInput, LockScheduleInput, PublishScheduleInput, ScheduleInput } from "../../types/schedule";
 import type { AuthEnv } from "../middleware/auth";
 import {
   canWriteClass,
@@ -35,6 +35,10 @@ function mapError(c: ScheduleContext, error: ScheduleError) {
       return responseBadRequest(c, "Minggu sumber dan tujuan sama");
     case "forbidden_class":
       return responseForbidden(c, "Kelas ini bukan cakupan Anda");
+    case "not_editable":
+      return responseConflict(c, "Jadwal sudah dikunci/dipublikasi, tidak dapat diubah");
+    case "drafts_remaining":
+      return responseConflict(c, "Masih ada jadwal draft — kunci semua dahulu sebelum publikasi");
   }
 }
 
@@ -59,7 +63,7 @@ class ScheduleController {
     const scope = await resolveReadClass(db, c.get("user"), c.req.query("class"));
     if (!scope.ok) return mapScopeError(c, scope.error);
 
-    const data = await scheduleService.getToday(db, scope.className);
+    const data = await scheduleService.getToday(db, scope.className, c.get("user").role);
     return responseOK(c, "Jadwal hari ini", data);
   };
 
@@ -74,7 +78,7 @@ class ScheduleController {
     const scope = await resolveReadClass(db, c.get("user"), c.req.query("class"));
     if (!scope.ok) return mapScopeError(c, scope.error);
 
-    const data = await scheduleService.getWeek(db, scope.className, date);
+    const data = await scheduleService.getWeek(db, scope.className, c.get("user").role, date);
     return responseOK(c, "Jadwal mingguan", data);
   };
 
@@ -98,6 +102,7 @@ class ScheduleController {
       year,
       month,
       scope.className,
+      c.get("user").role,
     );
     return responseOK(c, "Jadwal bulanan", data);
   };
@@ -113,7 +118,7 @@ class ScheduleController {
     const scope = await resolveReadClass(db, c.get("user"), c.req.query("class"));
     if (!scope.ok) return mapScopeError(c, scope.error);
 
-    const data = await scheduleService.getRange(db, from!, to!, scope.className);
+    const data = await scheduleService.getRange(db, from!, to!, scope.className, c.get("user").role);
     return responseOK(c, "Jadwal rentang", data);
   };
 
@@ -131,7 +136,7 @@ class ScheduleController {
       if (!allowed.ok) return responseForbidden(c, FORBIDDEN_CLASS);
     }
 
-    const data = await scheduleService.getById(db, id);
+    const data = await scheduleService.getById(db, id, c.get("user").role);
     if (!data) return responseNotFound(c, "Jadwal tidak ditemukan");
 
     return responseOK(c, "Detail jadwal", data);
@@ -267,6 +272,7 @@ class ScheduleController {
     }
 
     const removed = await scheduleService.deleteSchedule(db, id);
+    if (typeof removed === "string") return mapError(c, removed);
     if (!removed) return responseNotFound(c, "Jadwal tidak ditemukan");
 
     return responseOK(c, "Jadwal berhasil dihapus");
@@ -305,6 +311,93 @@ class ScheduleController {
 
     if (typeof result === "string") return mapError(c, result);
     return responseCreated(c, "Jadwal berhasil disalin", result);
+  };
+
+  // ── Kunci & Publikasi (admin & korlas) ──────────────────────
+
+  /**
+   * Kunci jadwal draft pada rentang tanggal untuk satu kelas.
+   * `POST /schedules/lock` dengan `{ fromDate, toDate, className? }`
+   */
+  lock = async (c: ScheduleContext) => {
+    let body: Partial<LockScheduleInput>;
+    try {
+      body = await c.req.json<Partial<LockScheduleInput>>();
+    } catch {
+      return responseBadRequest(c, "Body harus berupa JSON");
+    }
+
+    const scope = resolveWriteClass(
+      c.get("user"),
+      typeof body.className === "string" ? body.className : null,
+    );
+    if (!scope.ok) return mapScopeError(c, scope.error);
+
+    if (!isIsoDate(body.fromDate)) {
+      return responseBadRequest(c, "`fromDate` wajib format YYYY-MM-DD");
+    }
+    if (!isIsoDate(body.toDate)) {
+      return responseBadRequest(c, "`toDate` wajib format YYYY-MM-DD");
+    }
+
+    const data = await scheduleService.lockSchedules(
+      getDb(c.env),
+      scope.className!,
+      { fromDate: body.fromDate, toDate: body.toDate },
+      c.get("user").sub,
+    );
+
+    return responseOK(c, "Jadwal berhasil dikunci", data);
+  };
+
+  /**
+   * Publikasi jadwal yang sudah dikunci untuk satu bulan.
+   * `POST /schedules/publish` dengan `{ year, month, className? }`
+   */
+  publish = async (c: ScheduleContext) => {
+    let body: Partial<PublishScheduleInput>;
+    try {
+      body = await c.req.json<Partial<PublishScheduleInput>>();
+    } catch {
+      return responseBadRequest(c, "Body harus berupa JSON");
+    }
+
+    const scope = resolveWriteClass(
+      c.get("user"),
+      typeof body.className === "string" ? body.className : null,
+    );
+    if (!scope.ok) return mapScopeError(c, scope.error);
+
+    if (!Number.isInteger(body.year) || body.year < 2000 || body.year > 2100) {
+      return responseBadRequest(c, "`year` tidak valid");
+    }
+    if (!Number.isInteger(body.month) || body.month < 1 || body.month > 12) {
+      return responseBadRequest(c, "`month` harus 1–12");
+    }
+
+    const result = await scheduleService.publishMonth(
+      getDb(c.env),
+      scope.className!,
+      { year: body.year, month: body.month },
+      c.get("user").sub,
+    );
+
+    if (typeof result === "string") return mapError(c, result);
+    return responseOK(c, "Jadwal berhasil dipublikasi", result);
+  };
+
+  /**
+   * Buka kunci satu baris jadwal — kembalikan ke draft.
+   * `POST /schedules/:id/unlock` — hanya admin.
+   */
+  unlock = async (c: ScheduleContext) => {
+    const id = parseId(c.req.param("id"));
+    if (id === null) return responseBadRequest(c, "ID tidak valid");
+
+    const result = await scheduleService.unlock(getDb(c.env), id);
+    if (typeof result === "string") return mapError(c, result);
+
+    return responseOK(c, "Kunci jadwal berhasil dibuka", result);
   };
 
   // ── Hari libur (tetap global, khusus admin) ─────────────────

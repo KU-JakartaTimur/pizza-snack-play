@@ -1,9 +1,9 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Pizza } from "lucide-react";
 import { Button, Card, Field, Input } from "@/components/ui";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import logo from "@/assets/logo.png";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
@@ -63,9 +63,8 @@ function LoginPage() {
 
       <div className="relative w-full max-w-sm">
         <div className="mb-6 text-center">
-          <span className="relative mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-brand-600 to-brand-800 text-white shadow-md">
-            <Pizza className="h-6 w-6" />
-            <span className="absolute -right-1 -bottom-1 h-3.5 w-3.5 rounded-full border-2 border-white bg-accent-500" />
+          <span className="relative mx-auto mb-3 flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl shadow-md">
+            <img src={logo} alt="Pizza Snack Play" className="h-full w-full object-cover" />
           </span>
           <h1 className="brand-text-gradient text-xl font-bold">
             Pizza Snack Play

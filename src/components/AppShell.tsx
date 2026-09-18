@@ -14,6 +14,7 @@ import {
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/cn";
 import { ClassSwitcher } from "./ClassSwitcher";
+import { PWAInstallPrompt } from "./PWAInstallPrompt";
 import type { Capability } from "./AdminOnly";
 import logo from "@/assets/logo.png";
 
@@ -164,6 +165,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           Pizza Snack Play · Bun + Hono + Vite + React + Cloudflare D1
         </p>
       </footer>
+
+      <PWAInstallPrompt />
     </div>
   );
 }

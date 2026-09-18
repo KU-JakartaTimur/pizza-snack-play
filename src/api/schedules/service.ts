@@ -124,12 +124,9 @@ class ScheduleService {
       menu: isHoliday
         ? null
         : ((schedule?.menuId ? ctx.menusById.get(schedule.menuId) : null) ?? null),
-<<<<<<< HEAD
       petugasName: schedule?.petugasName ?? null,
       petugasParentName: schedule?.petugasParentName ?? null,
-=======
       status: (schedule?.status as ScheduleStatus | undefined) ?? null,
->>>>>>> 2ad3c510a41db83a5b49cd8546c8a4b2fdd99ed3
     };
   }
 

@@ -497,7 +497,7 @@ async function main() {
           holidayCount++;
           for (const className of CLASSES) {
             scheduleRows.push(
-              `(${weekId}, ${sqlString(cursor)}, ${dayIdx}, ${sqlString(className)}, NULL, 1, NULL, NULL, ${sqlString(menuText)})`,
+              `(${weekId}, ${sqlString(cursor)}, ${dayIdx}, ${sqlString(className)}, NULL, 1, NULL, NULL, ${sqlString(menuText)}, 'published')`,
             );
           }
         } else {
@@ -532,7 +532,7 @@ async function main() {
           for (const className of CLASSES) {
             const petugasName = petugasForDate?.get(className) ?? null;
             scheduleRows.push(
-              `(${weekId}, ${sqlString(cursor)}, ${dayIdx}, ${sqlString(className)}, ${menuId}, 0, ${sqlString(petugasName)}, NULL, ${sqlString(parsed.notes)})`,
+              `(${weekId}, ${sqlString(cursor)}, ${dayIdx}, ${sqlString(className)}, ${menuId}, 0, ${sqlString(petugasName)}, NULL, ${sqlString(parsed.notes)}, 'published')`,
             );
           }
         }
@@ -560,7 +560,7 @@ async function main() {
   }
 
   statements.push(
-    `INSERT INTO schedules (week_id, schedule_date, day_of_week, class_name, menu_id, is_holiday, petugas_name, petugas_parent_name, notes) VALUES\n  ${scheduleRows.join(",\n  ")};`,
+    `INSERT INTO schedules (week_id, schedule_date, day_of_week, class_name, menu_id, is_holiday, petugas_name, petugas_parent_name, notes, status) VALUES\n  ${scheduleRows.join(",\n  ")};`,
   );
 
   // ── holidays

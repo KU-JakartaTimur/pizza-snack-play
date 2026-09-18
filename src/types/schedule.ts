@@ -36,15 +36,12 @@ export interface ScheduleDayDto {
   notes: string | null;
   scheduleId: number | null;
   menu: MenuDto | null;
-<<<<<<< HEAD
   /** Nama siswa yang bertugas piket (ambil snack) pada hari ini. */
   petugasName: string | null;
   /** Nama orang tua/wali petugas — bila diketahui. */
   petugasParentName: string | null;
-=======
   /** Status jadwal — hanya relevan untuk admin/korlas. */
   status: ScheduleStatus | null;
->>>>>>> 2ad3c510a41db83a5b49cd8546c8a4b2fdd99ed3
 }
 
 export interface WeekScheduleDto {

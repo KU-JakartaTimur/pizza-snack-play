@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, like, lte, or, sql } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, like, lte, or, sql } from "drizzle-orm";
 import type { Db } from "../../database/db";
 import {
   holidays,
@@ -8,6 +8,7 @@ import {
   weeks,
 } from "../../database/schema";
 import type { Holiday, Schedule, Week } from "../../database/schema";
+import type { ScheduleStatus } from "../../types/schedule";
 import { endOfWeek, monthOf, startOfWeek, yearOf } from "../utils/date";
 import { likePattern } from "../utils/sql";
 
@@ -21,26 +22,42 @@ export interface MenuHistoryRow {
   notes: string | null;
 }
 
+/** Ringkasan status jadwal untuk satu bulan + kelas. */
+export interface MonthStatusRow {
+  status: string;
+  count: number;
+}
+
 class ScheduleRepository {
   // ── Jadwal ──────────────────────────────────────────────────
 
-  /** Jadwal satu kelas pada rentang tanggal, urut tanggal. */
+  /**
+   * Jadwal satu kelas pada rentang tanggal, urut tanggal.
+   * `statusFilter` opsional — bila diisi, hanya baris dengan status
+   * tersebut yang dikembalikan (dipakai untuk membatasi orang tua
+   * ke 'published' saja).
+   */
   async findSchedulesBetween(
     db: Db,
     from: string,
     to: string,
     className: string,
+    statusFilter?: ScheduleStatus[],
   ): Promise<Schedule[]> {
+    const conditions = [
+      eq(schedules.className, className),
+      gte(schedules.scheduleDate, from),
+      lte(schedules.scheduleDate, to),
+    ];
+
+    if (statusFilter && statusFilter.length > 0) {
+      conditions.push(inArray(schedules.status, statusFilter));
+    }
+
     return db
       .select()
       .from(schedules)
-      .where(
-        and(
-          eq(schedules.className, className),
-          gte(schedules.scheduleDate, from),
-          lte(schedules.scheduleDate, to),
-        ),
-      )
+      .where(and(...conditions))
       .orderBy(asc(schedules.scheduleDate));
   }
 
@@ -127,6 +144,126 @@ class ScheduleRepository {
       .select({ count: sql<number>`count(*)` })
       .from(schedules);
     return rows[0]?.count ?? 0;
+  }
+
+  // ── Kunci & Publikasi ───────────────────────────────────────
+
+  /**
+   * Kunci semua jadwal draft pada rentang tanggal untuk satu kelas.
+   * Baris yang sudah 'locked' atau 'published' dilewati.
+   * Mengembalikan jumlah baris yang dikunci.
+   */
+  async lockDraftSchedulesBetween(
+    db: Db,
+    from: string,
+    to: string,
+    className: string,
+    userId: number,
+  ): Promise<number> {
+    const rows = await db
+      .update(schedules)
+      .set({
+        status: "locked",
+        lockedBy: userId,
+        lockedAt: sql`(datetime('now'))`,
+        updatedAt: sql`(datetime('now'))`,
+      })
+      .where(
+        and(
+          eq(schedules.className, className),
+          eq(schedules.status, "draft"),
+          gte(schedules.scheduleDate, from),
+          lte(schedules.scheduleDate, to),
+        ),
+      )
+      .returning({ id: schedules.id });
+
+    return rows.length;
+  }
+
+  /**
+   * Publikasi semua jadwal locked untuk satu bulan + kelas.
+   * Mengembalikan jumlah baris yang dipublikasi.
+   */
+  async publishLockedSchedulesForMonth(
+    db: Db,
+    year: number,
+    month: number,
+    className: string,
+    userId: number,
+  ): Promise<number> {
+    const from = `${year}-${String(month).padStart(2, "0")}-01`;
+    const to = `${year}-${String(month).padStart(2, "0")}-31`;
+
+    const rows = await db
+      .update(schedules)
+      .set({
+        status: "published",
+        publishedBy: userId,
+        publishedAt: sql`(datetime('now'))`,
+        updatedAt: sql`(datetime('now'))`,
+      })
+      .where(
+        and(
+          eq(schedules.className, className),
+          eq(schedules.status, "locked"),
+          gte(schedules.scheduleDate, from),
+          lte(schedules.scheduleDate, to),
+        ),
+      )
+      .returning({ id: schedules.id });
+
+    return rows.length;
+  }
+
+  /**
+   * Hitung jumlah baris per status untuk satu bulan + kelas.
+   * Dipakai untuk menentukan apakah publikasi sudah bisa dilakukan
+   * (semua baris harus 'locked', tidak boleh ada 'draft').
+   */
+  async countSchedulesByStatusForMonth(
+    db: Db,
+    year: number,
+    month: number,
+    className: string,
+  ): Promise<MonthStatusRow[]> {
+    const from = `${year}-${String(month).padStart(2, "0")}-01`;
+    const to = `${year}-${String(month).padStart(2, "0")}-31`;
+
+    return db
+      .select({
+        status: schedules.status,
+        count: sql<number>`count(*)`,
+      })
+      .from(schedules)
+      .where(
+        and(
+          eq(schedules.className, className),
+          gte(schedules.scheduleDate, from),
+          lte(schedules.scheduleDate, to),
+        ),
+      )
+      .groupBy(schedules.status);
+  }
+
+  /**
+   * Buka kunci satu baris jadwal — kembalikan ke 'draft'.
+   * Hanya admin yang boleh melakukan ini.
+   */
+  async unlockSchedule(db: Db, id: number): Promise<Schedule | undefined> {
+    const rows = await db
+      .update(schedules)
+      .set({
+        status: "draft",
+        lockedBy: null,
+        lockedAt: null,
+        publishedBy: null,
+        publishedAt: null,
+        updatedAt: sql`(datetime('now'))`,
+      })
+      .where(eq(schedules.id, id))
+      .returning();
+    return rows[0];
   }
 
   /**

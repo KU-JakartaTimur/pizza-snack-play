@@ -1,14 +1,20 @@
 import type { Db } from "../../database/db";
 import type { Holiday, Schedule, Week } from "../../database/schema";
 import type { MenuDto, MenuItemType } from "../../types/catalog";
+import type { Role } from "../../types/auth";
 import type {
   CopyWeekInput,
   CopyWeekResultDto,
+  LockScheduleInput,
+  LockScheduleResultDto,
   MenuHistoryDto,
   MenuHistoryMatchDto,
   MonthScheduleDto,
+  PublishScheduleInput,
+  PublishScheduleResultDto,
   ScheduleDayDto,
   ScheduleInput,
+  ScheduleStatus,
   TodayScheduleDto,
   WeekDto,
   WeekScheduleDto,
@@ -32,7 +38,9 @@ export type ScheduleError =
   | "duplicate_date"
   | "menu_not_found"
   | "same_week"
-  | "forbidden_class";
+  | "forbidden_class"
+  | "not_editable"
+  | "drafts_remaining";
 
 /** Data pendukung yang dimuat sekali untuk sebuah rentang tanggal. */
 interface ScheduleContext {
@@ -69,10 +77,11 @@ class ScheduleService {
     from: string,
     to: string,
     className: string | null,
+    statusFilter?: ScheduleStatus[],
   ): Promise<ScheduleContext> {
     const [scheduleRows, holidayRows, weekRows] = await Promise.all([
       className
-        ? scheduleRepository.findSchedulesBetween(db, from, to, className)
+        ? scheduleRepository.findSchedulesBetween(db, from, to, className, statusFilter)
         : Promise.resolve<Schedule[]>([]),
       scheduleRepository.findHolidaysBetween(db, from, to),
       scheduleRepository.findWeeksOverlapping(db, from, to),
@@ -115,6 +124,7 @@ class ScheduleService {
       menu: isHoliday
         ? null
         : ((schedule?.menuId ? ctx.menusById.get(schedule.menuId) : null) ?? null),
+      status: (schedule?.status as ScheduleStatus | undefined) ?? null,
     };
   }
 
@@ -137,10 +147,28 @@ class ScheduleService {
 
   // ── Pembacaan ───────────────────────────────────────────────
 
-  async getToday(db: Db, className: string | null): Promise<TodayScheduleDto> {
+  /**
+   * Orang tua hanya boleh melihat jadwal yang sudah 'published'.
+   * Admin & korlas melihat semua status.
+   */
+  private statusFilterForRole(role: Role): ScheduleStatus[] | undefined {
+    return role === "parent" ? ["published"] : undefined;
+  }
+
+  async getToday(
+    db: Db,
+    className: string | null,
+    role: Role = "parent",
+  ): Promise<TodayScheduleDto> {
     const today = todayInWib();
     const weekStart = startOfWeek(today);
-    const ctx = await this.loadContext(db, weekStart, endOfWeek(today), className);
+    const ctx = await this.loadContext(
+      db,
+      weekStart,
+      endOfWeek(today),
+      className,
+      this.statusFilterForRole(role),
+    );
 
     return {
       day: this.buildDay(today, ctx),
@@ -152,12 +180,19 @@ class ScheduleService {
   async getWeek(
     db: Db,
     className: string | null,
+    role: Role = "parent",
     date?: string,
   ): Promise<WeekScheduleDto> {
     const anchor = date ?? todayInWib();
     const weekStart = startOfWeek(anchor);
     const weekEnd = endOfWeek(anchor);
-    const ctx = await this.loadContext(db, weekStart, weekEnd, className);
+    const ctx = await this.loadContext(
+      db,
+      weekStart,
+      weekEnd,
+      className,
+      this.statusFilterForRole(role),
+    );
 
     return this.buildWeek(weekStart, ctx);
   }
@@ -171,6 +206,7 @@ class ScheduleService {
     year: number,
     month: number,
     className: string | null,
+    role: Role = "parent",
   ): Promise<MonthScheduleDto> {
     const { start, end } = monthRange(year, month);
 
@@ -181,7 +217,13 @@ class ScheduleService {
 
     const from = weekStarts[0] ?? start;
     const to = addDays(weekStarts[weekStarts.length - 1] ?? start, 4);
-    const ctx = await this.loadContext(db, from, to, className);
+    const ctx = await this.loadContext(
+      db,
+      from,
+      to,
+      className,
+      this.statusFilterForRole(role),
+    );
 
     return {
       year,
@@ -198,8 +240,15 @@ class ScheduleService {
     from: string,
     to: string,
     className: string | null,
+    role: Role = "parent",
   ): Promise<ScheduleDayDto[]> {
-    const ctx = await this.loadContext(db, from, to, className);
+    const ctx = await this.loadContext(
+      db,
+      from,
+      to,
+      className,
+      this.statusFilterForRole(role),
+    );
     const days: ScheduleDayDto[] = [];
 
     for (let cursor = from; cursor <= to; cursor = addDays(cursor, 1)) {
@@ -209,10 +258,19 @@ class ScheduleService {
     return days;
   }
 
-  /** Detail satu baris jadwal — kelasnya mengikuti baris itu sendiri. */
-  async getById(db: Db, id: number): Promise<ScheduleDayDto | null> {
+  /**
+   * Detail satu baris jadwal — kelasnya mengikuti baris itu sendiri.
+   * Orang tua hanya bisa melihat baris yang sudah 'published'.
+   */
+  async getById(
+    db: Db,
+    id: number,
+    role: Role = "parent",
+  ): Promise<ScheduleDayDto | null> {
     const schedule = await scheduleRepository.findScheduleById(db, id);
     if (!schedule) return null;
+
+    if (role === "parent" && schedule.status !== "published") return null;
 
     const ctx = await this.loadContext(
       db,
@@ -330,7 +388,7 @@ class ScheduleService {
       notes: input.notes ?? null,
     });
 
-    return (await this.getById(db, created.id))!;
+    return (await this.getById(db, created.id, "admin"))!;
   }
 
   async updateSchedule(
@@ -340,6 +398,11 @@ class ScheduleService {
   ): Promise<ScheduleDayDto | ScheduleError> {
     const current = await scheduleRepository.findScheduleById(db, id);
     if (!current) return "not_found";
+
+    // Jadwal yang sudah dikunci/dipublikasi tidak dapat diubah.
+    if (current.status === "locked" || current.status === "published") {
+      return "not_editable";
+    }
 
     if (input.menuId != null) {
       const menu = await catalogRepository.findMenuById(db, input.menuId);
@@ -356,12 +419,17 @@ class ScheduleService {
       ...(isHoliday ? { menuId: null } : {}),
     });
 
-    return (await this.getById(db, id))!;
+    return (await this.getById(db, id, "admin"))!;
   }
 
-  async deleteSchedule(db: Db, id: number): Promise<boolean> {
+  async deleteSchedule(db: Db, id: number): Promise<boolean | ScheduleError> {
     const current = await scheduleRepository.findScheduleById(db, id);
     if (!current) return false;
+
+    // Jadwal yang sudah dikunci/dipublikasi tidak dapat dihapus.
+    if (current.status === "locked" || current.status === "published") {
+      return "not_editable";
+    }
 
     await scheduleRepository.deleteSchedule(db, id);
     return true;
@@ -415,6 +483,12 @@ class ScheduleService {
       );
 
       if (existing) {
+        // Baris yang sudah dikunci/dipublikasi tidak boleh ditimpa.
+        if (existing.status === "locked" || existing.status === "published") {
+          skipped += 1;
+          continue;
+        }
+
         if (!input.overwrite) {
           skipped += 1;
           continue;
@@ -449,6 +523,106 @@ class ScheduleService {
       updated,
       skipped,
     };
+  }
+
+  // ── Kunci & Publikasi (korlas & admin) ─────────────────────
+
+  /**
+   * Kunci semua jadwal 'draft' pada rentang `fromDate`–`toDate` untuk satu kelas.
+   * Baris yang sudah 'locked' atau 'published' dilewati.
+   * Dipanggil oleh korlas setelah selesai menyusun jadwal.
+   */
+  async lockSchedules(
+    db: Db,
+    className: string,
+    input: LockScheduleInput,
+    userId: number,
+  ): Promise<LockScheduleResultDto> {
+    // Ambil status saat ini untuk menghitung yang sudah terkunci/dilewati.
+    const rows = await scheduleRepository.findSchedulesBetween(
+      db,
+      input.fromDate,
+      input.toDate,
+      className,
+    );
+
+    const draftCount = rows.filter((r) => r.status === "draft").length;
+    const alreadyLocked = rows.filter((r) => r.status === "locked").length;
+    const skipped = rows.filter((r) => r.status === "published").length;
+
+    const locked = draftCount > 0
+      ? await scheduleRepository.lockDraftSchedulesBetween(
+          db,
+          input.fromDate,
+          input.toDate,
+          className,
+          userId,
+        )
+      : 0;
+
+    return {
+      className,
+      fromDate: input.fromDate,
+      toDate: input.toDate,
+      locked,
+      alreadyLocked,
+      skipped,
+    };
+  }
+
+  /**
+   * Publikasi semua jadwal 'locked' untuk satu bulan + kelas.
+   * Gagal bila masih ada baris 'draft' — harus dikunci dulu.
+   * Setelah publikasi, jadwal terlihat oleh semua orang tua.
+   */
+  async publishMonth(
+    db: Db,
+    className: string,
+    input: PublishScheduleInput,
+    userId: number,
+  ): Promise<PublishScheduleResultDto | ScheduleError> {
+    const statusCounts = await scheduleRepository.countSchedulesByStatusForMonth(
+      db,
+      input.year,
+      input.month,
+      className,
+    );
+
+    const counts = new Map(statusCounts.map((r) => [r.status, r.count]));
+    const draftCount = counts.get("draft") ?? 0;
+
+    if (draftCount > 0) return "drafts_remaining";
+
+    const alreadyPublished = counts.get("published") ?? 0;
+
+    const published = await scheduleRepository.publishLockedSchedulesForMonth(
+      db,
+      input.year,
+      input.month,
+      className,
+      userId,
+    );
+
+    return {
+      className,
+      year: input.year,
+      month: input.month,
+      published,
+      draftCount,
+      alreadyPublished,
+    };
+  }
+
+  /**
+   * Buka kunci satu baris jadwal — kembalikan ke 'draft'.
+   * Hanya admin yang boleh melakukan ini (lihat middleware route).
+   */
+  async unlock(db: Db, id: number): Promise<ScheduleDayDto | ScheduleError> {
+    const current = await scheduleRepository.findScheduleById(db, id);
+    if (!current) return "not_found";
+
+    await scheduleRepository.unlockSchedule(db, id);
+    return (await this.getById(db, id, "admin"))!;
   }
 
   async createHoliday(

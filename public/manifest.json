@@ -28,16 +28,9 @@
   "screenshots": [
     {
       "src": "/screenshot.png",
-      "sizes": "1280x720",
+      "sizes": "1920x1080",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "Jadwal mingguan Pizza Snack Play"
-    },
-    {
-      "src": "/screenshot.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "narrow",
       "label": "Jadwal mingguan Pizza Snack Play"
     }
   ]

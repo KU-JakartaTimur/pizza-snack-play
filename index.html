@@ -25,6 +25,35 @@
     <link rel="apple-touch-startup-image" href="/pwa/icon-512x512.png" />
 
     <title>Pizza Snack Play</title>
+
+    <!--
+      Penangkap `beforeinstallprompt`.
+
+      Event ini hanya menyala sekali, segera setelah Chrome selesai memvalidasi
+      manifest + service worker. Banner pemasangan dirender di dalam AppShell,
+      yang baru muncul setelah sesi diverifikasi ke `/auth/me` — satu round-trip
+      jaringan. Tanpa penangkap di sini event-nya sudah lewat sebelum React
+      sempat memasang listener, dan tombol Pasang tidak pernah muncul.
+
+      Diletakkan di <head> sebagai skrip klasik supaya berjalan lebih dulu
+      daripada bundel aplikasi, yang bertipe module dan karenanya ditunda.
+    -->
+    <script>
+      (function () {
+        window.__pwaInstallPrompt = null;
+
+        window.addEventListener("beforeinstallprompt", function (event) {
+          event.preventDefault();
+          window.__pwaInstallPrompt = event;
+          // Memberi tahu hook yang mungkin baru terpasang setelah ini.
+          window.dispatchEvent(new CustomEvent("pwa-install-available"));
+        });
+
+        window.addEventListener("appinstalled", function () {
+          window.__pwaInstallPrompt = null;
+        });
+      })();
+    </script>
   </head>
 
   <body>

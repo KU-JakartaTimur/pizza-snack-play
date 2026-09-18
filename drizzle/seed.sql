@@ -1,5 +1,7 @@
 -- Seed Pizza Snack Play (dibuat otomatis oleh scripts/seed.ts)
 
+DELETE FROM schedule_claims;
+
 DELETE FROM schedules;
 
 DELETE FROM menu_items;
@@ -443,15 +445,85 @@ INSERT INTO settings (key, value) VALUES
   ('active_month', '2026-09');
 
 INSERT INTO users (id, username, password_hash, full_name, role, class_name, is_active) VALUES
-  (1, 'admin', 'pbkdf2$100000$uSLHLHbzr8DZ8SfGsMzfTQ$baEjg6cNWEvRSUSwkT-YAPGSuufQspa1Scw-pye4Mq8', 'Bu Guru Sari', 'admin', NULL, 1),
-  (2, 'sari', 'pbkdf2$100000$Ro14QjdxoEyHOClW7dqB-g$nswtH2oqhnkI7Lc92RWHepDdW1fnMOIx6vDQTlnBVy0', 'Ibu Sari', 'parent', NULL, 1),
-  (3, 'budi', 'pbkdf2$100000$Ro14QjdxoEyHOClW7dqB-g$nswtH2oqhnkI7Lc92RWHepDdW1fnMOIx6vDQTlnBVy0', 'Pak Budi', 'korlas', '1', 1),
-  (4, 'dewi', 'pbkdf2$100000$Ro14QjdxoEyHOClW7dqB-g$nswtH2oqhnkI7Lc92RWHepDdW1fnMOIx6vDQTlnBVy0', 'Ibu Dewi', 'parent', NULL, 1);
+  (1, 'admin', 'pbkdf2$100000$w8St38biw7CYXewuPmytUA$lI7vjJioagNjlk9z8a2BuY8mLPMvC00mkNPGG1yLiJs', 'Bu Guru Sari', 'admin', NULL, 1),
+  (2, 'sari', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Ibu Sari', 'parent', NULL, 1),
+  (3, 'budi', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Pak Budi', 'korlas', '1', 1),
+  (4, 'dewi', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Ibu Dewi', 'parent', NULL, 1),
+  (5, 'aditya', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Aditya Priwahyuni', 'parent', NULL, 1),
+  (6, 'muhammad', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Muhammad Mubarraq', 'parent', NULL, 1),
+  (7, 'aprino', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Aprino Trinanda', 'parent', NULL, 1),
+  (8, 'dafid', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Dafid Saputra', 'parent', NULL, 1),
+  (9, 'januar', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Januar Tri Wahyudi', 'parent', NULL, 1),
+  (10, 'kholid', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Kholid Asyidiqi', 'parent', NULL, 1),
+  (11, 'alpisahrin', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Alpisahrin', 'parent', NULL, 1),
+  (12, 'pungkas', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Pungkas Setiady', 'parent', NULL, 1),
+  (13, 'muochamad', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Muochamad Samsudar', 'parent', NULL, 1),
+  (14, 'arif', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Arif Nugroho', 'parent', NULL, 1),
+  (15, 'abdul', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Abdul Bachman Fariz', 'parent', NULL, 1),
+  (16, 'mhasan', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'M. Hasan Basyori', 'parent', NULL, 1),
+  (17, 'zuman', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Zuman Heri Ritonga', 'parent', NULL, 1),
+  (18, 'januar2', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Januar Tri Wahyudi', 'parent', NULL, 1),
+  (19, 'teger', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Teger Rio Bangun', 'parent', NULL, 1),
+  (20, 'widiyantoro', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Widiyantoro', 'parent', NULL, 1),
+  (21, 'djumadi', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Djumadi', 'parent', NULL, 1),
+  (22, 'muhammad2', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Muhammad Bayu Aji', 'parent', NULL, 1),
+  (23, 'andi', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Andi Heri Widodo', 'parent', NULL, 1),
+  (24, 'zaenui', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Zaenui Palah', 'parent', NULL, 1),
+  (25, 'iwan', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Iwan Hanafiah', 'parent', NULL, 1),
+  (26, 'nugrono', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Nugrono Dwi Haryanto', 'parent', NULL, 1),
+  (27, 'dede', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Dede Firmansyah', 'parent', NULL, 1),
+  (28, 'mohammad', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Mohammad Iksan', 'parent', NULL, 1),
+  (29, 'muchaamad', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Muchaamad Desta Fadilah', 'parent', NULL, 1),
+  (30, 'roni', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Roni Hermanto', 'parent', NULL, 1),
+  (31, 'nopriadi', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Nopriadi', 'parent', NULL, 1),
+  (32, 'satrio', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Satrio Damar Baskoro', 'parent', NULL, 1),
+  (33, 'ahmad', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Ahmad Arifudin', 'parent', NULL, 1),
+  (34, 'udi', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Udi Hermawan', 'parent', NULL, 1),
+  (35, 'tri', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Tri Cahyadi, ST', 'parent', NULL, 1),
+  (36, 'andi2', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Andi', 'parent', NULL, 1),
+  (37, 'edi', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Edi Setyawan', 'parent', NULL, 1),
+  (38, 'rolly', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Rolly Afrinaldi', 'parent', NULL, 1),
+  (39, 'freny', 'pbkdf2$100000$DL-hpz0el6pH5EfUR_0QXA$P-A8I7KBn_N-TernZkCGOAsFtqQ6ltfFixQXVgbr7cw', 'Freny Edrian', 'parent', NULL, 1);
 
 INSERT INTO parents (user_id, parent_name, relationship, phone) VALUES
   (2, 'Sari Wulandari', 'ibu', '081234567890'),
   (3, 'Budi Santoso', 'ayah', '081234567891'),
-  (4, 'Dewi Lestari', 'ibu', '081234567892');
+  (4, 'Dewi Lestari', 'ibu', '081234567892'),
+  (5, 'Aditya Priwahyuni', 'ayah', '081234567893'),
+  (6, 'Muhammad Mubarraq', 'ayah', '081234567894'),
+  (7, 'Aprino Trinanda', 'ayah', '081234567895'),
+  (8, 'Dafid Saputra', 'ayah', '081234567896'),
+  (9, 'Januar Tri Wahyudi', 'ayah', '081234567897'),
+  (10, 'Kholid Asyidiqi', 'ayah', '081234567898'),
+  (11, 'Alpisahrin', 'ayah', '081234567899'),
+  (12, 'Pungkas Setiady', 'ayah', '081234567900'),
+  (13, 'Muochamad Samsudar', 'ayah', '081234567901'),
+  (14, 'Arif Nugroho', 'ayah', '081234567902'),
+  (15, 'Abdul Bachman Fariz', 'ayah', '081234567903'),
+  (16, 'M. Hasan Basyori', 'ayah', '081234567904'),
+  (17, 'Zuman Heri Ritonga', 'ayah', '081234567905'),
+  (18, 'Januar Tri Wahyudi', 'ayah', '081234567906'),
+  (19, 'Teger Rio Bangun', 'ayah', '081234567907'),
+  (20, 'Widiyantoro', 'ayah', '081234567908'),
+  (21, 'Djumadi', 'ayah', '081234567909'),
+  (22, 'Muhammad Bayu Aji', 'ayah', '081234567910'),
+  (23, 'Andi Heri Widodo', 'ayah', '081234567911'),
+  (24, 'Zaenui Palah', 'ayah', '081234567912'),
+  (25, 'Iwan Hanafiah', 'ayah', '081234567913'),
+  (26, 'Nugrono Dwi Haryanto', 'ayah', '081234567914'),
+  (27, 'Dede Firmansyah', 'ayah', '081234567915'),
+  (28, 'Mohammad Iksan', 'ayah', '081234567916'),
+  (29, 'Muchaamad Desta Fadilah', 'ayah', '081234567917'),
+  (30, 'Roni Hermanto', 'ayah', '081234567918'),
+  (31, 'Nopriadi', 'ayah', '081234567919'),
+  (32, 'Satrio Damar Baskoro', 'ayah', '081234567920'),
+  (33, 'Ahmad Arifudin', 'ayah', '081234567921'),
+  (34, 'Udi Hermawan', 'ayah', '081234567922'),
+  (35, 'Tri Cahyadi, ST', 'ayah', '081234567923'),
+  (36, 'Andi', 'ayah', '081234567924'),
+  (37, 'Edi Setyawan', 'ayah', '081234567925'),
+  (38, 'Rolly Afrinaldi', 'ayah', '081234567926'),
+  (39, 'Freny Edrian', 'ayah', '081234567927');
 
 INSERT INTO students (parent_id, name, class_name, is_active) VALUES
   ((SELECT p.id FROM parents p JOIN users u ON u.id = p.user_id WHERE u.username = 'sari'), 'Aisyah Sari', '1', 1),

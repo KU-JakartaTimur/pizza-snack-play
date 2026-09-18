@@ -441,7 +441,7 @@ function MenusPage() {
                       key={category.id}
                       type="button"
                       onClick={() => toggleCategory(category.id)}
-                      className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                      className={`rounded-sm border px-3 py-1 text-xs font-medium transition-colors ${
                         checked
                           ? "border-brand-300 bg-brand-50 text-brand-700"
                           : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50"

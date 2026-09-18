@@ -1,5 +1,16 @@
 import { useEffect, useState, useCallback } from "react";
 
+declare global {
+  interface Window {
+    /**
+     * `beforeinstallprompt` yang ditangkap skrip inline di `index.html`.
+     * Event itu hanya menyala sekali dan bisa terjadi sebelum React memasang
+     * listener, sehingga ditahan di sini agar tidak hilang.
+     */
+    __pwaInstallPrompt?: Event | null;
+  }
+}
+
 export interface PWAState {
   /** Apakah PWA sudah di-install (standalone mode). */
   isInstalled: boolean;
@@ -31,7 +42,11 @@ export function usePWA(): PWAState {
     );
   });
 
-  const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null);
+  // Nilai awal diambil dari penangkap inline: saat hook ini dipasang, event
+  // sering kali sudah lewat.
+  const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(
+    () => (typeof window === "undefined" ? null : (window.__pwaInstallPrompt ?? null)),
+  );
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
 
@@ -44,11 +59,17 @@ export function usePWA(): PWAState {
 
     const handleBeforeInstall = (e: Event) => {
       e.preventDefault();
+      window.__pwaInstallPrompt = e;
       setDeferredPrompt(e);
     };
     window.addEventListener("beforeinstallprompt", handleBeforeInstall);
 
+    // Dikirim penangkap inline bila event menyala sebelum hook ini terpasang.
+    const handleCaptured = () => setDeferredPrompt(window.__pwaInstallPrompt ?? null);
+    window.addEventListener("pwa-install-available", handleCaptured);
+
     const handleAppInstalled = () => {
+      window.__pwaInstallPrompt = null;
       setDeferredPrompt(null);
       setIsInstalled(true);
       setIsInstalling(false);
@@ -61,6 +82,7 @@ export function usePWA(): PWAState {
     return () => {
       mq.removeEventListener("change", handleChange);
       window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
+      window.removeEventListener("pwa-install-available", handleCaptured);
       window.removeEventListener("appinstalled", handleAppInstalled);
       window.removeEventListener("sw-update-available", handleSWUpdate);
     };
@@ -76,6 +98,8 @@ export function usePWA(): PWAState {
       if (choice.outcome === "accepted") {
         setIsInstalled(true);
       }
+      // Event hanya bisa dipakai sekali — buang juga dari penangkap inline.
+      window.__pwaInstallPrompt = null;
       setDeferredPrompt(null);
       setIsInstalling(false);
     });

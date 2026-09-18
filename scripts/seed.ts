@@ -88,6 +88,61 @@ const STUDENTS: Array<[string, string, string]> = [
 ];
 
 /**
+ * Wali murid dari daftar kontak manual sekolah: `[username, nama]`.
+ *
+ * Nomor telepon sengaja TIDAK disimpan di sini. Repo ini publik, sehingga
+ * seed hanya memakai nomor urut dummy (`demoPhone`); kontak asli diisi
+ * langsung di database, bukan lewat berkas yang ikut ter-commit.
+ *
+ * Entri yang nama dan nomornya persis kembar pada daftar sumber sudah
+ * digabung: `arif2`, `teger2`, dan `zaenul` dibuang. `januar2` dan `andi2`
+ * dipertahankan karena nomornya berbeda — kemungkinan memang dua orang.
+ */
+const EXTRA_PARENTS: Array<[string, string]> = [
+  ["aditya", "Aditya Priwahyuni"],
+  ["muhammad", "Muhammad Mubarraq"],
+  ["aprino", "Aprino Trinanda"],
+  ["dafid", "Dafid Saputra"],
+  ["januar", "Januar Tri Wahyudi"],
+  ["kholid", "Kholid Asyidiqi"],
+  ["alpisahrin", "Alpisahrin"],
+  ["pungkas", "Pungkas Setiady"],
+  ["muochamad", "Muochamad Samsudar"],
+  ["arif", "Arif Nugroho"],
+  ["abdul", "Abdul Bachman Fariz"],
+  ["mhasan", "M. Hasan Basyori"],
+  ["zuman", "Zuman Heri Ritonga"],
+  ["januar2", "Januar Tri Wahyudi"],
+  ["teger", "Teger Rio Bangun"],
+  ["widiyantoro", "Widiyantoro"],
+  ["djumadi", "Djumadi"],
+  ["muhammad2", "Muhammad Bayu Aji"],
+  ["andi", "Andi Heri Widodo"],
+  ["zaenui", "Zaenui Palah"],
+  ["iwan", "Iwan Hanafiah"],
+  ["nugrono", "Nugrono Dwi Haryanto"],
+  ["dede", "Dede Firmansyah"],
+  ["mohammad", "Mohammad Iksan"],
+  ["muchaamad", "Muchaamad Desta Fadilah"],
+  ["roni", "Roni Hermanto"],
+  ["nopriadi", "Nopriadi"],
+  ["satrio", "Satrio Damar Baskoro"],
+  ["ahmad", "Ahmad Arifudin"],
+  ["udi", "Udi Hermawan"],
+  ["tri", "Tri Cahyadi, ST"],
+  ["andi2", "Andi"],
+  ["edi", "Edi Setyawan"],
+  ["rolly", "Rolly Afrinaldi"],
+  ["freny", "Freny Edrian"],
+];
+
+/** `users.id` pertama untuk daftar di atas — 1–4 dipakai akun demo. */
+const FIRST_EXTRA_USER_ID = 5;
+
+/** Nomor urut dummy, meneruskan pola akun demo (`081234567890`). */
+const demoPhone = (index: number) => `08123456${7890 + index}`;
+
+/**
  * Kelas yang dikenal seed. Menu digandakan ke setiap kelas karena
  * `schedules` menyimpan satu baris per (tanggal × kelas).
  * Kelas 6 ada di struktur tapi belum punya data petugas di sumber teks.
@@ -420,6 +475,9 @@ async function main() {
   const categoryIdBySlug = new Map<string, number>();
 
   statements.push("-- Seed Pizza Snack Play (dibuat otomatis oleh scripts/seed.ts)");
+  // Klaim dihapus lebih dulu: tanpa ini, seed ulang bergantung pada cascade
+  // dari `schedules` yang hanya berlaku bila FK sedang ditegakkan.
+  statements.push("DELETE FROM schedule_claims;");
   statements.push("DELETE FROM schedules;");
   statements.push("DELETE FROM menu_items;");
   statements.push("DELETE FROM menu_categories;");
@@ -578,12 +636,33 @@ async function main() {
   const parentHash = await hashPassword(DEFAULT_PASSWORD);
 
   // `budi` sengaja dijadikan korlas kelas 1 sebagai contoh peran baru.
-  statements.push(
-    `INSERT INTO users (id, username, password_hash, full_name, role, class_name, is_active) VALUES\n  (1, 'admin', ${sqlString(adminHash)}, 'Bu Guru Sari', 'admin', NULL, 1),\n  (2, 'sari', ${sqlString(parentHash)}, 'Ibu Sari', 'parent', NULL, 1),\n  (3, 'budi', ${sqlString(parentHash)}, 'Pak Budi', 'korlas', '1', 1),\n  (4, 'dewi', ${sqlString(parentHash)}, 'Ibu Dewi', 'parent', NULL, 1);`,
-  );
+  const userRows = [
+    `  (1, 'admin', ${sqlString(adminHash)}, 'Bu Guru Sari', 'admin', NULL, 1)`,
+    `  (2, 'sari', ${sqlString(parentHash)}, 'Ibu Sari', 'parent', NULL, 1)`,
+    `  (3, 'budi', ${sqlString(parentHash)}, 'Pak Budi', 'korlas', '1', 1)`,
+    `  (4, 'dewi', ${sqlString(parentHash)}, 'Ibu Dewi', 'parent', NULL, 1)`,
+    ...EXTRA_PARENTS.map(
+      ([username, fullName], index) =>
+        `  (${FIRST_EXTRA_USER_ID + index}, ${sqlString(username)}, ${sqlString(parentHash)}, ${sqlString(fullName)}, 'parent', NULL, 1)`,
+    ),
+  ];
 
   statements.push(
-    `INSERT INTO parents (user_id, parent_name, relationship, phone) VALUES\n  (2, 'Sari Wulandari', 'ibu', '081234567890'),\n  (3, 'Budi Santoso', 'ayah', '081234567891'),\n  (4, 'Dewi Lestari', 'ibu', '081234567892');`,
+    `INSERT INTO users (id, username, password_hash, full_name, role, class_name, is_active) VALUES\n${userRows.join(",\n")};`,
+  );
+
+  const parentRows = [
+    `  (2, 'Sari Wulandari', 'ibu', '${demoPhone(0)}')`,
+    `  (3, 'Budi Santoso', 'ayah', '${demoPhone(1)}')`,
+    `  (4, 'Dewi Lestari', 'ibu', '${demoPhone(2)}')`,
+    ...EXTRA_PARENTS.map(
+      ([, fullName], index) =>
+        `  (${FIRST_EXTRA_USER_ID + index}, ${sqlString(fullName)}, 'ayah', '${demoPhone(index + 3)}')`,
+    ),
+  ];
+
+  statements.push(
+    `INSERT INTO parents (user_id, parent_name, relationship, phone) VALUES\n${parentRows.join(",\n")};`,
   );
 
   // ── students — satu orang tua boleh punya lebih dari satu anak.
@@ -612,7 +691,9 @@ async function main() {
     `  Jadwal       : ${scheduleRows.length} baris (${holidayCount} hari libur × ${CLASSES.length} kelas)`,
   );
   console.log(`  Petugas unik : ${petugasMap.size} tanggal tercatat`);
-  console.log("  Users        : 4 (1 admin, 1 korlas 1, 2 orang tua)");
+  console.log(
+    `  Users        : ${4 + EXTRA_PARENTS.length} (1 admin, 1 korlas kelas 1, ${2 + EXTRA_PARENTS.length} orang tua)`,
+  );
   console.log(`  Password     : ${DEFAULT_PASSWORD}`);
 }
 

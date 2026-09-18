@@ -258,8 +258,14 @@ section("10. Statistik dashboard");
 {
   const r = await call("GET", "/stats/summary", { token: adminToken });
   check("GET /stats/summary -> 200", r.status === 200, `got ${r.status}`);
-  check("3 orang tua", r.data?.parents?.total === 3, `total=${r.data?.parents?.total}`);
-  check("3 orang tua aktif", r.data?.parents?.active === 3, `active=${r.data?.parents?.active}`);
+  // Jumlahnya mengikuti daftar wali murid di seed, jadi yang diuji adalah
+  // semua orang tua tercatat dan aktif — bukan angka tetap.
+  check("ada orang tua tercatat", r.data?.parents?.total >= 3, `total=${r.data?.parents?.total}`);
+  check(
+    "semua orang tua aktif",
+    r.data?.parents?.active === r.data?.parents?.total,
+    `active=${r.data?.parents?.active} total=${r.data?.parents?.total}`,
+  );
   check("42 menu", r.data?.menus?.total === 42, `total=${r.data?.menus?.total}`);
   check("ada hari libur tercatat", r.data?.schedules?.holidays >= 1,
     `holidays=${r.data?.schedules?.holidays}`);

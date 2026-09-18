@@ -25,6 +25,7 @@ const scheduleWriters = requireRole("admin", "korlas");
  */
 export const schedulesRoute = new Hono<AuthEnv>()
   .get("/today", requireAuth, scheduleController.today)
+  .get("/today-all", requireAuth, admin, scheduleController.todayAll)
   .get("/week", requireAuth, scheduleController.week)
   .get("/month", requireAuth, scheduleController.month)
   .get("/range", requireAuth, scheduleController.range)

@@ -1,0 +1,44 @@
+{
+  "short_name": "Snack Play",
+  "name": "Pizza Snack Play",
+  "description": "Aplikasi manajemen & informasi jadwal piket snack sekolah",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#51277C",
+  "theme_color": "#51277C",
+  "orientation": "portrait",
+  "scope": "/",
+  "lang": "id",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/pwa/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/pwa/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "productivity"],
+  "screenshots": [
+    {
+      "src": "/screenshot.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Jadwal mingguan Pizza Snack Play"
+    },
+    {
+      "src": "/screenshot.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Jadwal mingguan Pizza Snack Play"
+    }
+  ]
+}

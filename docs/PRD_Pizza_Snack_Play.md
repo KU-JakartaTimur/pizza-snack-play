@@ -127,7 +127,7 @@ Saat ini jadwal piket snack disusun dalam format teks manual (lihat lampiran), d
 - **Profil** — orang tua dapat melihat profil (termasuk daftar anak) dan ubah password sendiri.
 - **Session/Token** — login menghasilkan JWT token dengan masa berlaku tertentu, disimpan di cookie/localStorage.
 - **Role-based access** — tiga role: `parent` (read-only), `korlas` (kelola katalog + jadwal kelasnya), `admin` (CRUD penuh). Pembatasan dilakukan **dua lapis**: API menolak dengan `403` (`requireRole(...)`), dan UI menyembunyikan tombol tambah/ubah/hapus lewat `<RoleGate need="...">` — `catalog` untuk menu/kategori, `schedule` untuk kelola jadwal, `admin` untuk halaman orang tua/dashboard. API adalah penegak yang sebenarnya; UI hanya menyembunyikan kontrol.
-- **Pengangkatan korlas** — korlas **tidak dibuat lewat halaman terpisah**, melainkan dengan mengubah `role` sebuah akun lewat `PUT /parents/:id` (`{"role":"korlas","className":"1A"}`). Saat role dijadikan `korlas`, `className` **wajib** diisi; saat dikembalikan ke `parent`, `className` otomatis dikosongkan. Form di halaman "Kelola Akun" menampilkan pilihan **Peran** dan input **Kelas yang dikoordinasikan** (muncul hanya bila peran = korlas), dan daftar akun menampilkan badge `Korlas <kelas>`.
+- **Pengangkatan korlas** — korlas **tidak dibuat lewat halaman terpisah**, melainkan dengan mengubah `role` sebuah akun lewat `PUT /parents/:id` (`{"role":"korlas","className":"1"}`). Saat role dijadikan `korlas`, `className` **wajib** diisi; saat dikembalikan ke `parent`, `className` otomatis dikosongkan. Form di halaman "Kelola Akun" menampilkan pilihan **Peran** dan input **Kelas yang dikoordinasikan** (muncul hanya bila peran = korlas), dan daftar akun menampilkan badge `Korlas <kelas>`.
 - **Cakupan kelas (`classScope`)** — pembacaan jadwal menerima `?class=` opsional; bila kosong, kelas default ditentukan dari peran (admin → kelas pertama tersedia, korlas → kelasnya, orang tua → kelas anak aktif pertama). Kelas di luar cakupan → `403`. Untuk penulisan, admin **wajib** menyebut kelas (`400 class_required`), sedangkan korlas terkunci ke `user.className`. Pada `PUT`/`DELETE`, kelas diambil dari **baris database** (bukan input klien) sehingga korlas tidak bisa membajak baris kelas lain.
 - **Daftar kelas tanpa tabel** — kelas sengaja tidak dijadikan tabel; daftarnya diturunkan dari `students.class_name` ∪ `users.class_name` (korlas) ∪ `schedules.class_name`, lalu disaring sesuai peran lewat `GET /classes`.
 
@@ -412,7 +412,7 @@ JWT_SECRET=              # (BARU) untuk signing JWT
 > **Bentuk `students`:** array objek `{ id?, name, className? }`. Saat `PUT`, entri yang menyertakan `id` akan **diperbarui**, entri tanpa `id` **dibuat baru**, dan entri yang tidak disebut lagi **dihapus**. `id` hanya dipercaya bila anak tersebut memang milik orang tua itu.
 
 > **Bentuk `role` / `className`:** `role` menerima `"parent"` atau `"korlas"`. Bila `role = "korlas"`,
-> `className` **wajib** diisi (mis. `"1A"`); bila `role = "parent"`, `className` diabaikan dan
+> `className` **wajib** diisi (mis. `"1"`); bila `role = "parent"`, `className` diabaikan dan
 > dikosongkan otomatis. Lihat §3.3 untuk wewenang korlas.
 
 ### 7.3 Kelas Endpoints
@@ -420,7 +420,7 @@ JWT_SECRET=              # (BARU) untuk signing JWT
 |--------|------|-----------|------|
 | GET | `/api/classes` | Daftar kelas yang **boleh diakses pemanggil** + kelas default. Admin → semua kelas; korlas → kelasnya sendiri; orang tua → kelas anak-anaknya | Authenticated |
 
-> Response: `{ "classes": ["1A","1B","2A"], "default": "1A" }`. Daftar ini **sudah dipersempit**
+> Response: `{ "classes": ["1","2","3","4","5","6"], "default": "1" }`. Daftar ini **sudah dipersempit**
 > sesuai peran, jadi UI bisa langsung memakainya untuk pemilih kelas tanpa logika tambahan.
 > Kelas diturunkan dari `students` ∪ korlas `users` ∪ `schedules` (tidak ada tabel `classes`),
 > dan diurutkan natural sehingga `2A` mendahului `10A`.
@@ -652,10 +652,10 @@ ke baris `schedules` lewat `schedule_id`; korlas hanya boleh mengelola penugasan
 ├──────────┬──────────┬────────────────────────┬─────────┤
 │ Nama     │ Username │ Anak                   │ Aksi    │
 │──────────┼──────────┼────────────────────────┼─────────│
-│ Sari     │ sari     │ Aisyah Sari (1A)       │Edit|Hps │
-│ Budi     │ budi     │ Bagas Budi (1A)        │Edit|Hps │
-│ Dewi     │ dewi     │ Citra Dewi (1B),       │Edit|Hps │
-│          │          │ Raka Dewi (2A)         │         │
+│ Sari     │ sari     │ Aisyah Sari (1)        │Edit|Hps │
+│ Budi     │ budi     │ Bagas Budi (1)         │Edit|Hps │
+│ Dewi     │ dewi     │ Citra Dewi (2),        │Edit|Hps │
+│          │          │ Raka Dewi (3)          │         │
 └──────────┴──────────┴────────────────────────┴─────────┘
 
 Formulir tambah/ubah akun:
@@ -810,7 +810,7 @@ bunx wrangler secret put JWT_SECRET
 - [x] Hari libur tetap **global** — hanya admin yang boleh mengubah
 - [x] Pengangkatan korlas lewat `PUT /parents/:id` (`role` + `className`) + form di `/orang-tua`
 - [x] Ringkasan statistik harian menampilkan `menuNames[]` lintas kelas + `classCount`
-- [x] Seed & test disesuaikan — `budi` jadi korlas 1A; test API 211 (termasuk section 18–19 untuk cakupan kelas & wewenang korlas)
+- [x] Seed & test disesuaikan — `budi` jadi korlas 1; test API 211 (termasuk section 18–19 untuk cakupan kelas & wewenang korlas)
 
 ### Phase 4: Penugasan Piket Siswa
 - [ ] Tabel baru `piket_assignments` — `schedule_id` (FK), `class_label`, `student_name`, `UNIQUE(schedule_id, class_label)`
@@ -858,8 +858,13 @@ bunx wrangler secret put JWT_SECRET
 | AC6 | Sistem dapat menyimpan jadwal untuk minimal 12 bulan ke depan | ✅ Done — tanpa batas periode; query rentang maks 92 hari |
 | AC7 | Pencarian menu "jeruk" menampilkan semua tanggal di mana jeruk disajikan | ✅ Done — `/pencarian` + `GET /schedules/search` (cocokkan nama menu *dan* komponen, dikelompokkan per bulan) |
 | AC8 | Ekspor PDF bulanan menampilkan semua jadwal dalam format yang dapat dicetak | Pending — Phase 3 |
+<<<<<<< HEAD
+| AC9 | Data seed dari file jadwal Agustus & September 2026 terinput dengan benar | ✅ Done — 10 minggu, 42 menu, 84 menu item, **258 jadwal** (~42 tanggal × 6 kelas: 1–6), 22 tanggal dengan petugas (Kelas 1–5), 4 akun (1 admin, 1 korlas, 2 orang tua), 4 anak |
+| AC10 | Schema 12 tabel berhasil dimigrasi ke Cloudflare D1 tanpa error | ✅ Done (D1 lokal) |
+=======
 | AC9 | Data seed dari file jadwal Agustus & September 2026 terinput dengan benar | ✅ Done — 10 minggu, 42 menu, 84 menu item, **129 jadwal** (43 tanggal × 3 kelas: 1A/1B/2A), 4 akun (1 admin, 1 korlas, 2 orang tua), 4 anak |
 | AC10 | Schema 13 tabel berhasil dimigrasi ke Cloudflare D1 tanpa error | ✅ Done (D1 lokal, 12 tabel; `piket_assignments` = Phase 4) |
+>>>>>>> 2ad3c510a41db83a5b49cd8546c8a4b2fdd99ed3
 | AC11 | Aplikasi berhasil di-build dan di-deploy ke Cloudflare Workers (`bun run deploy`) | Sebagian — build OK, deploy butuh kredensial |
 | AC12 | `bun run dev` menjalankan dev server lokal tanpa error | ✅ Done |
 | AC13 | Autentikasi JWT menolak akses tanpa token / token invalid dengan 401 | ✅ Done — terverifikasi 244 test (33 auth + 211 API) |
@@ -873,10 +878,13 @@ bunx wrangler secret put JWT_SECRET
 | AC21 | Orang tua tidak melihat tombol tambah/ubah/hapus pada halaman menu & kategori | ✅ Done — gerbang `canManageCatalog` dari `useAuth()`; tombol Edit/Hapus tidak dirender untuk `parent` |
 | AC22 | Jadwal dapat disimpan **terpisah per kelas** pada tanggal yang sama | ✅ Done — `schedules.class_name` + `UNIQUE(schedule_date, class_name)`; diuji di `test-api` section 13 (tanggal sama + kelas berbeda → 201) |
 | AC23 | Data jadwal lama tidak hilang saat migrasi ke model per kelas | ✅ Done — migrasi `0002_*.sql` mereplikasi baris global ke tiap kelas: 43 → **129 baris**, 0 baris yatim (fallback kelas `'Umum'` bila belum ada kelas) |
-| AC24 | Korlas dapat mengubah jadwal **kelasnya sendiri** | ✅ Done — `resolveWriteClass` + guard baris `canWriteClass`; `budi` (korlas 1A) berhasil create/update/copy kelas 1A; diuji di `test-api` section 19 |
+| AC24 | Korlas dapat mengubah jadwal **kelasnya sendiri** | ✅ Done — `resolveWriteClass` + guard baris `canWriteClass`; `budi` (korlas 1) berhasil create/update/copy kelas 1; diuji di `test-api` section 19 |
 | AC25 | Korlas **tidak dapat** menyentuh jadwal kelas lain (baca maupun tulis) | ✅ Done — `403 forbidden_class` / `Kelas ini bukan cakupan Anda`; diuji untuk read, create, update, delete, dan copy kelas lain (baris korban diverifikasi tidak berubah) |
 | AC26 | Korlas dapat mengelola katalog menu & kategori | ✅ Done — `requireRole("admin","korlas")` di `/menus` & `/categories`; diuji di `test-api` section 19 |
 | AC27 | Korlas **tidak** dapat mengubah hari libur, akun orang tua, atau statistik | ✅ Done — `requireRole("admin")` tetap di `/holidays`, `/parents`, `/stats`; diuji `403` di section 19 |
+<<<<<<< HEAD
+| AC28 | Pengguna dengan akses > 1 kelas dapat berpindah kelas dari UI, dan pilihannya bertahan | ✅ Done — `ClassSwitcher` di header (`GET /classes`), tersimpan di `localStorage.psp_class`; muncul hanya bila `classes.length > 1`; diverifikasi di browser (admin: 1–6, `dewi`: 2/3, `sari`: tanpa pemilih) |
+=======
 | AC28 | Pengguna dengan akses > 1 kelas dapat berpindah kelas dari UI, dan pilihannya bertahan | ✅ Done — `ClassSwitcher` di header (`GET /classes`), tersimpan di `localStorage.psp_class`; muncul hanya bila `classes.length > 1`; diverifikasi di browser (admin: 1A/1B/2A, `dewi`: 1B/2A, `sari`: tanpa pemilih) |
 | AC29 | Admin/korlas dapat menetapkan siswa piket per kelas per hari | Pending — Phase 4 |
 | AC30 | Orang tua dapat melihat nama siswa piket di kartu jadwal harian/mingguan/bulanan | Pending — Phase 4 |
@@ -889,6 +897,7 @@ bunx wrangler secret put JWT_SECRET
 | AC37 | Orang tua hanya melihat jadwal `published`; baris `draft`/`locked` tidak muncul | ✅ Done — filter `statusFilter = ["published"]` di repository untuk role `parent` |
 | AC38 | Baris `locked`/`published` tidak dapat diedit, dihapus, atau ditimpa (copy) | ✅ Done — `409 not_editable` di service; kontrol edit dinonaktifkan di UI |
 | AC39 | Admin dapat membuka kunci (unlock) baris individual kembali ke `draft` | ✅ Done — `POST /schedules/:id/unlock` (admin only) + tombol 🔓 di `/jadwal` |
+>>>>>>> 2ad3c510a41db83a5b49cd8546c8a4b2fdd99ed3
 
 ---
 
@@ -920,8 +929,12 @@ bunx wrangler secret put JWT_SECRET
 | **Piket (Penugasan)** | Penugasan siswa per kelas per hari untuk membawa/menyiapkan snack. Disimpan di tabel `piket_assignments` (`schedule_id` + `class_label` + `student_name`). Satu siswa per kelas per hari |
 | Makanan Utama | Item makanan utama (mis. "Roti coklat", "Risol ayam") |
 | Buah Pendamping | Buah segar/olahan buah yang menyertai makanan utama |
+<<<<<<< HEAD
+| **Kelas** | Kelompok siswa (mis. `1`, `2`, `3`). Bukan tabel tersendiri — diturunkan dari `students.class_name`, `users.class_name` (korlas), dan `schedules.class_name` |
+=======
 | **Label Kelas** | Label kelas dari file sumber (mis. "Kelas 1", "Kelas 2", ..., "Kelas 5"). Disimpan di `piket_assignments.class_label`. Berbeda dari `class_name` di `schedules` (mis. "1A") — pemetaan dilakukan saat impor/seed |
 | **Kelas** | Kelompok siswa (mis. `1A`, `1B`, `2A`). Bukan tabel tersendiri — diturunkan dari `students.class_name`, `users.class_name` (korlas), dan `schedules.class_name` |
+>>>>>>> 2ad3c510a41db83a5b49cd8546c8a4b2fdd99ed3
 | **Korlas** | Koordinator Kelas — role `korlas`; boleh mengelola katalog menu/kategori (sekolah-wide) + jadwal **kelasnya sendiri**, ditautkan ke satu kelas lewat `users.class_name` |
 | **Cakupan kelas** | Batas kelas yang boleh dibaca/ditulis seorang user, dihitung di `src/api/utils/classScope.ts`. Admin = semua kelas; korlas = kelasnya; orang tua = kelas anak-anaknya. Di luar cakupan → `403` |
 | **Pemilih kelas** | `ClassSwitcher` di header — memilih kelas aktif bila user punya akses ke lebih dari satu kelas; pilihan disimpan di `localStorage.psp_class` |

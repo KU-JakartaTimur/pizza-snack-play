@@ -96,7 +96,7 @@ let parentToken = null;
     students?.[0]?.name === "Aisyah Sari",
     JSON.stringify(students),
   );
-  check("kelas = 1A", students?.[0]?.className === "1A");
+  check("kelas = 1", students?.[0]?.className === "1");
   check("relationship = ibu", r.json?.data?.user?.relationship === "ibu");
   parentToken = r.json?.data?.token ?? null;
 }

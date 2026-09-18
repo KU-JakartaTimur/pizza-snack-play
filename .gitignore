@@ -205,4 +205,8 @@ dist
 
 ### Artefak verifikasi lokal (skrip + screenshot) ###
 outputs/
+<<<<<<< HEAD
+.workbuddy-ai/memory/2026-09-18.md
+=======
 .workbuddy-ai/memory/2026-09-17.md
+>>>>>>> 2ad3c510a41db83a5b49cd8546c8a4b2fdd99ed3

@@ -37,6 +37,10 @@ export interface ScheduleDayDto {
   notes: string | null;
   scheduleId: number | null;
   menu: MenuDto | null;
+  /** Nama siswa yang bertugas piket (ambil snack) pada hari ini. */
+  petugasName: string | null;
+  /** Nama orang tua/wali petugas — bila diketahui. */
+  petugasParentName: string | null;
   /** Status jadwal — hanya relevan untuk admin/korlas. */
   status: ScheduleStatus | null;
   /**
@@ -69,6 +73,16 @@ export interface TodayScheduleDto {
   week: WeekScheduleDto;
 }
 
+/** Jadwal hari ini untuk SEMUA kelas — khusus admin. */
+export interface TodayAllClassesDto {
+  today: string;
+  classes: Array<{
+    className: string;
+    day: ScheduleDayDto;
+  }>;
+  week: WeekScheduleDto;
+}
+
 export interface ScheduleInput {
   scheduleDate: string;
   /**
@@ -78,6 +92,10 @@ export interface ScheduleInput {
   className?: string;
   menuId?: number | null;
   isHoliday?: boolean;
+  /** Nama siswa yang bertugas piket mengambil snack. */
+  petugasName?: string | null;
+  /** Nama orang tua/wali petugas. */
+  petugasParentName?: string | null;
   notes?: string | null;
 }
 

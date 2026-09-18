@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "b8eb9b2f-9581-4d25-8fe9-680990982bb1",
-  "prevId": "c5cd9f13-a117-4a24-800e-bfd2658d79e0",
+  "id": "25ce7f00-e404-4c19-8a14-e8eb243b9691",
+  "prevId": "b8eb9b2f-9581-4d25-8fe9-680990982bb1",
   "tables": {
     "categories": {
       "name": "categories",
@@ -530,6 +530,114 @@
             "id"
           ],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "schedule_claims": {
+      "name": "schedule_claims",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "schedule_id": {
+          "name": "schedule_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "parent_id": {
+          "name": "parent_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "student_id": {
+          "name": "student_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "claimed_at": {
+          "name": "claimed_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(datetime('now'))"
+        }
+      },
+      "indexes": {
+        "idx_schedule_claims_schedule": {
+          "name": "idx_schedule_claims_schedule",
+          "columns": [
+            "schedule_id"
+          ],
+          "isUnique": true
+        },
+        "idx_schedule_claims_parent": {
+          "name": "idx_schedule_claims_parent",
+          "columns": [
+            "parent_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "schedule_claims_schedule_id_schedules_id_fk": {
+          "name": "schedule_claims_schedule_id_schedules_id_fk",
+          "tableFrom": "schedule_claims",
+          "tableTo": "schedules",
+          "columnsFrom": [
+            "schedule_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "schedule_claims_parent_id_parents_id_fk": {
+          "name": "schedule_claims_parent_id_parents_id_fk",
+          "tableFrom": "schedule_claims",
+          "tableTo": "parents",
+          "columnsFrom": [
+            "parent_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "schedule_claims_student_id_students_id_fk": {
+          "name": "schedule_claims_student_id_students_id_fk",
+          "tableFrom": "schedule_claims",
+          "tableTo": "students",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },

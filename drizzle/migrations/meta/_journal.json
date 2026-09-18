@@ -26,15 +26,22 @@
     {
       "idx": 3,
       "version": "6",
-      "when": 1789721895000,
-      "tag": "0003_schedule_lock_publish",
+      "when": 1789704405325,
+      "tag": "0003_quiet_nitro",
       "breakpoints": true
     },
     {
       "idx": 4,
       "version": "6",
-      "when": 1789719169265,
-      "tag": "0004_schedule_claims",
+      "when": 1789706881925,
+      "tag": "0004_noisy_whiplash",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1789721183001,
+      "tag": "0005_schedule_claims",
       "breakpoints": true
     }
   ]

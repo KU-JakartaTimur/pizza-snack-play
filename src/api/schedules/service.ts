@@ -16,6 +16,7 @@ import type {
   ScheduleDayDto,
   ScheduleInput,
   ScheduleStatus,
+  TodayAllClassesDto,
   TodayScheduleDto,
   WeekDto,
   WeekScheduleDto,
@@ -33,6 +34,7 @@ import {
   startOfWeek,
   todayInWib,
 } from "../utils/date";
+import { classRepository } from "../classes/repository";
 import { scheduleRepository } from "./repository";
 
 export type ScheduleError =
@@ -134,6 +136,8 @@ class ScheduleService {
       menu: isHoliday
         ? null
         : ((schedule?.menuId ? ctx.menusById.get(schedule.menuId) : null) ?? null),
+      petugasName: schedule?.petugasName ?? null,
+      petugasParentName: schedule?.petugasParentName ?? null,
       status: (schedule?.status as ScheduleStatus | undefined) ?? null,
       claim: schedule ? (ctx.claimsByScheduleId.get(schedule.id) ?? null) : null,
     };
@@ -184,6 +188,40 @@ class ScheduleService {
     return {
       day: this.buildDay(today, ctx),
       week: this.buildWeek(weekStart, ctx),
+    };
+  }
+
+  /**
+   * Jadwal hari ini untuk SEMUA kelas — khusus admin.
+   * Mengembalikan satu kartu per kelas yang dikenal sistem.
+   */
+  async getTodayAllClasses(db: Db): Promise<TodayAllClassesDto> {
+    const today = todayInWib();
+    const weekStart = startOfWeek(today);
+    const allClasses = await classRepository.listAll(db);
+
+    // Muat konteks minggu sekali (tanpa filter status)
+    const baseCtx = await this.loadContext(db, weekStart, endOfWeek(today), null);
+
+    const classes = await Promise.all(
+      allClasses.map(async (className) => {
+        const ctx = await this.loadContext(
+          db,
+          weekStart,
+          endOfWeek(today),
+          className,
+        );
+        return {
+          className,
+          day: this.buildDay(today, ctx),
+        };
+      }),
+    );
+
+    return {
+      today,
+      classes,
+      week: this.buildWeek(weekStart, baseCtx),
     };
   }
 
@@ -396,6 +434,8 @@ class ScheduleService {
       className,
       menuId: input.isHoliday ? null : (input.menuId ?? null),
       isHoliday: input.isHoliday ? 1 : 0,
+      petugasName: input.petugasName ?? null,
+      petugasParentName: input.petugasParentName ?? null,
       notes: input.notes ?? null,
     });
 
@@ -425,6 +465,8 @@ class ScheduleService {
     await scheduleRepository.updateSchedule(db, id, {
       ...(input.menuId !== undefined ? { menuId: input.menuId } : {}),
       ...(isHoliday !== undefined ? { isHoliday: isHoliday ? 1 : 0 } : {}),
+      ...(input.petugasName !== undefined ? { petugasName: input.petugasName } : {}),
+      ...(input.petugasParentName !== undefined ? { petugasParentName: input.petugasParentName } : {}),
       ...(input.notes !== undefined ? { notes: input.notes } : {}),
       // Hari libur tidak menyimpan menu.
       ...(isHoliday ? { menuId: null } : {}),
@@ -508,6 +550,8 @@ class ScheduleService {
         await scheduleRepository.updateSchedule(db, existing.id, {
           menuId: source.menuId,
           isHoliday: source.isHoliday,
+          petugasName: source.petugasName,
+          petugasParentName: source.petugasParentName,
           notes: source.notes,
         });
         updated += 1;
@@ -522,6 +566,8 @@ class ScheduleService {
         className,
         menuId: source.menuId,
         isHoliday: source.isHoliday,
+        petugasName: source.petugasName,
+        petugasParentName: source.petugasParentName,
         notes: source.notes,
       });
       created += 1;

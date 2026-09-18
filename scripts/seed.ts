@@ -1,8 +1,9 @@
 /**
  * Seed generator untuk Pizza Snack Play.
  *
- * Membaca `data/jadwal_piket_snack.txt`, mem-parse jadwal piket snack,
- * lalu menghasilkan `drizzle/seed.sql` yang siap dieksekusi ke Cloudflare D1:
+ * Membaca `data/jadwal_piket_snack.txt` (menu) dan `data/output_jadwal_piket.txt`
+ * (petugas piket per kelas), mem-parse jadwal, lalu menghasilkan
+ * `drizzle/seed.sql` yang siap dieksekusi ke Cloudflare D1:
  *
  *   bun run scripts/seed.ts
  *   bunx wrangler d1 execute pizza-snack-play --local --file=./drizzle/seed.sql
@@ -16,6 +17,7 @@ import { hashPassword } from "../src/api/utils/password";
 
 const ROOT = join(import.meta.dir, "..");
 const SOURCE_FILE = join(ROOT, "data", "jadwal_piket_snack.txt");
+const PETUGAS_FILE = join(ROOT, "data", "output_jadwal_piket.txt");
 const OUTPUT_FILE = join(ROOT, "drizzle", "seed.sql");
 
 const DEFAULT_PASSWORD = "snack123";
@@ -74,19 +76,23 @@ const CATEGORY_KEYWORDS: Array<[RegExp, string]> = [
 /**
  * Anak per orang tua: `[username orang tua, nama anak, kelas]`.
  * Satu orang tua boleh punya lebih dari satu anak.
+ *
+ * Kelas diubah menjadi tingkat 1–6 sesuai struktur sekolah. Demo korlas
+ * (`budi`) tetap kelas 1; `dewi` punya anak di kelas 2 dan 3.
  */
 const STUDENTS: Array<[string, string, string]> = [
-  ["sari", "Aisyah Sari", "1A"],
-  ["budi", "Bagas Budi", "1A"],
-  ["dewi", "Citra Dewi", "1B"],
-  ["dewi", "Raka Dewi", "2A"],
+  ["sari", "Aisyah Sari", "1"],
+  ["budi", "Bagas Budi", "1"],
+  ["dewi", "Citra Dewi", "2"],
+  ["dewi", "Raka Dewi", "3"],
 ];
 
 /**
- * Kelas yang dikenal seed. Jadwal digandakan ke setiap kelas ini karena
- * `schedules` kini menyimpan satu baris per (tanggal × kelas).
+ * Kelas yang dikenal seed. Menu digandakan ke setiap kelas karena
+ * `schedules` menyimpan satu baris per (tanggal × kelas).
+ * Kelas 6 ada di struktur tapi belum punya data petugas di sumber teks.
  */
-const CLASSES = [...new Set(STUDENTS.map(([, , className]) => className))].sort();
+const CLASSES = ["1", "2", "3", "4", "5", "6"];
 
 // ─────────────────────────────────────────────────────────────
 // Tipe hasil parsing
@@ -145,8 +151,27 @@ function slugifyCategory(itemName: string, itemType: string): string {
   return "lainnya";
 }
 
+function findDateForDayName(
+  start: string,
+  end: string,
+  dayName: string,
+): string | null {
+  const targetIndex = DAY_NAMES.findIndex(
+    (d) => d.toLowerCase() === dayName.toLowerCase(),
+  );
+  if (targetIndex === -1) return null;
+  let cursor = start;
+  let steps = 0;
+  while (cursor <= end && steps < 14) {
+    if (utcDayIndex(cursor) === targetIndex) return cursor;
+    cursor = addDays(cursor, 1);
+    steps++;
+  }
+  return null;
+}
+
 // ─────────────────────────────────────────────────────────────
-// Parser
+// Parser menu
 // ─────────────────────────────────────────────────────────────
 
 function parseScheduleFile(content: string): ParsedWeek[] {
@@ -244,6 +269,104 @@ function parseScheduleFile(content: string): ParsedWeek[] {
   return weeks;
 }
 
+// ─────────────────────────────────────────────────────────────
+// Parser petugas
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Membaca `data/output_jadwal_piket.txt` yang berisi daftar petugas
+ * (siswa) per kelas per hari. Mengembalikan map:
+ *   tanggal ISO → (nomor kelas → nama siswa)
+ */
+function parsePetugasFile(content: string): Map<string, Map<string, string>> {
+  const lines = content.split(/\r?\n/);
+  let currentWeek: ParsedWeek | null = null;
+  let currentDayName: string | null = null;
+  const result = new Map<string, Map<string, string>>();
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) {
+      currentDayName = null;
+      continue;
+    }
+
+    // Header bulan (opsional, diabaikan)
+    const headerMatch = line.match(
+      new RegExp(`(${MONTHS.join("|")})\\s+(\\d{4})`, "i"),
+    );
+    if (/^JADWAL/i.test(line) && headerMatch) continue;
+
+    // Rentang minggu
+    const rangeMatch = line.match(
+      new RegExp(`^(\\d{1,2})\\s*-\\s*(\\d{1,2})\\s+(${MONTHS.join("|")})\\s+(\\d{4})$`, "i"),
+    );
+    if (rangeMatch) {
+      const month = monthIndexFromName(rangeMatch[3]);
+      const year = Number.parseInt(rangeMatch[4], 10);
+      currentWeek = {
+        startDate: toIsoDate(year, month, Number.parseInt(rangeMatch[1], 10)),
+        endDate: toIsoDate(year, month, Number.parseInt(rangeMatch[2], 10)),
+        month,
+        year,
+        days: [],
+      };
+      currentDayName = null;
+      continue;
+    }
+
+    // Satu hari
+    const singleMatch = line.match(
+      new RegExp(`^(\\d{1,2})\\s+(${MONTHS.join("|")})\\s+(\\d{4})$`, "i"),
+    );
+    if (singleMatch) {
+      const month = monthIndexFromName(singleMatch[2]);
+      const year = Number.parseInt(singleMatch[3], 10);
+      const date = toIsoDate(year, month, Number.parseInt(singleMatch[1], 10));
+      currentWeek = {
+        startDate: date,
+        endDate: date,
+        month,
+        year,
+        days: [],
+      };
+      currentDayName = null;
+      continue;
+    }
+
+    // Baris hari
+    const dayMatch = line.match(
+      new RegExp(`^(${DAY_NAMES.join("|")})\\s*:\\s*(.+)$`, "i"),
+    );
+    if (dayMatch && currentWeek) {
+      currentDayName = dayMatch[1];
+      continue;
+    }
+
+    // Baris kelas: "Kelas 1 : Shezan" (toleran terhadap spasi & tanda baca)
+    const kelasMatch = line.match(/^Kelas\s*(\d+)\s*[:;]?\s*(.+)$/i);
+    if (kelasMatch && currentWeek && currentDayName) {
+      const classNum = kelasMatch[1].trim();
+      const name = kelasMatch[2].trim();
+      const date = findDateForDayName(
+        currentWeek.startDate,
+        currentWeek.endDate,
+        currentDayName,
+      );
+      if (date) {
+        if (!result.has(date)) result.set(date, new Map());
+        result.get(date)!.set(classNum, name);
+      }
+    }
+  }
+
+  return result;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Parser teks menu
+// ─────────────────────────────────────────────────────────────
+
 interface ParsedMenu {
   main: string;
   fruit: string | null;
@@ -285,7 +408,9 @@ function parseMenuText(text: string): ParsedMenu | null {
 
 async function main() {
   const content = readFileSync(SOURCE_FILE, "utf8");
+  const petugasContent = readFileSync(PETUGAS_FILE, "utf8");
   const weeks = parseScheduleFile(content);
+  const petugasMap = parsePetugasFile(petugasContent);
 
   if (weeks.length === 0) {
     throw new Error("Tidak ada jadwal yang berhasil di-parse.");
@@ -361,16 +486,18 @@ async function main() {
       const dayName = DAY_NAMES[dayIdx];
       const menuText = dayMap.get(dayName.toLowerCase());
 
+      // Petugas untuk tanggal ini (bila tersedia)
+      const petugasForDate = petugasMap.get(cursor);
+
       if (menuText) {
         const parsed = parseMenuText(menuText);
 
         if (!parsed) {
           // Libur
           holidayCount++;
-          // Satu baris per kelas — jadwal kini disimpan per (tanggal × kelas).
           for (const className of CLASSES) {
             scheduleRows.push(
-              `(${weekId}, ${sqlString(cursor)}, ${dayIdx}, ${sqlString(className)}, NULL, 1, ${sqlString(menuText)})`,
+              `(${weekId}, ${sqlString(cursor)}, ${dayIdx}, ${sqlString(className)}, NULL, 1, NULL, NULL, ${sqlString(menuText)}, 'published')`,
             );
           }
         } else {
@@ -403,8 +530,9 @@ async function main() {
           }
 
           for (const className of CLASSES) {
+            const petugasName = petugasForDate?.get(className) ?? null;
             scheduleRows.push(
-              `(${weekId}, ${sqlString(cursor)}, ${dayIdx}, ${sqlString(className)}, ${menuId}, 0, ${sqlString(parsed.notes)})`,
+              `(${weekId}, ${sqlString(cursor)}, ${dayIdx}, ${sqlString(className)}, ${menuId}, 0, ${sqlString(petugasName)}, NULL, ${sqlString(parsed.notes)}, 'published')`,
             );
           }
         }
@@ -432,7 +560,7 @@ async function main() {
   }
 
   statements.push(
-    `INSERT INTO schedules (week_id, schedule_date, day_of_week, class_name, menu_id, is_holiday, notes) VALUES\n  ${scheduleRows.join(",\n  ")};`,
+    `INSERT INTO schedules (week_id, schedule_date, day_of_week, class_name, menu_id, is_holiday, petugas_name, petugas_parent_name, notes, status) VALUES\n  ${scheduleRows.join(",\n  ")};`,
   );
 
   // ── holidays
@@ -449,10 +577,9 @@ async function main() {
   const adminHash = await hashPassword(DEFAULT_PASSWORD);
   const parentHash = await hashPassword(DEFAULT_PASSWORD);
 
-  // `budi` sengaja dijadikan korlas kelas 1A sebagai contoh peran baru:
-  // ia tetap orang tua murid, tetapi boleh mengubah jadwal kelas 1A.
+  // `budi` sengaja dijadikan korlas kelas 1 sebagai contoh peran baru.
   statements.push(
-    `INSERT INTO users (id, username, password_hash, full_name, role, class_name, is_active) VALUES\n  (1, 'admin', ${sqlString(adminHash)}, 'Bu Guru Sari', 'admin', NULL, 1),\n  (2, 'sari', ${sqlString(parentHash)}, 'Ibu Sari', 'parent', NULL, 1),\n  (3, 'budi', ${sqlString(parentHash)}, 'Pak Budi', 'korlas', '1A', 1),\n  (4, 'dewi', ${sqlString(parentHash)}, 'Ibu Dewi', 'parent', NULL, 1);`,
+    `INSERT INTO users (id, username, password_hash, full_name, role, class_name, is_active) VALUES\n  (1, 'admin', ${sqlString(adminHash)}, 'Bu Guru Sari', 'admin', NULL, 1),\n  (2, 'sari', ${sqlString(parentHash)}, 'Ibu Sari', 'parent', NULL, 1),\n  (3, 'budi', ${sqlString(parentHash)}, 'Pak Budi', 'korlas', '1', 1),\n  (4, 'dewi', ${sqlString(parentHash)}, 'Ibu Dewi', 'parent', NULL, 1);`,
   );
 
   statements.push(
@@ -460,8 +587,6 @@ async function main() {
   );
 
   // ── students — satu orang tua boleh punya lebih dari satu anak.
-  // `parent_id` diambil lewat subquery agar tidak bergantung pada nilai
-  // AUTOINCREMENT yang bisa berubah setelah DELETE.
   const parentIdSubquery = (username: string) =>
     `(SELECT p.id FROM parents p JOIN users u ON u.id = p.user_id WHERE u.username = '${username}')`;
 
@@ -486,7 +611,8 @@ async function main() {
   console.log(
     `  Jadwal       : ${scheduleRows.length} baris (${holidayCount} hari libur × ${CLASSES.length} kelas)`,
   );
-  console.log("  Users        : 4 (1 admin, 1 korlas 1A, 2 orang tua)");
+  console.log(`  Petugas unik : ${petugasMap.size} tanggal tercatat`);
+  console.log("  Users        : 4 (1 admin, 1 korlas 1, 2 orang tua)");
   console.log(`  Password     : ${DEFAULT_PASSWORD}`);
 }
 

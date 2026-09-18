@@ -32,7 +32,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, need: "admin" },
   { to: "/hari-ini", label: "Hari Ini", icon: CalendarDays },
-  { to: "/minggu-ini", label: "Minggu Ini", icon: CalendarRange },
+  { to: "/minggu-ini", label: "Pekan Ini", icon: CalendarRange },
   { to: "/bulan", label: "Bulanan", icon: CalendarDays },
   { to: "/pilih-jadwal", label: "Pilih Jadwal", icon: HandHeart, parentsOnly: true },
   { to: "/pencarian", label: "Cari Menu", icon: Search },

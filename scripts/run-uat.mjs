@@ -9,7 +9,8 @@ import puppeteer from "puppeteer-core";
 import fs from "fs";
 import path from "path";
 
-const CHROME_PATH = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
+const CHROME_PATH =
+  "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 const BASE_URL = "http://localhost:5173";
 const OUTPUT_DIR = "D:\\DEV\\JS\\pizza-snack-play\\outputs\\screenshots";
 
@@ -100,7 +101,7 @@ async function runUAT() {
   });
 
   // -------------------------------------------------------------
-  // SKENARIO 3: TAMPILAN JADWAL (HARI INI, MINGGUAN, BULANAN)
+  // SKENARIO 3: TAMPILAN JADWAL (HARI INI, Sepekan, BULANAN)
   // -------------------------------------------------------------
   await step("UAT-05", "Jadwal Hari Ini (Info Menu & Petugas)", async () => {
     await page.goto(`${BASE_URL}/hari-ini`, { waitUntil: "networkidle0" });
@@ -108,7 +109,7 @@ async function runUAT() {
     await saveScreenshot("uat-05-jadwal-hari-ini.png");
   });
 
-  await step("UAT-06", "Jadwal Mingguan (Senin s/d Jumat)", async () => {
+  await step("UAT-06", "Jadwal Sepekan (Senin s/d Jumat)", async () => {
     await page.goto(`${BASE_URL}/minggu-ini`, { waitUntil: "networkidle0" });
     await wait(1000);
     await saveScreenshot("uat-06-jadwal-minggu-ini.png");
@@ -123,18 +124,22 @@ async function runUAT() {
   // -------------------------------------------------------------
   // SKENARIO 4: MANAJEMEN JADWAL (ADMIN / KORLAS)
   // -------------------------------------------------------------
-  await step("UAT-08", "Kelola Jadwal (Tabel Status Draft/Locked/Published)", async () => {
-    await page.goto(`${BASE_URL}/jadwal`, { waitUntil: "networkidle0" });
-    await wait(1500);
-    await saveScreenshot("uat-08-kelola-jadwal-admin.png");
-  });
+  await step(
+    "UAT-08",
+    "Kelola Jadwal (Tabel Status Draft/Locked/Published)",
+    async () => {
+      await page.goto(`${BASE_URL}/jadwal`, { waitUntil: "networkidle0" });
+      await wait(1500);
+      await saveScreenshot("uat-08-kelola-jadwal-admin.png");
+    },
+  );
 
-  await step("UAT-09", "Modal Dialog Salin Jadwal Antar Minggu", async () => {
-    // Find and click "Salin minggu"
+  await step("UAT-09", "Modal Dialog Salin Jadwal Sepekan", async () => {
+    // Find and click "Salin Sepekan"
     const buttons = await page.$$("button");
     for (const btn of buttons) {
       const text = await page.evaluate((el) => el.textContent, btn);
-      if (text && text.toLowerCase().includes("salin minggu")) {
+      if (text && text.toLowerCase().includes("Salin Sepekan")) {
         await btn.click();
         break;
       }
@@ -269,48 +274,75 @@ async function runUAT() {
   // -------------------------------------------------------------
   // SKENARIO 8: ROLE ORANG TUA & FITUR PILIH JADWAL (F9)
   // -------------------------------------------------------------
-  await step("UAT-17", "Login Orang Tua ('sari') & Fitur Pilih Jadwal", async () => {
-    await loginAs("sari", "snack123");
-    await page.goto(`${BASE_URL}/pilih-jadwal`, { waitUntil: "networkidle0" });
-    await wait(1200);
-    await saveScreenshot("uat-17-pilih-jadwal-orang-tua.png");
-  });
+  await step(
+    "UAT-17",
+    "Login Orang Tua ('sari') & Fitur Pilih Jadwal",
+    async () => {
+      await loginAs("sari", "snack123");
+      await page.goto(`${BASE_URL}/pilih-jadwal`, {
+        waitUntil: "networkidle0",
+      });
+      await wait(1200);
+      await saveScreenshot("uat-17-pilih-jadwal-orang-tua.png");
+    },
+  );
 
   // -------------------------------------------------------------
   // SKENARIO 9: ORANG TUA MULTI-ANAK & CLASS SWITCHER
   // -------------------------------------------------------------
-  await step("UAT-18", "Orang Tua Multi-Anak ('dewi') & Class Switcher", async () => {
-    await loginAs("dewi", "snack123");
-    await page.goto(`${BASE_URL}/hari-ini`, { waitUntil: "networkidle0" });
-    await wait(1200);
-    await saveScreenshot("uat-18-orang-tua-multi-anak-switcher.png");
-  });
+  await step(
+    "UAT-18",
+    "Orang Tua Multi-Anak ('dewi') & Class Switcher",
+    async () => {
+      await loginAs("dewi", "snack123");
+      await page.goto(`${BASE_URL}/hari-ini`, { waitUntil: "networkidle0" });
+      await wait(1200);
+      await saveScreenshot("uat-18-orang-tua-multi-anak-switcher.png");
+    },
+  );
 
-  await step("UAT-19", "Profil Pengguna Orang Tua & Form Password", async () => {
-    await page.goto(`${BASE_URL}/profil`, { waitUntil: "networkidle0" });
-    await wait(1000);
-    await saveScreenshot("uat-19-profil-orang-tua.png");
-  });
+  await step(
+    "UAT-19",
+    "Profil Pengguna Orang Tua & Form Password",
+    async () => {
+      await page.goto(`${BASE_URL}/profil`, { waitUntil: "networkidle0" });
+      await wait(1000);
+      await saveScreenshot("uat-19-profil-orang-tua.png");
+    },
+  );
 
   // -------------------------------------------------------------
   // SKENARIO 10: ROLE KORLAS (KOORDINATOR KELAS)
   // -------------------------------------------------------------
-  await step("UAT-20", "Login Korlas ('budi' Kelas 1) & Wewenang Terbatas", async () => {
-    await loginAs("budi", "snack123");
-    await page.goto(`${BASE_URL}/jadwal`, { waitUntil: "networkidle0" });
-    await wait(1200);
-    await saveScreenshot("uat-20-tampilan-korlas-kelas-1.png");
-  });
+  await step(
+    "UAT-20",
+    "Login Korlas ('budi' Kelas 1) & Wewenang Terbatas",
+    async () => {
+      await loginAs("budi", "snack123");
+      await page.goto(`${BASE_URL}/jadwal`, { waitUntil: "networkidle0" });
+      await wait(1200);
+      await saveScreenshot("uat-20-tampilan-korlas-kelas-1.png");
+    },
+  );
 
   // -------------------------------------------------------------
   // SKENARIO 11: RESPONSIVE MOBILE VIEWPORT (PWA / SMARTPHONE)
   // -------------------------------------------------------------
-  await step("UAT-21", "Tampilan Mobile Viewport (iPhone 12/13/14)", async () => {
-    await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
-    await page.goto(`${BASE_URL}/hari-ini`, { waitUntil: "networkidle0" });
-    await wait(1000);
-    await saveScreenshot("uat-21-responsive-mobile-view.png");
-  });
+  await step(
+    "UAT-21",
+    "Tampilan Mobile Viewport (iPhone 12/13/14)",
+    async () => {
+      await page.setViewport({
+        width: 390,
+        height: 844,
+        isMobile: true,
+        hasTouch: true,
+      });
+      await page.goto(`${BASE_URL}/hari-ini`, { waitUntil: "networkidle0" });
+      await wait(1000);
+      await saveScreenshot("uat-21-responsive-mobile-view.png");
+    },
+  );
 
   await browser.close();
 

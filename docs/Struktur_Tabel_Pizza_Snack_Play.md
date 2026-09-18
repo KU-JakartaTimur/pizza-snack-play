@@ -1,4 +1,5 @@
 # Struktur Tabel Database
+
 ## Aplikasi "Pizza Snack Play"
 
 **Stack:** Bun + Hono + Vite + React (Cloudflare Workers)
@@ -57,7 +58,7 @@ import { drizzle } from "drizzle-orm/d1";
 import * as schema from "./schema";
 
 export interface Env {
-  DB: D1Database;   // binding D1 dari wrangler.json
+  DB: D1Database; // binding D1 dari wrangler.json
 }
 
 export function createDb(env: Env) {
@@ -202,6 +203,7 @@ export default app;
 ## 2. DDL — Skema Lengkap (SQLite)
 
 ### 2.1 Tabel: `categories`
+
 Kategori untuk mengelompokkan menu item (mis. "gorengan", "kukusan", "buah", "rebusan").
 
 ```sql
@@ -218,6 +220,7 @@ CREATE INDEX IF NOT EXISTS idx_categories_slug ON categories(slug);
 ```
 
 ### 2.2 Tabel: `menus`
+
 Definisi menu snack (kombinasi makanan utama + buah pendamping). Menu dapat dipakai ulang pada hari berbeda.
 
 ```sql
@@ -236,6 +239,7 @@ CREATE INDEX IF NOT EXISTS idx_menus_active ON menus(is_active);
 ```
 
 ### 2.3 Tabel: `menu_items`
+
 Komponen individual dalam satu menu (mis. "Roti isi coklat" = item utama, "Jeruk" = buah).
 
 ```sql
@@ -258,6 +262,7 @@ CREATE INDEX IF NOT EXISTS idx_menu_items_type     ON menu_items(item_type);
 ```
 
 ### 2.4 Tabel: `menu_categories` (Many-to-Many)
+
 Satu menu bisa memiliki multiple kategori (mis. "gorengan" + "sayur").
 
 ```sql
@@ -272,7 +277,8 @@ CREATE TABLE IF NOT EXISTS menu_categories (
 ```
 
 ### 2.5 Tabel: `weeks`
-Periode mingguan (Senin–Jumat) untuk pengelompokan jadwal.
+
+Periode Sepekan (Senin–Jumat) untuk pengelompokan jadwal.
 
 ```sql
 CREATE TABLE IF NOT EXISTS weeks (
@@ -291,6 +297,7 @@ CREATE INDEX IF NOT EXISTS idx_weeks_month_year ON weeks(month, year);
 ```
 
 ### 2.6 Tabel: `schedules`
+
 Jadwal harian **per kelas** — menghubungkan tanggal tertentu dengan menu yang disajikan untuk satu kelas.
 
 ```sql
@@ -350,6 +357,7 @@ CREATE INDEX IF NOT EXISTS idx_schedules_status ON schedules(status);
 > dijatuhkan ke kelas `'Umum'` supaya tidak ada jadwal yang hilang.
 
 ### 2.7 Tabel: `holidays`
+
 Daftar hari libur **sekolah-wide** (nasional, sekolah, dll.) untuk otomatis flag `is_holiday`.
 Tidak punya `class_name` — berlaku untuk semua kelas, dan hanya admin yang boleh mengubah.
 
@@ -364,6 +372,7 @@ CREATE TABLE IF NOT EXISTS holidays (
 ```
 
 ### 2.8 Tabel: `users` (Autentikasi — Admin, Korlas & Orang Tua)
+
 Tabel untuk autentikasi semua pengguna: admin/guru piket, korlas (koordinator kelas), dan orang tua. Setiap orang tua wajib memiliki akun login.
 
 ```sql
@@ -388,6 +397,7 @@ CREATE INDEX IF NOT EXISTS idx_users_active  ON users(is_active);
 
 > **Kolom `class_name` (revisi jadwal per kelas):** nullable dan hanya bermakna untuk `role = 'korlas'`.
 > Ditambahkan lewat `ALTER TABLE users ADD class_name TEXT` (aman karena nullable). Nilainya:
+>
 > - **wajib** diisi saat sebuah akun diangkat menjadi korlas (`PUT /parents/:id` dengan `role: "korlas"`);
 > - **otomatis dikosongkan** saat role dikembalikan menjadi `parent`, supaya tidak ada kelas
 >   "yatim" yang tertinggal dan membuat cakupan akses membingungkan;
@@ -396,17 +406,18 @@ CREATE INDEX IF NOT EXISTS idx_users_active  ON users(is_active);
 >
 > **Matriks wewenang per role:**
 >
-> | Aksi | admin | korlas | parent |
-> |------|:-----:|:------:|:------:|
-> | Baca jadwal kelas sendiri | ✅ | ✅ | ✅ |
-> | Baca jadwal kelas lain | ✅ | ❌ 403 | ❌ 403 |
-> | Tulis jadwal (kelas sendiri) | ✅ | ✅ | ❌ |
-> | Tulis jadwal (kelas lain) | ✅ | ❌ 403 | ❌ |
-> | Katalog menu & kategori | ✅ | ✅ | ❌ |
-> | Hari libur sekolah | ✅ | ❌ 403 | ❌ |
-> | Akun orang tua & statistik | ✅ | ❌ 403 | ❌ |
+> | Aksi                         | admin | korlas | parent |
+> | ---------------------------- | :---: | :----: | :----: |
+> | Baca jadwal kelas sendiri    |  ✅   |   ✅   |   ✅   |
+> | Baca jadwal kelas lain       |  ✅   | ❌ 403 | ❌ 403 |
+> | Tulis jadwal (kelas sendiri) |  ✅   |   ✅   |   ❌   |
+> | Tulis jadwal (kelas lain)    |  ✅   | ❌ 403 |   ❌   |
+> | Katalog menu & kategori      |  ✅   |   ✅   |   ❌   |
+> | Hari libur sekolah           |  ✅   | ❌ 403 |   ❌   |
+> | Akun orang tua & statistik   |  ✅   | ❌ 403 |   ❌   |
 
 ### 2.9 Tabel: `parents` (Profil Orang Tua)
+
 Profil detail orang tua yang terhubung ke akun `users`. Daftar anak **tidak** disimpan di sini, melainkan di tabel `students` (relasi 1 ── n) agar satu orang tua bisa memiliki lebih dari satu anak.
 
 ```sql
@@ -429,6 +440,7 @@ CREATE INDEX IF NOT EXISTS idx_parents_active  ON parents(is_active);
 ```
 
 ### 2.10 Tabel: `students` (Anak dari Orang Tua)
+
 Menyimpan setiap anak milik seorang orang tua. Satu orang tua boleh punya **banyak** anak; setiap anak punya nama dan kelas sendiri. Menghapus orang tua akan menghapus anak-anaknya (`ON DELETE CASCADE`).
 
 ```sql
@@ -451,6 +463,7 @@ CREATE INDEX IF NOT EXISTS idx_students_class     ON students(class_name);
 > **Migrasi dari skema lama:** kolom `parents.student_name` / `parents.student_class` dipindahkan ke tabel `students` sebelum kolomnya dihapus — lihat `drizzle/migrations/0001_*.sql`. Setiap baris `parents` yang punya `student_name` tidak kosong menghasilkan satu baris `students` dengan `parent_id` yang sama.
 
 ### 2.11 Tabel: `settings` (Konfigurasi Aplikasi)
+
 Pengaturan global (nama sekolah, tahun ajaran aktif, dll.).
 
 ```sql
@@ -463,6 +476,7 @@ CREATE TABLE IF NOT EXISTS settings (
 ```
 
 ### 2.12 Tabel: `import_logs` (Audit Trail)
+
 Mencatat impor data dari file teks manual.
 
 ```sql
@@ -477,6 +491,7 @@ CREATE TABLE IF NOT EXISTS import_logs (
 ```
 
 ### 2.13 Tabel: `schedule_claims` (Pilih Jadwal — Klaim Orang Tua)
+
 Menyimpan tanggal yang "diambil" seorang orang tua dari jadwal yang sudah dipublikasi korlas.
 Satu baris jadwal hanya boleh diklaim **satu** orang tua; bila jadwal atau orang tuanya dihapus,
 klaimnya ikut terhapus (`ON DELETE CASCADE`).
@@ -558,23 +573,23 @@ CREATE INDEX IF NOT EXISTS idx_piket_student ON piket_assignments(student_name);
 
 ## 3. Relasi Antar Tabel (Summary)
 
-| Dari | Ke | Jenis | Foreign Key |
-|------|----|-------|-------------|
-| `menu_items` | `menus` | Many-to-One | `menu_id` |
-| `menu_items` | `categories` | Many-to-One (opsional) | `category_id` |
-| `menu_categories` | `menus` | Many-to-Many | `menu_id` |
-| `menu_categories` | `categories` | Many-to-Many | `category_id` |
-| `schedules` | `weeks` | Many-to-One (opsional) | `week_id` |
-| `schedules` | `menus` | Many-to-One (opsional) | `menu_id` |
-| `schedules` | `users` | Many-to-One (opsional) | `locked_by` — siapa yang mengunci |
-| `schedules` | `users` | Many-to-One (opsional) | `published_by` — siapa yang mempublikasi |
-| `parents` | `users` | Many-to-One | `user_id` |
-| `students` | `parents` | Many-to-One | `parent_id` |
-| `schedule_claims` | `schedules` | **One-to-One** | `schedule_id` — `UNIQUE`, penjaga rebutan |
-| `schedule_claims` | `parents` | Many-to-One | `parent_id` |
-| `schedule_claims` | `students` | Many-to-One (opsional) | `student_id` — `ON DELETE SET NULL` |
-| `schedules` | `users` (korlas) | **Logis, bukan FK** | `schedules.class_name` = `users.class_name` |
-| `schedules` | `students` | **Logis, bukan FK** | `schedules.class_name` = `students.class_name` |
+| Dari              | Ke               | Jenis                  | Foreign Key                                    |
+| ----------------- | ---------------- | ---------------------- | ---------------------------------------------- |
+| `menu_items`      | `menus`          | Many-to-One            | `menu_id`                                      |
+| `menu_items`      | `categories`     | Many-to-One (opsional) | `category_id`                                  |
+| `menu_categories` | `menus`          | Many-to-Many           | `menu_id`                                      |
+| `menu_categories` | `categories`     | Many-to-Many           | `category_id`                                  |
+| `schedules`       | `weeks`          | Many-to-One (opsional) | `week_id`                                      |
+| `schedules`       | `menus`          | Many-to-One (opsional) | `menu_id`                                      |
+| `schedules`       | `users`          | Many-to-One (opsional) | `locked_by` — siapa yang mengunci              |
+| `schedules`       | `users`          | Many-to-One (opsional) | `published_by` — siapa yang mempublikasi       |
+| `parents`         | `users`          | Many-to-One            | `user_id`                                      |
+| `students`        | `parents`        | Many-to-One            | `parent_id`                                    |
+| `schedule_claims` | `schedules`      | **One-to-One**         | `schedule_id` — `UNIQUE`, penjaga rebutan      |
+| `schedule_claims` | `parents`        | Many-to-One            | `parent_id`                                    |
+| `schedule_claims` | `students`       | Many-to-One (opsional) | `student_id` — `ON DELETE SET NULL`            |
+| `schedules`       | `users` (korlas) | **Logis, bukan FK**    | `schedules.class_name` = `users.class_name`    |
+| `schedules`       | `students`       | **Logis, bukan FK**    | `schedules.class_name` = `students.class_name` |
 
 > **Catatan:** tabel `schedule_items` tidak dipakai pada implementasi ini. Komponen menu disimpan di `menu_items` (terikat ke `menus`), sedangkan `schedules` hanya menyimpan `menu_id` + `is_holiday` + `note`.
 >
@@ -717,6 +732,7 @@ INSERT INTO students (parent_id, name, class_name, is_active) VALUES
 
 > **Catatan hashing di Cloudflare Workers:** Runtime Worker tidak menyediakan `bcrypt` native.
 > Gunakan salah satu pendekatan berikut:
+>
 > - **Web Crypto API** (edge-native, tanpa dependency) — PBKDF2 via `crypto.subtle.deriveBits()`
 > - **`bcryptjs`** (pure JS) dengan `compatibility_flags: ["nodejs_compat"]`
 > - **`@noble/hashes`** — implementasi hash ringan dan cepat untuk edge
@@ -768,12 +784,15 @@ ORDER BY mi.item_type;
 > Lalu teruskan sebagai parameter ke query Drizzle:
 >
 > ```typescript
-> const rows = await db.select().from(schedules).where(eq(schedules.scheduleDate, today));
+> const rows = await db
+>   .select()
+>   .from(schedules)
+>   .where(eq(schedules.scheduleDate, today));
 > ```
 >
 > Alternatif di SQL: `date('now', '+7 hours')`.
 
-### 5.2 Jadwal Minggu Ini
+### 5.2 Jadwal pekan ini
 
 ```sql
 SELECT
@@ -952,11 +971,11 @@ ORDER BY st.class_name;
 
 **Pemeriksaan akses kelas** (dijalankan di aplikasi, `src/api/utils/classScope.ts`):
 
-| Role | Cakupan baca | Cakupan tulis |
-|------|--------------|---------------|
-| `admin` | semua kelas (`GET /classes` → seluruh daftar) | semua kelas, **wajib** menyebut `className` (jika kosong → `400 class_required`) |
-| `korlas` | `[u.class_name]` | `[u.class_name]` saja; menyebut kelas lain → `403 forbidden_class` |
-| `parent` | kelas semua anak aktifnya | tidak boleh menulis jadwal sama sekali |
+| Role     | Cakupan baca                                  | Cakupan tulis                                                                    |
+| -------- | --------------------------------------------- | -------------------------------------------------------------------------------- |
+| `admin`  | semua kelas (`GET /classes` → seluruh daftar) | semua kelas, **wajib** menyebut `className` (jika kosong → `400 class_required`) |
+| `korlas` | `[u.class_name]`                              | `[u.class_name]` saja; menyebut kelas lain → `403 forbidden_class`               |
+| `parent` | kelas semua anak aktifnya                     | tidak boleh menulis jadwal sama sekali                                           |
 
 ```sql
 -- Guard tingkat baris untuk PUT/DELETE /schedules/:id
@@ -1005,143 +1024,207 @@ Berikut adalah padanan skema SQL di atas dalam **Drizzle ORM** (`drizzle-orm/sql
 ```typescript
 // src/database/schema.ts
 
-import { sqliteTable, text, integer, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
-import { sql } from 'drizzle-orm';
+import {
+  sqliteTable,
+  text,
+  integer,
+  index,
+  uniqueIndex,
+} from "drizzle-orm/sqlite-core";
+import { sql } from "drizzle-orm";
 
 // ─── categories ───────────────────────────────────────
-export const categories = sqliteTable('categories', {
-  id:        integer('id').primaryKey({ autoIncrement: true }),
-  name:      text('name').notNull().unique(),
-  slug:      text('slug').notNull().unique(),
-  color:     text('color').default('#CCCCCC'),
-  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
-  updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
+export const categories = sqliteTable("categories", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull().unique(),
+  slug: text("slug").notNull().unique(),
+  color: text("color").default("#CCCCCC"),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
 });
 
 // ─── menus ───────────────────────────────────────────
-export const menus = sqliteTable('menus', {
-  id:          integer('id').primaryKey({ autoIncrement: true }),
-  name:        text('name').notNull(),
-  description: text('description'),
-  isActive:    integer('is_active').notNull().default(1),
-  isArchived:  integer('is_archived').notNull().default(0),
-  createdAt:   text('created_at').notNull().default(sql`(datetime('now'))`),
-  updatedAt:   text('updated_at').notNull().default(sql`(datetime('now'))`),
+export const menus = sqliteTable("menus", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  description: text("description"),
+  isActive: integer("is_active").notNull().default(1),
+  isArchived: integer("is_archived").notNull().default(0),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
 });
 
 // ─── menu_items ──────────────────────────────────────
-export const menuItems = sqliteTable('menu_items', {
-  id:          integer('id').primaryKey({ autoIncrement: true }),
-  menuId:      integer('menu_id').notNull().references(() => menus.id, { onDelete: 'cascade' }),
-  name:        text('name').notNull(),
-  itemType:    text('item_type').notNull().default('main'), // 'main' | 'fruit' | 'drink' | 'other'
-  categoryId:  integer('category_id').references(() => categories.id, { onDelete: 'set null' }),
-  createdAt:   text('created_at').notNull().default(sql`(datetime('now'))`),
-  updatedAt:   text('updated_at').notNull().default(sql`(datetime('now'))`),
+export const menuItems = sqliteTable("menu_items", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  menuId: integer("menu_id")
+    .notNull()
+    .references(() => menus.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  itemType: text("item_type").notNull().default("main"), // 'main' | 'fruit' | 'drink' | 'other'
+  categoryId: integer("category_id").references(() => categories.id, {
+    onDelete: "set null",
+  }),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
 });
 
 // ─── menu_categories (M2M) ───────────────────────────
-export const menuCategories = sqliteTable('menu_categories', {
-  menuId:     integer('menu_id').notNull().references(() => menus.id, { onDelete: 'cascade' }),
-  categoryId: integer('category_id').notNull().references(() => categories.id, { onDelete: 'cascade' }),
+export const menuCategories = sqliteTable("menu_categories", {
+  menuId: integer("menu_id")
+    .notNull()
+    .references(() => menus.id, { onDelete: "cascade" }),
+  categoryId: integer("category_id")
+    .notNull()
+    .references(() => categories.id, { onDelete: "cascade" }),
 });
 
 // ─── weeks ───────────────────────────────────────────
-export const weeks = sqliteTable('weeks', {
-  id:            integer('id').primaryKey({ autoIncrement: true }),
-  weekStartDate: text('week_start_date').notNull(),
-  weekEndDate:   text('week_end_date').notNull(),
-  month:         integer('month').notNull(),
-  year:          integer('year').notNull(),
-  label:         text('label'),
-  createdAt:     text('created_at').notNull().default(sql`(datetime('now'))`),
+export const weeks = sqliteTable("weeks", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  weekStartDate: text("week_start_date").notNull(),
+  weekEndDate: text("week_end_date").notNull(),
+  month: integer("month").notNull(),
+  year: integer("year").notNull(),
+  label: text("label"),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
 });
 
 // ─── schedules (jadwal per kelas) ────────────────────
-export const schedules = sqliteTable('schedules', {
-  id:           integer('id').primaryKey({ autoIncrement: true }),
-  weekId:       integer('week_id').references(() => weeks.id, { onDelete: 'set null' }),
-  scheduleDate: text('schedule_date').notNull(),
-  dayOfWeek:    integer('day_of_week').notNull(), // 1=Senin .. 5=Jumat
-  /** ★ Kelas pemilik baris ini, mis. "1". Wajib diisi. */
-  className:    text('class_name').notNull(),
-  menuId:       integer('menu_id').references(() => menus.id, { onDelete: 'set null' }),
-  isHoliday:    integer('is_holiday').notNull().default(0),
-  notes:        text('notes'),
-  // ★ Kunci & Publikasi (migrasi 0003)
-  status:       text('status').notNull().default('draft'),     // 'draft' | 'locked' | 'published'
-  lockedBy:     integer('locked_by').references(() => users.id, { onDelete: 'set null' }),
-  lockedAt:     text('locked_at'),
-  publishedBy:  integer('published_by').references(() => users.id, { onDelete: 'set null' }),
-  publishedAt:  text('published_at'),
-  createdAt:    text('created_at').notNull().default(sql`(datetime('now'))`),
-  updatedAt:    text('updated_at').notNull().default(sql`(datetime('now'))`),
-}, (table) => [
-  // ★ Unik gabungan menggantikan .unique() pada schedule_date:
-  //   satu kelas satu baris per tanggal, tetapi tanggal yang sama
-  //   boleh muncul untuk kelas berbeda.
-  uniqueIndex('idx_schedules_date_class').on(table.scheduleDate, table.className),
-  index('idx_schedules_week').on(table.weekId),
-  index('idx_schedules_menu').on(table.menuId),
-  index('idx_schedules_class').on(table.className),
-  index('idx_schedules_status').on(table.status),
-]);
+export const schedules = sqliteTable(
+  "schedules",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    weekId: integer("week_id").references(() => weeks.id, {
+      onDelete: "set null",
+    }),
+    scheduleDate: text("schedule_date").notNull(),
+    dayOfWeek: integer("day_of_week").notNull(), // 1=Senin .. 5=Jumat
+    /** ★ Kelas pemilik baris ini, mis. "1". Wajib diisi. */
+    className: text("class_name").notNull(),
+    menuId: integer("menu_id").references(() => menus.id, {
+      onDelete: "set null",
+    }),
+    isHoliday: integer("is_holiday").notNull().default(0),
+    notes: text("notes"),
+    // ★ Kunci & Publikasi (migrasi 0003)
+    status: text("status").notNull().default("draft"), // 'draft' | 'locked' | 'published'
+    lockedBy: integer("locked_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    lockedAt: text("locked_at"),
+    publishedBy: integer("published_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    publishedAt: text("published_at"),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (table) => [
+    // ★ Unik gabungan menggantikan .unique() pada schedule_date:
+    //   satu kelas satu baris per tanggal, tetapi tanggal yang sama
+    //   boleh muncul untuk kelas berbeda.
+    uniqueIndex("idx_schedules_date_class").on(
+      table.scheduleDate,
+      table.className,
+    ),
+    index("idx_schedules_week").on(table.weekId),
+    index("idx_schedules_menu").on(table.menuId),
+    index("idx_schedules_class").on(table.className),
+    index("idx_schedules_status").on(table.status),
+  ],
+);
 
 // ─── holidays (global, sekolah-wide) ─────────────────
-export const holidays = sqliteTable('holidays', {
-  id:          integer('id').primaryKey({ autoIncrement: true }),
-  date:        text('date').notNull().unique(),
-  name:        text('name').notNull(),
-  description: text('description'),
-  createdAt:   text('created_at').notNull().default(sql`(datetime('now'))`),
+export const holidays = sqliteTable("holidays", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  date: text("date").notNull().unique(),
+  name: text("name").notNull(),
+  description: text("description"),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
 });
 
 // ─── users (Admin, Korlas & Orang Tua) ───────────────
-export const users = sqliteTable('users', {
-  id:           integer('id').primaryKey({ autoIncrement: true }),
-  username:     text('username').notNull().unique(),
-  passwordHash: text('password_hash').notNull(),
-  fullName:     text('full_name'),
-  email:        text('email'),
-  phone:        text('phone'),
-  role:         text('role').notNull().default('parent'), // 'admin' | 'korlas' | 'parent'
+export const users = sqliteTable("users", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  username: text("username").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  fullName: text("full_name"),
+  email: text("email"),
+  phone: text("phone"),
+  role: text("role").notNull().default("parent"), // 'admin' | 'korlas' | 'parent'
   /** ★ Kelas yang dikoordinasi — hanya bermakna untuk role 'korlas'. */
-  className:    text('class_name'),
-  isActive:     integer('is_active').notNull().default(1),
-  lastLoginAt:  text('last_login_at'),
-  createdAt:    text('created_at').notNull().default(sql`(datetime('now'))`),
-  updatedAt:    text('updated_at').notNull().default(sql`(datetime('now'))`),
+  className: text("class_name"),
+  isActive: integer("is_active").notNull().default(1),
+  lastLoginAt: text("last_login_at"),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
 });
 
 // ─── parents (Profil Orang Tua) ─────────────────────
-export const parents = sqliteTable('parents', {
-  id:           integer('id').primaryKey({ autoIncrement: true }),
-  userId:       integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  parentName:   text('parent_name').notNull(),
-  relationship: text('relationship').notNull().default('ibu'), // 'ibu' | 'ayah' | 'wali'
-  phone:        text('phone'),
-  address:      text('address'),
-  isActive:     integer('is_active').notNull().default(1),
-  createdAt:    text('created_at').notNull().default(sql`(datetime('now'))`),
-  updatedAt:    text('updated_at').notNull().default(sql`(datetime('now'))`),
+export const parents = sqliteTable("parents", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  parentName: text("parent_name").notNull(),
+  relationship: text("relationship").notNull().default("ibu"), // 'ibu' | 'ayah' | 'wali'
+  phone: text("phone"),
+  address: text("address"),
+  isActive: integer("is_active").notNull().default(1),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
 });
 
 // ─── students (Anak — satu orang tua boleh banyak) ───
 export const students = sqliteTable(
-  'students',
+  "students",
   {
-    id:        integer('id').primaryKey({ autoIncrement: true }),
-    parentId:  integer('parent_id').notNull()
-                 .references(() => parents.id, { onDelete: 'cascade' }),
-    name:      text('name').notNull(),
-    className: text('class_name'),
-    isActive:  integer('is_active').notNull().default(1),
-    createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
-    updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    parentId: integer("parent_id")
+      .notNull()
+      .references(() => parents.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    className: text("class_name"),
+    isActive: integer("is_active").notNull().default(1),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
   },
   (table) => [
-    index('idx_students_parent_id').on(table.parentId),
-    index('idx_students_class').on(table.className),
+    index("idx_students_parent_id").on(table.parentId),
+    index("idx_students_class").on(table.className),
   ],
 );
 
@@ -1149,40 +1232,49 @@ export const students = sqliteTable(
 // Satu tanggal hanya untuk satu orang tua. `uniqueIndex` di bawah adalah
 // penjaga rebutannya — bukan pengecekan di service.
 export const scheduleClaims = sqliteTable(
-  'schedule_claims',
+  "schedule_claims",
   {
-    id:         integer('id').primaryKey({ autoIncrement: true }),
-    scheduleId: integer('schedule_id').notNull()
-                  .references(() => schedules.id, { onDelete: 'cascade' }),
-    parentId:   integer('parent_id').notNull()
-                  .references(() => parents.id, { onDelete: 'cascade' }),
-    studentId:  integer('student_id')
-                  .references(() => students.id, { onDelete: 'set null' }),
-    note:       text('note'),
-    claimedAt:  text('claimed_at').notNull().default(sql`(datetime('now'))`),
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    scheduleId: integer("schedule_id")
+      .notNull()
+      .references(() => schedules.id, { onDelete: "cascade" }),
+    parentId: integer("parent_id")
+      .notNull()
+      .references(() => parents.id, { onDelete: "cascade" }),
+    studentId: integer("student_id").references(() => students.id, {
+      onDelete: "set null",
+    }),
+    note: text("note"),
+    claimedAt: text("claimed_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
   },
   (table) => [
-    uniqueIndex('idx_schedule_claims_schedule').on(table.scheduleId),
-    index('idx_schedule_claims_parent').on(table.parentId),
+    uniqueIndex("idx_schedule_claims_schedule").on(table.scheduleId),
+    index("idx_schedule_claims_parent").on(table.parentId),
   ],
 );
 
 // ─── settings ────────────────────────────────────────
-export const settings = sqliteTable('settings', {
-  id:        integer('id').primaryKey({ autoIncrement: true }),
-  key:       text('key').notNull().unique(),
-  value:     text('value'),
-  updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
+export const settings = sqliteTable("settings", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  key: text("key").notNull().unique(),
+  value: text("value"),
+  updatedAt: text("updated_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
 });
 
 // ─── import_logs ─────────────────────────────────────
-export const importLogs = sqliteTable('import_logs', {
-  id:           integer('id').primaryKey({ autoIncrement: true }),
-  sourceFile:   text('source_file').notNull(),
-  recordsAdded: integer('records_added').notNull().default(0),
-  status:       text('status').notNull().default('success'),
-  errorMessage: text('error_message'),
-  importedAt:   text('imported_at').notNull().default(sql`(datetime('now'))`),
+export const importLogs = sqliteTable("import_logs", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  sourceFile: text("source_file").notNull(),
+  recordsAdded: integer("records_added").notNull().default(0),
+  status: text("status").notNull().default("success"),
+  errorMessage: text("error_message"),
+  importedAt: text("imported_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
 });
 ```
 
@@ -1241,29 +1333,29 @@ For each month block in file:
 
 ## 8. Index Strategy
 
-| Tabel | Kolom | Index Name | Alasan |
-|-------|-------|------------|--------|
-| `schedules` | `schedule_date`, `class_name` | `idx_schedules_date_class` (**UNIQUE**) | ★ Unik gabungan: satu kelas satu baris per tanggal, sekaligus index utama query "hari ini" & "minggu ini" **per kelas** |
-| `schedules` | `class_name` | `idx_schedules_class` | Daftar kelas turunan + filter kelas pada semua pembacaan |
-| `schedules` | `week_id` | `idx_schedules_week` | Filter by minggu |
-| `schedules` | `menu_id` | `idx_schedules_menu` | Cari semua tanggal untuk menu tertentu |
-| `schedules` | `status` | `idx_schedules_status` | Filter status: orang tua hanya melihat `published` (`WHERE status IN ('published')`) |
-| `menus` | `name` | `idx_menus_name` | Pencarian menu by nama |
-| `menus` | `is_active` | `idx_menus_active` | Filter menu aktif |
-| `menu_items` | `menu_id` | `idx_menu_items_menu_id` | Join ke parent menu |
-| `menu_items` | `name` | `idx_menu_items_name` | Pencarian item by nama |
-| `menu_items` | `item_type` | `idx_menu_items_type` | Filter main vs fruit |
-| `categories` | `slug` | `idx_categories_slug` | Lookup kategori by slug |
-| `weeks` | `month, year` | `idx_weeks_month_year` | Filter minggu by bulan |
-| `users` | `role` | `idx_users_role` | Filter user by role (admin/korlas/parent) |
-| `users` | `is_active` | `idx_users_active` | Filter user aktif/nonaktif |
-| `parents` | `user_id` | `idx_parents_user_id` | Join parent → user |
-| `parents` | `is_active` | `idx_parents_active` | Filter parent aktif/nonaktif |
-| `students` | `parent_id` | `idx_students_parent_id` | Ambil semua anak satu orang tua (menghindari N+1) |
-| `students` | `class_name` | `idx_students_class` | Filter/pencarian berdasarkan kelas anak |
-| `schedules` | `status` | `idx_schedules_status` | Filter `draft`/`locked`/`published` |
-| `schedule_claims` | `schedule_id` | `idx_schedule_claims_schedule` | **UNIQUE** — penjaga rebutan, bukan sekadar percepatan |
-| `schedule_claims` | `parent_id` | `idx_schedule_claims_parent` | Daftar tanggal yang diambil satu orang tua |
+| Tabel             | Kolom                         | Index Name                              | Alasan                                                                                                                 |
+| ----------------- | ----------------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `schedules`       | `schedule_date`, `class_name` | `idx_schedules_date_class` (**UNIQUE**) | ★ Unik gabungan: satu kelas satu baris per tanggal, sekaligus index utama query "hari ini" & "pekan ini" **per kelas** |
+| `schedules`       | `class_name`                  | `idx_schedules_class`                   | Daftar kelas turunan + filter kelas pada semua pembacaan                                                               |
+| `schedules`       | `week_id`                     | `idx_schedules_week`                    | Filter by minggu                                                                                                       |
+| `schedules`       | `menu_id`                     | `idx_schedules_menu`                    | Cari semua tanggal untuk menu tertentu                                                                                 |
+| `schedules`       | `status`                      | `idx_schedules_status`                  | Filter status: orang tua hanya melihat `published` (`WHERE status IN ('published')`)                                   |
+| `menus`           | `name`                        | `idx_menus_name`                        | Pencarian menu by nama                                                                                                 |
+| `menus`           | `is_active`                   | `idx_menus_active`                      | Filter menu aktif                                                                                                      |
+| `menu_items`      | `menu_id`                     | `idx_menu_items_menu_id`                | Join ke parent menu                                                                                                    |
+| `menu_items`      | `name`                        | `idx_menu_items_name`                   | Pencarian item by nama                                                                                                 |
+| `menu_items`      | `item_type`                   | `idx_menu_items_type`                   | Filter main vs fruit                                                                                                   |
+| `categories`      | `slug`                        | `idx_categories_slug`                   | Lookup kategori by slug                                                                                                |
+| `weeks`           | `month, year`                 | `idx_weeks_month_year`                  | Filter minggu by bulan                                                                                                 |
+| `users`           | `role`                        | `idx_users_role`                        | Filter user by role (admin/korlas/parent)                                                                              |
+| `users`           | `is_active`                   | `idx_users_active`                      | Filter user aktif/nonaktif                                                                                             |
+| `parents`         | `user_id`                     | `idx_parents_user_id`                   | Join parent → user                                                                                                     |
+| `parents`         | `is_active`                   | `idx_parents_active`                    | Filter parent aktif/nonaktif                                                                                           |
+| `students`        | `parent_id`                   | `idx_students_parent_id`                | Ambil semua anak satu orang tua (menghindari N+1)                                                                      |
+| `students`        | `class_name`                  | `idx_students_class`                    | Filter/pencarian berdasarkan kelas anak                                                                                |
+| `schedules`       | `status`                      | `idx_schedules_status`                  | Filter `draft`/`locked`/`published`                                                                                    |
+| `schedule_claims` | `schedule_id`                 | `idx_schedule_claims_schedule`          | **UNIQUE** — penjaga rebutan, bukan sekadar percepatan                                                                 |
+| `schedule_claims` | `parent_id`                   | `idx_schedule_claims_parent`            | Daftar tanggal yang diambil satu orang tua                                                                             |
 
 > **`idx_schedule_claims_schedule` bukan optimasi.** Index ini adalah satu-satunya hal yang mencegah
 > dua orang tua mengklaim tanggal yang sama saat permintaannya tiba bersamaan. Pengecekan di service
@@ -1408,35 +1500,35 @@ bunx wrangler d1 execute pizza-snack-play --remote --command="SELECT class_name 
 
 ### Ringkasan Perintah
 
-| Perintah | Fungsi |
-|----------|--------|
-| `bunx wrangler d1 create <name>` | Buat database D1 baru |
-| `bunx drizzle-kit generate` | Generate file migrasi dari schema |
-| `bunx drizzle-kit migrate` | Terapkan migrasi ke D1 remote |
-| `bunx drizzle-kit push` | Push schema langsung (prototyping) |
-| `bunx drizzle-kit studio` | GUI inspeksi database |
-| `bunx wrangler d1 execute <name> --remote --command="..."` | Jalankan SQL di D1 remote |
-| `bunx wrangler d1 execute <name> --local --command="..."` | Jalankan SQL di D1 lokal |
-| `bunx wrangler d1 export <name> --output=backup.sql` | Backup isi database |
+| Perintah                                                   | Fungsi                             |
+| ---------------------------------------------------------- | ---------------------------------- |
+| `bunx wrangler d1 create <name>`                           | Buat database D1 baru              |
+| `bunx drizzle-kit generate`                                | Generate file migrasi dari schema  |
+| `bunx drizzle-kit migrate`                                 | Terapkan migrasi ke D1 remote      |
+| `bunx drizzle-kit push`                                    | Push schema langsung (prototyping) |
+| `bunx drizzle-kit studio`                                  | GUI inspeksi database              |
+| `bunx wrangler d1 execute <name> --remote --command="..."` | Jalankan SQL di D1 remote          |
+| `bunx wrangler d1 execute <name> --local --command="..."`  | Jalankan SQL di D1 lokal           |
+| `bunx wrangler d1 export <name> --output=backup.sql`       | Backup isi database                |
 
 ---
 
 ## 10. Catatan Khusus Cloudflare D1
 
-| Aspek | Catatan |
-|-------|---------|
-| **Tipe SQLite** | D1 berbasis SQLite — DDL di Section 2 berlaku tanpa perubahan |
-| **Foreign keys** | D1 mengaktifkan `PRAGMA foreign_keys` secara default |
-| **Transaksi** | Tidak ada transaksi interaktif panjang; gunakan `db.batch([...])` |
-| **Statement size** | Batas ukuran query ~100 KB per statement |
-| **Parameter** | Maksimum ~100 bound parameter per query (gunakan batch untuk insert besar) |
-| **Row size** | Maksimum ~1 MB per row |
-| **Latency** | Query dari Worker ke D1 di region yang sama sangat rendah |
-| **Backup** | Terkelola oleh Cloudflare; backup logis tambahan via `wrangler d1 export` |
-| **Local dev** | `wrangler dev` menyediakan D1 lokal (miniflare) — data terpisah dari remote |
-| **Timezone** | Worker berjalan di UTC. `datetime('now','localtime')` = UTC. Untuk WIB gunakan `date('now','+7 hours')` atau hitung di aplikasi |
-| **Migration tracking** | `drizzle-kit` mencatat migrasi di tabel `d1_migrations` (dikelola wrangler) |
-| **`ADD COLUMN ... NOT NULL`** | **Ditolak** bila tabel sudah berisi data (tanpa `DEFAULT`). Untuk kolom wajib baru: rebuild tabel (`CREATE ..._new` → `INSERT ... SELECT` → `DROP` → `RENAME`). Lihat catatan migrasi `0002` di Step 2 |
+| Aspek                         | Catatan                                                                                                                                                                                                                                                                       |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Tipe SQLite**               | D1 berbasis SQLite — DDL di Section 2 berlaku tanpa perubahan                                                                                                                                                                                                                 |
+| **Foreign keys**              | D1 mengaktifkan `PRAGMA foreign_keys` secara default                                                                                                                                                                                                                          |
+| **Transaksi**                 | Tidak ada transaksi interaktif panjang; gunakan `db.batch([...])`                                                                                                                                                                                                             |
+| **Statement size**            | Batas ukuran query ~100 KB per statement                                                                                                                                                                                                                                      |
+| **Parameter**                 | Maksimum ~100 bound parameter per query (gunakan batch untuk insert besar)                                                                                                                                                                                                    |
+| **Row size**                  | Maksimum ~1 MB per row                                                                                                                                                                                                                                                        |
+| **Latency**                   | Query dari Worker ke D1 di region yang sama sangat rendah                                                                                                                                                                                                                     |
+| **Backup**                    | Terkelola oleh Cloudflare; backup logis tambahan via `wrangler d1 export`                                                                                                                                                                                                     |
+| **Local dev**                 | `wrangler dev` menyediakan D1 lokal (miniflare) — data terpisah dari remote                                                                                                                                                                                                   |
+| **Timezone**                  | Worker berjalan di UTC. `datetime('now','localtime')` = UTC. Untuk WIB gunakan `date('now','+7 hours')` atau hitung di aplikasi                                                                                                                                               |
+| **Migration tracking**        | `drizzle-kit` mencatat migrasi di tabel `d1_migrations` (dikelola wrangler)                                                                                                                                                                                                   |
+| **`ADD COLUMN ... NOT NULL`** | **Ditolak** bila tabel sudah berisi data (tanpa `DEFAULT`). Untuk kolom wajib baru: rebuild tabel (`CREATE ..._new` → `INSERT ... SELECT` → `DROP` → `RENAME`). Lihat catatan migrasi `0002` di Step 2                                                                        |
 | **`UNIQUE` + kolom nullable** | SQLite menganggap setiap `NULL` **berbeda**, sehingga baris dengan kolom `NULL` tidak saling bentrok di index unik. Karena itu `schedules.class_name` dibuat `NOT NULL` — agar `UNIQUE(schedule_date, class_name)` benar-benar menegakkan "satu kelas satu baris per tanggal" |
 
 ---

@@ -225,7 +225,7 @@ class ScheduleService {
     };
   }
 
-  /** Jadwal mingguan. `date` opsional — default hari ini (WIB). */
+  /** Jadwal Sepekan. `date` opsional — default hari ini (WIB). */
   async getWeek(
     db: Db,
     className: string | null,

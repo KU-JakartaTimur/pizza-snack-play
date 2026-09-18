@@ -102,7 +102,7 @@ export const menuCategories = sqliteTable(
 );
 
 // ─────────────────────────────────────────────────────────────
-// Periode mingguan (Senin–Jumat)
+// Periode Sepekan (Senin–Jumat)
 // ─────────────────────────────────────────────────────────────
 export const weeks = sqliteTable(
   "weeks",

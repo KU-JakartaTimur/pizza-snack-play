@@ -1,23 +1,24 @@
 # Product Requirements Document (PRD)
+
 ## Aplikasi "Pizza Snack Play"
 
 ---
 
-| Field | Value |
-|-------|-------|
-| **Nama Produk** | Pizza Snack Play |
-| **Versi Dokumen** | 1.7 |
-| **Tanggal** | 18 September 2026 |
-| **Stack Teknologi** | BHVR — Bun + Hono + Vite + React (Cloudflare Workers + D1) |
-| **Status** | Draft for Review |
-| **Sumber Data** | `data/output_jadwal_piket.txt` — Jadwal Piket Snack September 2026 (menu + penugasan siswa per kelas); `data/jadwal_piket_snack.txt` — arsip Agustus & September 2026 (menu saja) |
-| **Perubahan v1.1** | Akses orang tua diubah dari publik (tanpa login) menjadi wajib login (autentikasi) |
-| **Perubahan v1.2** | Stack disesuaikan dengan template `bhvr-template` yang sebenarnya: React 19 (bukan Vue 3), Cloudflare Workers + D1 (bukan bun:sqlite lokal) |
-| **Perubahan v1.3** | Phase 2 selesai: pencarian riwayat menu (`/schedules/search`) & duplikasi jadwal antar minggu (`/schedules/copy`); daftar endpoint diselaraskan dengan implementasi |
-| **Perubahan v1.4** | **Jadwal disimpan per kelas** (`schedules.class_name`, unik gabungan `tanggal + kelas`) dan role baru **`korlas`** (koordinator kelas): boleh mengelola katalog menu/kategori (sekolah-wide) + jadwal **kelasnya sendiri**. Endpoint baru `GET /classes`; semua pembacaan jadwal menerima `?class=` |
-| **Perubahan v1.5** | **Analisis ulang file sumber** `output_jadwal_piket.txt`: (a) koreksi pemetaan tanggal di §5 (1 Sep = Selasa, bukan 2 Sep — pergeseran 1 hari); (b) koreksi nama menu agar cocok dengan file sumber ("Roti coklat" bukan "Roti isi coklat", "naga" bukan "buah naga"); (c) **dimensi baru: Penugasan Piket Siswa** — file sumber memuat nama siswa piket per kelas per hari (38 siswa, 87 penugasan, kelas 3–5 per hari), yang sebelumnya tidak dimodelkan sama sekali; (d) fitur baru **F7** + tabel baru `piket_assignments` (13 tabel total); (e) koreksi rentang minggu pertama (1–4 Sep, bukan 1–5 Sep) |
-| **Perubahan v1.6** | **Fitur Kunci & Publikasi Jadwal (F8):** alur tiga-status `draft → locked → published`. Korlas dapat **mengunci** jadwal draft pada suatu rentang/bulan; setelah seluruh bulan terkunci, korlas dapat **memublikasi** ke semua orang tua. Orang tua hanya melihat jadwal `published`. Admin dapat **membuka kunci** (unlock) baris individual. Kolom baru di `schedules`: `status`, `locked_by`, `locked_at`, `published_by`, `published_at` + migrasi `0003_*.sql`. Endpoint baru: `POST /schedules/lock`, `POST /schedules/publish`, `POST /schedules/:id/unlock`. Perlindungan tulis: baris `locked`/`published` tidak dapat diedit/dihapus/ditimpa |
-| **Perubahan v1.7** | **(a) Fitur Pilih Jadwal (F9):** orang tua berebut tanggal snack yang petugasnya sengaja dibiarkan kosong korlas — siapa cepat dia dapat. Tabel baru `schedule_claims` dengan `UNIQUE(schedule_id)` sebagai penjaga rebutan; endpoint `POST/DELETE /claims`, `GET /claims/mine`, `GET /claims`. Klaim **menulis balik** ke `schedules.petugas_name`/`petugas_parent_name` sehingga hanya ada satu sumber kebenaran soal petugas. **(b) PWA (F10):** aplikasi dapat dipasang ke layar utama + service worker. **(c) Koreksi:** tabel `piket_assignments` (v1.5, F7) **tidak pernah dibuat** — digantikan dua kolom `petugas_*` di `schedules`; F7 ditandai ulang sebagai ditinggalkan. **(d)** Migrasi kunci & publikasi dinomori ulang dari `0003` menjadi `0004`; `schedule_claims` menjadi `0005` |
+| Field               | Value                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Nama Produk**     | Pizza Snack Play                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| **Versi Dokumen**   | 1.7                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| **Tanggal**         | 18 September 2026                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| **Stack Teknologi** | BHVR — Bun + Hono + Vite + React (Cloudflare Workers + D1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| **Status**          | Draft for Review                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| **Sumber Data**     | `data/output_jadwal_piket.txt` — Jadwal Piket Snack September 2026 (menu + penugasan siswa per kelas); `data/jadwal_piket_snack.txt` — arsip Agustus & September 2026 (menu saja)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| **Perubahan v1.1**  | Akses orang tua diubah dari publik (tanpa login) menjadi wajib login (autentikasi)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| **Perubahan v1.2**  | Stack disesuaikan dengan template `bhvr-template` yang sebenarnya: React 19 (bukan Vue 3), Cloudflare Workers + D1 (bukan bun:sqlite lokal)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| **Perubahan v1.3**  | Phase 2 selesai: pencarian riwayat menu (`/schedules/search`) & duplikasi jadwal Sepekan (`/schedules/copy`); daftar endpoint diselaraskan dengan implementasi                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| **Perubahan v1.4**  | **Jadwal disimpan per kelas** (`schedules.class_name`, unik gabungan `tanggal + kelas`) dan role baru **`korlas`** (koordinator kelas): boleh mengelola katalog menu/kategori (sekolah-wide) + jadwal **kelasnya sendiri**. Endpoint baru `GET /classes`; semua pembacaan jadwal menerima `?class=`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| **Perubahan v1.5**  | **Analisis ulang file sumber** `output_jadwal_piket.txt`: (a) koreksi pemetaan tanggal di §5 (1 Sep = Selasa, bukan 2 Sep — pergeseran 1 hari); (b) koreksi nama menu agar cocok dengan file sumber ("Roti coklat" bukan "Roti isi coklat", "naga" bukan "buah naga"); (c) **dimensi baru: Penugasan Piket Siswa** — file sumber memuat nama siswa piket per kelas per hari (38 siswa, 87 penugasan, kelas 3–5 per hari), yang sebelumnya tidak dimodelkan sama sekali; (d) fitur baru **F7** + tabel baru `piket_assignments` (13 tabel total); (e) koreksi rentang minggu pertama (1–4 Sep, bukan 1–5 Sep)                                                                                                                                                                                        |
+| **Perubahan v1.6**  | **Fitur Kunci & Publikasi Jadwal (F8):** alur tiga-status `draft → locked → published`. Korlas dapat **mengunci** jadwal draft pada suatu rentang/bulan; setelah seluruh bulan terkunci, korlas dapat **memublikasi** ke semua orang tua. Orang tua hanya melihat jadwal `published`. Admin dapat **membuka kunci** (unlock) baris individual. Kolom baru di `schedules`: `status`, `locked_by`, `locked_at`, `published_by`, `published_at` + migrasi `0003_*.sql`. Endpoint baru: `POST /schedules/lock`, `POST /schedules/publish`, `POST /schedules/:id/unlock`. Perlindungan tulis: baris `locked`/`published` tidak dapat diedit/dihapus/ditimpa                                                                                                                                              |
+| **Perubahan v1.7**  | **(a) Fitur Pilih Jadwal (F9):** orang tua berebut tanggal snack yang petugasnya sengaja dibiarkan kosong korlas — siapa cepat dia dapat. Tabel baru `schedule_claims` dengan `UNIQUE(schedule_id)` sebagai penjaga rebutan; endpoint `POST/DELETE /claims`, `GET /claims/mine`, `GET /claims`. Klaim **menulis balik** ke `schedules.petugas_name`/`petugas_parent_name` sehingga hanya ada satu sumber kebenaran soal petugas. **(b) PWA (F10):** aplikasi dapat dipasang ke layar utama + service worker. **(c) Koreksi:** tabel `piket_assignments` (v1.5, F7) **tidak pernah dibuat** — digantikan dua kolom `petugas_*` di `schedules`; F7 ditandai ulang sebagai ditinggalkan. **(d)** Migrasi kunci & publikasi dinomori ulang dari `0003` menjadi `0004`; `schedule_claims` menjadi `0005` |
 
 ---
 
@@ -26,6 +27,7 @@
 **Pizza Snack Play** adalah aplikasi manajemen dan informasi jadwal piket snack sekolah. Aplikasi ini memungkinkan pengelola sekolah (admin/guru piket) untuk mengelola jadwal menu snack harian beserta **penugasan siswa piket** (siswa yang bertugas membawa/menyiapkan snack per kelas per hari), sementara orang tua dan siswa dapat melihat jadwal snack yang akan disajikan setiap harinya setelah melakukan login. Data utama aplikasi berasal dari jadwal piket snack bulanan yang berisi menu snack untuk hari Senin–Jumat (makanan utama + buah pendamping) serta daftar siswa yang bertugas piket per kelas.
 
 ### Tujuan Utama
+
 - **Digitalisasi jadwal piket snack** — mengganti dokumen fisik/manual menjadi aplikasi yang dapat diakses kapan saja.
 - **Transparansi menu** — orang tua/siswa tahu menu snack hari ini dan minggu depan, dengan akses melalui login aman.
 - **Manajemen menu** — admin dapat menambah, mengedit, dan mengatur menu snack per hari, minggu, dan bulan.
@@ -38,12 +40,14 @@
 ## 2. Latar Belakang & Masalah
 
 Saat ini jadwal piket snack disusun dalam format teks manual (lihat lampiran), dengan struktur:
+
 - Dikelompokkan per minggu (misal: 1–4 September, 7–11 September, dst.)
 - Setiap hari Senin–Jumat memiliki 2 item: **makanan utama** + **buah pendamping**
 - Setiap hari juga memuat **daftar siswa piket per kelas** (mis. "Kelas 1: Shezan", "Kelas 2: Uma")
 - Contoh: "Selasa: Roti coklat + jeruk / Kelas 1: Shezan / Kelas 2: Uma / Kelas 3: Azkayra"
 
 ### Masalah yang Dihadapi
+
 1. **Tidak ada pencarian** — sulit mencari kapan menu tertentu disajikan.
 2. **Tidak ada notifikasi** — orang tua tidak tahu menu hari ini tanpa bertanya.
 3. **Sulit diedit** — perubahan menu manual rawan kesalahan.
@@ -56,22 +60,25 @@ Saat ini jadwal piket snack disusun dalam format teks manual (lihat lampiran), d
 ## 3. Target Pengguna (User Personas)
 
 ### 3.1 Admin / Guru Piket
+
 - **Peran:** Mengelola jadwal snack (CRUD menu, atur jadwal harian/minggu/bulan).
-- **Kebutuhan:** Form input cepat, duplikasi jadwal, template menu, preview mingguan.
+- **Kebutuhan:** Form input cepat, duplikasi jadwal, template menu, preview Sepekan.
 - **Akses:** Dashboard admin (web app React).
 
 ### 3.2 Orang Tua / Siswa
+
 - **Peran:** Melihat jadwal snack hari ini, minggu ini, dan bulan ini.
 - **Kebutuhan:** Tampilan kalender/list sederhana, notifikasi opsional, akses login pribadi.
 - **Akses:** Wajib login (akun pribadi yang diberikan admin/sekolah). Setiap orang tua memiliki akun dengan username & password yang diatur oleh admin sekolah. Belum login hanya melihat halaman login, tidak dapat melihat jadwal.
 - **Cakupan kelas:** Orang tua hanya melihat jadwal **kelas anaknya**. Bila punya anak di lebih dari satu kelas, muncul **pemilih kelas** di header; tanpa memilih, kelas anak pertama dipakai sebagai default.
 
 ### 3.3 Korlas (Koordinator Kelas)
+
 - **Peran:** Perpanjangan tangan admin di tingkat kelas — mengatur menu snack untuk **kelasnya sendiri** tanpa perlu menunggu admin.
 - **Kebutuhan:** Bisa mengubah jadwal menu per tanggal untuk kelasnya, dan ikut merawat katalog menu/kategori bersama admin.
 - **Akses:** Login seperti pengguna lain (role `korlas`), terhubung ke satu kelas lewat `users.class_name`. Kelasnya juga ikut sebagai claim `className` di JWT.
 - **Wewenang:**
-  - ✅ Ubah/tambah/hapus jadwal (termasuk salin minggu) — **terbatas kelasnya sendiri**.
+  - ✅ Ubah/tambah/hapus jadwal (termasuk Salin Sepekan) — **terbatas kelasnya sendiri**.
   - ✅ Kelola katalog menu & kategori (bersifat sekolah-wide, dipakai bersama semua kelas).
   - ❌ Melihat atau mengubah jadwal kelas lain → `403`.
   - ❌ Menandai hari libur sekolah (`/holidays`) → `403` (tetap wewenang admin).
@@ -79,6 +86,7 @@ Saat ini jadwal piket snack disusun dalam format teks manual (lihat lampiran), d
 - **Catatan:** Korlas **bukan** admin. Ia tetap melihat profil & daftar anaknya sendiri seperti orang tua, tetapi tidak melihat menu "Dashboard" maupun "Orang Tua" di navigasi.
 
 ### 3.4 Koperasi / Kantin
+
 - **Peran:** Mengetahui menu yang harus disiapkan.
 - **Kebutuhan:** Daftar belanja/persiapan per minggu.
 - **Akses:** View-only dengan ekspor PDF/Excel.
@@ -88,6 +96,7 @@ Saat ini jadwal piket snack disusun dalam format teks manual (lihat lampiran), d
 ## 4. Fitur Utama (Features)
 
 ### F1: Manajemen Menu Snack (Admin & Korlas)
+
 - **Tambah menu** — input nama makanan utama + buah pendamping.
 - **Edit menu** — ubah komponen menu.
 - **Hapus menu** — soft delete (arsip).
@@ -99,8 +108,9 @@ Saat ini jadwal piket snack disusun dalam format teks manual (lihat lampiran), d
 > untuk kelasnya tanpa menunggu admin.
 
 ### F2: Manajemen Jadwal (Admin & Korlas — Per Kelas)
+
 - **Atur jadwal harian** — pilih tanggal → pilih menu → simpan, **untuk kelas tertentu**.
-- **Atur jadwal mingguan** — input rentang tanggal (Senin–Jumat) → assign menu per hari.
+- **Atur jadwal Sepekan** — input rentang tanggal (Senin–Jumat) → assign menu per hari.
 - **Duplikasi jadwal** — copy jadwal minggu ke minggu lain (per kelas).
 - **Template bulanan** — generate jadwal sebulan dari template.
 - **Override** — ubah menu untuk tanggal tertentu tanpa mengganggu jadwal lain.
@@ -110,6 +120,7 @@ Saat ini jadwal piket snack disusun dalam format teks manual (lihat lampiran), d
   jadwal kelasnya; **hari libur sekolah** tetap global dan hanya admin yang boleh mengubahnya.
 
 ### F3: Tampilan Jadwal (User — Wajib Login)
+
 - **Jadwal hari ini** — card menampilkan menu hari ini (makanan + buah). Hanya tampil setelah login.
 - **Jadwal minggu ini** — list Senin–Jumat dengan menu masing-masing. Hanya tampil setelah login.
 - **Jadwal bulanan** — kalender/komponen grid menampilkan semua hari di bulan tsb. Hanya tampil setelah login.
@@ -121,6 +132,7 @@ Saat ini jadwal piket snack disusun dalam format teks manual (lihat lampiran), d
   `localStorage` sehingga pilihan tidak hilang saat berpindah halaman.
 
 ### F3b: Autentikasi Orang Tua
+
 - **Login** — halaman login dengan username & password.
 - **Akun pribadi** — setiap orang tua memiliki akun yang diberikan oleh admin sekolah.
 - **Satu akun, banyak anak** — seorang orang tua boleh memiliki lebih dari satu anak; setiap anak punya nama dan kelas sendiri. Profil menampilkan seluruh anak, dan daftar akun di halaman admin menampilkan semua anak dalam satu baris.
@@ -133,15 +145,18 @@ Saat ini jadwal piket snack disusun dalam format teks manual (lihat lampiran), d
 - **Daftar kelas tanpa tabel** — kelas sengaja tidak dijadikan tabel; daftarnya diturunkan dari `students.class_name` ∪ `users.class_name` (korlas) ∪ `schedules.class_name`, lalu disaring sesuai peran lewat `GET /classes`.
 
 ### F4: Kategori & Filtering
+
 - **Filter by kategori** — mis. "menu gorengan saja minggu ini".
 - **Filter by buah** — "kapan terakhir jeruk disajikan?"
 - **Statistik ringan** — jumlah menu unik per bulan, distribusi kategori.
 
 ### F5: Ekspor & Cetak
-- **Ekspor PDF** — jadwal mingguan/bulanan untuk cetak/pengumuman.
+
+- **Ekspor PDF** — jadwal Sepekan/bulanan untuk cetak/pengumuman.
 - **Ekspor Excel** — untuk perencanaan koperasi.
 
 ### F6: Notifikasi (Opsional / Future)
+
 - **Push notification** — pengingat menu hari ini (opsional, phase 2).
 - **Broadcast WhatsApp** — integrasi opsional.
 
@@ -173,6 +188,7 @@ Saat ini jadwal piket snack disusun dalam format teks manual (lihat lampiran), d
 > dilakukan saat impor/seed, bukan saat runtime.
 
 ### F8: Kunci & Publikasi Jadwal (Korlas & Admin)
+
 - **Tiga status jadwal** — setiap baris `schedules` memiliki `status`:
   - `draft` (default) — dapat diedit oleh korlas/admin
   - `locked` — dikunci oleh korlas; **tidak dapat** diedit/dihapus/ditimpa
@@ -254,21 +270,23 @@ Bulan → Minggu (rentang tanggal) → Hari → Menu (makanan utama + buah)
 ```
 
 ### Contoh Pemetaan Data:
-| Tanggal | Hari | Makanan Utama | Buah Pendamping | Bulan |
-|---------|------|---------------|-----------------|-------|
-| 1 Sep 2026 | Selasa | Roti coklat | Jeruk | September |
-| 2 Sep 2026 | Rabu | Tahu isi sayur | Melon | September |
-| 3 Sep 2026 | Kamis | Pisang panggang coklat keju | Nanas madu | September |
-| 4 Sep 2026 | Jumat | Urap jagung | Semangka | September |
-| 7 Sep 2026 | Senin | Ubi cilembu | Jambu air | September |
-| ... | ... | ... | ... | ... |
+
+| Tanggal    | Hari   | Makanan Utama               | Buah Pendamping | Bulan     |
+| ---------- | ------ | --------------------------- | --------------- | --------- |
+| 1 Sep 2026 | Selasa | Roti coklat                 | Jeruk           | September |
+| 2 Sep 2026 | Rabu   | Tahu isi sayur              | Melon           | September |
+| 3 Sep 2026 | Kamis  | Pisang panggang coklat keju | Nanas madu      | September |
+| 4 Sep 2026 | Jumat  | Urap jagung                 | Semangka        | September |
+| 7 Sep 2026 | Senin  | Ubi cilembu                 | Jambu air       | September |
+| ...        | ...    | ...                         | ...             | ...       |
 
 ### Contoh Penugasan Piket (1 Sep 2026 — Selasa):
-| Kelas | Siswa Piket |
-|-------|-------------|
-| Kelas 1 | Shezan |
-| Kelas 2 | Uma |
-| Kelas 3 | Azkayra |
+
+| Kelas   | Siswa Piket |
+| ------- | ----------- |
+| Kelas 1 | Shezan      |
+| Kelas 2 | Uma         |
+| Kelas 3 | Azkayra     |
 
 > **File sumber `output_jadwal_piket.txt` memuat dimensi penugasan siswa.** Setiap hari kerja mencantumkan
 > nama siswa yang bertugas piket per kelas. Jumlah kelas yang piket per hari bervariasi (3–5 kelas).
@@ -283,6 +301,7 @@ Bulan → Minggu (rentang tanggal) → Hari → Menu (makanan utama + buah)
 > hanya pasangan `(tanggal, kelas)` tertentu; struktur tabelnya sudah siap tanpa migrasi baru.
 
 ### Catatan:
+
 - Hari **Sabtu & Minggu** tidak ada jadwal (libur sekolah).
 - Ada kemungkinan **hari libur** di tengah minggu (mis. "Senin: Libur" pada 17 Agustus 2026).
 - Setiap hari kerja memiliki **tepat dua item menu**: makanan utama + buah.
@@ -296,15 +315,15 @@ Bulan → Minggu (rentang tanggal) → Hari → Menu (makanan utama + buah)
 
 ### 6.1 Komponen Stack
 
-| Lapisan | Teknologi | Penjelasan |
-|---------|-----------|------------|
-| **B**un | Runtime & Package Manager | Runtime JavaScript/TypeScript cepat; dipakai untuk install, script, dan tooling. Bukan runtime server produksi. |
-| **H**ono | Backend API | Web framework ultrafast, middleware-based. Berjalan di atas **Cloudflare Workers**. |
-| **V**ite | Build Tool | Dev server dengan HMR instan + build produksi teroptimasi. |
-| **R**eact | Frontend | React 19 + **TanStack Router v7** untuk routing + **TanStack Query** untuk data fetching/caching. |
-| **Database** | Cloudflare D1 | Serverless SQLite yang terintegrasi dengan Workers, diakses via **Drizzle ORM**. |
-| **Styling** | Tailwind CSS v4 | Utility-first CSS, via `@tailwindcss/vite` plugin. |
-| **Deployment** | Cloudflare Workers | Serverless edge runtime, aset statis disajikan dari `./dist/client` dengan SPA fallback. |
+| Lapisan        | Teknologi                 | Penjelasan                                                                                                      |
+| -------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| **B**un        | Runtime & Package Manager | Runtime JavaScript/TypeScript cepat; dipakai untuk install, script, dan tooling. Bukan runtime server produksi. |
+| **H**ono       | Backend API               | Web framework ultrafast, middleware-based. Berjalan di atas **Cloudflare Workers**.                             |
+| **V**ite       | Build Tool                | Dev server dengan HMR instan + build produksi teroptimasi.                                                      |
+| **R**eact      | Frontend                  | React 19 + **TanStack Router v7** untuk routing + **TanStack Query** untuk data fetching/caching.               |
+| **Database**   | Cloudflare D1             | Serverless SQLite yang terintegrasi dengan Workers, diakses via **Drizzle ORM**.                                |
+| **Styling**    | Tailwind CSS v4           | Utility-first CSS, via `@tailwindcss/vite` plugin.                                                              |
+| **Deployment** | Cloudflare Workers        | Serverless edge runtime, aset statis disajikan dari `./dist/client` dengan SPA fallback.                        |
 
 **Penting — koreksi dari v1.1:** Dokumen versi sebelumnya menyebut frontend **Vue 3** dan database **bun:sqlite lokal**. Setelah template `bhvr-template` di-scaffold, stack sebenarnya adalah **React 19** dan **Cloudflare D1**. Skema database tetap berlaku karena D1 adalah SQLite — hanya lapisan akses dan deployment yang berubah. Sejak v1.4 jumlah tabel menjadi **12** setelah tabel `students` dipisahkan dari `parents`. Sejak v1.5 ditambahkan tabel `piket_assignments` sehingga total menjadi **13** tabel.
 
@@ -366,7 +385,7 @@ pizza-snack-play/
 │   │       ├── index.tsx         # / → redirect ke /hari-ini
 │   │       ├── dashboard.tsx     # Ringkasan (admin)
 │   │       ├── hari-ini.tsx      # Jadwal hari ini (per kelas aktif)
-│   │       ├── minggu-ini.tsx    # Jadwal mingguan (per kelas aktif)
+│   │       ├── minggu-ini.tsx    # Jadwal Sepekan (per kelas aktif)
 │   │       ├── bulan.tsx         # Jadwal bulanan (per kelas aktif)
 │   │       ├── pencarian.tsx     # Cari riwayat menu (per kelas aktif)
 │   │       ├── menu.tsx          # CRUD menu (admin & korlas)
@@ -401,12 +420,12 @@ pizza-snack-play/
 
 Setiap fitur backend mengikuti pola berlapis yang sama seperti contoh `user/`:
 
-| Lapisan | Tanggung Jawab | Contoh File |
-|---------|----------------|-------------|
-| **Route** | Definisi endpoint & HTTP method | `src/api/auth/route.ts` |
-| **Controller** | Terima request, validasi, kirim response | `src/api/auth/controller.ts` |
-| **Service** | Business logic (hash password, verifikasi, generate JWT) | `src/api/auth/service.ts` |
-| **Repository** | Akses data via Drizzle (query D1) | `src/api/auth/repository.ts` |
+| Lapisan        | Tanggung Jawab                                           | Contoh File                  |
+| -------------- | -------------------------------------------------------- | ---------------------------- |
+| **Route**      | Definisi endpoint & HTTP method                          | `src/api/auth/route.ts`      |
+| **Controller** | Terima request, validasi, kirim response                 | `src/api/auth/controller.ts` |
+| **Service**    | Business logic (hash password, verifikasi, generate JWT) | `src/api/auth/service.ts`    |
+| **Repository** | Akses data via Drizzle (query D1)                        | `src/api/auth/repository.ts` |
 
 Path alias: `@/*` untuk frontend, `@api/*` untuk backend.
 
@@ -450,22 +469,24 @@ JWT_SECRET=              # (BARU) untuk signing JWT
 ## 7. API Endpoints
 
 ### 7.1 Auth Endpoints
-| Method | Path | Deskripsi | Role |
-|--------|------|-----------|------|
-| POST | `/api/auth/login` | Login (username + password) → JWT token + profil user | Public |
-| POST | `/api/auth/logout` | Logout (titik keluar eksplisit; JWT stateless) | Authenticated |
-| GET | `/api/auth/me` | Profil user yang sedang login + daftar anak (bila `parent`) | Authenticated |
-| PUT | `/api/auth/password` | Ubah password sendiri | Authenticated |
+
+| Method | Path                 | Deskripsi                                                   | Role          |
+| ------ | -------------------- | ----------------------------------------------------------- | ------------- |
+| POST   | `/api/auth/login`    | Login (username + password) → JWT token + profil user       | Public        |
+| POST   | `/api/auth/logout`   | Logout (titik keluar eksplisit; JWT stateless)              | Authenticated |
+| GET    | `/api/auth/me`       | Profil user yang sedang login + daftar anak (bila `parent`) | Authenticated |
+| PUT    | `/api/auth/password` | Ubah password sendiri                                       | Authenticated |
 
 ### 7.2 Parent (Orang Tua) Endpoints — Admin Only
-| Method | Path | Deskripsi | Role |
-|--------|------|-----------|------|
-| GET | `/api/parents` | List akun orang tua + seluruh anaknya (paginated, `search` mencocokkan nama/kelas anak) | Admin |
-| GET | `/api/parents/:id` | Detail akun + daftar anak | Admin |
-| POST | `/api/parents` | Buat akun + profil + daftar anak (`students[]`, min. 1) | Admin |
-| PUT | `/api/parents/:id` | Edit akun; `students[]` menggantikan daftar lama bila dikirim | Admin |
-| DELETE | `/api/parents/:id?hard=` | Nonaktifkan akun (soft delete), atau hapus permanen | Admin |
-| POST | `/api/parents/:id/reset-password` | Reset password akun orang tua | Admin |
+
+| Method | Path                              | Deskripsi                                                                               | Role  |
+| ------ | --------------------------------- | --------------------------------------------------------------------------------------- | ----- |
+| GET    | `/api/parents`                    | List akun orang tua + seluruh anaknya (paginated, `search` mencocokkan nama/kelas anak) | Admin |
+| GET    | `/api/parents/:id`                | Detail akun + daftar anak                                                               | Admin |
+| POST   | `/api/parents`                    | Buat akun + profil + daftar anak (`students[]`, min. 1)                                 | Admin |
+| PUT    | `/api/parents/:id`                | Edit akun; `students[]` menggantikan daftar lama bila dikirim                           | Admin |
+| DELETE | `/api/parents/:id?hard=`          | Nonaktifkan akun (soft delete), atau hapus permanen                                     | Admin |
+| POST   | `/api/parents/:id/reset-password` | Reset password akun orang tua                                                           | Admin |
 
 > **Bentuk `students`:** array objek `{ id?, name, className? }`. Saat `PUT`, entri yang menyertakan `id` akan **diperbarui**, entri tanpa `id` **dibuat baru**, dan entri yang tidak disebut lagi **dihapus**. `id` hanya dipercaya bila anak tersebut memang milik orang tua itu.
 
@@ -474,9 +495,10 @@ JWT_SECRET=              # (BARU) untuk signing JWT
 > dikosongkan otomatis. Lihat §3.3 untuk wewenang korlas.
 
 ### 7.3 Kelas Endpoints
-| Method | Path | Deskripsi | Role |
-|--------|------|-----------|------|
-| GET | `/api/classes` | Daftar kelas yang **boleh diakses pemanggil** + kelas default. Admin → semua kelas; korlas → kelasnya sendiri; orang tua → kelas anak-anaknya | Authenticated |
+
+| Method | Path           | Deskripsi                                                                                                                                     | Role          |
+| ------ | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| GET    | `/api/classes` | Daftar kelas yang **boleh diakses pemanggil** + kelas default. Admin → semua kelas; korlas → kelasnya sendiri; orang tua → kelas anak-anaknya | Authenticated |
 
 > Response: `{ "classes": ["1","2","3","4","5","6"], "default": "1" }`. Daftar ini **sudah dipersempit**
 > sesuai peran, jadi UI bisa langsung memakainya untuk pemilih kelas tanpa logika tambahan.
@@ -484,39 +506,41 @@ JWT_SECRET=              # (BARU) untuk signing JWT
 > dan diurutkan natural sehingga `2A` mendahului `10A`.
 
 ### 7.4 Menu Endpoints
-| Method | Path | Deskripsi | Role |
-|--------|------|-----------|------|
-| GET | `/api/menus` | List semua menu (paginated) | Admin, Korlas, Parent |
-| GET | `/api/menus/item-types` | Jenis komponen menu (`main`, `fruit`, `drink`, `other`) | Admin, Korlas, Parent |
-| GET | `/api/menus/:id` | Detail menu | Admin, Korlas, Parent |
-| POST | `/api/menus` | Tambah menu baru | Admin, **Korlas** |
-| PUT | `/api/menus/:id` | Edit menu | Admin, **Korlas** |
-| DELETE | `/api/menus/:id` | Soft-delete menu (arsip) | Admin, **Korlas** |
+
+| Method | Path                    | Deskripsi                                               | Role                  |
+| ------ | ----------------------- | ------------------------------------------------------- | --------------------- |
+| GET    | `/api/menus`            | List semua menu (paginated)                             | Admin, Korlas, Parent |
+| GET    | `/api/menus/item-types` | Jenis komponen menu (`main`, `fruit`, `drink`, `other`) | Admin, Korlas, Parent |
+| GET    | `/api/menus/:id`        | Detail menu                                             | Admin, Korlas, Parent |
+| POST   | `/api/menus`            | Tambah menu baru                                        | Admin, **Korlas**     |
+| PUT    | `/api/menus/:id`        | Edit menu                                               | Admin, **Korlas**     |
+| DELETE | `/api/menus/:id`        | Soft-delete menu (arsip)                                | Admin, **Korlas**     |
 
 ### 7.5 Schedule Endpoints
+
 Semua pembacaan menerima query **`?class=`** opsional. Bila kosong, kelas default ditentukan dari peran
 pemanggil (lihat §7.3). Kelas di luar cakupan → `403`.
 
-| Method | Path | Deskripsi | Role |
-|--------|------|-----------|------|
-| GET | `/api/schedules/today?class=` | Jadwal hari ini (WIB) + minggu berjalan | Admin, Korlas, Parent |
-| GET | `/api/schedules/today-all` | Jadwal hari ini untuk **semua kelas** sekaligus | **Admin** |
-| GET | `/api/schedules/week?date=YYYY-MM-DD&class=` | Jadwal Senin–Jumat pada minggu tersebut | Admin, Korlas, Parent |
-| GET | `/api/schedules/month?year=YYYY&month=M&class=` | Jadwal bulanan, dikelompokkan per minggu | Admin, Korlas, Parent |
-| GET | `/api/schedules/range?from=&to=&class=` | Rentang bebas (maks. 92 hari) | Admin, Korlas, Parent |
-| GET | `/api/schedules/search?q=&from=&to=&class=` | Cari tanggal di mana menu/komponen pernah dijadwalkan (maks. 400 hari) | Admin, Korlas, Parent |
-| GET | `/api/schedules/:id` | Detail satu entri jadwal (kelas diambil dari barisnya) | Admin, Korlas, Parent |
-| POST | `/api/schedules` | Set jadwal satu tanggal **untuk satu kelas** (`className` wajib) | Admin, **Korlas** |
-| POST | `/api/schedules/copy` | Salin jadwal Senin–Jumat ke minggu lain (`overwrite` opsional) | Admin, **Korlas** |
-| PUT | `/api/schedules/:id` | Ubah menu / libur / catatan (kelas dari baris) | Admin, **Korlas** |
-| DELETE | `/api/schedules/:id` | Hapus jadwal (kelas dari baris; ditolak bila `locked`/`published`) | Admin, **Korlas** |
-| POST | `/api/schedules/lock` | Kunci semua jadwal `draft` pada rentang tanggal (`fromDate`, `toDate`, `className?`) | Admin, **Korlas** |
-| POST | `/api/schedules/publish` | Publikasi semua jadwal `locked` untuk satu bulan (`year`, `month`, `className?`); gagal bila masih ada `draft` | Admin, **Korlas** |
-| POST | `/api/schedules/:id/unlock` | Buka kunci satu baris — kembalikan ke `draft` (hapus `locked_by`/`published_by` dll) | Admin |
-| GET | `/api/weeks?year=&month=` | Daftar minggu pada bulan tersebut | Admin, Korlas, Parent |
-| GET | `/api/holidays?from=&to=` | Daftar hari libur (sekolah-wide) | Admin, Korlas, Parent |
-| POST | `/api/holidays` | Tambah hari libur | Admin |
-| DELETE | `/api/holidays/:id` | Hapus hari libur | Admin |
+| Method | Path                                            | Deskripsi                                                                                                      | Role                  |
+| ------ | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | --------------------- |
+| GET    | `/api/schedules/today?class=`                   | Jadwal hari ini (WIB) + minggu berjalan                                                                        | Admin, Korlas, Parent |
+| GET    | `/api/schedules/today-all`                      | Jadwal hari ini untuk **semua kelas** sekaligus                                                                | **Admin**             |
+| GET    | `/api/schedules/week?date=YYYY-MM-DD&class=`    | Jadwal Senin–Jumat pada minggu tersebut                                                                        | Admin, Korlas, Parent |
+| GET    | `/api/schedules/month?year=YYYY&month=M&class=` | Jadwal bulanan, dikelompokkan per minggu                                                                       | Admin, Korlas, Parent |
+| GET    | `/api/schedules/range?from=&to=&class=`         | Rentang bebas (maks. 92 hari)                                                                                  | Admin, Korlas, Parent |
+| GET    | `/api/schedules/search?q=&from=&to=&class=`     | Cari tanggal di mana menu/komponen pernah dijadwalkan (maks. 400 hari)                                         | Admin, Korlas, Parent |
+| GET    | `/api/schedules/:id`                            | Detail satu entri jadwal (kelas diambil dari barisnya)                                                         | Admin, Korlas, Parent |
+| POST   | `/api/schedules`                                | Set jadwal satu tanggal **untuk satu kelas** (`className` wajib)                                               | Admin, **Korlas**     |
+| POST   | `/api/schedules/copy`                           | Salin jadwal Senin–Jumat ke minggu lain (`overwrite` opsional)                                                 | Admin, **Korlas**     |
+| PUT    | `/api/schedules/:id`                            | Ubah menu / libur / catatan (kelas dari baris)                                                                 | Admin, **Korlas**     |
+| DELETE | `/api/schedules/:id`                            | Hapus jadwal (kelas dari baris; ditolak bila `locked`/`published`)                                             | Admin, **Korlas**     |
+| POST   | `/api/schedules/lock`                           | Kunci semua jadwal `draft` pada rentang tanggal (`fromDate`, `toDate`, `className?`)                           | Admin, **Korlas**     |
+| POST   | `/api/schedules/publish`                        | Publikasi semua jadwal `locked` untuk satu bulan (`year`, `month`, `className?`); gagal bila masih ada `draft` | Admin, **Korlas**     |
+| POST   | `/api/schedules/:id/unlock`                     | Buka kunci satu baris — kembalikan ke `draft` (hapus `locked_by`/`published_by` dll)                           | Admin                 |
+| GET    | `/api/weeks?year=&month=`                       | Daftar minggu pada bulan tersebut                                                                              | Admin, Korlas, Parent |
+| GET    | `/api/holidays?from=&to=`                       | Daftar hari libur (sekolah-wide)                                                                               | Admin, Korlas, Parent |
+| POST   | `/api/holidays`                                 | Tambah hari libur                                                                                              | Admin                 |
+| DELETE | `/api/holidays/:id`                             | Hapus hari libur                                                                                               | Admin                 |
 
 > **Aturan tulis:** `POST /schedules` dan `POST /schedules/copy` menerima `className` di body.
 > Admin **wajib** mengirimkannya (`400 class_required` bila kosong); korlas boleh mengirim
@@ -525,6 +549,7 @@ pemanggil (lihat §7.3). Kelas di luar cakupan → `403`.
 > yang menyentuh baris kelas lain ditolak `403` (`Kelas ini bukan cakupan Anda`).
 
 > **Aturan kunci & publikasi:**
+>
 > - `POST /schedules/lock` menerima `className` di body (admin wajib, korlas otomatis).
 >   Mengunci semua baris `draft` pada rentang `fromDate`–`toDate` → status `locked`.
 > - `POST /schedules/publish` menerima `className` di body. Memublikasi semua baris `locked`
@@ -536,40 +561,42 @@ pemanggil (lihat §7.3). Kelas di luar cakupan → `403`.
 >   dengan status `locked`/`published` → `409 not_editable`.
 
 ### 7.6 Category Endpoints
-| Method | Path | Deskripsi | Role |
-|--------|------|-----------|------|
-| GET | `/api/categories` | List kategori | Admin, Korlas, Parent |
-| POST | `/api/categories` | Tambah kategori | Admin, **Korlas** |
+
+| Method | Path              | Deskripsi       | Role                  |
+| ------ | ----------------- | --------------- | --------------------- |
+| GET    | `/api/categories` | List kategori   | Admin, Korlas, Parent |
+| POST   | `/api/categories` | Tambah kategori | Admin, **Korlas**     |
 
 ### 7.7 Report Endpoints
-| Method | Path | Deskripsi | Role |
-|--------|------|-----------|------|
-| GET | `/api/stats/summary` | Ringkasan: menu hari ini (`menuNames[]` + `classCount`), jumlah menu/orang tua/kategori | Admin |
-| GET | `/api/reports/week/:date/pdf` | Ekspor PDF mingguan | Admin, Korlas, Parent |
-| GET | `/api/reports/month/:month/pdf` | Ekspor PDF bulanan | Admin, Korlas, Parent |
-| GET | `/api/reports/month/:month/excel` | Ekspor Excel bulanan | Admin |
-| GET | `/api/reports/stats?month=YYYY-MM` | Statistik menu bulanan | Admin |
+
+| Method | Path                               | Deskripsi                                                                               | Role                  |
+| ------ | ---------------------------------- | --------------------------------------------------------------------------------------- | --------------------- |
+| GET    | `/api/stats/summary`               | Ringkasan: menu hari ini (`menuNames[]` + `classCount`), jumlah menu/orang tua/kategori | Admin                 |
+| GET    | `/api/reports/week/:date/pdf`      | Ekspor PDF Sepekan                                                                      | Admin, Korlas, Parent |
+| GET    | `/api/reports/month/:month/pdf`    | Ekspor PDF bulanan                                                                      | Admin, Korlas, Parent |
+| GET    | `/api/reports/month/:month/excel`  | Ekspor Excel bulanan                                                                    | Admin                 |
+| GET    | `/api/reports/stats?month=YYYY-MM` | Statistik menu bulanan                                                                  | Admin                 |
 
 ### 7.8 Claim Endpoints (Pilih Jadwal) — ✅ Terimplementasi
 
-| Method | Path | Deskripsi | Role |
-|--------|------|-----------|------|
-| POST | `/api/claims` | Ambil satu tanggal (`scheduleId`, `studentId?`, `note?`) | **Parent, Korlas** |
-| DELETE | `/api/claims/:id` | Batalkan — pemiliknya, atau admin/korlas kelas itu | Auth |
-| GET | `/api/claims/mine?from=&to=` | Tanggal yang sudah diambil sendiri | Parent, Korlas |
-| GET | `/api/claims?from=&to=&class=` | Rekap klaim satu kelas | Auth |
+| Method | Path                           | Deskripsi                                                | Role               |
+| ------ | ------------------------------ | -------------------------------------------------------- | ------------------ |
+| POST   | `/api/claims`                  | Ambil satu tanggal (`scheduleId`, `studentId?`, `note?`) | **Parent, Korlas** |
+| DELETE | `/api/claims/:id`              | Batalkan — pemiliknya, atau admin/korlas kelas itu       | Auth               |
+| GET    | `/api/claims/mine?from=&to=`   | Tanggal yang sudah diambil sendiri                       | Parent, Korlas     |
+| GET    | `/api/claims?from=&to=&class=` | Rekap klaim satu kelas                                   | Auth               |
 
 **Kode kegagalan `POST /api/claims`:**
 
-| Kode | Kondisi | Pesan |
-|------|---------|-------|
-| 409 | `already_claimed` | "Yah, sudah dipilih orang tua lain — {nama}" |
-| 409 | `already_mine` | Sudah diambil sendiri sebelumnya |
-| 409 | `already_assigned` | Petugasnya sudah ditetapkan korlas |
-| 409 | `not_published` | Jadwal belum dipublikasi korlas |
-| 409 | `past_date` | Tanggalnya sudah lewat |
-| 403 | `forbidden_class` | Kelasnya bukan kelas anaknya |
-| 403 | `not_parent` | Akun tidak punya profil orang tua (mis. admin) |
+| Kode | Kondisi            | Pesan                                          |
+| ---- | ------------------ | ---------------------------------------------- |
+| 409  | `already_claimed`  | "Yah, sudah dipilih orang tua lain — {nama}"   |
+| 409  | `already_mine`     | Sudah diambil sendiri sebelumnya               |
+| 409  | `already_assigned` | Petugasnya sudah ditetapkan korlas             |
+| 409  | `not_published`    | Jadwal belum dipublikasi korlas                |
+| 409  | `past_date`        | Tanggalnya sudah lewat                         |
+| 403  | `forbidden_class`  | Kelasnya bukan kelas anaknya                   |
+| 403  | `not_parent`       | Akun tidak punya profil orang tua (mis. admin) |
 
 > **Efek samping yang disengaja:** `POST /api/claims` ikut menulis `schedules.petugas_name` dan
 > `petugas_parent_name`; `DELETE /api/claims/:id` mengosongkannya kembali. Dengan begitu endpoint
@@ -586,12 +613,12 @@ pemanggil (lihat §7.3). Kelas di luar cakupan → `403`.
 Semua pembacaan menerima query **`?class=`** opsional seperti endpoint jadwal. Penugasan terkait
 ke baris `schedules` lewat `schedule_id`; korlas hanya boleh mengelola penugasan untuk kelasnya sendiri.
 
-| Method | Path | Deskripsi | Role |
-|--------|------|-----------|------|
-| GET | `/api/schedules/:id/piket` | Daftar siswa piket untuk satu entri jadwal | Admin, Korlas, Parent |
-| GET | `/api/piket/search?q=&from=&to=` | Cari riwayat piket siswa berdasarkan nama (maks. 400 hari) | Admin, Korlas, Parent |
-| POST | `/api/schedules/:id/piket` | Tetapkan/ubah siswa piket untuk satu entri jadwal (`classLabel` + `studentName`) | Admin, **Korlas** |
-| DELETE | `/api/schedules/:id/piket/:piketId` | Hapus penugasan piket | Admin, **Korlas** |
+| Method | Path                                | Deskripsi                                                                        | Role                  |
+| ------ | ----------------------------------- | -------------------------------------------------------------------------------- | --------------------- |
+| GET    | `/api/schedules/:id/piket`          | Daftar siswa piket untuk satu entri jadwal                                       | Admin, Korlas, Parent |
+| GET    | `/api/piket/search?q=&from=&to=`    | Cari riwayat piket siswa berdasarkan nama (maks. 400 hari)                       | Admin, Korlas, Parent |
+| POST   | `/api/schedules/:id/piket`          | Tetapkan/ubah siswa piket untuk satu entri jadwal (`classLabel` + `studentName`) | Admin, **Korlas**     |
+| DELETE | `/api/schedules/:id/piket/:piketId` | Hapus penugasan piket                                                            | Admin, **Korlas**     |
 
 > **Aturan tulis:** korlas hanya boleh mengelola penugasan pada baris `schedules` yang `class_name`
 > sama dengan kelasnya. Sistem memuat baris jadwal lebih dulu, lalu memanggil `canWriteClass(user, row.className)`
@@ -601,14 +628,16 @@ ke baris `schedules` lewat `schedule_id`; korlas hanya boleh mengelola penugasan
 
 ## 8. Alur Pengguna (User Flows)
 
-### 8.1 Admin: Input Jadwal Mingguan
+### 8.1 Admin: Input Jadwal Sepekan
+
 1. Login → Dashboard Admin
 2. Klik "Atur Jadwal" → Pilih rentang tanggal (Senin–Jumat)
 3. Untuk setiap hari → pilih menu dari dropdown (atau buat baru)
 4. Simpan → jadwal tersimpan ke SQLite
-5. Preview → lihat hasil tampilan mingguan
+5. Preview → lihat hasil tampilan Sepekan
 
 ### 8.2 Orang Tua: Lihat Jadwal Hari Ini
+
 1. Buka aplikasi → halaman login
 2. Masukkan username & password (diberikan admin sekolah)
 3. Login berhasil → redirect ke halaman utama "Menu Hari Ini"
@@ -618,7 +647,8 @@ ke baris `schedules` lewat `schedule_id`; korlas hanya boleh mengelola penugasan
 7. Bisa ubah password sendiri di halaman profil
 
 ### 8.3 Admin: Duplikasi Jadwal — ✅ Terimplementasi
-1. Buka `/jadwal` → klik **"Salin minggu"** di kanan atas
+
+1. Buka `/jadwal` → klik **"Salin Sepekan"** di kanan atas
 2. Dialog terbuka dengan default: minggu berjalan → minggu berikutnya
 3. Ubah tanggal bila perlu; label minggu (mis. `14 - 18 September 2026`) tampil langsung di bawah input
 4. Opsional: centang **"Timpa jadwal yang sudah ada"** — bila tidak dicentang, hari yang sudah terisi di minggu tujuan dilewati
@@ -628,6 +658,7 @@ ke baris `schedules` lewat `schedule_id`; korlas hanya boleh mengelola penugasan
 7. Minggu sumber = minggu tujuan ditolak dengan pesan "Minggu sumber dan tujuan sama"
 
 ### 8.4 Admin: Kelola Akun Orang Tua — ✅ Terimplementasi
+
 1. Dashboard → "Kelola Orang Tua"
 2. Lihat daftar akun orang tua; kolom **Anak** menampilkan seluruh anak dalam satu baris
 3. Klik "Tambah Akun" → isi username, password sementara, nama orang tua, hubungan
@@ -638,7 +669,8 @@ ke baris `schedules` lewat `schedule_id`; korlas hanya boleh mengelola penugasan
 8. Pencarian pada daftar akun juga mencocokkan **nama anak** dan **kelas anak**
 
 ### 8.5 Semua Role: Cari Riwayat Menu — ✅ Terimplementasi
-1. Klik **"Cari Menu"** di navigasi (tersedia untuk admin *dan* orang tua)
+
+1. Klik **"Cari Menu"** di navigasi (tersedia untuk admin _dan_ orang tua)
 2. Masukkan kata kunci (mis. `jeruk`) — pencarian mencocokkan **nama menu** maupun **komponennya**
 3. Atur rentang tanggal, atau pakai tombol rentang cepat: **1 bulan / 3 bulan / 6 bulan / 1 tahun** (default: 6 bulan terakhir)
 4. Klik **"Cari"** → ringkasan `Ditemukan 4 hari yang cocok dengan "jeruk".`
@@ -647,6 +679,7 @@ ke baris `schedules` lewat `schedule_id`; korlas hanya boleh mengelola penugasan
 7. Catatan harian ikut ditampilkan bila ada (mis. `Catatan: outing`)
 
 ### 8.6 Admin/Korlas: Kelola Penugasan Piket Siswa
+
 1. Buka `/jadwal` → pilih kelas → klik tanggal tertentu
 2. Di samping menu, muncul bagian **"Siswa Piket"** dengan input nama siswa per kelas
 3. Masukkan nama siswa (mis. "Shezan" untuk Kelas 1) → simpan
@@ -655,12 +688,14 @@ ke baris `schedules` lewat `schedule_id`; korlas hanya boleh mengelola penugasan
 6. Cari riwayat piket: "kapan Shezan terakhir piket?" — hasil dikelompokkan per bulan
 
 ### 8.7 Orang Tua: Lihat Anak Piket Hari Ini
+
 1. Login → halaman "Hari Ini"
 2. Card menampilkan menu + daftar siswa piket per kelas
 3. Nama anak yang sedang piket disorot (mis. badge "Anak Anda piket hari ini!")
-4. Bisa lihat jadwal piket mingguan/bulanan untuk mengetahui giliran piket anak ke depan
+4. Bisa lihat jadwal piket Sepekan/bulanan untuk mengetahui giliran piket anak ke depan
 
 ### 8.8 Korlas: Kunci & Publikasi Jadwal Bulanan — ✅ Terimplementasi
+
 1. Buka `/jadwal` → pilih bulan yang akan dipublikasi
 2. Susun/edit menu untuk setiap hari (status = `draft`)
 3. Klik tombol **"Kunci bulan"** → semua baris `draft` berubah menjadi `locked`
@@ -676,6 +711,7 @@ ke baris `schedules` lewat `schedule_id`; korlas hanya boleh mengelola penugasan
 > sebelum langkah 5**. Setelah `published`, barisnya tidak bisa diedit lagi.
 
 ### 8.9 Orang Tua: Ambil Tanggal Snack — ✅ Terimplementasi
+
 1. Login → menu **"Pilih Jadwal"**
 2. Halaman menampilkan bulan berjalan: berapa tanggal yang masih kosong, dan mana yang sudah
    diambil sendiri
@@ -684,7 +720,7 @@ ke baris `schedules` lewat `schedule_id`; korlas hanya boleh mengelola penugasan
    konfirmasi
 5. **Berhasil:** kartunya disorot, berlabel "Pilihan Anda", dan nama anak + nama orang tua langsung
    muncul sebagai petugas di seluruh tampilan jadwal
-6. **Keduluan:** muncul modal *"Yah, keduluan!"* dengan nama orang tua yang lebih dulu mengambil,
+6. **Keduluan:** muncul modal _"Yah, keduluan!"_ dengan nama orang tua yang lebih dulu mengambil,
    dan papan jadwalnya langsung disegarkan sehingga terlihat tanggal mana yang masih tersisa
 7. Berubah pikiran → **"Batalkan"** selama tanggalnya belum lewat; tanggal itu kembali terbuka
    untuk orang tua lain
@@ -697,6 +733,7 @@ ke baris `schedules` lewat `schedule_id`; korlas hanya boleh mengelola penugasan
 ## 9. Tampilan / UI Screenshots (Wireframe Konsep)
 
 ### 9.1 Halaman Login (Orang Tua & Admin)
+
 ```
 ┌──────────────────────────────┐
 │   🍕 Pizza Snack Play        │
@@ -713,6 +750,7 @@ ke baris `schedules` lewat `schedule_id`; korlas hanya boleh mengelola penugasan
 ```
 
 ### 9.2 Halaman Utama (Orang Tua — Setelah Login)
+
 ```
 ┌──────────────────────────────────────────┐
 │   🍕 Pizza Snack Play                    │
@@ -740,6 +778,7 @@ ke baris `schedules` lewat `schedule_id`; korlas hanya boleh mengelola penugasan
 ```
 
 ### 9.3 Dashboard Admin
+
 ```
 ┌──────────────────────────────────────────┐
 │  Dashboard Admin          [Logout]        │
@@ -755,6 +794,7 @@ ke baris `schedules` lewat `schedule_id`; korlas hanya boleh mengelola penugasan
 ```
 
 ### 9.4 Admin: Kelola Akun Orang Tua
+
 ```
 ┌───────────────────────────────────────────────────────┐
 │  Kelola Orang Tua                        [Logout]      │
@@ -788,12 +828,14 @@ Formulir tambah/ubah akun:
 ## 10. Non-Functional Requirements
 
 ### 10.1 Performance
+
 - Halaman utama load < 500ms — aset statis disajikan dari edge Cloudflare (CDN global).
 - API response < 100ms untuk query single record (Worker dieksekusi di edge terdekat).
 - Query D1 dioptimalkan dengan index pada kolom `schedule_date`.
 - Caching data fetching di frontend via TanStack Query (stale-while-revalidate).
 
 ### 10.2 Security
+
 - **Semua endpoint dilindungi autentikasi JWT** — tidak ada endpoint publik selain `POST /api/auth/login`.
 - **Role-based access control (RBAC)** — tiga role: `admin` (CRUD penuh), `korlas` (kelola katalog menu/kategori + jadwal **kelasnya sendiri**), dan `parent` (read-only jadwal + ubah password sendiri). Ditegakkan di API lewat `requireRole(...)` → `403`.
 - **Pembatasan cakupan kelas** — korlas dan orang tua hanya dapat membaca kelasnya/anaknya; percobaan membaca atau menulis kelas lain dijawab `403`. Untuk `PUT`/`DELETE`, kelas diambil dari **baris database** (bukan dari body) sehingga tidak bisa dipalsukan dari klien. Detail: `src/api/utils/classScope.ts`.
@@ -806,11 +848,13 @@ Formulir tambah/ubah akun:
 - SQL injection prevention via Drizzle ORM parameterized queries.
 
 ### 10.3 Scalability
+
 - Cloudflare D1 + Workers menskalakan otomatis di edge — tidak perlu manajemen server.
 - D1 cukup untuk skala sekolah (ribuan record jadwal; limit D1 jauh lebih besar).
 - Arsitektur multi-sekolah di masa depan: tambah kolom `school_id` + D1 multi-tenant, atau migrasi ke PostgreSQL (Hyperdrive).
 
 ### 10.4 Reliability
+
 - D1 menyediakan replikasi dan backup terkelola oleh Cloudflare.
 - Backup logis tambahan: `wrangler d1 export` berkala (cron job / GitHub Actions).
 - Soft delete untuk semua data — tidak ada hard delete.
@@ -821,6 +865,7 @@ Formulir tambah/ubah akun:
 ## 11. Setup & Deployment
 
 ### 11.1 Prasyarat
+
 - [Bun](https://bun.sh/) v1.x
 - Akun Cloudflare + `wrangler` (sudah termasuk sebagai devDependency)
 
@@ -849,19 +894,19 @@ bun run dev        # → http://localhost:5173
 
 ### 11.3 Scripts Penting
 
-| Script | Perintah | Fungsi |
-|--------|----------|--------|
-| `dev` | `vite` | Dev server dengan HMR |
-| `build` | `tsc -b && vite build` | Build produksi (frontend + worker) |
-| `preview` | `vite preview` | Preview hasil build secara lokal |
-| `deploy` | `bun run build && wrangler deploy --env production` | Deploy ke Cloudflare Workers |
-| `check` | `tsc && vite build && wrangler deploy --dry-run` | Validasi penuh sebelum deploy |
-| `lint` | `eslint .` | Cek kualitas kode |
-| `cf-typegen` | `wrangler types` | Generate tipe dari binding `wrangler.json` |
-| `db:generate` | `drizzle-kit generate` | Generate file migrasi dari schema |
-| `db:migrate` | `drizzle-kit migrate` | Terapkan migrasi ke D1 |
-| `db:push` | `drizzle-kit push` | Push schema langsung (dev) |
-| `db:studio` | `drizzle-kit studio` | GUI untuk inspeksi database |
+| Script        | Perintah                                            | Fungsi                                     |
+| ------------- | --------------------------------------------------- | ------------------------------------------ |
+| `dev`         | `vite`                                              | Dev server dengan HMR                      |
+| `build`       | `tsc -b && vite build`                              | Build produksi (frontend + worker)         |
+| `preview`     | `vite preview`                                      | Preview hasil build secara lokal           |
+| `deploy`      | `bun run build && wrangler deploy --env production` | Deploy ke Cloudflare Workers               |
+| `check`       | `tsc && vite build && wrangler deploy --dry-run`    | Validasi penuh sebelum deploy              |
+| `lint`        | `eslint .`                                          | Cek kualitas kode                          |
+| `cf-typegen`  | `wrangler types`                                    | Generate tipe dari binding `wrangler.json` |
+| `db:generate` | `drizzle-kit generate`                              | Generate file migrasi dari schema          |
+| `db:migrate`  | `drizzle-kit migrate`                               | Terapkan migrasi ke D1                     |
+| `db:push`     | `drizzle-kit push`                                  | Push schema langsung (dev)                 |
+| `db:studio`   | `drizzle-kit studio`                                | GUI untuk inspeksi database                |
 
 ### 11.4 Secrets Produksi
 
@@ -874,6 +919,7 @@ bunx wrangler secret put JWT_SECRET
 ## 12. Fase Pengembangan (Roadmap)
 
 ### Phase 1: MVP (Core) — ✅ SELESAI
+
 - [x] Scaffold project dari `bhvr-template` (Bun + Hono + Vite + React + D1)
 - [x] Skema database di `src/database/schema.ts` (11 tabel saat MVP; **12** sejak v1.4 setelah `students` dipisah dari `parents`; **13** sejak v1.5 setelah `piket_assignments` ditambahkan)
 - [x] File migrasi Drizzle ter-generate (`drizzle/migrations/0000_*.sql`) & diterapkan ke D1 lokal
@@ -899,17 +945,19 @@ bunx wrangler secret put JWT_SECRET
 - [ ] Deploy ke Cloudflare Workers
 
 ### Phase 2: Admin Dashboard (lanjutan) — ✅ SELESAI
+
 - [x] Dashboard admin dengan ringkasan data
 - [x] Manajemen jadwal bulanan (tetapkan menu, tandai libur, catatan per hari)
 - [x] Kategori & tagging menu
 - [x] Kelola akun orang tua
-- [x] Duplikasi jadwal antar minggu (`POST /schedules/copy` + dialog di `/jadwal`)
+- [x] Duplikasi jadwal Sepekan (`POST /schedules/copy` + dialog di `/jadwal`)
 - [x] Pencarian riwayat menu ("kapan jeruk disajikan?") — `GET /schedules/search` + halaman `/pencarian`
 - [x] Satu orang tua boleh punya **lebih dari satu anak** — tabel `students` + migrasi berpindah data (`0001_*.sql`)
 - [x] RBAC digerbangi juga di UI — orang tua tidak melihat tombol CRUD menu/kategori/jadwal/orang tua
 - [ ] Bulk import akun orang tua (CSV/Excel)
 
 ### Phase 3: Jadwal Per Kelas & Role Korlas — ✅ SELESAI
+
 - [x] Jadwal disimpan **per kelas** — `schedules.class_name` + indeks unik gabungan `UNIQUE(schedule_date, class_name)`
 - [x] Migrasi data lama `0002_*.sql` — baris global direplikasi ke setiap kelas (43 → 129 baris, 3 kelas)
 - [x] Endpoint `GET /classes` — daftar kelas yang sudah dipersempit sesuai peran + kelas default
@@ -924,6 +972,7 @@ bunx wrangler secret put JWT_SECRET
 - [x] Seed & test disesuaikan — `budi` jadi korlas 1; test API 211 (termasuk section 18–19 untuk cakupan kelas & wewenang korlas)
 
 ### Phase 4: Penugasan Piket Siswa
+
 - [ ] Tabel baru `piket_assignments` — `schedule_id` (FK), `class_label`, `student_name`, `UNIQUE(schedule_id, class_label)`
 - [ ] Migrasi `0004_*.sql` — membuat tabel `piket_assignments` + index
 - [ ] Seed data piket dari `output_jadwal_piket.txt` — parse "Kelas N: <nama>" → 87 penugasan, 38 siswa
@@ -936,6 +985,7 @@ bunx wrangler secret put JWT_SECRET
 - [ ] Test: piket CRUD + pencarian + RBAC (korlas hanya kelasnya)
 
 ### Phase 4b: Kunci & Publikasi Jadwal — ✅ SELESAI
+
 - [x] Kolom baru di `schedules`: `status`, `locked_by`, `locked_at`, `published_by`, `published_at`
 - [x] Migrasi `0003_schedule_lock_publish.sql` — `ALTER TABLE` + `UPDATE` existing rows ke `published`
 - [x] Repository: `lockDraftSchedulesBetween`, `publishLockedSchedulesForMonth`, `countSchedulesByStatusForMonth`, `unlockSchedule` + `statusFilter` di `findSchedulesBetween`
@@ -946,6 +996,7 @@ bunx wrangler secret put JWT_SECRET
 - [x] Test: lock + publish + unlock + filter orang tua + `not_editable`
 
 ### Phase 4c: Pilih Jadwal (Rebutan Tanggal) — ✅ SELESAI
+
 - [x] Tabel `schedule_claims` + migrasi `0005_schedule_claims.sql` dengan `UNIQUE(schedule_id)`
 - [x] Repository/Service/Controller/Route modul `claims` — termasuk penangkapan `UNIQUE constraint failed` sebagai `already_claimed`
 - [x] Klaim menulis balik `petugas_name`/`petugas_parent_name`; pembatalan mengosongkannya
@@ -955,16 +1006,19 @@ bunx wrangler secret put JWT_SECRET
 - [x] Test: 25 skenario termasuk race 5 permintaan serentak
 
 ### Phase 4d: PWA — ✅ SELESAI
+
 - [x] `manifest.json` + ikon 192/512 + service worker (`public/sw.js`)
 - [x] Banner pasang + petunjuk manual iOS + banner "Versi baru tersedia"
 - [x] Penangkap `beforeinstallprompt` di `<head>` agar event tidak hilang sebelum React mount
 
 ### Phase 5: Ekspor & Cetak
-- [ ] Ekspor PDF jadwal mingguan/bulanan (termasuk daftar siswa piket)
+
+- [ ] Ekspor PDF jadwal Sepekan/bulanan (termasuk daftar siswa piket)
 - [ ] Ekspor Excel
 - [ ] Cetak langsung dari browser
 
 ### Phase 6: Notifikasi (Opsional)
+
 - [ ] Push notification (PWA)
 - [ ] Pengingat piket H-1 untuk siswa/orang tua
 - [ ] WhatsApp broadcast (opsional, integrasi pihak ketiga)
@@ -973,61 +1027,62 @@ bunx wrangler secret put JWT_SECRET
 
 ## 13. Acceptance Criteria
 
-| ID | Kriteria | Status |
-|----|----------|--------|
-| AC1 | Admin dapat input jadwal snack untuk satu minggu (5 hari kerja) dalam < 2 menit | ✅ Done — dropdown menu per hari di `/jadwal` |
-| AC2 | Orang tua dapat login dengan username & password yang diberikan admin | ✅ Done — API + halaman login |
-| AC3 | Orang tua yang belum login TIDAK dapat melihat jadwal — hanya melihat halaman login | ✅ Done — halaman `/login` + guard route; endpoint 401 tanpa token |
-| AC4 | Admin dapat membuat, edit, dan menonaktifkan akun orang tua | ✅ Done — `/orang-tua` + API `/parents` |
-| AC5 | Orang tua dapat mengubah password sendiri dari halaman profil | ✅ Done — `/profil` + `PUT /auth/password` |
-| AC6 | Sistem dapat menyimpan jadwal untuk minimal 12 bulan ke depan | ✅ Done — tanpa batas periode; query rentang maks 92 hari |
-| AC7 | Pencarian menu "jeruk" menampilkan semua tanggal di mana jeruk disajikan | ✅ Done — `/pencarian` + `GET /schedules/search` (cocokkan nama menu *dan* komponen, dikelompokkan per bulan) |
-| AC8 | Ekspor PDF bulanan menampilkan semua jadwal dalam format yang dapat dicetak | Pending — Phase 3 |
-| AC9 | Data seed dari file jadwal Agustus & September 2026 terinput dengan benar | ✅ Done — 10 minggu, 42 menu, 84 menu item, **258 jadwal** (~42 tanggal × 6 kelas: 1–6), 22 tanggal dengan petugas (Kelas 1–5), 39 akun (1 admin, 1 korlas, 37 orang tua), 4 anak |
-| AC10 | Schema berhasil dimigrasi ke Cloudflare D1 tanpa error | ✅ Done (D1 lokal) — **13 tabel**: 12 dasar + `schedule_claims`. `piket_assignments` tidak dibuat, digantikan kolom `petugas_*` di `schedules` |
-| AC11 | Aplikasi berhasil di-build dan di-deploy ke Cloudflare Workers (`bun run deploy`) | Sebagian — build OK, deploy butuh kredensial |
-| AC12 | `bun run dev` menjalankan dev server lokal tanpa error | ✅ Done |
-| AC13 | Autentikasi JWT menolak akses tanpa token / token invalid dengan 401 | ✅ Done — terverifikasi 244 test (33 auth + 211 API) |
-| AC14 | Password tersimpan sebagai hash PBKDF2, bukan plain text | ✅ Done |
-| AC15 | Orang tua TIDAK dapat mengakses endpoint admin (403) | ✅ Done — `requireRole('admin')`, diuji di 17 operasi tulis + 2 bukti data tidak berubah |
-| AC16 | Orang tua TIDAK melihat menu admin di navigasi maupun halaman admin | ✅ Done — navigasi sadar-kapabilitas (`need`) + pembatas `RoleGate` + gerbang `canManage*` pada halaman menu/kategori/jadwal/orang-tua |
-| AC17 | Admin dapat menyalin jadwal satu minggu ke minggu lain tanpa menimpa hari yang sudah terisi | ✅ Done — `POST /schedules/copy` + dialog "Salin minggu" di `/jadwal` |
-| AC18 | Pencarian aman dari wildcard SQL — `%` dan `_` diperlakukan literal | ✅ Done — `escapeLike()` di `utils/sql.ts`, diuji di 2 skenario |
-| AC19 | Satu akun orang tua dapat memiliki **lebih dari satu anak** | ✅ Done — tabel `students` (relasi 1 ── n); `dewi` di-seed dengan 2 anak; diuji di `test-auth` (section 5b) & `test-api` (section 15) |
-| AC20 | Admin dapat menambah/menghapus anak pada satu akun tanpa membuat akun baru | ✅ Done — bagian "Anak — boleh lebih dari satu" di formulir `/orang-tua`; `students[]` pada `POST`/`PUT /parents` |
-| AC21 | Orang tua tidak melihat tombol tambah/ubah/hapus pada halaman menu & kategori | ✅ Done — gerbang `canManageCatalog` dari `useAuth()`; tombol Edit/Hapus tidak dirender untuk `parent` |
-| AC22 | Jadwal dapat disimpan **terpisah per kelas** pada tanggal yang sama | ✅ Done — `schedules.class_name` + `UNIQUE(schedule_date, class_name)`; diuji di `test-api` section 13 (tanggal sama + kelas berbeda → 201) |
-| AC23 | Data jadwal lama tidak hilang saat migrasi ke model per kelas | ✅ Done — migrasi `0002_*.sql` mereplikasi baris global ke tiap kelas: 43 → **129 baris**, 0 baris yatim (fallback kelas `'Umum'` bila belum ada kelas) |
-| AC24 | Korlas dapat mengubah jadwal **kelasnya sendiri** | ✅ Done — `resolveWriteClass` + guard baris `canWriteClass`; `budi` (korlas 1) berhasil create/update/copy kelas 1; diuji di `test-api` section 19 |
-| AC25 | Korlas **tidak dapat** menyentuh jadwal kelas lain (baca maupun tulis) | ✅ Done — `403 forbidden_class` / `Kelas ini bukan cakupan Anda`; diuji untuk read, create, update, delete, dan copy kelas lain (baris korban diverifikasi tidak berubah) |
-| AC26 | Korlas dapat mengelola katalog menu & kategori | ✅ Done — `requireRole("admin","korlas")` di `/menus` & `/categories`; diuji di `test-api` section 19 |
-| AC27 | Korlas **tidak** dapat mengubah hari libur, akun orang tua, atau statistik | ✅ Done — `requireRole("admin")` tetap di `/holidays`, `/parents`, `/stats`; diuji `403` di section 19 |
-| AC28 | Pengguna dengan akses > 1 kelas dapat berpindah kelas dari UI, dan pilihannya bertahan | ✅ Done — `ClassSwitcher` di header (`GET /classes`), tersimpan di `localStorage.psp_class`; muncul hanya bila `classes.length > 1`; diverifikasi di browser (admin: 1–6, `dewi`: 2/3, `sari`: tanpa pemilih) |
-| AC29 | Admin/korlas dapat menetapkan siswa piket per kelas per hari | ✅ Done — bukan lewat `piket_assignments`, melainkan kolom `petugas_name`/`petugas_parent_name` di `schedules` |
-| AC30 | Orang tua dapat melihat nama siswa piket di kartu jadwal harian/mingguan/bulanan | ✅ Done — blok petugas di `ScheduleDayCard` |
-| AC31 | Pencarian riwayat piket siswa berfungsi ("kapan Shezan terakhir piket?") | Pending — belum ada endpoint pencarian petugas |
-| AC32 | Data piket dari `output_jadwal_piket.txt` ter-seed dengan benar | ✅ Done — 22 tanggal bertugas (September 2026, Kelas 1–5) |
-| AC33 | Nama anak orang tua disorot bila sedang piket hari itu | Pending — kartu menampilkan nama, tetapi belum menyorot anak sendiri |
-| AC34 | Korlas dapat mengunci jadwal draft bulan ini (status `draft` → `locked`) | ✅ Done — `POST /schedules/lock` + tombol "Kunci bulan" di `/jadwal` |
-| AC35 | Korlas dapat memublikasi jadwal yang sudah terkunci penuh satu bulan (`locked` → `published`) | ✅ Done — `POST /schedules/publish` + tombol "Publikasi" di `/jadwal` |
-| AC36 | Publikasi ditolak bila masih ada baris `draft` di bulan tersebut | ✅ Done — `409 drafts_remaining` + tombol dinonaktifkan bila `draftCount > 0` |
-| AC37 | Orang tua hanya melihat jadwal `published`; baris `draft`/`locked` tidak muncul | ✅ Done — filter `statusFilter = ["published"]` di repository untuk role `parent` |
-| AC38 | Baris `locked`/`published` tidak dapat diedit, dihapus, atau ditimpa (copy) | ✅ Done — `409 not_editable` di service; kontrol edit dinonaktifkan di UI |
-| AC39 | Admin dapat membuka kunci (unlock) baris individual kembali ke `draft` | ✅ Done — `POST /schedules/:id/unlock` (admin only) + tombol 🔓 di `/jadwal` |
-| AC40 | Orang tua dapat mengambil tanggal snack yang masih kosong | ✅ Done — `POST /claims` + halaman `/pilih-jadwal` |
-| AC41 | **Dua orang tua tidak pernah bisa mendapat tanggal yang sama**, meski menekan tombol bersamaan | ✅ Done — `UNIQUE(schedule_id)` di `schedule_claims`; diuji dengan 5 permintaan serentak → tepat 1 berhasil, 4 dijawab `409` |
-| AC42 | Yang kalah cepat melihat pesan jelas beserta nama orang tua yang lebih dulu | ✅ Done — modal "Yah, keduluan!" + pesan `Yah, sudah dipilih orang tua lain — {nama}` |
-| AC43 | Klaim mengisi kolom petugas, pembatalan mengosongkannya kembali | ✅ Done — satu sumber kebenaran; diverifikasi di tes klaim |
-| AC44 | Tanggal yang petugasnya sudah ditetapkan korlas tidak bisa direbut | ✅ Done — `409 already_assigned` + badge "Ditetapkan korlas" |
-| AC45 | Orang tua tidak bisa mengambil tanggal di kelas yang bukan kelas anaknya | ✅ Done — `403 forbidden_class` |
-| AC46 | Pembatalan hanya oleh pemiliknya, admin, atau korlas kelas itu | ✅ Done — `403 not_owner` untuk orang lain |
-| AC47 | Aplikasi dapat dipasang ke layar utama (PWA) | ✅ Done — manifest + service worker + banner Pasang; `beforeinstallprompt` ditangkap di `<head>` agar tidak hilang sebelum React mount |
+| ID   | Kriteria                                                                                       | Status                                                                                                                                                                                                        |
+| ---- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| AC1  | Admin dapat input jadwal snack untuk satu minggu (5 hari kerja) dalam < 2 menit                | ✅ Done — dropdown menu per hari di `/jadwal`                                                                                                                                                                 |
+| AC2  | Orang tua dapat login dengan username & password yang diberikan admin                          | ✅ Done — API + halaman login                                                                                                                                                                                 |
+| AC3  | Orang tua yang belum login TIDAK dapat melihat jadwal — hanya melihat halaman login            | ✅ Done — halaman `/login` + guard route; endpoint 401 tanpa token                                                                                                                                            |
+| AC4  | Admin dapat membuat, edit, dan menonaktifkan akun orang tua                                    | ✅ Done — `/orang-tua` + API `/parents`                                                                                                                                                                       |
+| AC5  | Orang tua dapat mengubah password sendiri dari halaman profil                                  | ✅ Done — `/profil` + `PUT /auth/password`                                                                                                                                                                    |
+| AC6  | Sistem dapat menyimpan jadwal untuk minimal 12 bulan ke depan                                  | ✅ Done — tanpa batas periode; query rentang maks 92 hari                                                                                                                                                     |
+| AC7  | Pencarian menu "jeruk" menampilkan semua tanggal di mana jeruk disajikan                       | ✅ Done — `/pencarian` + `GET /schedules/search` (cocokkan nama menu _dan_ komponen, dikelompokkan per bulan)                                                                                                 |
+| AC8  | Ekspor PDF bulanan menampilkan semua jadwal dalam format yang dapat dicetak                    | Pending — Phase 3                                                                                                                                                                                             |
+| AC9  | Data seed dari file jadwal Agustus & September 2026 terinput dengan benar                      | ✅ Done — 10 minggu, 42 menu, 84 menu item, **258 jadwal** (~42 tanggal × 6 kelas: 1–6), 22 tanggal dengan petugas (Kelas 1–5), 39 akun (1 admin, 1 korlas, 37 orang tua), 4 anak                             |
+| AC10 | Schema berhasil dimigrasi ke Cloudflare D1 tanpa error                                         | ✅ Done (D1 lokal) — **13 tabel**: 12 dasar + `schedule_claims`. `piket_assignments` tidak dibuat, digantikan kolom `petugas_*` di `schedules`                                                                |
+| AC11 | Aplikasi berhasil di-build dan di-deploy ke Cloudflare Workers (`bun run deploy`)              | Sebagian — build OK, deploy butuh kredensial                                                                                                                                                                  |
+| AC12 | `bun run dev` menjalankan dev server lokal tanpa error                                         | ✅ Done                                                                                                                                                                                                       |
+| AC13 | Autentikasi JWT menolak akses tanpa token / token invalid dengan 401                           | ✅ Done — terverifikasi 244 test (33 auth + 211 API)                                                                                                                                                          |
+| AC14 | Password tersimpan sebagai hash PBKDF2, bukan plain text                                       | ✅ Done                                                                                                                                                                                                       |
+| AC15 | Orang tua TIDAK dapat mengakses endpoint admin (403)                                           | ✅ Done — `requireRole('admin')`, diuji di 17 operasi tulis + 2 bukti data tidak berubah                                                                                                                      |
+| AC16 | Orang tua TIDAK melihat menu admin di navigasi maupun halaman admin                            | ✅ Done — navigasi sadar-kapabilitas (`need`) + pembatas `RoleGate` + gerbang `canManage*` pada halaman menu/kategori/jadwal/orang-tua                                                                        |
+| AC17 | Admin dapat menyalin jadwal satu minggu ke minggu lain tanpa menimpa hari yang sudah terisi    | ✅ Done — `POST /schedules/copy` + dialog "Salin Sepekan" di `/jadwal`                                                                                                                                        |
+| AC18 | Pencarian aman dari wildcard SQL — `%` dan `_` diperlakukan literal                            | ✅ Done — `escapeLike()` di `utils/sql.ts`, diuji di 2 skenario                                                                                                                                               |
+| AC19 | Satu akun orang tua dapat memiliki **lebih dari satu anak**                                    | ✅ Done — tabel `students` (relasi 1 ── n); `dewi` di-seed dengan 2 anak; diuji di `test-auth` (section 5b) & `test-api` (section 15)                                                                         |
+| AC20 | Admin dapat menambah/menghapus anak pada satu akun tanpa membuat akun baru                     | ✅ Done — bagian "Anak — boleh lebih dari satu" di formulir `/orang-tua`; `students[]` pada `POST`/`PUT /parents`                                                                                             |
+| AC21 | Orang tua tidak melihat tombol tambah/ubah/hapus pada halaman menu & kategori                  | ✅ Done — gerbang `canManageCatalog` dari `useAuth()`; tombol Edit/Hapus tidak dirender untuk `parent`                                                                                                        |
+| AC22 | Jadwal dapat disimpan **terpisah per kelas** pada tanggal yang sama                            | ✅ Done — `schedules.class_name` + `UNIQUE(schedule_date, class_name)`; diuji di `test-api` section 13 (tanggal sama + kelas berbeda → 201)                                                                   |
+| AC23 | Data jadwal lama tidak hilang saat migrasi ke model per kelas                                  | ✅ Done — migrasi `0002_*.sql` mereplikasi baris global ke tiap kelas: 43 → **129 baris**, 0 baris yatim (fallback kelas `'Umum'` bila belum ada kelas)                                                       |
+| AC24 | Korlas dapat mengubah jadwal **kelasnya sendiri**                                              | ✅ Done — `resolveWriteClass` + guard baris `canWriteClass`; `budi` (korlas 1) berhasil create/update/copy kelas 1; diuji di `test-api` section 19                                                            |
+| AC25 | Korlas **tidak dapat** menyentuh jadwal kelas lain (baca maupun tulis)                         | ✅ Done — `403 forbidden_class` / `Kelas ini bukan cakupan Anda`; diuji untuk read, create, update, delete, dan copy kelas lain (baris korban diverifikasi tidak berubah)                                     |
+| AC26 | Korlas dapat mengelola katalog menu & kategori                                                 | ✅ Done — `requireRole("admin","korlas")` di `/menus` & `/categories`; diuji di `test-api` section 19                                                                                                         |
+| AC27 | Korlas **tidak** dapat mengubah hari libur, akun orang tua, atau statistik                     | ✅ Done — `requireRole("admin")` tetap di `/holidays`, `/parents`, `/stats`; diuji `403` di section 19                                                                                                        |
+| AC28 | Pengguna dengan akses > 1 kelas dapat berpindah kelas dari UI, dan pilihannya bertahan         | ✅ Done — `ClassSwitcher` di header (`GET /classes`), tersimpan di `localStorage.psp_class`; muncul hanya bila `classes.length > 1`; diverifikasi di browser (admin: 1–6, `dewi`: 2/3, `sari`: tanpa pemilih) |
+| AC29 | Admin/korlas dapat menetapkan siswa piket per kelas per hari                                   | ✅ Done — bukan lewat `piket_assignments`, melainkan kolom `petugas_name`/`petugas_parent_name` di `schedules`                                                                                                |
+| AC30 | Orang tua dapat melihat nama siswa piket di kartu jadwal harian/Sepekan/bulanan                | ✅ Done — blok petugas di `ScheduleDayCard`                                                                                                                                                                   |
+| AC31 | Pencarian riwayat piket siswa berfungsi ("kapan Shezan terakhir piket?")                       | Pending — belum ada endpoint pencarian petugas                                                                                                                                                                |
+| AC32 | Data piket dari `output_jadwal_piket.txt` ter-seed dengan benar                                | ✅ Done — 22 tanggal bertugas (September 2026, Kelas 1–5)                                                                                                                                                     |
+| AC33 | Nama anak orang tua disorot bila sedang piket hari itu                                         | Pending — kartu menampilkan nama, tetapi belum menyorot anak sendiri                                                                                                                                          |
+| AC34 | Korlas dapat mengunci jadwal draft bulan ini (status `draft` → `locked`)                       | ✅ Done — `POST /schedules/lock` + tombol "Kunci bulan" di `/jadwal`                                                                                                                                          |
+| AC35 | Korlas dapat memublikasi jadwal yang sudah terkunci penuh satu bulan (`locked` → `published`)  | ✅ Done — `POST /schedules/publish` + tombol "Publikasi" di `/jadwal`                                                                                                                                         |
+| AC36 | Publikasi ditolak bila masih ada baris `draft` di bulan tersebut                               | ✅ Done — `409 drafts_remaining` + tombol dinonaktifkan bila `draftCount > 0`                                                                                                                                 |
+| AC37 | Orang tua hanya melihat jadwal `published`; baris `draft`/`locked` tidak muncul                | ✅ Done — filter `statusFilter = ["published"]` di repository untuk role `parent`                                                                                                                             |
+| AC38 | Baris `locked`/`published` tidak dapat diedit, dihapus, atau ditimpa (copy)                    | ✅ Done — `409 not_editable` di service; kontrol edit dinonaktifkan di UI                                                                                                                                     |
+| AC39 | Admin dapat membuka kunci (unlock) baris individual kembali ke `draft`                         | ✅ Done — `POST /schedules/:id/unlock` (admin only) + tombol 🔓 di `/jadwal`                                                                                                                                  |
+| AC40 | Orang tua dapat mengambil tanggal snack yang masih kosong                                      | ✅ Done — `POST /claims` + halaman `/pilih-jadwal`                                                                                                                                                            |
+| AC41 | **Dua orang tua tidak pernah bisa mendapat tanggal yang sama**, meski menekan tombol bersamaan | ✅ Done — `UNIQUE(schedule_id)` di `schedule_claims`; diuji dengan 5 permintaan serentak → tepat 1 berhasil, 4 dijawab `409`                                                                                  |
+| AC42 | Yang kalah cepat melihat pesan jelas beserta nama orang tua yang lebih dulu                    | ✅ Done — modal "Yah, keduluan!" + pesan `Yah, sudah dipilih orang tua lain — {nama}`                                                                                                                         |
+| AC43 | Klaim mengisi kolom petugas, pembatalan mengosongkannya kembali                                | ✅ Done — satu sumber kebenaran; diverifikasi di tes klaim                                                                                                                                                    |
+| AC44 | Tanggal yang petugasnya sudah ditetapkan korlas tidak bisa direbut                             | ✅ Done — `409 already_assigned` + badge "Ditetapkan korlas"                                                                                                                                                  |
+| AC45 | Orang tua tidak bisa mengambil tanggal di kelas yang bukan kelas anaknya                       | ✅ Done — `403 forbidden_class`                                                                                                                                                                               |
+| AC46 | Pembatalan hanya oleh pemiliknya, admin, atau korlas kelas itu                                 | ✅ Done — `403 not_owner` untuk orang lain                                                                                                                                                                    |
+| AC47 | Aplikasi dapat dipasang ke layar utama (PWA)                                                   | ✅ Done — manifest + service worker + banner Pasang; `beforeinstallprompt` ditangkap di `<head>` agar tidak hilang sebelum React mount                                                                        |
 
 ---
 
 ## 14. Risiko & Asumsi
 
 ### Risiko
+
 1. **Akurasi data input** — jika admin salah input, orang tua melihat info salah. Mitigasi: preview sebelum simpan.
 2. **Libur nasional** — jadwal otomatis skip hari libur. Mitigasi: tabel `holidays` atau flag `is_holiday` pada schedule.
 3. **Menu duplikat** — menu yang sama disajikan terlalu sering. Mitigasi: warning di UI admin.
@@ -1035,6 +1090,7 @@ bunx wrangler secret put JWT_SECRET
 5. **Lupa password** — orang tua mungkin lupa password. Mitigasi: fitur reset password oleh admin, atau email/SMS reset (phase 2).
 
 ### Asumsi
+
 - Aplikasi digunakan oleh **satu sekolah** pada Phase 1.
 - Jadwal snack hanya untuk **hari kerja** (Senin–Jumat).
 - Setiap hari memiliki **tepat satu makanan utama + satu buah** (dapat diperluas di masa depan).
@@ -1047,40 +1103,40 @@ bunx wrangler secret put JWT_SECRET
 
 ## 15. Glossary
 
-| Istilah | Definisi |
-|---------|----------|
-| Piket Snack | Tugas harian menyediakan snack untuk siswa |
-| **Piket (Penugasan)** | Penugasan siswa per kelas per hari untuk membawa/menyiapkan snack. Disimpan sebagai kolom `petugas_name` + `petugas_parent_name` di `schedules` — **bukan** tabel `piket_assignments`, yang tidak pernah dibuat. Satu petugas per kelas per hari |
-| **Klaim (Pilih Jadwal)** | Pengambilan satu tanggal oleh seorang orang tua lewat `schedule_claims`. Siapa cepat dia dapat; `UNIQUE(schedule_id)` menjamin satu tanggal hanya untuk satu orang tua. Klaim ikut mengisi kolom petugas. Lihat F9 |
-| Makanan Utama | Item makanan utama (mis. "Roti coklat", "Risol ayam") |
-| Buah Pendamping | Buah segar/olahan buah yang menyertai makanan utama |
-| **Kelas** | Kelompok siswa (mis. `1`, `2`, `3`). Bukan tabel tersendiri — diturunkan dari `students.class_name`, `users.class_name` (korlas), dan `schedules.class_name` |
-| **Korlas** | Koordinator Kelas — role `korlas`; boleh mengelola katalog menu/kategori (sekolah-wide) + jadwal **kelasnya sendiri**, ditautkan ke satu kelas lewat `users.class_name` |
-| **Cakupan kelas** | Batas kelas yang boleh dibaca/ditulis seorang user, dihitung di `src/api/utils/classScope.ts`. Admin = semua kelas; korlas = kelasnya; orang tua = kelas anak-anaknya. Di luar cakupan → `403` |
-| **Pemilih kelas** | `ClassSwitcher` di header — memilih kelas aktif bila user punya akses ke lebih dari satu kelas; pilihan disimpan di `localStorage.psp_class` |
-| **Hari libur global** | Hari libur sekolah (`holidays`) yang berlaku untuk **semua** kelas dan hanya boleh diubah admin. Berbeda dari "libur kelas" yang ditandai korlas pada catatan jadwal kelasnya |
-| **Status jadwal** | Status baris `schedules`: `draft` (editable) → `locked` (dikunci korlas, tidak dapat diedit) → `published` (dipublikasi ke orang tua). Orang tua hanya melihat `published`. Lihat F8 |
-| **Kunci (lock)** | Operasi korlas/admin mengunci semua jadwal `draft` pada suatu rentang → `locked`. Pencatat `locked_by` + `locked_at` |
-| **Publikasi (publish)** | Operasi korlas/admin memublikasi semua jadwal `locked` untuk satu bulan → `published`. Syarat: tidak ada `draft` tersisa. Orang tua langsung melihat jadwal setelah publikasi |
-| **Buka kunci (unlock)** | Operasi **admin** mengembalikan satu baris `locked`/`published` ke `draft`. Berguna bila perlu revisi setelah jadwal dikunci |
-| **Stack BHVR** | **B**un + **H**ono + **V**ite + **R**eact — stack dari template `bhvr-template` |
-| Bun | Runtime & package manager JavaScript/TypeScript (untuk tooling, bukan runtime server) |
-| Hono | Web framework ultrafast yang berjalan di Cloudflare Workers |
-| Vite | Build tool & dev server dengan HMR instan |
-| React | Library UI (versi 19) untuk frontend |
-| TanStack Router | Library routing client-side (v7) — file-based di `src/routes/`, route tree auto-generate |
-| TanStack Query | Library data fetching & caching untuk React |
-| Tailwind CSS | Utility-first CSS framework (v4) |
-| Cloudflare Workers | Serverless edge runtime tempat backend berjalan |
-| Cloudflare D1 | Database SQLite serverless milik Cloudflare |
-| Drizzle ORM | Type-safe ORM untuk TypeScript, bekerja dengan D1/SQLite |
-| Wrangler | CLI Cloudflare untuk dev, migrasi, dan deploy Worker |
-| N-Layered | Pola arsitektur backend: Route → Controller → Service → Repository |
-| JWT | JSON Web Token — standar untuk autentikasi stateless |
-| RBAC | Role-Based Access Control — pembagian hak akses berdasarkan peran |
-| Orang Tua / Parent | Role user dengan akses read-only ke jadwal setelah login |
-| Anak / Student | Data anak milik seorang orang tua (nama + kelas). Satu orang tua boleh punya lebih dari satu — tabel `students` |
-| Admin / Guru Piket | Role user dengan akses CRUD penuh + kelola akun orang tua |
+| Istilah                  | Definisi                                                                                                                                                                                                                                         |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Piket Snack              | Tugas harian menyediakan snack untuk siswa                                                                                                                                                                                                       |
+| **Piket (Penugasan)**    | Penugasan siswa per kelas per hari untuk membawa/menyiapkan snack. Disimpan sebagai kolom `petugas_name` + `petugas_parent_name` di `schedules` — **bukan** tabel `piket_assignments`, yang tidak pernah dibuat. Satu petugas per kelas per hari |
+| **Klaim (Pilih Jadwal)** | Pengambilan satu tanggal oleh seorang orang tua lewat `schedule_claims`. Siapa cepat dia dapat; `UNIQUE(schedule_id)` menjamin satu tanggal hanya untuk satu orang tua. Klaim ikut mengisi kolom petugas. Lihat F9                               |
+| Makanan Utama            | Item makanan utama (mis. "Roti coklat", "Risol ayam")                                                                                                                                                                                            |
+| Buah Pendamping          | Buah segar/olahan buah yang menyertai makanan utama                                                                                                                                                                                              |
+| **Kelas**                | Kelompok siswa (mis. `1`, `2`, `3`). Bukan tabel tersendiri — diturunkan dari `students.class_name`, `users.class_name` (korlas), dan `schedules.class_name`                                                                                     |
+| **Korlas**               | Koordinator Kelas — role `korlas`; boleh mengelola katalog menu/kategori (sekolah-wide) + jadwal **kelasnya sendiri**, ditautkan ke satu kelas lewat `users.class_name`                                                                          |
+| **Cakupan kelas**        | Batas kelas yang boleh dibaca/ditulis seorang user, dihitung di `src/api/utils/classScope.ts`. Admin = semua kelas; korlas = kelasnya; orang tua = kelas anak-anaknya. Di luar cakupan → `403`                                                   |
+| **Pemilih kelas**        | `ClassSwitcher` di header — memilih kelas aktif bila user punya akses ke lebih dari satu kelas; pilihan disimpan di `localStorage.psp_class`                                                                                                     |
+| **Hari libur global**    | Hari libur sekolah (`holidays`) yang berlaku untuk **semua** kelas dan hanya boleh diubah admin. Berbeda dari "libur kelas" yang ditandai korlas pada catatan jadwal kelasnya                                                                    |
+| **Status jadwal**        | Status baris `schedules`: `draft` (editable) → `locked` (dikunci korlas, tidak dapat diedit) → `published` (dipublikasi ke orang tua). Orang tua hanya melihat `published`. Lihat F8                                                             |
+| **Kunci (lock)**         | Operasi korlas/admin mengunci semua jadwal `draft` pada suatu rentang → `locked`. Pencatat `locked_by` + `locked_at`                                                                                                                             |
+| **Publikasi (publish)**  | Operasi korlas/admin memublikasi semua jadwal `locked` untuk satu bulan → `published`. Syarat: tidak ada `draft` tersisa. Orang tua langsung melihat jadwal setelah publikasi                                                                    |
+| **Buka kunci (unlock)**  | Operasi **admin** mengembalikan satu baris `locked`/`published` ke `draft`. Berguna bila perlu revisi setelah jadwal dikunci                                                                                                                     |
+| **Stack BHVR**           | **B**un + **H**ono + **V**ite + **R**eact — stack dari template `bhvr-template`                                                                                                                                                                  |
+| Bun                      | Runtime & package manager JavaScript/TypeScript (untuk tooling, bukan runtime server)                                                                                                                                                            |
+| Hono                     | Web framework ultrafast yang berjalan di Cloudflare Workers                                                                                                                                                                                      |
+| Vite                     | Build tool & dev server dengan HMR instan                                                                                                                                                                                                        |
+| React                    | Library UI (versi 19) untuk frontend                                                                                                                                                                                                             |
+| TanStack Router          | Library routing client-side (v7) — file-based di `src/routes/`, route tree auto-generate                                                                                                                                                         |
+| TanStack Query           | Library data fetching & caching untuk React                                                                                                                                                                                                      |
+| Tailwind CSS             | Utility-first CSS framework (v4)                                                                                                                                                                                                                 |
+| Cloudflare Workers       | Serverless edge runtime tempat backend berjalan                                                                                                                                                                                                  |
+| Cloudflare D1            | Database SQLite serverless milik Cloudflare                                                                                                                                                                                                      |
+| Drizzle ORM              | Type-safe ORM untuk TypeScript, bekerja dengan D1/SQLite                                                                                                                                                                                         |
+| Wrangler                 | CLI Cloudflare untuk dev, migrasi, dan deploy Worker                                                                                                                                                                                             |
+| N-Layered                | Pola arsitektur backend: Route → Controller → Service → Repository                                                                                                                                                                               |
+| JWT                      | JSON Web Token — standar untuk autentikasi stateless                                                                                                                                                                                             |
+| RBAC                     | Role-Based Access Control — pembagian hak akses berdasarkan peran                                                                                                                                                                                |
+| Orang Tua / Parent       | Role user dengan akses read-only ke jadwal setelah login                                                                                                                                                                                         |
+| Anak / Student           | Data anak milik seorang orang tua (nama + kelas). Satu orang tua boleh punya lebih dari satu — tabel `students`                                                                                                                                  |
+| Admin / Guru Piket       | Role user dengan akses CRUD penuh + kelola akun orang tua                                                                                                                                                                                        |
 
 ---
 

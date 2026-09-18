@@ -204,6 +204,6 @@ dist
 .tanstack
 
 ### Artefak verifikasi lokal (skrip + screenshot) ###
-outputs/
+# outputs/
 # Seluruh folder, bukan per tanggal — satu baris per hari selalu berujung konflik merge.
 .workbuddy-ai/memory/

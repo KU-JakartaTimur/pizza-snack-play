@@ -127,13 +127,24 @@ export function ScheduleDayCard({
 
         {!day.isHoliday && (day.petugasName || day.petugasParentName) && (
           <div className="mt-3 flex items-start gap-2 text-sm text-slate-700">
-            <User className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+            {day.claim ? (
+              <HandHeart className="mt-0.5 h-4 w-4 shrink-0 text-accent-600" />
+            ) : (
+              <User className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+            )}
             <div className="min-w-0">
               {day.petugasName && (
                 <p className="font-medium text-slate-900">{day.petugasName}</p>
               )}
               {day.petugasParentName && (
                 <p className="text-xs text-slate-500">{day.petugasParentName}</p>
+              )}
+              {/* Petugas hasil klaim sendiri dibedakan dari yang ditunjuk korlas. */}
+              {day.claim && (
+                <p className="mt-0.5 text-xs text-accent-700">
+                  Dipilih sendiri
+                  {day.claim.note && ` · ${day.claim.note}`}
+                </p>
               )}
             </div>
           </div>
@@ -146,18 +157,6 @@ export function ScheduleDayCard({
           </div>
         )}
 
-        {day.claim && !day.isHoliday && (
-          <div className="mt-3 flex items-start gap-2 rounded-lg border border-accent-200 bg-accent-50 px-2.5 py-2 text-xs text-accent-800">
-            <HandHeart className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            <span>
-              Dipilih oleh <strong className="font-semibold">{day.claim.parentName}</strong>
-              {day.claim.studentName && ` · ${day.claim.studentName}`}
-              {day.claim.note && (
-                <span className="block text-accent-700">{day.claim.note}</span>
-              )}
-            </span>
-          </div>
-        )}
       </div>
 
       {footer && (

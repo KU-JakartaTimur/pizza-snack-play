@@ -19,6 +19,7 @@ export type ClaimError =
   | "forbidden_class"
   | "past_date"
   | "already_claimed"
+  | "already_assigned"
   | "already_mine"
   | "student_not_found"
   | "claim_not_found"
@@ -107,11 +108,29 @@ class ClaimService {
         : { ok: false, error: "already_claimed", takenBy: existing.parentName };
     }
 
+    // Petugas yang sudah terisi tanpa klaim berarti korlas menunjuknya dari
+    // daftar piket manual — tanggal itu tidak ikut diperebutkan.
+    if (schedule.petugasName || schedule.petugasParentName) {
+      return {
+        ok: false,
+        error: "already_assigned",
+        takenBy: schedule.petugasParentName ?? schedule.petugasName ?? undefined,
+      };
+    }
+
+    // Bila orang tua tidak menyebut anaknya, pakai satu-satunya anak di kelas
+    // itu — hampir selalu benar, dan membuat kolom petugas tetap terisi.
+    const student =
+      parent.students.find((s) => s.id === studentId) ??
+      (studentId === null
+        ? parent.students.filter((s) => s.className === schedule.className)[0]
+        : undefined);
+
     try {
       await claimRepository.insert(db, {
         scheduleId: input.scheduleId,
         parentId: parent.parent.id,
-        studentId,
+        studentId: student?.id ?? null,
         note: input.note?.trim() || null,
       });
     } catch (error) {
@@ -125,6 +144,13 @@ class ClaimService {
         takenBy: winner?.parentName,
       };
     }
+
+    // Klaim menjadi sumber kebenaran petugas hari itu, sehingga seluruh
+    // tampilan yang sudah merender petugas ikut terisi tanpa perubahan.
+    await scheduleRepository.updateSchedule(db, input.scheduleId, {
+      petugasName: student?.name ?? null,
+      petugasParentName: parent.parent.parentName,
+    });
 
     const rows = await claimRepository.findByParentId(
       db,
@@ -169,6 +195,14 @@ class ClaimService {
     }
 
     await claimRepository.deleteById(db, claimId);
+
+    // Petugas pada baris ini berasal dari klaim yang baru saja dibatalkan,
+    // jadi tanggalnya dikembalikan menjadi kosong dan bisa direbut lagi.
+    await scheduleRepository.updateSchedule(db, row.claim.scheduleId, {
+      petugasName: null,
+      petugasParentName: null,
+    });
+
     return { ok: true, data: null };
   }
 

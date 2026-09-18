@@ -126,7 +126,9 @@ function PickSchedulePage() {
     .filter((day) => day.scheduleId !== null && !day.isHoliday);
 
   const myClaims = days.filter((day) => day.claim?.parentId === user?.parentId);
-  const available = days.filter((day) => !day.claim && day.date >= today);
+  const available = days.filter(
+    (day) => !day.claim && !day.petugasName && !day.petugasParentName && day.date >= today,
+  );
   const busy = takeMutation.isPending || releaseMutation.isPending;
 
   return (
@@ -324,6 +326,11 @@ function ClaimAction({
     }
 
     return <Badge tone="warning">Sudah dipilih orang tua lain</Badge>;
+  }
+
+  // Petugas terisi tanpa klaim = korlas menunjuknya dari daftar piket manual.
+  if (day.petugasName || day.petugasParentName) {
+    return <Badge tone="neutral">Ditetapkan korlas</Badge>;
   }
 
   if (isPast) {

@@ -40,6 +40,13 @@ function mapError(c: ClaimContext, error: ClaimError, takenBy?: string) {
           ? `Yah, sudah dipilih orang tua lain — ${takenBy}`
           : "Yah, sudah dipilih orang tua lain",
       );
+    case "already_assigned":
+      return responseConflict(
+        c,
+        takenBy
+          ? `Tanggal ini sudah ditetapkan korlas untuk ${takenBy}`
+          : "Tanggal ini sudah ditetapkan korlas",
+      );
     case "already_mine":
       return responseConflict(c, "Tanggal ini sudah Anda pilih sebelumnya");
     case "student_not_found":

@@ -3,6 +3,7 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   CalendarDays,
   CalendarRange,
+  HandHeart,
   LayoutDashboard,
   LogOut,
   Search,
@@ -23,6 +24,8 @@ interface NavItem {
   icon: typeof CalendarDays;
   /** Kemampuan minimum untuk melihat menu ini; kosong = semua role. */
   need?: Capability;
+  /** Sembunyikan dari admin — admin tidak punya profil orang tua. */
+  parentsOnly?: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -30,6 +33,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/hari-ini", label: "Hari Ini", icon: CalendarDays },
   { to: "/minggu-ini", label: "Minggu Ini", icon: CalendarRange },
   { to: "/bulan", label: "Bulanan", icon: CalendarDays },
+  { to: "/pilih-jadwal", label: "Pilih Jadwal", icon: HandHeart, parentsOnly: true },
   { to: "/pencarian", label: "Cari Menu", icon: Search },
   { to: "/menu", label: "Menu", icon: UtensilsCrossed },
   { to: "/kategori", label: "Kategori", icon: Tags, need: "catalog" },
@@ -52,6 +56,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
 
   const items = NAV_ITEMS.filter((item) => {
+    if (item.parentsOnly && isAdmin) return false;
     if (!item.need) return true;
     if (item.need === "admin") return isAdmin;
     if (item.need === "schedule") return canManageSchedule;

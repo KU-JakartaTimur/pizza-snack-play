@@ -368,17 +368,19 @@ class ScheduleController {
     );
     if (!scope.ok) return mapScopeError(c, scope.error);
 
-    if (!Number.isInteger(body.year) || body.year < 2000 || body.year > 2100) {
+    const { year, month } = body;
+
+    if (!Number.isInteger(year) || year! < 2000 || year! > 2100) {
       return responseBadRequest(c, "`year` tidak valid");
     }
-    if (!Number.isInteger(body.month) || body.month < 1 || body.month > 12) {
+    if (!Number.isInteger(month) || month! < 1 || month! > 12) {
       return responseBadRequest(c, "`month` harus 1–12");
     }
 
     const result = await scheduleService.publishMonth(
       getDb(c.env),
       scope.className!,
-      { year: body.year, month: body.month },
+      { year: year!, month: month! },
       c.get("user").sub,
     );
 

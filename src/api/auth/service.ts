@@ -33,11 +33,16 @@ export function resolveExpiresIn(raw: string | undefined): number {
 
 /** Profil anak & hubungan orang tua — kosong untuk admin. */
 interface ParentProfile {
+  parentId: number | null;
   relationship: string | null;
   students: StudentProfile[];
 }
 
-const EMPTY_PROFILE: ParentProfile = { relationship: null, students: [] };
+const EMPTY_PROFILE: ParentProfile = {
+  parentId: null,
+  relationship: null,
+  students: [],
+};
 
 function toPublicUser(
   user: {
@@ -55,6 +60,7 @@ function toPublicUser(
     fullName: user.fullName,
     role: user.role as Role,
     className: user.className,
+    parentId: profile.parentId,
     relationship: profile.relationship,
     students: profile.students,
   };
@@ -149,6 +155,7 @@ class AuthService {
     if (!found) return EMPTY_PROFILE;
 
     return {
+      parentId: found.parent.id,
       relationship: found.parent.relationship,
       students: found.students.map((student) => ({
         id: student.id,

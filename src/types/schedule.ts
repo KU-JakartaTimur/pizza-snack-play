@@ -1,6 +1,7 @@
 /** DTO jadwal — dipakai bersama oleh API dan frontend. */
 
 import type { MenuDto, MenuItemType } from "./catalog";
+import type { ScheduleClaimSummaryDto } from "./claim";
 
 /** Status jadwal: draft (editable) → locked (dikunci) → published (tampil ke orang tua). */
 export type ScheduleStatus = "draft" | "locked" | "published";
@@ -38,6 +39,11 @@ export interface ScheduleDayDto {
   menu: MenuDto | null;
   /** Status jadwal — hanya relevan untuk admin/korlas. */
   status: ScheduleStatus | null;
+  /**
+   * Orang tua yang sudah mengklaim tanggal ini, `null` bila masih kosong.
+   * Hanya jadwal `published` yang bisa diklaim.
+   */
+  claim: ScheduleClaimSummaryDto | null;
 }
 
 export interface WeekScheduleDto {

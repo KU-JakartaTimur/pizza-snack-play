@@ -276,6 +276,38 @@ export const students = sqliteTable(
 );
 
 // ─────────────────────────────────────────────────────────────
+// Klaim jadwal — orang tua "mengambil" tanggal yang sudah dipublikasi
+// korlas, siapa cepat dia dapat.
+//
+// Satu baris jadwal hanya boleh diklaim oleh SATU orang tua. Keunikan itu
+// ditegakkan indeks unik pada `schedule_id`, bukan sekadar pengecekan di
+// aplikasi: dua permintaan yang tiba nyaris bersamaan akan membuat salah
+// satunya gagal di level database, sehingga klaim ganda mustahil terjadi.
+// ─────────────────────────────────────────────────────────────
+export const scheduleClaims = sqliteTable(
+  "schedule_claims",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    scheduleId: integer("schedule_id")
+      .notNull()
+      .references(() => schedules.id, { onDelete: "cascade" }),
+    parentId: integer("parent_id")
+      .notNull()
+      .references(() => parents.id, { onDelete: "cascade" }),
+    /** Anak yang diwakili — opsional, berguna bila satu orang tua punya beberapa anak. */
+    studentId: integer("student_id").references(() => students.id, {
+      onDelete: "set null",
+    }),
+    note: text("note"),
+    claimedAt: text("claimed_at").notNull().default(now),
+  },
+  (table) => [
+    uniqueIndex("idx_schedule_claims_schedule").on(table.scheduleId),
+    index("idx_schedule_claims_parent").on(table.parentId),
+  ],
+);
+
+// ─────────────────────────────────────────────────────────────
 // Konfigurasi global (nama sekolah, tahun ajaran aktif, dll.)
 // ─────────────────────────────────────────────────────────────
 export const settings = sqliteTable(
@@ -334,6 +366,9 @@ export type NewParent = typeof parents.$inferInsert;
 
 export type Student = typeof students.$inferSelect;
 export type NewStudent = typeof students.$inferInsert;
+
+export type ScheduleClaim = typeof scheduleClaims.$inferSelect;
+export type NewScheduleClaim = typeof scheduleClaims.$inferInsert;
 
 export type Setting = typeof settings.$inferSelect;
 export type NewSetting = typeof settings.$inferInsert;

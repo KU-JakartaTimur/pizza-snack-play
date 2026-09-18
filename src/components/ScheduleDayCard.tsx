@@ -1,4 +1,5 @@
-import { CalendarOff, StickyNote, UtensilsCrossed } from "lucide-react";
+import type { ReactNode } from "react";
+import { CalendarOff, HandHeart, StickyNote, UtensilsCrossed } from "lucide-react";
 import { Badge } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { formatIndonesianDate, relativeDayLabel } from "@/lib/date";
@@ -17,18 +18,25 @@ function groupItems(items: { itemType: MenuItemType; name: string }[]) {
 export function ScheduleDayCard({
   day,
   compact = false,
+  footer,
+  highlight = false,
 }: {
   day: ScheduleDayDto;
   compact?: boolean;
+  /** Aksi tambahan di bawah kartu, mis. tombol memilih tanggal. */
+  footer?: ReactNode;
+  /** Sorot kartu — dipakai halaman pemilihan untuk menandai pilihan sendiri. */
+  highlight?: boolean;
 }) {
   const isToday = day.isToday;
 
   return (
     <div
       className={cn(
-        "card overflow-hidden transition-shadow",
+        "card flex flex-col overflow-hidden transition-shadow",
         // "Hari ini" disorot persik agar langsung tertangkap mata.
         isToday && "ring-2 ring-highlight-400 ring-offset-1",
+        highlight && !isToday && "ring-2 ring-accent-400 ring-offset-1",
         !isToday && "hover:shadow-md",
       )}
     >
@@ -58,7 +66,7 @@ export function ScheduleDayCard({
         </Badge>
       </div>
 
-      <div className="px-4 py-3.5">
+      <div className="flex-1 px-4 py-3.5">
         {day.isHoliday ? (
           <div className="flex items-center gap-2.5 text-highlight-700">
             <CalendarOff className="h-4 w-4 shrink-0" />
@@ -117,7 +125,26 @@ export function ScheduleDayCard({
             <span>{day.notes}</span>
           </div>
         )}
+
+        {day.claim && !day.isHoliday && (
+          <div className="mt-3 flex items-start gap-2 rounded-lg border border-accent-200 bg-accent-50 px-2.5 py-2 text-xs text-accent-800">
+            <HandHeart className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <span>
+              Dipilih oleh <strong className="font-semibold">{day.claim.parentName}</strong>
+              {day.claim.studentName && ` · ${day.claim.studentName}`}
+              {day.claim.note && (
+                <span className="block text-accent-700">{day.claim.note}</span>
+              )}
+            </span>
+          </div>
+        )}
       </div>
+
+      {footer && (
+        <div className="border-t border-slate-200 bg-slate-50/70 px-4 py-3">
+          {footer}
+        </div>
+      )}
     </div>
   );
 }

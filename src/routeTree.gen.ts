@@ -13,6 +13,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppProfilRouteImport } from './routes/_app/profil'
+import { Route as AppPilihJadwalRouteImport } from './routes/_app/pilih-jadwal'
 import { Route as AppPencarianRouteImport } from './routes/_app/pencarian'
 import { Route as AppOrangTuaRouteImport } from './routes/_app/orang-tua'
 import { Route as AppMingguIniRouteImport } from './routes/_app/minggu-ini'
@@ -40,6 +41,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
 const AppProfilRoute = AppProfilRouteImport.update({
   id: '/profil',
   path: '/profil',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPilihJadwalRoute = AppPilihJadwalRouteImport.update({
+  id: '/pilih-jadwal',
+  path: '/pilih-jadwal',
   getParentRoute: () => AppRoute,
 } as any)
 const AppPencarianRoute = AppPencarianRouteImport.update({
@@ -100,6 +106,7 @@ export interface FileRoutesByFullPath {
   '/minggu-ini': typeof AppMingguIniRoute
   '/orang-tua': typeof AppOrangTuaRoute
   '/pencarian': typeof AppPencarianRoute
+  '/pilih-jadwal': typeof AppPilihJadwalRoute
   '/profil': typeof AppProfilRoute
 }
 export interface FileRoutesByTo {
@@ -113,6 +120,7 @@ export interface FileRoutesByTo {
   '/minggu-ini': typeof AppMingguIniRoute
   '/orang-tua': typeof AppOrangTuaRoute
   '/pencarian': typeof AppPencarianRoute
+  '/pilih-jadwal': typeof AppPilihJadwalRoute
   '/profil': typeof AppProfilRoute
   '/': typeof AppIndexRoute
 }
@@ -129,6 +137,7 @@ export interface FileRoutesById {
   '/_app/minggu-ini': typeof AppMingguIniRoute
   '/_app/orang-tua': typeof AppOrangTuaRoute
   '/_app/pencarian': typeof AppPencarianRoute
+  '/_app/pilih-jadwal': typeof AppPilihJadwalRoute
   '/_app/profil': typeof AppProfilRoute
   '/_app/': typeof AppIndexRoute
 }
@@ -146,6 +155,7 @@ export interface FileRouteTypes {
     | '/minggu-ini'
     | '/orang-tua'
     | '/pencarian'
+    | '/pilih-jadwal'
     | '/profil'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -159,6 +169,7 @@ export interface FileRouteTypes {
     | '/minggu-ini'
     | '/orang-tua'
     | '/pencarian'
+    | '/pilih-jadwal'
     | '/profil'
     | '/'
   id:
@@ -174,6 +185,7 @@ export interface FileRouteTypes {
     | '/_app/minggu-ini'
     | '/_app/orang-tua'
     | '/_app/pencarian'
+    | '/_app/pilih-jadwal'
     | '/_app/profil'
     | '/_app/'
   fileRoutesById: FileRoutesById
@@ -211,6 +223,13 @@ declare module '@tanstack/react-router' {
       path: '/profil'
       fullPath: '/profil'
       preLoaderRoute: typeof AppProfilRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/pilih-jadwal': {
+      id: '/_app/pilih-jadwal'
+      path: '/pilih-jadwal'
+      fullPath: '/pilih-jadwal'
+      preLoaderRoute: typeof AppPilihJadwalRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/pencarian': {
@@ -289,6 +308,7 @@ interface AppRouteChildren {
   AppMingguIniRoute: typeof AppMingguIniRoute
   AppOrangTuaRoute: typeof AppOrangTuaRoute
   AppPencarianRoute: typeof AppPencarianRoute
+  AppPilihJadwalRoute: typeof AppPilihJadwalRoute
   AppProfilRoute: typeof AppProfilRoute
   AppIndexRoute: typeof AppIndexRoute
 }
@@ -303,6 +323,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppMingguIniRoute: AppMingguIniRoute,
   AppOrangTuaRoute: AppOrangTuaRoute,
   AppPencarianRoute: AppPencarianRoute,
+  AppPilihJadwalRoute: AppPilihJadwalRoute,
   AppProfilRoute: AppProfilRoute,
   AppIndexRoute: AppIndexRoute,
 }

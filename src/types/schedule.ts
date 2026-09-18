@@ -30,6 +30,10 @@ export interface ScheduleDayDto {
   notes: string | null;
   scheduleId: number | null;
   menu: MenuDto | null;
+  /** Nama siswa yang bertugas piket (ambil snack) pada hari ini. */
+  petugasName: string | null;
+  /** Nama orang tua/wali petugas — bila diketahui. */
+  petugasParentName: string | null;
 }
 
 export interface WeekScheduleDto {
@@ -64,6 +68,10 @@ export interface ScheduleInput {
   className?: string;
   menuId?: number | null;
   isHoliday?: boolean;
+  /** Nama siswa yang bertugas piket mengambil snack. */
+  petugasName?: string | null;
+  /** Nama orang tua/wali petugas. */
+  petugasParentName?: string | null;
   notes?: string | null;
 }
 

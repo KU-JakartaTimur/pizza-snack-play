@@ -16,7 +16,12 @@
 > `UNIQUE(schedule_date)`. Tabel `users` mendapat kolom `class_name` (nullable) untuk menautkan role baru
 > **`korlas`** ke kelas yang dikoordinasinya. Karena SQLite menolak `ADD COLUMN ... NOT NULL` pada tabel
 > berisi data, migrasi `0002` melakukan **rebuild tabel**: `schedules_new` → salin (`CROSS JOIN` daftar kelas)
-> → drop → rename. Hasilnya **43 baris lama → 129 baris** (43 tanggal × 3 kelas: 1A, 1B, 2A), 0 baris yatim.
+> → drop → rename.
+>
+> **Migrasi `0003_*.sql` — kolom petugas:** Menambah `petugas_name` dan `petugas_parent_name` (TEXT, nullable)
+> pada `schedules`. Menu bersifat sekolah-wide; perbedaan antar kelas adalah petugas piket.
+> Seed terbaru menghasilkan **258 baris** (~42 tanggal × 6 kelas: 1–6), dengan 22 tanggal tercatat
+> petugasnya (September 2026, Kelas 1–5).
 >
 > **Tidak ada tabel `classes`:** kelas sengaja tetap berupa **teks bebas** (konsisten dengan `students.class_name`).
 > Daftar kelas diturunkan dari `students.class_name` ∪ `users.class_name` (korlas) ∪ `schedules.class_name`
@@ -242,7 +247,7 @@ CREATE TABLE IF NOT EXISTS schedules (
     week_id        INTEGER,                          -- FK ke weeks (opsional, untuk grouping)
     schedule_date  TEXT NOT NULL,                    -- YYYY-MM-DD
     day_of_week    INTEGER NOT NULL,                 -- 1=Senin .. 5=Jumat
-    class_name     TEXT NOT NULL,                    -- ★ kelas pemilik baris, mis. '1A'
+    class_name     TEXT NOT NULL,                    -- ★ kelas pemilik baris, mis. '1'
     menu_id        INTEGER,                          -- FK ke menus (NULL jika libur)
     is_holiday     INTEGER NOT NULL DEFAULT 0,       -- 1=libur, 0=ada snack
     notes          TEXT,                             -- catatan khusus
@@ -263,7 +268,7 @@ CREATE INDEX IF NOT EXISTS idx_schedules_class ON schedules(class_name);
 
 > **Kenapa `class_name` tidak jadi FK ke tabel `classes`?** Kelas sengaja tetap teks bebas agar
 > konsisten dengan `students.class_name` dan tidak menambah tabel baru. Konsekuensinya penamaan
-> kelas harus konsisten (`"1A"` bukan `"1a"` / `"1 A"`); daftar kelas diturunkan dari data yang ada
+> kelas harus konsisten (`"1"` bukan `"1a"` / `"1 A"`); daftar kelas diturunkan dari data yang ada
 > dan disajikan lewat `GET /api/classes`.
 >
 > **Kenapa bukan satu baris global + pengecualian?** Model "baris global + penanda `'*'`" memaksa
@@ -364,7 +369,7 @@ CREATE TABLE IF NOT EXISTS students (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     parent_id   INTEGER NOT NULL,                    -- FK ke parents
     name        TEXT NOT NULL,                       -- nama anak
-    class_name  TEXT,                                -- kelas (mis. "1A", "2B")
+    class_name  TEXT,                                -- kelas (mis. "1", "2")
     is_active   INTEGER NOT NULL DEFAULT 1,
     created_at  TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
@@ -427,7 +432,7 @@ CREATE TABLE IF NOT EXISTS import_logs (
 > jadi tidak ada yang bisa direferensikan. Kesamaannya hanya dipakai untuk **menentukan cakupan akses**
 > (korlas ↔ kelasnya) dan **menentukan kelas anak** (orang tua ↔ kelas anaknya), bukan untuk integritas data.
 > Inilah sebabnya penghapusan/rename kelas tidak bisa otomatis di-cascade dan konsistensi penamaan
-> (`"1A"` vs `"1a"`) menjadi tanggung jawab admin.
+> (`"1"` vs `"1a"`) menjadi tanggung jawab admin.
 
 ---
 
@@ -493,30 +498,30 @@ INSERT INTO weeks (week_start_date, week_end_date, month, year, label) VALUES
 -- Schedules for the week — SATU BARIS PER KELAS
 -- Kolom class_name wajib diisi; tanggal yang sama boleh berulang untuk kelas berbeda.
 INSERT INTO schedules (week_id, schedule_date, day_of_week, class_name, menu_id, is_holiday) VALUES
--- Kelas 1A
-(1, '2026-09-01', 2, '1A', 1, 0),  -- Selasa: Roti isi coklat + Jeruk (outing)
-(1, '2026-09-02', 3, '1A', 2, 0),  -- Rabu: Tahu isi sayur + Melon
-(1, '2026-09-03', 4, '1A', 3, 0),  -- Kamis: Pisang panggang coklat keju + Nanas madu
-(1, '2026-09-04', 5, '1A', 4, 0),  -- Jumat: Urap jagung + Semangka
--- Kelas 1B (menu boleh berbeda pada tanggal yang sama)
-(1, '2026-09-01', 2, '1B', 1, 0),
-(1, '2026-09-02', 3, '1B', 5, 0),
-(1, '2026-09-03', 4, '1B', 3, 0),
-(1, '2026-09-04', 5, '1B', 6, 0),
--- Kelas 2A
-(1, '2026-09-01', 2, '2A', 7, 0),
-(1, '2026-09-02', 3, '2A', 2, 0),
-(1, '2026-09-03', 4, '2A', 8, 0),
-(1, '2026-09-04', 5, '2A', 4, 0);
+-- Kelas 1
+(1, '2026-09-01', 2, '1', 1, 0, 'Shezan', NULL, 'outing'),
+(1, '2026-09-02', 3, '1', 2, 0, 'Huma', NULL, NULL),
+(1, '2026-09-03', 4, '1', 3, 0, 'Rasyid', NULL, NULL),
+(1, '2026-09-04', 5, '1', 4, 0, 'Shezan', NULL, NULL),
+-- Kelas 2
+(1, '2026-09-01', 2, '2', 1, 0, 'Uma', NULL, 'outing'),
+(1, '2026-09-02', 3, '2', 2, 0, 'Uma', NULL, NULL),
+(1, '2026-09-03', 4, '2', 3, 0, 'Nabila', NULL, NULL),
+(1, '2026-09-04', 5, '2', 4, 0, 'Mikha', NULL, NULL),
+-- Kelas 3
+(1, '2026-09-01', 2, '3', 1, 0, 'Azkayra', NULL, 'outing'),
+(1, '2026-09-02', 3, '3', 2, 0, 'Taqiya', NULL, NULL),
+(1, '2026-09-03', 4, '3', 3, 0, 'Nafiza', NULL, NULL),
+(1, '2026-09-04', 5, '3', 4, 0, 'Al falah', NULL, NULL);
 -- Catatan: 1 September 2026 adalah Selasa (hari Senin tidak ada di file, kemungkinan libur)
 
--- Boleh juga menandai libur hanya untuk satu kelas (korlas), mis. kelas 1A ikut kegiatan:
--- INSERT INTO schedules (week_id, schedule_date, day_of_week, class_name, menu_id, is_holiday, notes)
--- VALUES (1, '2026-09-04', 5, '1A', NULL, 1, 'Kelas 1A ikut kegiatan pramuka');
+-- Boleh juga menandai libur hanya untuk satu kelas (korlas), mis. kelas 1 ikut kegiatan:
+-- INSERT INTO schedules (week_id, schedule_date, day_of_week, class_name, menu_id, is_holiday, petugas_name, petugas_parent_name, notes)
+-- VALUES (1, '2026-09-04', 5, '1', NULL, 1, NULL, NULL, 'Kelas 1 ikut kegiatan pramuka');
 ```
 
 > **Volume data seed:** file sumber berisi **43 tanggal**; karena setiap tanggal dibuat untuk
-> **3 kelas** (1A, 1B, 2A), `drizzle/seed.sql` menghasilkan **129 baris `schedules`** — sama persis
+> **6 kelas** (1–6), `drizzle/seed.sql` menghasilkan **258 baris `schedules`** — menu sekolah-wide,
 > dengan hasil migrasi `0002_*.sql` untuk data lama (43 → 129), sehingga data lokal dan hasil migrasi
 > konsisten.
 
@@ -538,7 +543,7 @@ INSERT INTO users (username, password_hash, full_name, role, is_active) VALUES
 -- class_name HANYA diisi untuk role 'korlas' (menunjukkan kelas yang dikoordinasikan).
 INSERT INTO users (username, password_hash, full_name, role, class_name, is_active) VALUES
 ('sari', 'pbkdf2$100000$<salt>$<hash>', 'Ibu Sari', 'parent', NULL, 1),
-('budi', 'pbkdf2$100000$<salt>$<hash>', 'Pak Budi', 'korlas', '1A', 1),
+('budi', 'pbkdf2$100000$<salt>$<hash>', 'Pak Budi', 'korlas', '1', 1),
 ('dewi', 'pbkdf2$100000$<salt>$<hash>', 'Ibu Dewi', 'parent', NULL, 1);
 
 -- Parent profiles (linked to users) — TANPA data anak
@@ -550,10 +555,10 @@ INSERT INTO parents (user_id, parent_name, relationship, phone) VALUES
 
 -- Anak-anak (1 orang tua boleh >1 anak) — dewi punya dua anak
 INSERT INTO students (parent_id, name, class_name, is_active) VALUES
-((SELECT p.id FROM parents p JOIN users u ON u.id = p.user_id WHERE u.username = 'sari'), 'Aisyah Sari', '1A', 1),
-((SELECT p.id FROM parents p JOIN users u ON u.id = p.user_id WHERE u.username = 'budi'), 'Bagas Budi',  '1A', 1),
-((SELECT p.id FROM parents p JOIN users u ON u.id = p.user_id WHERE u.username = 'dewi'), 'Citra Dewi',  '1B', 1),
-((SELECT p.id FROM parents p JOIN users u ON u.id = p.user_id WHERE u.username = 'dewi'), 'Raka Dewi',   '2A', 1);
+((SELECT p.id FROM parents p JOIN users u ON u.id = p.user_id WHERE u.username = 'sari'), 'Aisyah Sari', '1', 1),
+((SELECT p.id FROM parents p JOIN users u ON u.id = p.user_id WHERE u.username = 'budi'), 'Bagas Budi',  '1', 1),
+((SELECT p.id FROM parents p JOIN users u ON u.id = p.user_id WHERE u.username = 'dewi'), 'Citra Dewi',  '2', 1),
+((SELECT p.id FROM parents p JOIN users u ON u.id = p.user_id WHERE u.username = 'dewi'), 'Raka Dewi',   '3', 1);
 ```
 
 > **Catatan hashing di Cloudflare Workers:** Runtime Worker tidak menyediakan `bcrypt` native.
@@ -585,7 +590,7 @@ FROM schedules s
 LEFT JOIN menus m ON s.menu_id = m.id
 LEFT JOIN menu_items mi ON mi.menu_id = m.id
 WHERE s.schedule_date = date('now', '+7 hours')   -- WIB
-  AND s.class_name = '1A'                         -- ★ selalu filter kelas
+  AND s.class_name = '1'                          -- ★ selalu filter kelas
 ORDER BY mi.item_type;
 ```
 
@@ -634,7 +639,7 @@ LEFT JOIN menus m ON s.menu_id = m.id
 LEFT JOIN menu_items mi ON mi.menu_id = m.id
 WHERE s.schedule_date >= date('now', '+7 hours', 'weekday 0', '-6 days')
   AND s.schedule_date <= date('now', '+7 hours', 'weekday 4')
-  AND s.class_name = '1A'                          -- ★ filter kelas
+  AND s.class_name = '1'                           -- ★ filter kelas
 GROUP BY s.schedule_date
 ORDER BY s.schedule_date;
 ```
@@ -758,14 +763,14 @@ ORDER BY p.parent_name;
 > **Kenapa `JOIN parents` dan bukan `WHERE u.role = 'parent'`?** Akun **korlas juga punya baris `parents`**
 > (mereka tetap orang tua dari siswa di kelasnya), dan admin perlu melihat serta mengangkat mereka dari
 > halaman yang sama. Menyaring dengan `role = 'parent'` akan menyembunyikan korlas dari daftar — jadi
-> daftar akun diambil dari tabel `parents`, dan `role` hanya dipakai sebagai label/badge (`Korlas 1A`).
+> daftar akun diambil dari tabel `parents`, dan `role` hanya dipakai sebagai label/badge (`Korlas 1`).
 >
 > Implementasi sebenarnya mengambil baris orang tua dulu, lalu **satu** query `WHERE parent_id IN (...)` untuk semua anak sekaligus, dan mengelompokkannya di memori — menghindari N+1 sekaligus menghindari baris ganda.
 
 ### 5.8 Cakupan Kelas (Daftar Kelas & Pemeriksaan Akses)
 
 **Daftar kelas** tidak punya tabel — diturunkan dari tiga sumber sekaligus, lalu dinormalkan
-(di-`TRIM`, dedupe) dan diurutkan natural (`2A` sebelum `10A`):
+(di-`TRIM`, dedupe) dan diurutkan natural (`2` sebelum `10`):
 
 ```sql
 SELECT class_name FROM (
@@ -873,7 +878,7 @@ export const schedules = sqliteTable('schedules', {
   weekId:       integer('week_id').references(() => weeks.id, { onDelete: 'set null' }),
   scheduleDate: text('schedule_date').notNull(),
   dayOfWeek:    integer('day_of_week').notNull(), // 1=Senin .. 5=Jumat
-  /** ★ Kelas pemilik baris ini, mis. "1A". Wajib diisi. */
+  /** ★ Kelas pemilik baris ini, mis. "1". Wajib diisi. */
   className:    text('class_name').notNull(),
   menuId:       integer('menu_id').references(() => menus.id, { onDelete: 'set null' }),
   isHoliday:    integer('is_holiday').notNull().default(0),
@@ -1167,7 +1172,7 @@ bunx wrangler d1 execute pizza-snack-play --remote --command="SELECT class_name 
 ```
 
 > **Baseline hasil migrasi `0002` (terverifikasi lokal):** 43 baris lama → **129 baris**,
-> 3 kelas (1A, 1B, 2A), **0 baris yatim**, dan jumlahnya identik dengan `drizzle/seed.sql`
+> 6 kelas (1–6), **0 baris yatim**, dan jumlahnya identik dengan `drizzle/seed.sql`
 > yang di-generate ulang — jadi data lama dan data seed baru konsisten.
 
 ### Ringkasan Perintah

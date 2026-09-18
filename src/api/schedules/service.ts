@@ -115,6 +115,8 @@ class ScheduleService {
       menu: isHoliday
         ? null
         : ((schedule?.menuId ? ctx.menusById.get(schedule.menuId) : null) ?? null),
+      petugasName: schedule?.petugasName ?? null,
+      petugasParentName: schedule?.petugasParentName ?? null,
     };
   }
 
@@ -327,6 +329,8 @@ class ScheduleService {
       className,
       menuId: input.isHoliday ? null : (input.menuId ?? null),
       isHoliday: input.isHoliday ? 1 : 0,
+      petugasName: input.petugasName ?? null,
+      petugasParentName: input.petugasParentName ?? null,
       notes: input.notes ?? null,
     });
 
@@ -351,6 +355,8 @@ class ScheduleService {
     await scheduleRepository.updateSchedule(db, id, {
       ...(input.menuId !== undefined ? { menuId: input.menuId } : {}),
       ...(isHoliday !== undefined ? { isHoliday: isHoliday ? 1 : 0 } : {}),
+      ...(input.petugasName !== undefined ? { petugasName: input.petugasName } : {}),
+      ...(input.petugasParentName !== undefined ? { petugasParentName: input.petugasParentName } : {}),
       ...(input.notes !== undefined ? { notes: input.notes } : {}),
       // Hari libur tidak menyimpan menu.
       ...(isHoliday ? { menuId: null } : {}),
@@ -423,6 +429,8 @@ class ScheduleService {
         await scheduleRepository.updateSchedule(db, existing.id, {
           menuId: source.menuId,
           isHoliday: source.isHoliday,
+          petugasName: source.petugasName,
+          petugasParentName: source.petugasParentName,
           notes: source.notes,
         });
         updated += 1;
@@ -437,6 +445,8 @@ class ScheduleService {
         className,
         menuId: source.menuId,
         isHoliday: source.isHoliday,
+        petugasName: source.petugasName,
+        petugasParentName: source.petugasParentName,
         notes: source.notes,
       });
       created += 1;

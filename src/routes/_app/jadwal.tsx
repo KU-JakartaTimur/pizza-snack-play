@@ -112,7 +112,13 @@ function ScheduleAdminContent() {
   const saveMutation = useMutation({
     mutationFn: async (vars: {
       day: ScheduleDayDto;
-      patch: { menuId?: number | null; isHoliday?: boolean; notes?: string | null };
+      patch: {
+        menuId?: number | null;
+        isHoliday?: boolean;
+        petugasName?: string | null;
+        petugasParentName?: string | null;
+        notes?: string | null;
+      };
     }) => {
       // Hari yang belum punya entri → buat baru; selebihnya → perbarui.
       if (vars.day.scheduleId) {
@@ -123,6 +129,8 @@ function ScheduleAdminContent() {
         className: className!,
         menuId: vars.patch.menuId ?? null,
         isHoliday: vars.patch.isHoliday ?? false,
+        petugasName: vars.patch.petugasName ?? null,
+        petugasParentName: vars.patch.petugasParentName ?? null,
         notes: vars.patch.notes ?? null,
       });
     },
@@ -367,6 +375,39 @@ function ScheduleAdminContent() {
                         </option>
                       ))}
                     </Select>
+                  )}
+
+                  {!day.isHoliday && (
+                    <>
+                      <Input
+                        className="w-36 shrink-0"
+                        placeholder="Petugas…"
+                        defaultValue={day.petugasName ?? ""}
+                        disabled={busy}
+                        onBlur={(event) => {
+                          const value = event.target.value.trim();
+                          if (value === (day.petugasName ?? "")) return;
+                          saveMutation.mutate({
+                            day,
+                            patch: { petugasName: value || null },
+                          });
+                        }}
+                      />
+                      <Input
+                        className="w-36 shrink-0"
+                        placeholder="Orang tua…"
+                        defaultValue={day.petugasParentName ?? ""}
+                        disabled={busy}
+                        onBlur={(event) => {
+                          const value = event.target.value.trim();
+                          if (value === (day.petugasParentName ?? "")) return;
+                          saveMutation.mutate({
+                            day,
+                            patch: { petugasParentName: value || null },
+                          });
+                        }}
+                      />
+                    </>
                   )}
 
                   <Input

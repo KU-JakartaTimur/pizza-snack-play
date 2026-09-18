@@ -1,4 +1,4 @@
-import { CalendarOff, StickyNote, UtensilsCrossed } from "lucide-react";
+import { CalendarOff, StickyNote, User, UtensilsCrossed } from "lucide-react";
 import { Badge } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { formatIndonesianDate, relativeDayLabel } from "@/lib/date";
@@ -109,6 +109,20 @@ export function ScheduleDayCard({
           <p className="text-sm text-slate-400">
             Belum ada menu untuk tanggal ini
           </p>
+        )}
+
+        {!day.isHoliday && (day.petugasName || day.petugasParentName) && (
+          <div className="mt-3 flex items-start gap-2 text-sm text-slate-700">
+            <User className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+            <div className="min-w-0">
+              {day.petugasName && (
+                <p className="font-medium text-slate-900">{day.petugasName}</p>
+              )}
+              {day.petugasParentName && (
+                <p className="text-xs text-slate-500">{day.petugasParentName}</p>
+              )}
+            </div>
+          </div>
         )}
 
         {day.notes && (

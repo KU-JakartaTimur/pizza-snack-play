@@ -11,7 +11,7 @@
 const BASE = "http://localhost:5173/api";
 const ADMIN = { username: "admin", password: "snack123" };
 const PARENT = { username: "sari", password: "snack123" };
-/** Korlas kelas 1A — orang tua yang ditunjuk sebagai koordinator kelas. */
+/** Korlas kelas 1 — orang tua yang ditunjuk sebagai koordinator kelas. */
 const KORLAS = { username: "budi", password: "snack123" };
 
 let pass = 0;
@@ -345,10 +345,10 @@ section("12. CRUD kategori (admin)");
 section("13. CRUD jadwal (admin)");
 {
   const date = "2026-10-05"; // Senin
-  const CLASS = "1A";
+  const CLASS = "1";
 
   // Bersihkan sisa uji pada tanggal ini untuk kedua kelas yang dipakai.
-  for (const cls of [CLASS, "1B"]) {
+  for (const cls of [CLASS, "2"]) {
     const rows = await call(
       "GET",
       `/schedules/range?from=${date}&to=${date}&class=${cls}`,
@@ -391,7 +391,7 @@ section("13. CRUD jadwal (admin)");
   // Keunikan komposit: tanggal sama boleh dipakai kelas lain.
   const otherClass = await call("POST", "/schedules", {
     token: adminToken,
-    body: { scheduleDate: date, className: "1B", menuId },
+    body: { scheduleDate: date, className: "2", menuId },
   });
   check("tanggal sama, kelas berbeda -> 201", otherClass.status === 201, `got ${otherClass.status}`);
 
@@ -459,7 +459,7 @@ section("15. CRUD orang tua (admin)");
       password: "rahasia123",
       parentName: "Ibu Uji",
       students: [
-        { name: "Anak Uji A", className: "2A" },
+        { name: "Anak Uji A", className: "3" },
         { name: "Anak Uji B", className: "3B" },
       ],
       relationship: "ibu",
@@ -471,7 +471,7 @@ section("15. CRUD orang tua (admin)");
     JSON.stringify(created.data?.students));
   check("anak pertama lengkap",
     created.data?.students?.[0]?.name === "Anak Uji A" &&
-      created.data?.students?.[0]?.className === "2A",
+      created.data?.students?.[0]?.className === "3",
     JSON.stringify(created.data?.students?.[0]));
   check("anak kedua lengkap",
     created.data?.students?.[1]?.name === "Anak Uji B" &&
@@ -847,37 +847,37 @@ section("17. Duplikasi jadwal antar minggu");
   // Sumber: Senin & Selasa saja.
   const createdA = await call("POST", "/schedules", {
     token: adminToken,
-    body: { scheduleDate: source, className: "1A", menuId },
+    body: { scheduleDate: source, className: "1", menuId },
   });
   const createdB = await call("POST", "/schedules", {
     token: adminToken,
-    body: { scheduleDate: addDays(source, 1), className: "1A", menuId },
+    body: { scheduleDate: addDays(source, 1), className: "1", menuId },
   });
   check("siapkan jadwal sumber Senin -> 201", createdA.status === 201, `got ${createdA.status}`);
   check("siapkan jadwal sumber Selasa -> 201", createdB.status === 201, `got ${createdB.status}`);
 
   const sameWeek = await call("POST", "/schedules/copy", {
     token: adminToken,
-    body: { fromDate: source, toDate: addDays(source, 2), className: "1A" },
+    body: { fromDate: source, toDate: addDays(source, 2), className: "1" },
   });
   check("minggu sumber = tujuan -> 400", sameWeek.status === 400, `got ${sameWeek.status}`);
 
   const badDate = await call("POST", "/schedules/copy", {
     token: adminToken,
-    body: { fromDate: "bukan-tanggal", toDate: target, className: "1A" },
+    body: { fromDate: "bukan-tanggal", toDate: target, className: "1" },
   });
   check("`fromDate` tidak valid -> 400", badDate.status === 400, `got ${badDate.status}`);
 
   const asParentCopy = await call("POST", "/schedules/copy", {
     token: parentToken,
-    body: { fromDate: source, toDate: target, className: "1A" },
+    body: { fromDate: source, toDate: target, className: "1" },
   });
   check("orang tua ditolak -> 403", asParentCopy.status === 403, `got ${asParentCopy.status}`);
 
   // Salin pertama: 2 dibuat, 3 dilewati (Rabu–Jumat tanpa sumber).
   const copy1 = await call("POST", "/schedules/copy", {
     token: adminToken,
-    body: { fromDate: source, toDate: target, className: "1A" },
+    body: { fromDate: source, toDate: target, className: "1" },
   });
   check("POST /schedules/copy -> 201", copy1.status === 201, `got ${copy1.status}`);
   check("created = 2", copy1.data?.created === 2, `created=${copy1.data?.created}`);
@@ -907,7 +907,7 @@ section("17. Duplikasi jadwal antar minggu");
   // Salin kedua tanpa overwrite: semuanya dilewati.
   const copy2 = await call("POST", "/schedules/copy", {
     token: adminToken,
-    body: { fromDate: source, toDate: target, className: "1A" },
+    body: { fromDate: source, toDate: target, className: "1" },
   });
   check("salin ulang tanpa overwrite -> created 0", copy2.data?.created === 0, `created=${copy2.data?.created}`);
   check("salin ulang tanpa overwrite -> skipped 5", copy2.data?.skipped === 5, `skipped=${copy2.data?.skipped}`);
@@ -915,7 +915,7 @@ section("17. Duplikasi jadwal antar minggu");
   // Salin ketiga dengan overwrite.
   const copy3 = await call("POST", "/schedules/copy", {
     token: adminToken,
-    body: { fromDate: source, toDate: target, className: "1A", overwrite: true },
+    body: { fromDate: source, toDate: target, className: "1", overwrite: true },
   });
   check("overwrite -> updated 2", copy3.data?.updated === 2, `updated=${copy3.data?.updated}`);
   check("overwrite -> created 0", copy3.data?.created === 0, `created=${copy3.data?.created}`);
@@ -924,11 +924,11 @@ section("17. Duplikasi jadwal antar minggu");
   const holidayDate = addDays(source, 2);
   await call("POST", "/schedules", {
     token: adminToken,
-    body: { scheduleDate: holidayDate, className: "1A", isHoliday: true, notes: "Libur uji" },
+    body: { scheduleDate: holidayDate, className: "1", isHoliday: true, notes: "Libur uji" },
   });
   const copy4 = await call("POST", "/schedules/copy", {
     token: adminToken,
-    body: { fromDate: source, toDate: target, className: "1A" },
+    body: { fromDate: source, toDate: target, className: "1" },
   });
   check("hari libur ikut tersalin -> created 1", copy4.data?.created === 1, `created=${copy4.data?.created}`);
 
@@ -971,29 +971,29 @@ section("18. Cakupan kelas — daftar & pembatasan baca");
   check("GET /classes sebagai admin -> 200", asAdmin.status === 200, `got ${asAdmin.status}`);
   check(
     "admin melihat semua kelas",
-    JSON.stringify(asAdmin.data?.classes) === JSON.stringify(["1A", "1B", "2A"]),
+    JSON.stringify(asAdmin.data?.classes) === JSON.stringify(["1", "2", "3", "4", "5", "6"]),
     JSON.stringify(asAdmin.data?.classes),
   );
 
-  // `sari` hanya punya anak di kelas 1A.
+  // `sari` hanya punya anak di kelas 1.
   const asParent = await call("GET", "/classes", { token: parentToken });
   check(
     "orang tua hanya melihat kelas anaknya",
-    JSON.stringify(asParent.data?.classes) === JSON.stringify(["1A"]),
+    JSON.stringify(asParent.data?.classes) === JSON.stringify(["1"]),
     JSON.stringify(asParent.data?.classes),
   );
 
-  const ownClass = await call("GET", "/schedules/today?class=1A", {
+  const ownClass = await call("GET", "/schedules/today?class=1", {
     token: parentToken,
   });
   check("orang tua membaca kelas anaknya -> 200", ownClass.status === 200, `got ${ownClass.status}`);
   check(
     "jadwal membawa nama kelas",
-    ownClass.data?.day?.className === "1A",
+    ownClass.data?.day?.className === "1",
     ownClass.data?.day?.className,
   );
 
-  const otherClass = await call("GET", "/schedules/today?class=1B", {
+  const otherClass = await call("GET", "/schedules/today?class=2", {
     token: parentToken,
   });
   check("orang tua membaca kelas lain -> 403", otherClass.status === 403, `got ${otherClass.status}`);
@@ -1002,7 +1002,7 @@ section("18. Cakupan kelas — daftar & pembatasan baca");
   const implicit = await call("GET", "/schedules/today", { token: parentToken });
   check(
     "tanpa `class` -> kelas anaknya dipakai",
-    implicit.data?.day?.className === "1A",
+    implicit.data?.day?.className === "1",
     implicit.data?.day?.className,
   );
 }
@@ -1015,7 +1015,7 @@ section("19. Korlas — wewenang & batas kelas");
   const korlasToken = korlasLogin.data?.token;
   check(
     "profil korlas membawa kelasnya",
-    korlasLogin.data?.user?.className === "1A",
+    korlasLogin.data?.user?.className === "1",
     korlasLogin.data?.user?.className,
   );
   check(
@@ -1027,7 +1027,7 @@ section("19. Korlas — wewenang & batas kelas");
   const classes = await call("GET", "/classes", { token: korlasToken });
   check(
     "korlas hanya melihat kelasnya",
-    JSON.stringify(classes.data?.classes) === JSON.stringify(["1A"]),
+    JSON.stringify(classes.data?.classes) === JSON.stringify(["1"]),
     JSON.stringify(classes.data?.classes),
   );
 
@@ -1052,7 +1052,7 @@ section("19. Korlas — wewenang & batas kelas");
   const to = "2032-03-08";
 
   // Bersihkan sisa uji sebelumnya pada rentang ini.
-  for (const cls of ["1A", "1B"]) {
+  for (const cls of ["1", "2"]) {
     const rows = await call(
       "GET",
       `/schedules/range?from=${from}&to=${to}&class=${cls}`,
@@ -1071,7 +1071,7 @@ section("19. Korlas — wewenang & batas kelas");
     body: { scheduleDate: from, menuId },
   });
   check("korlas membuat jadwal kelasnya -> 201", own.status === 201, `got ${own.status}`);
-  check("kelas terisi otomatis", own.data?.className === "1A", own.data?.className);
+  check("kelas terisi otomatis", own.data?.className === "1", own.data?.className);
 
   const ownUpdate = await call("PUT", `/schedules/${own.data?.scheduleId}`, {
     token: korlasToken,
@@ -1082,16 +1082,16 @@ section("19. Korlas — wewenang & batas kelas");
   // Menulis ke kelas lain ditolak.
   const otherWrite = await call("POST", "/schedules", {
     token: korlasToken,
-    body: { scheduleDate: "2032-03-02", className: "1B", menuId },
+    body: { scheduleDate: "2032-03-02", className: "2", menuId },
   });
   check("korlas menulis kelas lain -> 403", otherWrite.status === 403, `got ${otherWrite.status}`);
 
   // Baris milik kelas lain tidak boleh diubah maupun dihapus.
   const adminRow = await call("POST", "/schedules", {
     token: adminToken,
-    body: { scheduleDate: "2032-03-02", className: "1B", menuId },
+    body: { scheduleDate: "2032-03-02", className: "2", menuId },
   });
-  check("admin menyiapkan baris 1B -> 201", adminRow.status === 201, `got ${adminRow.status}`);
+  check("admin menyiapkan baris kelas 2 -> 201", adminRow.status === 201, `got ${adminRow.status}`);
 
   const adminRowId = adminRow.data?.scheduleId;
 
@@ -1122,7 +1122,7 @@ section("19. Korlas — wewenang & batas kelas");
 
   const copyOther = await call("POST", "/schedules/copy", {
     token: korlasToken,
-    body: { fromDate: from, toDate: to, className: "1B" },
+    body: { fromDate: from, toDate: to, className: "2" },
   });
   check("korlas menyalin minggu kelas lain -> 403", copyOther.status === 403, `got ${copyOther.status}`);
 
@@ -1139,7 +1139,7 @@ section("19. Korlas — wewenang & batas kelas");
   }
 
   // Bersihkan jejak uji.
-  for (const cls of ["1A", "1B"]) {
+  for (const cls of ["1", "2"]) {
     const rows = await call(
       "GET",
       `/schedules/range?from=${from}&to=${to}&class=${cls}`,
@@ -1161,7 +1161,7 @@ section("19. Korlas — wewenang & batas kelas");
 
   const leftover = await call(
     "GET",
-    `/schedules/range?from=${from}&to=${to}&class=1A`,
+    `/schedules/range?from=${from}&to=${to}&class=1`,
     { token: adminToken },
   );
   check(

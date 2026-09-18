@@ -127,9 +127,11 @@ export const weeks = sqliteTable(
 // menu_id NULL + is_holiday=1 berarti libur.
 //
 // Jadwal bersifat PER KELAS: setiap kelas punya barisnya sendiri untuk
-// satu tanggal, sehingga korlas kelas 1A bisa menyusun menu yang berbeda
-// dari kelas 1B. Karena itu keunikannya komposit (tanggal + kelas),
-// bukan tanggal saja seperti sebelumnya.
+// satu tanggal. Menunya sendiri bersifat sekolah-wide — satu menu dipakai
+// semua kelas pada tanggal yang sama — sehingga yang membedakan antar baris
+// adalah `petugas_name` (siapa yang piket mengambil snack hari itu).
+// Karena itu keunikannya komposit (tanggal + kelas), bukan tanggal saja
+// seperti sebelumnya.
 // ─────────────────────────────────────────────────────────────
 export const schedules = sqliteTable(
   "schedules",
@@ -140,12 +142,22 @@ export const schedules = sqliteTable(
     }),
     scheduleDate: text("schedule_date").notNull(),
     dayOfWeek: integer("day_of_week").notNull(),
-    /** Kelas pemilik baris ini, mis. `"1A"`. Wajib diisi. */
+    /** Kelas pemilik baris ini, mis. `"1"`. Wajib diisi. */
     className: text("class_name").notNull(),
     menuId: integer("menu_id").references(() => menus.id, {
       onDelete: "set null",
     }),
     isHoliday: integer("is_holiday").notNull().default(0),
+    /**
+     * Nama siswa yang bertugas piket mengambil snack pada tanggal ini.
+     * Menu bersifat sekolah-wide, sehingga inilah yang membedakan satu kelas
+     * dari kelas lain pada tanggal yang sama. Disimpan sebagai teks bebas
+     * (bukan relasi ke `students`) karena daftar petugas berasal dari dokumen
+     * manual dan tidak setiap petugas punya akun.
+     */
+    petugasName: text("petugas_name"),
+    /** Nama orang tua/wali petugas — opsional, diisi bila diketahui. */
+    petugasParentName: text("petugas_parent_name"),
     notes: text("notes"),
     createdAt: text("created_at").notNull().default(now),
     updatedAt: text("updated_at").notNull().default(now),

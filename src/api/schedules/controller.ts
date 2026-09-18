@@ -213,6 +213,8 @@ class ScheduleController {
         scheduleDate: body.scheduleDate,
         menuId: body.menuId ?? null,
         isHoliday: body.isHoliday === true,
+        petugasName: typeof body.petugasName === "string" ? body.petugasName : null,
+        petugasParentName: typeof body.petugasParentName === "string" ? body.petugasParentName : null,
         notes: typeof body.notes === "string" ? body.notes : null,
       },
     );
@@ -247,6 +249,8 @@ class ScheduleController {
     const result = await scheduleService.updateSchedule(db, id, {
       ...(body.menuId !== undefined ? { menuId: body.menuId } : {}),
       ...(body.isHoliday !== undefined ? { isHoliday: body.isHoliday } : {}),
+      ...(body.petugasName !== undefined ? { petugasName: body.petugasName } : {}),
+      ...(body.petugasParentName !== undefined ? { petugasParentName: body.petugasParentName } : {}),
       ...(body.notes !== undefined ? { notes: body.notes } : {}),
     });
 

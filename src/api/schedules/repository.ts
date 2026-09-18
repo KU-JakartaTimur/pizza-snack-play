@@ -93,6 +93,8 @@ class ScheduleRepository {
       className: string;
       menuId: number | null;
       isHoliday: number;
+      petugasName: string | null;
+      petugasParentName: string | null;
       notes: string | null;
     },
   ): Promise<Schedule> {
@@ -107,6 +109,8 @@ class ScheduleRepository {
       weekId: number | null;
       menuId: number | null;
       isHoliday: number;
+      petugasName: string | null;
+      petugasParentName: string | null;
       notes: string | null;
     }>,
   ): Promise<Schedule | undefined> {

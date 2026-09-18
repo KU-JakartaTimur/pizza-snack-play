@@ -28,7 +28,7 @@ Jadwal piket snack sekolah sebelumnya disusun dalam dokumen teks manual — suli
 |-------|-----------|------|--------|
 | **Autentikasi Wajib** | Setiap orang tua login dengan akun pribadi yang dibuat admin | Semua | ✅ |
 | **Role-Based Access** | `admin` (penuh), `korlas` (koordinator kelas), `parent` (read-only) | Semua | ✅ |
-| **Jadwal Per Kelas** | Setiap kelas punya jadwalnya sendiri — menu 1A boleh beda dari 1B | Semua | ✅ |
+| **Jadwal Per Kelas** | Menu bersifat sekolah-wide (sama untuk semua kelas); yang berbeda tiap kelas adalah **petugas piket** (siapa yang ambil snack) | Semua | ✅ |
 | **Pemilih Kelas** | Admin & orang tua multi-kelas memilih kelas yang ditampilkan | Admin, Parent | ✅ |
 | **Jadwal Hari Ini** | Menu snack hari ini + ringkasan minggu berjalan | Semua | ✅ |
 | **Jadwal Mingguan** | Senin–Jumat dengan navigasi antar minggu | Semua | ✅ |
@@ -480,14 +480,14 @@ bun run lint       # ESLint
 | Username | Role | Nama | Kelas | Anak |
 |----------|------|------|-------|------|
 | `admin` | admin | Bu Guru Sari | — | — |
-| `sari` | parent | Ibu Sari | — | Aisyah Sari (1A) |
-| `budi` | **korlas** | Pak Budi | **1A** | Bagas Budi (1A) |
-| `dewi` | parent | Ibu Dewi | — | Citra Dewi (1B), Raka Dewi (2A) |
+| `sari` | parent | Ibu Sari | — | Aisyah Sari (1) |
+| `budi` | **korlas** | Pak Budi | **1** | Bagas Budi (1) |
+| `dewi` | parent | Ibu Dewi | — | Citra Dewi (2), Raka Dewi (3) |
 
 > Password default: `snack123` — **wajib diganti** saat login pertama.
 > Akun `dewi` sengaja dibuat dengan **dua anak** untuk menguji tampilan multi-anak.
-> Akun `budi` sengaja dibuat sebagai **korlas kelas 1A** untuk menguji batas wewenang:
-> ia bisa mengelola katalog menu/kategori dan jadwal kelas 1A, tetapi ditolak (403)
+> Akun `budi` sengaja dibuat sebagai **korlas kelas 1** untuk menguji batas wewenang:
+> ia bisa mengelola katalog menu/kategori dan jadwal kelas 1, tetapi ditolak (403)
 > saat menyentuh kelas lain, hari libur, akun orang tua, atau statistik.
 
 ---
@@ -519,7 +519,7 @@ bun run lint       # ESLint
 - **Jadwal per kelas = baris sendiri:** Setiap kelas memiliki **baris jadwalnya sendiri** (bukan satu baris global dengan pengecualian). Karena itu `schedules` memakai indeks unik gabungan `UNIQUE(schedule_date, class_name)` — tanggal yang sama boleh muncul beberapa kali selama kelasnya berbeda. Konsekuensinya `class_name` **wajib** diisi, dan tanggal yang belum diisi untuk suatu kelas memang tampil kosong. Alternatif "satu baris global + penanda `'*'`" sengaja **tidak** dipakai agar tidak ada dua lapis resolusi (global vs override) di setiap pembacaan.
 - **Penentuan kelas saat baca/tulis (`classScope.ts`):** Semua pembacaan jadwal menerima `?class=` opsional. Bila kosong, kelas ditentukan dari peran: admin → kelas pertama yang tersedia, korlas → kelasnya sendiri, orang tua → kelas anak aktif pertamanya. Kelas di luar cakupan menghasilkan **403**. Saat menulis, admin **wajib** menyebut kelas (`class_required` → 400) agar tidak ada penulisan lintas kelas yang tidak disengaja, sedangkan korlas terkunci ke `user.className` dan menyebut kelas lain → 403.
 - **Guard tingkat baris:** Untuk `PUT`/`DELETE /schedules/:id`, kelas ditentukan oleh **baris yang ada di database**, bukan oleh input klien. Handler memuat baris lebih dulu lalu memanggil `canWriteClass(user, row.className)` — sehingga korlas tidak bisa membajak baris kelas lain dengan menghilangkan atau memalsukan `className`.
-- **Daftar kelas tidak punya tabel:** Kelas sengaja **tidak** dijadikan tabel tersendiri (konsisten dengan `students.class_name` yang sudah berupa teks bebas). Daftarnya **diturunkan** dari gabungan `students.class_name`, `users.class_name` (korlas), dan `schedules.class_name`, lalu dinormalkan + diurutkan natural (`localeCompare(..., { numeric: true })`, sehingga `2A` mendahului `10A`). Endpoint `GET /classes` mengembalikan daftar yang **sudah dipersempit sesuai peran** pemanggil, plus `default`.
+- **Daftar kelas tidak punya tabel:** Kelas sengaja **tidak** dijadikan tabel tersendiri (konsisten dengan `students.class_name` yang sudah berupa teks bebas). Daftarnya **diturunkan** dari gabungan `students.class_name`, `users.class_name` (korlas), dan `schedules.class_name`, lalu dinormalkan + diurutkan natural (`localeCompare(..., { numeric: true })`, sehingga `'2'` mendahului `'10'`). Endpoint `GET /classes` mengembalikan daftar yang **sudah dipersempit sesuai peran** pemanggil, plus `default`.
 - **Hari libur tetap global:** Tabel `holidays` berlaku sekolah-wide dan **hanya admin** yang boleh mengubahnya. Korlas bisa menandai satu hari sebagai "libur kelas" lewat catatan jadwal kelasnya, tetapi tidak bisa menambah/mengubah hari libur sekolah. Statistik harian (`/stats/summary`) menghitung `isHoliday` bila ada hari libur global **atau** seluruh baris kelas pada tanggal itu bertanda libur.
 - **Kelas ikut di JWT:** `className` korlas disertakan sebagai claim di JWT (selain di response login), sehingga pengecekan cakupan kelas tidak perlu query tambahan ke tabel `users`.
 - **Soft delete:** Menghapus menu yang masih dipakai jadwal akan mengarsipkannya (bukan menghapus), agar jadwal lama tidak kehilangan referensi. Akun orang tua dinonaktifkan secara default; hapus permanen butuh `?hard=true`.
@@ -546,13 +546,12 @@ Salinan file sumber ada di repo: [`data/jadwal_piket_snack.txt`](data/jadwal_pik
 
 Setiap hari kerja (Senin–Jumat): **makanan utama + buah pendamping**.
 
-`scripts/seed.ts` mem-parse file ini dan menghasilkan **10 minggu, 42 menu, 84 menu item, 129 jadwal, 4 akun (1 admin, 1 korlas, 2 orang tua), 4 anak** (1 hari libur: 17 Agustus 2026).
+`scripts/seed.ts` mem-parse `data/jadwal_piket_snack.txt` (menu) dan `data/output_jadwal_piket.txt` (petugas) menghasilkan **10 minggu, 42 menu, 84 menu item, 258 jadwal, 4 akun (1 admin, 1 korlas, 2 orang tua), 4 anak** (1 hari libur: 17 Agustus 2026).
 
-> **129 jadwal = 43 tanggal × 3 kelas** (1A, 1B, 2A). Sejak jadwal disimpan per kelas, setiap tanggal
-> di file sumber menghasilkan satu baris untuk **setiap** kelas. Migrasi `0002` melakukan hal yang sama
-> untuk data lama: baris global yang sudah ada direplikasi ke seluruh kelas yang terdaftar di
-> `students` ∪ korlas `users` (43 → 129 baris), dengan kelas `'Umum'` sebagai jaring pengaman bila
-> belum ada kelas sama sekali — jadi tidak ada jadwal yang hilang.
+> **258 jadwal = ~42 tanggal × 6 kelas** (1, 2, 3, 4, 5, 6). Menu bersifat sekolah-wide — satu menu
+> per hari disalin ke semua kelas. Yang membedakan tiap kelas adalah **petugas piket** (nama siswa
+> yang ambil snack), dibaca dari `data/output_jadwal_piket.txt` untuk September 2026 (Kelas 1–5).
+> Kelas 6 dan Agustus belum ada data petugas — kolomnya dibiarkan kosong.
 
 **Cara kerja parser:** setiap blok minggu dibaca sebagai rentang tanggal, lalu setiap tanggal dalam rentang dicocokkan dengan nama harinya (Senin–Jumat) — jadi tanggal tidak perlu ditulis eksplisit di file sumber.
 

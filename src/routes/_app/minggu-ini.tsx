@@ -30,7 +30,7 @@ function WeekPage() {
   return (
     <>
       <PageHeader
-        title="Jadwal Mingguan"
+        title="Jadwal Sepekan"
         description={
           shownClass
             ? `Menu snack Senin–Jumat untuk kelas ${shownClass}.`
@@ -70,7 +70,7 @@ function WeekPage() {
               onClick={() => setAnchor(todayInWib())}
               className="text-xs text-brand-600 hover:text-brand-700 hover:underline"
             >
-              Kembali ke minggu ini
+              Kembali ke pekan ini
             </button>
           </div>
         </div>

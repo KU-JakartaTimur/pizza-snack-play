@@ -170,7 +170,7 @@ export interface MenuHistoryDto {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Duplikasi jadwal antar minggu
+// Duplikasi jadwal Sepekan
 // ─────────────────────────────────────────────────────────────
 
 export interface CopyWeekInput {

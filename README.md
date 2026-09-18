@@ -4,7 +4,7 @@
 
 **Aplikasi manajemen & informasi jadwal piket snack sekolah**
 
-Setiap orang tua memiliki akun login pribadi untuk melihat jadwal menu snack harian, mingguan, dan bulanan.
+Setiap orang tua memiliki akun login pribadi untuk melihat jadwal menu snack harian, Sepekan, dan bulanan.
 
 ![Bun](https://img.shields.io/badge/Bun-%23000000.svg?style=for-the-badge&logo=bun&logoColor=white)
 ![Hono](https://img.shields.io/badge/Hono-v4.12-E36002?style=for-the-badge&logo=hono&logoColor=white)
@@ -18,33 +18,33 @@ Setiap orang tua memiliki akun login pribadi untuk melihat jadwal menu snack har
 
 ## Tentang Aplikasi
 
-Jadwal piket snack sekolah sebelumnya disusun dalam dokumen teks manual — sulit dicari, tidak ada riwayat, dan orang tua harus bertanya untuk tahu menu hari ini. **Pizza Snack Play** mendigitalkan seluruh proses tersebut: admin mengelola menu & jadwal, orang tua login untuk memilih menu, melihat jadwal harian, mingguan, dan bulanan.
+Jadwal piket snack sekolah sebelumnya disusun dalam dokumen teks manual — sulit dicari, tidak ada riwayat, dan orang tua harus bertanya untuk tahu menu hari ini. **Pizza Snack Play** mendigitalkan seluruh proses tersebut: admin mengelola menu & jadwal, orang tua login untuk memilih menu, melihat jadwal harian, Sepekan, dan bulanan.
 
 ---
 
 ## Fitur
 
-| Fitur                         | Deskripsi                                                                                                                              | Role           | Status     |
-| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------------- | ---------- |
-| **Autentikasi Wajib**         | Setiap orang tua login dengan akun pribadi yang dibuat admin                                                                           | Semua          | ✅         |
-| **Role-Based Access**         | `admin` (penuh), `korlas` (koordinator kelas), `parent` (read-only)                                                                    | Semua          | ✅         |
-| **Jadwal Per Kelas**          | Menu bersifat sekolah-wide (sama untuk semua kelas); yang berbeda tiap kelas adalah **petugas piket** (siapa yang ambil snack)         | Semua          | ✅         |
-| **Pemilih Kelas**             | Admin & orang tua multi-kelas memilih kelas yang ditampilkan                                                                           | Admin, Parent  | ✅         |
-| **Jadwal Hari Ini**           | Menu snack hari ini + ringkasan minggu berjalan                                                                                        | Semua          | ✅         |
-| **Jadwal Mingguan**           | Senin–Jumat dengan navigasi antar minggu                                                                                               | Semua          | ✅         |
-| **Jadwal Bulanan**            | Rekap per minggu dengan statistik hari sekolah/libur                                                                                   | Semua          | ✅         |
-| **Manajemen Menu**            | CRUD menu (makanan utama + buah pendamping) + kategori                                                                                 | Admin, Korlas  | ✅         |
-| **Kelola Jadwal**             | Tetapkan menu per tanggal, tandai libur kelas, tambah catatan                                                                          | Admin, Korlas  | ✅         |
-| **Salin Jadwal Antar Minggu** | Duplikasi jadwal Senin–Jumat ke minggu lain, opsional timpa                                                                            | Admin, Korlas  | ✅         |
-| **Kunci & Publikasi Jadwal**  | `draft` → `locked` → `published`; orang tua hanya melihat yang sudah dipublikasi                                                       | Admin, Korlas  | ✅         |
-| **Pilih Jadwal**              | Orang tua berebut tanggal snack yang dibiarkan kosong korlas — siapa cepat dia dapat                                                   | Parent, Korlas | ✅         |
-| **PWA**                       | Pasang ke layar utama + service worker (cache offline)                                                                                 | Semua          | ✅         |
-| **Kelola Hari Libur**         | Tambah/hapus hari libur bernama (berlaku semua kelas)                                                                                  | Admin          | ✅         |
-| **Pencarian Riwayat Menu**    | "Kapan jeruk pernah disajikan?" — cari menu/komponen lintas bulan                                                                      | Semua          | ✅         |
-| **Kelola Akun Orang Tua**     | Buat, ubah, nonaktifkan, hapus, reset password — satu akun boleh punya **lebih dari satu anak**, dan dapat diangkat menjadi **korlas** | Admin          | ✅         |
-| **Dashboard**                 | Ringkasan jumlah akun, menu, jadwal, dan hari libur                                                                                    | Admin          | ✅         |
-| **Ubah Password**             | Setiap pengguna dapat mengganti password sendiri                                                                                       | Semua          | ✅         |
-| **Ekspor PDF/Excel**          | Cetak jadwal mingguan/bulanan                                                                                                          | Admin, Parent  | ⏳ Rencana |
+| Fitur                        | Deskripsi                                                                                                                              | Role           | Status     |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------------- | ---------- |
+| **Autentikasi Wajib**        | Setiap orang tua login dengan akun pribadi yang dibuat admin                                                                           | Semua          | ✅         |
+| **Role-Based Access**        | `admin` (penuh), `korlas` (koordinator kelas), `parent` (read-only)                                                                    | Semua          | ✅         |
+| **Jadwal Per Kelas**         | Menu bersifat sekolah-wide (sama untuk semua kelas); yang berbeda tiap kelas adalah **petugas piket** (siapa yang ambil snack)         | Semua          | ✅         |
+| **Pemilih Kelas**            | Admin & orang tua multi-kelas memilih kelas yang ditampilkan                                                                           | Admin, Parent  | ✅         |
+| **Jadwal Hari Ini**          | Menu snack hari ini + ringkasan minggu berjalan                                                                                        | Semua          | ✅         |
+| **Jadwal Sepekan**           | Senin–Jumat dengan navigasi Sepekan                                                                                                    | Semua          | ✅         |
+| **Jadwal Bulanan**           | Rekap per minggu dengan statistik hari sekolah/libur                                                                                   | Semua          | ✅         |
+| **Manajemen Menu**           | CRUD menu (makanan utama + buah pendamping) + kategori                                                                                 | Admin, Korlas  | ✅         |
+| **Kelola Jadwal**            | Tetapkan menu per tanggal, tandai libur kelas, tambah catatan                                                                          | Admin, Korlas  | ✅         |
+| **Salin Jadwal Sepekan**     | Duplikasi jadwal Senin–Jumat ke minggu lain, opsional timpa                                                                            | Admin, Korlas  | ✅         |
+| **Kunci & Publikasi Jadwal** | `draft` → `locked` → `published`; orang tua hanya melihat yang sudah dipublikasi                                                       | Admin, Korlas  | ✅         |
+| **Pilih Jadwal**             | Orang tua berebut tanggal snack yang dibiarkan kosong korlas — siapa cepat dia dapat                                                   | Parent, Korlas | ✅         |
+| **PWA**                      | Pasang ke layar utama + service worker (cache offline)                                                                                 | Semua          | ✅         |
+| **Kelola Hari Libur**        | Tambah/hapus hari libur bernama (berlaku semua kelas)                                                                                  | Admin          | ✅         |
+| **Pencarian Riwayat Menu**   | "Kapan jeruk pernah disajikan?" — cari menu/komponen lintas bulan                                                                      | Semua          | ✅         |
+| **Kelola Akun Orang Tua**    | Buat, ubah, nonaktifkan, hapus, reset password — satu akun boleh punya **lebih dari satu anak**, dan dapat diangkat menjadi **korlas** | Admin          | ✅         |
+| **Dashboard**                | Ringkasan jumlah akun, menu, jadwal, dan hari libur                                                                                    | Admin          | ✅         |
+| **Ubah Password**            | Setiap pengguna dapat mengganti password sendiri                                                                                       | Semua          | ✅         |
+| **Ekspor PDF/Excel**         | Cetak jadwal Sepekan/bulanan                                                                                                           | Admin, Parent  | ⏳ Rencana |
 
 ---
 
@@ -152,7 +152,7 @@ pizza-snack-play/
 │   │       ├── index.tsx         # / → redirect ke /hari-ini
 │   │       ├── dashboard.tsx     # Ringkasan (admin)
 │   │       ├── hari-ini.tsx      # Jadwal hari ini
-│   │       ├── minggu-ini.tsx    # Jadwal mingguan
+│   │       ├── minggu-ini.tsx    # Jadwal Sepekan
 │   │       ├── bulan.tsx         # Jadwal bulanan
 │   │       ├── pilih-jadwal.tsx  # Ambil tanggal snack (orang tua, korlas)
 │   │       ├── pencarian.tsx     # Cari riwayat menu (semua role)
@@ -236,7 +236,7 @@ Middleware dipasang berurutan: `requireAuth` (401 bila tanpa token) lalu
 | `menus`           | Definisi menu (kombinasi main + fruit), dapat dipakai ulang                                                         |
 | `menu_items`      | Komponen individual dalam menu (makanan utama / buah)                                                               |
 | `menu_categories` | Relasi many-to-many menu ↔ kategori                                                                                 |
-| `weeks`           | Periode mingguan (Senin–Jumat)                                                                                      |
+| `weeks`           | Periode Sepekan (Senin–Jumat)                                                                                       |
 | `schedules`       | Tabel inti — **(tanggal × kelas)** → menu, `is_holiday`, petugas piket, dan `status` (`draft`/`locked`/`published`) |
 | `schedule_claims` | Klaim satu tanggal oleh satu orang tua — **`UNIQUE(schedule_id)`** yang menjadi penjaga rebutan                     |
 | `holidays`        | Daftar hari libur nasional/sekolah — berlaku untuk **semua kelas**                                                  |
@@ -286,7 +286,7 @@ Meminta kelas di luar cakupan dijawab **403**.
 | `GET`    | `/schedules/search?q=&from=&to=&class=` | Auth          | Cari tanggal di mana menu/komponen pernah dijadwalkan (maks. 400 hari)                            |
 | `GET`    | `/schedules/:id`                        | Auth          | Detail satu entri jadwal                                                                          |
 | `POST`   | `/schedules`                            | Admin, Korlas | Buat entri jadwal — `className` **wajib** untuk admin, otomatis untuk korlas                      |
-| `POST`   | `/schedules/copy`                       | Admin, Korlas | Salin jadwal Senin–Jumat antar minggu, untuk satu kelas                                           |
+| `POST`   | `/schedules/copy`                       | Admin, Korlas | Salin jadwal Senin–Jumat Sepekan, untuk satu kelas                                                |
 | `POST`   | `/schedules/lock`                       | Admin, Korlas | Kunci semua baris `draft` pada rentang tanggal                                                    |
 | `POST`   | `/schedules/publish`                    | Admin, Korlas | Publikasi sebulan — gagal **409** bila masih ada `draft`                                          |
 | `POST`   | `/schedules/:id/unlock`                 | Admin         | Kembalikan satu baris ke `draft`                                                                  |
@@ -572,11 +572,11 @@ jadwal maupun memakai Pilih Jadwal sampai `students`-nya diisi.
 | Phase                            | Scope                                                                                                                                | Status        |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------- |
 | **1. MVP**                       | Scaffold, skema DB (12 tabel), migrasi D1, seed data, auth JWT, RBAC, backend CRUD, frontend jadwal + admin                          | ✅ Selesai    |
-| **2. Pencarian & Duplikasi**     | Pencarian riwayat menu lintas bulan, salin jadwal antar minggu                                                                       | ✅ Selesai    |
+| **2. Pencarian & Duplikasi**     | Pencarian riwayat menu lintas bulan, salin jadwal Sepekan                                                                            | ✅ Selesai    |
 | **3. Jadwal Per Kelas & Korlas** | Jadwal disimpan **per kelas**, pemilih kelas, role `korlas` (kelola katalog menu/kategori + jadwal kelasnya sendiri)                 | ✅ Selesai    |
 | **4. Kunci, Publikasi & PWA**    | Siklus `draft` → `locked` → `published`, petugas piket per kelas, ringkasan semua kelas untuk admin, pemasangan PWA + service worker | ✅ Selesai    |
 | **5. Pilih Jadwal**              | Orang tua berebut tanggal yang dibiarkan kosong korlas; klaim menjadi sumber kebenaran petugas                                       | ✅ Selesai    |
-| **6. Ekspor & Cetak**            | Halaman cetak ramah printer + ekspor CSV mingguan/bulanan                                                                            | ⏳ Berikutnya |
+| **6. Ekspor & Cetak**            | Halaman cetak ramah printer + ekspor CSV Sepekan/bulanan                                                                             | ⏳ Berikutnya |
 | **7. Notifikasi**                | Push notification (PWA), WhatsApp broadcast (opsional)                                                                               | ⏳ Rencana    |
 
 ---

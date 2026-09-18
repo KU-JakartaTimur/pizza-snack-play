@@ -38,7 +38,9 @@ async function call(method, path, { token, body } = {}) {
   if (token) headers.Authorization = `Bearer ${token}`;
 
   // GET/HEAD/OPTIONS tidak boleh menyertakan body.
-  const canHaveBody = !["GET", "HEAD", "OPTIONS"].includes(method.toUpperCase());
+  const canHaveBody = !["GET", "HEAD", "OPTIONS"].includes(
+    method.toUpperCase(),
+  );
 
   const res = await fetch(`${BASE}${path}`, {
     method,
@@ -64,11 +66,21 @@ const parentLogin = await call("POST", "/auth/login", { body: PARENT });
 const parentToken = parentLogin.data?.token;
 
 section("0. Persiapan");
-check("login admin berhasil", Boolean(adminToken), `status ${adminLogin.status}`);
-check("login orang tua berhasil", Boolean(parentToken), `status ${parentLogin.status}`);
+check(
+  "login admin berhasil",
+  Boolean(adminToken),
+  `status ${adminLogin.status}`,
+);
+check(
+  "login orang tua berhasil",
+  Boolean(parentToken),
+  `status ${parentLogin.status}`,
+);
 
 if (!adminToken || !parentToken) {
-  console.log("\nTidak bisa melanjutkan tanpa token. Pastikan server & seed siap.");
+  console.log(
+    "\nTidak bisa melanjutkan tanpa token. Pastikan server & seed siap.",
+  );
   process.exit(1);
 }
 
@@ -78,9 +90,16 @@ section("1. Jadwal — hari ini");
 {
   const r = await call("GET", "/schedules/today", { token: parentToken });
   check("GET /schedules/today -> 200", r.status === 200, `got ${r.status}`);
-  check("ada objek day", Boolean(r.data?.day?.date), JSON.stringify(r.data)?.slice(0, 120));
-  check("ada objek week dengan 5 hari", r.data?.week?.days?.length === 5,
-    `days=${r.data?.week?.days?.length}`);
+  check(
+    "ada objek day",
+    Boolean(r.data?.day?.date),
+    JSON.stringify(r.data)?.slice(0, 120),
+  );
+  check(
+    "ada objek week dengan 5 hari",
+    r.data?.week?.days?.length === 5,
+    `days=${r.data?.week?.days?.length}`,
+  );
   check(
     "hari kerja (dayOfWeek 1-5)",
     r.data?.day?.dayOfWeek >= 1 && r.data?.day?.dayOfWeek <= 5,
@@ -88,30 +107,57 @@ section("1. Jadwal — hari ini");
   );
 }
 
-section("2. Jadwal — mingguan");
+section("2. Jadwal — Sepekan");
 {
-  const r = await call("GET", "/schedules/week?date=2026-09-01", { token: parentToken });
+  const r = await call("GET", "/schedules/week?date=2026-09-01", {
+    token: parentToken,
+  });
   check("GET /schedules/week -> 200", r.status === 200, `got ${r.status}`);
-  check("rentang minggu 2026-08-31 s/d 2026-09-04",
+  check(
+    "rentang minggu 2026-08-31 s/d 2026-09-04",
     r.data?.startDate === "2026-08-31" && r.data?.endDate === "2026-09-04",
-    `${r.data?.startDate}..${r.data?.endDate}`);
-  check("label minggu terisi", typeof r.data?.label === "string" && r.data.label.length > 0,
-    r.data?.label);
-  check("hari pertama = Senin", r.data?.days?.[0]?.dayName === "Senin",
-    r.data?.days?.[0]?.dayName);
+    `${r.data?.startDate}..${r.data?.endDate}`,
+  );
+  check(
+    "label minggu terisi",
+    typeof r.data?.label === "string" && r.data.label.length > 0,
+    r.data?.label,
+  );
+  check(
+    "hari pertama = Senin",
+    r.data?.days?.[0]?.dayName === "Senin",
+    r.data?.days?.[0]?.dayName,
+  );
 
   const selasa = r.data?.days?.[1];
-  check("Selasa 1 Sep punya menu", Boolean(selasa?.menu?.name), JSON.stringify(selasa)?.slice(0, 120));
-  check("menu punya komponen", (selasa?.menu?.items?.length ?? 0) > 0,
-    `items=${selasa?.menu?.items?.length}`);
+  check(
+    "Selasa 1 Sep punya menu",
+    Boolean(selasa?.menu?.name),
+    JSON.stringify(selasa)?.slice(0, 120),
+  );
+  check(
+    "menu punya komponen",
+    (selasa?.menu?.items?.length ?? 0) > 0,
+    `items=${selasa?.menu?.items?.length}`,
+  );
 }
 
 section("3. Jadwal — bulanan");
 {
-  const r = await call("GET", "/schedules/month?year=2026&month=9", { token: parentToken });
+  const r = await call("GET", "/schedules/month?year=2026&month=9", {
+    token: parentToken,
+  });
   check("GET /schedules/month -> 200", r.status === 200, `got ${r.status}`);
-  check("nama bulan = September", r.data?.monthName === "September", r.data?.monthName);
-  check("ada 5 minggu", r.data?.weeks?.length === 5, `weeks=${r.data?.weeks?.length}`);
+  check(
+    "nama bulan = September",
+    r.data?.monthName === "September",
+    r.data?.monthName,
+  );
+  check(
+    "ada 5 minggu",
+    r.data?.weeks?.length === 5,
+    `weeks=${r.data?.weeks?.length}`,
+  );
   check(
     "total hari = 25 (5 minggu x 5 hari)",
     r.data?.weeks?.reduce((sum, w) => sum + w.days.length, 0) === 25,
@@ -120,30 +166,55 @@ section("3. Jadwal — bulanan");
 
 section("4. Jadwal — Agustus (termasuk libur)");
 {
-  const r = await call("GET", "/schedules/month?year=2026&month=8", { token: parentToken });
+  const r = await call("GET", "/schedules/month?year=2026&month=8", {
+    token: parentToken,
+  });
   check("GET bulan Agustus -> 200", r.status === 200, `got ${r.status}`);
 
   const allDays = (r.data?.weeks ?? []).flatMap((w) => w.days);
   const holiday = allDays.find((d) => d.date === "2026-08-17");
-  check("17 Agustus 2026 ada di data", Boolean(holiday), "tanggal tidak ditemukan");
-  check("17 Agustus ditandai libur", holiday?.isHoliday === true,
-    JSON.stringify(holiday)?.slice(0, 120));
+  check(
+    "17 Agustus 2026 ada di data",
+    Boolean(holiday),
+    "tanggal tidak ditemukan",
+  );
+  check(
+    "17 Agustus ditandai libur",
+    holiday?.isHoliday === true,
+    JSON.stringify(holiday)?.slice(0, 120),
+  );
   check("hari libur tidak punya menu", holiday?.menu === null);
 }
 
 section("5. Jadwal — rentang & validasi");
 {
-  const ok = await call("GET", "/schedules/range?from=2026-09-01&to=2026-09-07", { token: parentToken });
+  const ok = await call(
+    "GET",
+    "/schedules/range?from=2026-09-01&to=2026-09-07",
+    { token: parentToken },
+  );
   check("GET /schedules/range -> 200", ok.status === 200, `got ${ok.status}`);
   check("7 hari terisi", ok.data?.length === 7, `len=${ok.data?.length}`);
 
-  const bad = await call("GET", "/schedules/range?from=2026-09-01", { token: parentToken });
+  const bad = await call("GET", "/schedules/range?from=2026-09-01", {
+    token: parentToken,
+  });
   check("range tanpa `to` -> 400", bad.status === 400, `got ${bad.status}`);
 
-  const tooLong = await call("GET", "/schedules/range?from=2026-01-01&to=2026-12-31", { token: parentToken });
-  check("range > 92 hari -> 400", tooLong.status === 400, `got ${tooLong.status}`);
+  const tooLong = await call(
+    "GET",
+    "/schedules/range?from=2026-01-01&to=2026-12-31",
+    { token: parentToken },
+  );
+  check(
+    "range > 92 hari -> 400",
+    tooLong.status === 400,
+    `got ${tooLong.status}`,
+  );
 
-  const badMonth = await call("GET", "/schedules/month?year=2026&month=13", { token: parentToken });
+  const badMonth = await call("GET", "/schedules/month?year=2026&month=13", {
+    token: parentToken,
+  });
   check("bulan 13 -> 400", badMonth.status === 400, `got ${badMonth.status}`);
 }
 
@@ -161,20 +232,37 @@ section("7. Menu");
 {
   const r = await call("GET", "/menus", { token: parentToken });
   check("GET /menus -> 200", r.status === 200, `got ${r.status}`);
-  check("menu terisi (42 dari seed)", r.data?.length === 42, `len=${r.data?.length}`);
+  check(
+    "menu terisi (42 dari seed)",
+    r.data?.length === 42,
+    `len=${r.data?.length}`,
+  );
 
   const withItems = (r.data ?? []).filter((m) => (m.items?.length ?? 0) > 0);
-  check("semua menu punya komponen", withItems.length === r.data?.length,
-    `${withItems.length}/${r.data?.length}`);
+  check(
+    "semua menu punya komponen",
+    withItems.length === r.data?.length,
+    `${withItems.length}/${r.data?.length}`,
+  );
 
   const first = r.data?.[0];
-  const detail = await call("GET", `/menus/${first?.id}`, { token: parentToken });
+  const detail = await call("GET", `/menus/${first?.id}`, {
+    token: parentToken,
+  });
   check("GET /menus/:id -> 200", detail.status === 200, `got ${detail.status}`);
   check("detail menu cocok", detail.data?.id === first?.id);
 
   const types = await call("GET", "/menus/item-types", { token: parentToken });
-  check("GET /menus/item-types -> 200", types.status === 200, `got ${types.status}`);
-  check("ada 4 jenis komponen", types.data?.length === 4, `len=${types.data?.length}`);
+  check(
+    "GET /menus/item-types -> 200",
+    types.status === 200,
+    `got ${types.status}`,
+  );
+  check(
+    "ada 4 jenis komponen",
+    types.data?.length === 4,
+    `len=${types.data?.length}`,
+  );
 }
 
 // ── 3. RBAC ───────────────────────────────────────────────────
@@ -204,7 +292,11 @@ section("8. RBAC — orang tua ditolak di endpoint admin");
 
   for (const [method, path] of cases) {
     const r = await call(method, path, { token: parentToken, body: {} });
-    check(`${method} ${path} sebagai orang tua -> 403`, r.status === 403, `got ${r.status}`);
+    check(
+      `${method} ${path} sebagai orang tua -> 403`,
+      r.status === 403,
+      `got ${r.status}`,
+    );
   }
 
   // Bukti tambahan: percobaan tulis benar-benar tidak mengubah data.
@@ -232,7 +324,11 @@ section("8. RBAC — orang tua ditolak di endpoint admin");
   // Orang tua tetap boleh membaca katalog (dipakai halaman Menu & jadwal).
   for (const path of ["/menus", "/categories", "/menus/item-types"]) {
     const r = await call("GET", path, { token: parentToken });
-    check(`GET ${path} sebagai orang tua -> 200`, r.status === 200, `got ${r.status}`);
+    check(
+      `GET ${path} sebagai orang tua -> 200`,
+      r.status === 200,
+      `got ${r.status}`,
+    );
   }
 }
 
@@ -248,7 +344,11 @@ section("9. RBAC — tanpa token");
 
   for (const [method, path] of cases) {
     const r = await call(method, path);
-    check(`${method} ${path} tanpa token -> 401`, r.status === 401, `got ${r.status}`);
+    check(
+      `${method} ${path} tanpa token -> 401`,
+      r.status === 401,
+      `got ${r.status}`,
+    );
   }
 }
 
@@ -260,17 +360,36 @@ section("10. Statistik dashboard");
   check("GET /stats/summary -> 200", r.status === 200, `got ${r.status}`);
   // Jumlahnya mengikuti daftar wali murid di seed, jadi yang diuji adalah
   // semua orang tua tercatat dan aktif — bukan angka tetap.
-  check("ada orang tua tercatat", r.data?.parents?.total >= 3, `total=${r.data?.parents?.total}`);
+  check(
+    "ada orang tua tercatat",
+    r.data?.parents?.total >= 3,
+    `total=${r.data?.parents?.total}`,
+  );
   check(
     "semua orang tua aktif",
     r.data?.parents?.active === r.data?.parents?.total,
     `active=${r.data?.parents?.active} total=${r.data?.parents?.total}`,
   );
-  check("42 menu", r.data?.menus?.total === 42, `total=${r.data?.menus?.total}`);
-  check("ada hari libur tercatat", r.data?.schedules?.holidays >= 1,
-    `holidays=${r.data?.schedules?.holidays}`);
-  check("currentWeek terisi", Boolean(r.data?.currentWeek?.label), r.data?.currentWeek?.label);
-  check("today terisi", Boolean(r.data?.today?.date), JSON.stringify(r.data?.today));
+  check(
+    "42 menu",
+    r.data?.menus?.total === 42,
+    `total=${r.data?.menus?.total}`,
+  );
+  check(
+    "ada hari libur tercatat",
+    r.data?.schedules?.holidays >= 1,
+    `holidays=${r.data?.schedules?.holidays}`,
+  );
+  check(
+    "currentWeek terisi",
+    Boolean(r.data?.currentWeek?.label),
+    r.data?.currentWeek?.label,
+  );
+  check(
+    "today terisi",
+    Boolean(r.data?.today?.date),
+    JSON.stringify(r.data?.today),
+  );
   check(
     "today merangkum menu & jumlah kelas",
     Array.isArray(r.data?.today?.menuNames) &&
@@ -296,18 +415,34 @@ section("11. CRUD menu (admin)");
   });
   check("POST /menus -> 201", created.status === 201, `got ${created.status}`);
   const menuId = created.data?.id;
-  check("menu baru punya 2 komponen", created.data?.items?.length === 2,
-    `items=${created.data?.items?.length}`);
+  check(
+    "menu baru punya 2 komponen",
+    created.data?.items?.length === 2,
+    `items=${created.data?.items?.length}`,
+  );
 
   const updated = await call("PUT", `/menus/${menuId}`, {
     token: adminToken,
-    body: { description: "Deskripsi diperbarui", items: [{ name: "Hanya satu", itemType: "main" }] },
+    body: {
+      description: "Deskripsi diperbarui",
+      items: [{ name: "Hanya satu", itemType: "main" }],
+    },
   });
-  check("PUT /menus/:id -> 200", updated.status === 200, `got ${updated.status}`);
-  check("deskripsi berubah", updated.data?.description === "Deskripsi diperbarui",
-    updated.data?.description);
-  check("komponen diganti jadi 1", updated.data?.items?.length === 1,
-    `items=${updated.data?.items?.length}`);
+  check(
+    "PUT /menus/:id -> 200",
+    updated.status === 200,
+    `got ${updated.status}`,
+  );
+  check(
+    "deskripsi berubah",
+    updated.data?.description === "Deskripsi diperbarui",
+    updated.data?.description,
+  );
+  check(
+    "komponen diganti jadi 1",
+    updated.data?.items?.length === 1,
+    `items=${updated.data?.items?.length}`,
+  );
 
   const dup = await call("POST", "/menus", {
     token: adminToken,
@@ -319,10 +454,20 @@ section("11. CRUD menu (admin)");
     token: adminToken,
     body: { name: `Kosong ${Date.now()}`, items: [] },
   });
-  check("menu tanpa komponen -> 400", noItems.status === 400, `got ${noItems.status}`);
+  check(
+    "menu tanpa komponen -> 400",
+    noItems.status === 400,
+    `got ${noItems.status}`,
+  );
 
-  const removed = await call("DELETE", `/menus/${menuId}`, { token: adminToken });
-  check("DELETE /menus/:id -> 200", removed.status === 200, `got ${removed.status}`);
+  const removed = await call("DELETE", `/menus/${menuId}`, {
+    token: adminToken,
+  });
+  check(
+    "DELETE /menus/:id -> 200",
+    removed.status === 200,
+    `got ${removed.status}`,
+  );
 
   const gone = await call("GET", `/menus/${menuId}`, { token: adminToken });
   check("menu terhapus -> 404", gone.status === 404, `got ${gone.status}`);
@@ -334,18 +479,40 @@ section("12. CRUD kategori (admin)");
     token: adminToken,
     body: { name: `Kategori Uji ${Date.now()}`, color: "#123456" },
   });
-  check("POST /categories -> 201", created.status === 201, `got ${created.status}`);
-  check("slug dibuat otomatis", Boolean(created.data?.slug), created.data?.slug);
-  check("warna tersimpan", created.data?.color === "#123456", created.data?.color);
+  check(
+    "POST /categories -> 201",
+    created.status === 201,
+    `got ${created.status}`,
+  );
+  check(
+    "slug dibuat otomatis",
+    Boolean(created.data?.slug),
+    created.data?.slug,
+  );
+  check(
+    "warna tersimpan",
+    created.data?.color === "#123456",
+    created.data?.color,
+  );
 
   const badColor = await call("POST", "/categories", {
     token: adminToken,
     body: { name: `Warna Salah ${Date.now()}`, color: "biru" },
   });
-  check("warna bukan hex -> 400", badColor.status === 400, `got ${badColor.status}`);
+  check(
+    "warna bukan hex -> 400",
+    badColor.status === 400,
+    `got ${badColor.status}`,
+  );
 
-  const removed = await call("DELETE", `/categories/${created.data?.id}`, { token: adminToken });
-  check("DELETE /categories/:id -> 200", removed.status === 200, `got ${removed.status}`);
+  const removed = await call("DELETE", `/categories/${created.data?.id}`, {
+    token: adminToken,
+  });
+  check(
+    "DELETE /categories/:id -> 200",
+    removed.status === 200,
+    `got ${removed.status}`,
+  );
 }
 
 section("13. CRUD jadwal (admin)");
@@ -361,7 +528,9 @@ section("13. CRUD jadwal (admin)");
       { token: adminToken },
     );
     if (rows.data?.[0]?.scheduleId) {
-      await call("DELETE", `/schedules/${rows.data[0].scheduleId}`, { token: adminToken });
+      await call("DELETE", `/schedules/${rows.data[0].scheduleId}`, {
+        token: adminToken,
+      });
     }
   }
 
@@ -373,18 +542,43 @@ section("13. CRUD jadwal (admin)");
     token: adminToken,
     body: { scheduleDate: date, menuId },
   });
-  check("admin tanpa `className` -> 400", noClass.status === 400, `got ${noClass.status}`);
+  check(
+    "admin tanpa `className` -> 400",
+    noClass.status === 400,
+    `got ${noClass.status}`,
+  );
 
   const created = await call("POST", "/schedules", {
     token: adminToken,
-    body: { scheduleDate: date, className: CLASS, menuId, notes: "Dibuat test" },
+    body: {
+      scheduleDate: date,
+      className: CLASS,
+      menuId,
+      notes: "Dibuat test",
+    },
   });
-  check("POST /schedules -> 201", created.status === 201, `got ${created.status}`);
+  check(
+    "POST /schedules -> 201",
+    created.status === 201,
+    `got ${created.status}`,
+  );
   check("tanggal sesuai", created.data?.date === date, created.data?.date);
-  check("kelas tersimpan", created.data?.className === CLASS, created.data?.className);
-  check("dayOfWeek = 1 (Senin)", created.data?.dayOfWeek === 1, `dow=${created.data?.dayOfWeek}`);
+  check(
+    "kelas tersimpan",
+    created.data?.className === CLASS,
+    created.data?.className,
+  );
+  check(
+    "dayOfWeek = 1 (Senin)",
+    created.data?.dayOfWeek === 1,
+    `dow=${created.data?.dayOfWeek}`,
+  );
   check("menu terpasang", created.data?.menu?.id === menuId);
-  check("notes tersimpan", created.data?.notes === "Dibuat test", created.data?.notes);
+  check(
+    "notes tersimpan",
+    created.data?.notes === "Dibuat test",
+    created.data?.notes,
+  );
 
   const scheduleId = created.data?.scheduleId;
 
@@ -399,23 +593,45 @@ section("13. CRUD jadwal (admin)");
     token: adminToken,
     body: { scheduleDate: date, className: "2", menuId },
   });
-  check("tanggal sama, kelas berbeda -> 201", otherClass.status === 201, `got ${otherClass.status}`);
+  check(
+    "tanggal sama, kelas berbeda -> 201",
+    otherClass.status === 201,
+    `got ${otherClass.status}`,
+  );
 
   const badDate = await call("POST", "/schedules", {
     token: adminToken,
     body: { scheduleDate: "05-10-2026", className: CLASS, menuId },
   });
-  check("format tanggal salah -> 400", badDate.status === 400, `got ${badDate.status}`);
+  check(
+    "format tanggal salah -> 400",
+    badDate.status === 400,
+    `got ${badDate.status}`,
+  );
 
   const asHoliday = await call("PUT", `/schedules/${scheduleId}`, {
     token: adminToken,
     body: { isHoliday: true },
   });
-  check("PUT jadwal jadi libur -> 200", asHoliday.status === 200, `got ${asHoliday.status}`);
-  check("libur menghapus menu", asHoliday.data?.menu === null, JSON.stringify(asHoliday.data?.menu));
+  check(
+    "PUT jadwal jadi libur -> 200",
+    asHoliday.status === 200,
+    `got ${asHoliday.status}`,
+  );
+  check(
+    "libur menghapus menu",
+    asHoliday.data?.menu === null,
+    JSON.stringify(asHoliday.data?.menu),
+  );
 
-  const removed = await call("DELETE", `/schedules/${scheduleId}`, { token: adminToken });
-  check("DELETE /schedules/:id -> 200", removed.status === 200, `got ${removed.status}`);
+  const removed = await call("DELETE", `/schedules/${scheduleId}`, {
+    token: adminToken,
+  });
+  check(
+    "DELETE /schedules/:id -> 200",
+    removed.status === 200,
+    `got ${removed.status}`,
+  );
 
   // Bersihkan baris kelas lain yang dibuat di atas.
   await call("DELETE", `/schedules/${otherClass.data?.scheduleId}`, {
@@ -426,7 +642,9 @@ section("13. CRUD jadwal (admin)");
 section("14. Hari libur (admin)");
 {
   const date = "2026-12-25";
-  const list = await call("GET", `/holidays?from=${date}&to=${date}`, { token: adminToken });
+  const list = await call("GET", `/holidays?from=${date}&to=${date}`, {
+    token: adminToken,
+  });
   for (const h of list.data ?? []) {
     await call("DELETE", `/holidays/${h.id}`, { token: adminToken });
   }
@@ -435,22 +653,44 @@ section("14. Hari libur (admin)");
     token: adminToken,
     body: { date, name: "Hari Natal", description: "Libur nasional" },
   });
-  check("POST /holidays -> 201", created.status === 201, `got ${created.status}`);
+  check(
+    "POST /holidays -> 201",
+    created.status === 201,
+    `got ${created.status}`,
+  );
 
   const dup = await call("POST", "/holidays", {
     token: adminToken,
     body: { date, name: "Duplikat" },
   });
-  check("tanggal libur duplikat -> 409", dup.status === 409, `got ${dup.status}`);
+  check(
+    "tanggal libur duplikat -> 409",
+    dup.status === 409,
+    `got ${dup.status}`,
+  );
 
-  const week = await call("GET", `/schedules/range?from=${date}&to=${date}`, { token: adminToken });
-  check("hari libur muncul di jadwal", week.data?.[0]?.isHoliday === true,
-    JSON.stringify(week.data?.[0])?.slice(0, 140));
-  check("nama libur terbawa", week.data?.[0]?.holidayName === "Hari Natal",
-    week.data?.[0]?.holidayName);
+  const week = await call("GET", `/schedules/range?from=${date}&to=${date}`, {
+    token: adminToken,
+  });
+  check(
+    "hari libur muncul di jadwal",
+    week.data?.[0]?.isHoliday === true,
+    JSON.stringify(week.data?.[0])?.slice(0, 140),
+  );
+  check(
+    "nama libur terbawa",
+    week.data?.[0]?.holidayName === "Hari Natal",
+    week.data?.[0]?.holidayName,
+  );
 
-  const removed = await call("DELETE", `/holidays/${created.data?.id}`, { token: adminToken });
-  check("DELETE /holidays/:id -> 200", removed.status === 200, `got ${removed.status}`);
+  const removed = await call("DELETE", `/holidays/${created.data?.id}`, {
+    token: adminToken,
+  });
+  check(
+    "DELETE /holidays/:id -> 200",
+    removed.status === 200,
+    `got ${removed.status}`,
+  );
 }
 
 section("15. CRUD orang tua (admin)");
@@ -471,18 +711,33 @@ section("15. CRUD orang tua (admin)");
       relationship: "ibu",
     },
   });
-  check("POST /parents -> 201", created.status === 201, `got ${created.status}`);
-  check("username akun baru terbaca", created.data?.username === username, created.data?.username);
-  check("dua anak tersimpan", created.data?.students?.length === 2,
-    JSON.stringify(created.data?.students));
-  check("anak pertama lengkap",
+  check(
+    "POST /parents -> 201",
+    created.status === 201,
+    `got ${created.status}`,
+  );
+  check(
+    "username akun baru terbaca",
+    created.data?.username === username,
+    created.data?.username,
+  );
+  check(
+    "dua anak tersimpan",
+    created.data?.students?.length === 2,
+    JSON.stringify(created.data?.students),
+  );
+  check(
+    "anak pertama lengkap",
     created.data?.students?.[0]?.name === "Anak Uji A" &&
       created.data?.students?.[0]?.className === "3",
-    JSON.stringify(created.data?.students?.[0]));
-  check("anak kedua lengkap",
+    JSON.stringify(created.data?.students?.[0]),
+  );
+  check(
+    "anak kedua lengkap",
     created.data?.students?.[1]?.name === "Anak Uji B" &&
       created.data?.students?.[1]?.className === "3B",
-    JSON.stringify(created.data?.students?.[1]));
+    JSON.stringify(created.data?.students?.[1]),
+  );
   const parentId = created.data?.id;
   const firstStudentId = created.data?.students?.[0]?.id;
 
@@ -507,7 +762,11 @@ section("15. CRUD orang tua (admin)");
       students: [{ name: "y" }],
     },
   });
-  check("username terlalu pendek -> 400", badUser.status === 400, `got ${badUser.status}`);
+  check(
+    "username terlalu pendek -> 400",
+    badUser.status === 400,
+    `got ${badUser.status}`,
+  );
 
   const shortPw = await call("POST", "/parents", {
     token: adminToken,
@@ -518,13 +777,25 @@ section("15. CRUD orang tua (admin)");
       students: [{ name: "y" }],
     },
   });
-  check("password < 8 karakter -> 400", shortPw.status === 400, `got ${shortPw.status}`);
+  check(
+    "password < 8 karakter -> 400",
+    shortPw.status === 400,
+    `got ${shortPw.status}`,
+  );
 
   const noStudents = await call("POST", "/parents", {
     token: adminToken,
-    body: { username: `n${Date.now().toString(36)}`, password: "rahasia123", parentName: "x" },
+    body: {
+      username: `n${Date.now().toString(36)}`,
+      password: "rahasia123",
+      parentName: "x",
+    },
   });
-  check("`students` tidak dikirim -> 400", noStudents.status === 400, `got ${noStudents.status}`);
+  check(
+    "`students` tidak dikirim -> 400",
+    noStudents.status === 400,
+    `got ${noStudents.status}`,
+  );
 
   const emptyStudents = await call("POST", "/parents", {
     token: adminToken,
@@ -535,7 +806,11 @@ section("15. CRUD orang tua (admin)");
       students: [],
     },
   });
-  check("`students` kosong -> 400", emptyStudents.status === 400, `got ${emptyStudents.status}`);
+  check(
+    "`students` kosong -> 400",
+    emptyStudents.status === 400,
+    `got ${emptyStudents.status}`,
+  );
 
   const blankStudent = await call("POST", "/parents", {
     token: adminToken,
@@ -546,7 +821,11 @@ section("15. CRUD orang tua (admin)");
       students: [{ name: "   " }],
     },
   });
-  check("nama anak hanya spasi -> 400", blankStudent.status === 400, `got ${blankStudent.status}`);
+  check(
+    "nama anak hanya spasi -> 400",
+    blankStudent.status === 400,
+    `got ${blankStudent.status}`,
+  );
 
   const badRelationship = await call("POST", "/parents", {
     token: adminToken,
@@ -558,40 +837,71 @@ section("15. CRUD orang tua (admin)");
       relationship: "kakek",
     },
   });
-  check("hubungan tidak dikenal -> 400", badRelationship.status === 400, `got ${badRelationship.status}`);
+  check(
+    "hubungan tidak dikenal -> 400",
+    badRelationship.status === 400,
+    `got ${badRelationship.status}`,
+  );
 
   // ── 15c. Daftar & pencarian ─────────────────────────────────
-  const list = await call("GET", `/parents?search=${username}`, { token: adminToken });
-  check("pencarian menemukan akun baru", list.data?.items?.length === 1,
-    `found=${list.data?.items?.length}`);
-  check("total terisi", list.data?.total === 1, `total=${list.data?.total}`);
-  check("daftar memuat kedua anak", list.data?.items?.[0]?.students?.length === 2,
-    JSON.stringify(list.data?.items?.[0]?.students));
-
-  const searchByChild = await call("GET", `/parents?search=${encodeURIComponent("Anak Uji B")}`, {
+  const list = await call("GET", `/parents?search=${username}`, {
     token: adminToken,
   });
-  check("pencarian lewat nama anak menemukan orang tua",
-    searchByChild.data?.items?.some((item) => item.id === parentId),
-    `found=${searchByChild.data?.items?.length}`);
-  check("tidak ada baris ganda saat cocok 1 anak",
-    searchByChild.data?.items?.filter((item) => item.id === parentId).length === 1,
-    JSON.stringify(searchByChild.data?.items?.map((item) => item.id)));
+  check(
+    "pencarian menemukan akun baru",
+    list.data?.items?.length === 1,
+    `found=${list.data?.items?.length}`,
+  );
+  check("total terisi", list.data?.total === 1, `total=${list.data?.total}`);
+  check(
+    "daftar memuat kedua anak",
+    list.data?.items?.[0]?.students?.length === 2,
+    JSON.stringify(list.data?.items?.[0]?.students),
+  );
 
-  const searchByClass = await call("GET", "/parents?search=3B", { token: adminToken });
-  check("pencarian lewat kelas anak berhasil",
+  const searchByChild = await call(
+    "GET",
+    `/parents?search=${encodeURIComponent("Anak Uji B")}`,
+    {
+      token: adminToken,
+    },
+  );
+  check(
+    "pencarian lewat nama anak menemukan orang tua",
+    searchByChild.data?.items?.some((item) => item.id === parentId),
+    `found=${searchByChild.data?.items?.length}`,
+  );
+  check(
+    "tidak ada baris ganda saat cocok 1 anak",
+    searchByChild.data?.items?.filter((item) => item.id === parentId).length ===
+      1,
+    JSON.stringify(searchByChild.data?.items?.map((item) => item.id)),
+  );
+
+  const searchByClass = await call("GET", "/parents?search=3B", {
+    token: adminToken,
+  });
+  check(
+    "pencarian lewat kelas anak berhasil",
     searchByClass.data?.items?.some((item) => item.id === parentId),
-    `found=${searchByClass.data?.items?.length}`);
+    `found=${searchByClass.data?.items?.length}`,
+  );
 
   // ── 15d. Login mengembalikan seluruh anak ───────────────────
   const login = await call("POST", "/auth/login", {
     body: { username, password: "rahasia123" },
   });
   check("akun baru bisa login", login.status === 200, `got ${login.status}`);
-  check("profil memuat dua anak", login.data?.user?.students?.length === 2,
-    JSON.stringify(login.data?.user?.students));
-  check("hubungan terbawa", login.data?.user?.relationship === "ibu",
-    login.data?.user?.relationship);
+  check(
+    "profil memuat dua anak",
+    login.data?.user?.students?.length === 2,
+    JSON.stringify(login.data?.user?.students),
+  );
+  check(
+    "hubungan terbawa",
+    login.data?.user?.relationship === "ibu",
+    login.data?.user?.relationship,
+  );
 
   // ── 15e. Update mengganti daftar anak ───────────────────────
   const updated = await call("PUT", `/parents/${parentId}`, {
@@ -604,33 +914,63 @@ section("15. CRUD orang tua (admin)");
       ],
     },
   });
-  check("PUT /parents/:id -> 200", updated.status === 200, `got ${updated.status}`);
-  check("nama orang tua berubah", updated.data?.parentName === "Ibu Uji Revisi",
-    updated.data?.parentName);
-  check("anak lama diperbarui di tempat",
+  check(
+    "PUT /parents/:id -> 200",
+    updated.status === 200,
+    `got ${updated.status}`,
+  );
+  check(
+    "nama orang tua berubah",
+    updated.data?.parentName === "Ibu Uji Revisi",
+    updated.data?.parentName,
+  );
+  check(
+    "anak lama diperbarui di tempat",
     updated.data?.students?.[0]?.id === firstStudentId &&
       updated.data?.students?.[0]?.name === "Anak Uji A Revisi" &&
       updated.data?.students?.[0]?.className === "4C",
-    JSON.stringify(updated.data?.students?.[0]));
-  check("anak baru ditambahkan",
+    JSON.stringify(updated.data?.students?.[0]),
+  );
+  check(
+    "anak baru ditambahkan",
     updated.data?.students?.[1]?.name === "Anak Uji C" &&
       updated.data?.students?.[1]?.className === "5D",
-    JSON.stringify(updated.data?.students?.[1]));
-  check("anak yang tidak disebut lagi terhapus", updated.data?.students?.length === 2,
-    JSON.stringify(updated.data?.students));
+    JSON.stringify(updated.data?.students?.[1]),
+  );
+  check(
+    "anak yang tidak disebut lagi terhapus",
+    updated.data?.students?.length === 2,
+    JSON.stringify(updated.data?.students),
+  );
 
   // Ganti daftar jadi satu anak saja → anak kedua harus hilang.
   const narrowed = await call("PUT", `/parents/${parentId}`, {
     token: adminToken,
-    body: { students: [{ id: firstStudentId, name: "Anak Uji A Revisi", className: "4C" }] },
+    body: {
+      students: [
+        { id: firstStudentId, name: "Anak Uji A Revisi", className: "4C" },
+      ],
+    },
   });
-  check("menyusutkan daftar anak -> 200", narrowed.status === 200, `got ${narrowed.status}`);
-  check("daftar anak jadi satu", narrowed.data?.students?.length === 1,
-    JSON.stringify(narrowed.data?.students));
+  check(
+    "menyusutkan daftar anak -> 200",
+    narrowed.status === 200,
+    `got ${narrowed.status}`,
+  );
+  check(
+    "daftar anak jadi satu",
+    narrowed.data?.students?.length === 1,
+    JSON.stringify(narrowed.data?.students),
+  );
 
-  const detail = await call("GET", `/parents/${parentId}`, { token: adminToken });
-  check("detail konsisten dengan hasil update", detail.data?.students?.length === 1,
-    JSON.stringify(detail.data?.students));
+  const detail = await call("GET", `/parents/${parentId}`, {
+    token: adminToken,
+  });
+  check(
+    "detail konsisten dengan hasil update",
+    detail.data?.students?.length === 1,
+    JSON.stringify(detail.data?.students),
+  );
 
   // ── 15f. ID anak milik orang tua lain tidak bisa dibajak ────
   const victimStudentId = parentLogin.data?.user?.students?.[0]?.id;
@@ -645,24 +985,35 @@ section("15. CRUD orang tua (admin)");
       ],
     },
   });
-  check("ID anak orang lain ditolak sebagai update -> 200 (dibuat baru)",
-    hijack.status === 200, `got ${hijack.status}`);
-  check("ID anak orang lain tidak tercatat di akun ini",
+  check(
+    "ID anak orang lain ditolak sebagai update -> 200 (dibuat baru)",
+    hijack.status === 200,
+    `got ${hijack.status}`,
+  );
+  check(
+    "ID anak orang lain tidak tercatat di akun ini",
     !hijack.data?.students?.some((student) => student.id === victimStudentId),
-    JSON.stringify(hijack.data?.students?.map((student) => student.id)));
+    JSON.stringify(hijack.data?.students?.map((student) => student.id)),
+  );
 
   const victimAfter = await call("POST", "/auth/login", { body: PARENT });
-  check("data anak orang tua lain tidak berubah",
+  check(
+    "data anak orang tua lain tidak berubah",
     victimAfter.data?.user?.students?.[0]?.id === victimStudentId &&
       victimAfter.data?.user?.students?.[0]?.name === victimName,
-    JSON.stringify(victimAfter.data?.user?.students?.[0]));
+    JSON.stringify(victimAfter.data?.user?.students?.[0]),
+  );
 
   // ── 15g. Update tidak boleh mengosongkan daftar anak ────────
   const emptied = await call("PUT", `/parents/${parentId}`, {
     token: adminToken,
     body: { students: [{ name: "   " }] },
   });
-  check("update dengan anak kosong -> 400", emptied.status === 400, `got ${emptied.status}`);
+  check(
+    "update dengan anak kosong -> 400",
+    emptied.status === 400,
+    `got ${emptied.status}`,
+  );
 
   // ── 15h. Reset password & nonaktifkan ───────────────────────
   const reset = await call("POST", `/parents/${parentId}/reset-password`, {
@@ -674,18 +1025,38 @@ section("15. CRUD orang tua (admin)");
   const loginNew = await call("POST", "/auth/login", {
     body: { username, password: "baru12345" },
   });
-  check("login dengan password baru", loginNew.status === 200, `got ${loginNew.status}`);
+  check(
+    "login dengan password baru",
+    loginNew.status === 200,
+    `got ${loginNew.status}`,
+  );
 
-  const deactivated = await call("DELETE", `/parents/${parentId}`, { token: adminToken });
-  check("DELETE /parents/:id -> 200", deactivated.status === 200, `got ${deactivated.status}`);
-  check("aksi = deactivated", deactivated.data?.action === "deactivated", deactivated.data?.action);
+  const deactivated = await call("DELETE", `/parents/${parentId}`, {
+    token: adminToken,
+  });
+  check(
+    "DELETE /parents/:id -> 200",
+    deactivated.status === 200,
+    `got ${deactivated.status}`,
+  );
+  check(
+    "aksi = deactivated",
+    deactivated.data?.action === "deactivated",
+    deactivated.data?.action,
+  );
 
   const loginOff = await call("POST", "/auth/login", {
     body: { username, password: "baru12345" },
   });
-  check("akun nonaktif tidak bisa login -> 401", loginOff.status === 401, `got ${loginOff.status}`);
+  check(
+    "akun nonaktif tidak bisa login -> 401",
+    loginOff.status === 401,
+    `got ${loginOff.status}`,
+  );
 
-  const hard = await call("DELETE", `/parents/${parentId}?hard=true`, { token: adminToken });
+  const hard = await call("DELETE", `/parents/${parentId}?hard=true`, {
+    token: adminToken,
+  });
   check("hapus permanen -> 200", hard.status === 200, `got ${hard.status}`);
   check("aksi = deleted", hard.data?.action === "deleted", hard.data?.action);
 }
@@ -707,31 +1078,51 @@ section("16. Pencarian riwayat menu");
   const blankQuery = await call("GET", `/schedules/search?q=%20&${range}`, {
     token: adminToken,
   });
-  check("`q` hanya spasi -> 400", blankQuery.status === 400, `got ${blankQuery.status}`);
+  check(
+    "`q` hanya spasi -> 400",
+    blankQuery.status === 400,
+    `got ${blankQuery.status}`,
+  );
 
   const noRange = await call("GET", "/schedules/search?q=jeruk", {
     token: adminToken,
   });
-  check("tanpa rentang -> 400", noRange.status === 400, `got ${noRange.status}`);
+  check(
+    "tanpa rentang -> 400",
+    noRange.status === 400,
+    `got ${noRange.status}`,
+  );
 
   const reversed = await call(
     "GET",
     "/schedules/search?q=jeruk&from=2026-12-31&to=2026-01-01",
     { token: adminToken },
   );
-  check("rentang terbalik -> 400", reversed.status === 400, `got ${reversed.status}`);
+  check(
+    "rentang terbalik -> 400",
+    reversed.status === 400,
+    `got ${reversed.status}`,
+  );
 
   const tooWide = await call(
     "GET",
     "/schedules/search?q=jeruk&from=2020-01-01&to=2026-01-01",
     { token: adminToken },
   );
-  check("rentang > 400 hari -> 400", tooWide.status === 400, `got ${tooWide.status}`);
+  check(
+    "rentang > 400 hari -> 400",
+    tooWide.status === 400,
+    `got ${tooWide.status}`,
+  );
 
   const hit = await call("GET", `/schedules/search?q=jeruk&${range}`, {
     token: adminToken,
   });
-  check("GET /schedules/search -> 200", hit.status === 200, `got ${hit.status}`);
+  check(
+    "GET /schedules/search -> 200",
+    hit.status === 200,
+    `got ${hit.status}`,
+  );
   check("query di-echo", hit.data?.query === "jeruk", hit.data?.query);
   check(
     "ada hasil untuk 'jeruk'",
@@ -804,15 +1195,19 @@ section("16. Pencarian riwayat menu");
   const asParent = await call("GET", `/schedules/search?q=jeruk&${range}`, {
     token: parentToken,
   });
-  check("orang tua boleh mencari -> 200", asParent.status === 200, `got ${asParent.status}`);
+  check(
+    "orang tua boleh mencari -> 200",
+    asParent.status === 200,
+    `got ${asParent.status}`,
+  );
 
   const noToken = await call("GET", `/schedules/search?q=jeruk&${range}`);
   check("tanpa token -> 401", noToken.status === 401, `got ${noToken.status}`);
 }
 
-// ── 7. Duplikasi jadwal antar minggu ──────────────────────────
+// ── 7. Duplikasi jadwal Sepekan ──────────────────────────
 
-section("17. Duplikasi jadwal antar minggu");
+section("17. Duplikasi jadwal Sepekan");
 {
   const isoDate = (date) => date.toISOString().slice(0, 10);
 
@@ -825,7 +1220,9 @@ section("17. Duplikasi jadwal antar minggu");
   }
 
   const addDays = (value, days) =>
-    isoDate(new Date(new Date(`${value}T00:00:00Z`).getTime() + days * 86_400_000));
+    isoDate(
+      new Date(new Date(`${value}T00:00:00Z`).getTime() + days * 86_400_000),
+    );
 
   // Tanggal jauh di masa depan agar tidak bertabrakan dengan data seed.
   const source = mondayOf("2031-06-15", 0);
@@ -838,7 +1235,9 @@ section("17. Duplikasi jadwal antar minggu");
     });
     for (const day of week.data?.days ?? []) {
       if (day.scheduleId) {
-        await call("DELETE", `/schedules/${day.scheduleId}`, { token: adminToken });
+        await call("DELETE", `/schedules/${day.scheduleId}`, {
+          token: adminToken,
+        });
       }
     }
   }
@@ -848,7 +1247,11 @@ section("17. Duplikasi jadwal antar minggu");
 
   const menus = await call("GET", "/menus?active=true", { token: adminToken });
   const menuId = menus.data?.[0]?.id;
-  check("ada menu aktif untuk diuji", Number.isInteger(menuId), `menuId=${menuId}`);
+  check(
+    "ada menu aktif untuk diuji",
+    Number.isInteger(menuId),
+    `menuId=${menuId}`,
+  );
 
   // Sumber: Senin & Selasa saja.
   const createdA = await call("POST", "/schedules", {
@@ -859,37 +1262,76 @@ section("17. Duplikasi jadwal antar minggu");
     token: adminToken,
     body: { scheduleDate: addDays(source, 1), className: "1", menuId },
   });
-  check("siapkan jadwal sumber Senin -> 201", createdA.status === 201, `got ${createdA.status}`);
-  check("siapkan jadwal sumber Selasa -> 201", createdB.status === 201, `got ${createdB.status}`);
+  check(
+    "siapkan jadwal sumber Senin -> 201",
+    createdA.status === 201,
+    `got ${createdA.status}`,
+  );
+  check(
+    "siapkan jadwal sumber Selasa -> 201",
+    createdB.status === 201,
+    `got ${createdB.status}`,
+  );
 
   const sameWeek = await call("POST", "/schedules/copy", {
     token: adminToken,
     body: { fromDate: source, toDate: addDays(source, 2), className: "1" },
   });
-  check("minggu sumber = tujuan -> 400", sameWeek.status === 400, `got ${sameWeek.status}`);
+  check(
+    "minggu sumber = tujuan -> 400",
+    sameWeek.status === 400,
+    `got ${sameWeek.status}`,
+  );
 
   const badDate = await call("POST", "/schedules/copy", {
     token: adminToken,
     body: { fromDate: "bukan-tanggal", toDate: target, className: "1" },
   });
-  check("`fromDate` tidak valid -> 400", badDate.status === 400, `got ${badDate.status}`);
+  check(
+    "`fromDate` tidak valid -> 400",
+    badDate.status === 400,
+    `got ${badDate.status}`,
+  );
 
   const asParentCopy = await call("POST", "/schedules/copy", {
     token: parentToken,
     body: { fromDate: source, toDate: target, className: "1" },
   });
-  check("orang tua ditolak -> 403", asParentCopy.status === 403, `got ${asParentCopy.status}`);
+  check(
+    "orang tua ditolak -> 403",
+    asParentCopy.status === 403,
+    `got ${asParentCopy.status}`,
+  );
 
   // Salin pertama: 2 dibuat, 3 dilewati (Rabu–Jumat tanpa sumber).
   const copy1 = await call("POST", "/schedules/copy", {
     token: adminToken,
     body: { fromDate: source, toDate: target, className: "1" },
   });
-  check("POST /schedules/copy -> 201", copy1.status === 201, `got ${copy1.status}`);
-  check("created = 2", copy1.data?.created === 2, `created=${copy1.data?.created}`);
-  check("updated = 0", copy1.data?.updated === 0, `updated=${copy1.data?.updated}`);
-  check("skipped = 3", copy1.data?.skipped === 3, `skipped=${copy1.data?.skipped}`);
-  check("ada label sumber & tujuan", Boolean(copy1.data?.sourceLabel && copy1.data?.targetLabel));
+  check(
+    "POST /schedules/copy -> 201",
+    copy1.status === 201,
+    `got ${copy1.status}`,
+  );
+  check(
+    "created = 2",
+    copy1.data?.created === 2,
+    `created=${copy1.data?.created}`,
+  );
+  check(
+    "updated = 0",
+    copy1.data?.updated === 0,
+    `updated=${copy1.data?.updated}`,
+  );
+  check(
+    "skipped = 3",
+    copy1.data?.skipped === 3,
+    `skipped=${copy1.data?.skipped}`,
+  );
+  check(
+    "ada label sumber & tujuan",
+    Boolean(copy1.data?.sourceLabel && copy1.data?.targetLabel),
+  );
 
   const targetWeek = await call("GET", `/schedules/week?date=${target}`, {
     token: adminToken,
@@ -915,28 +1357,53 @@ section("17. Duplikasi jadwal antar minggu");
     token: adminToken,
     body: { fromDate: source, toDate: target, className: "1" },
   });
-  check("salin ulang tanpa overwrite -> created 0", copy2.data?.created === 0, `created=${copy2.data?.created}`);
-  check("salin ulang tanpa overwrite -> skipped 5", copy2.data?.skipped === 5, `skipped=${copy2.data?.skipped}`);
+  check(
+    "salin ulang tanpa overwrite -> created 0",
+    copy2.data?.created === 0,
+    `created=${copy2.data?.created}`,
+  );
+  check(
+    "salin ulang tanpa overwrite -> skipped 5",
+    copy2.data?.skipped === 5,
+    `skipped=${copy2.data?.skipped}`,
+  );
 
   // Salin ketiga dengan overwrite.
   const copy3 = await call("POST", "/schedules/copy", {
     token: adminToken,
     body: { fromDate: source, toDate: target, className: "1", overwrite: true },
   });
-  check("overwrite -> updated 2", copy3.data?.updated === 2, `updated=${copy3.data?.updated}`);
-  check("overwrite -> created 0", copy3.data?.created === 0, `created=${copy3.data?.created}`);
+  check(
+    "overwrite -> updated 2",
+    copy3.data?.updated === 2,
+    `updated=${copy3.data?.updated}`,
+  );
+  check(
+    "overwrite -> created 0",
+    copy3.data?.created === 0,
+    `created=${copy3.data?.created}`,
+  );
 
   // Hari libur ikut tersalin, tetapi tanpa menu.
   const holidayDate = addDays(source, 2);
   await call("POST", "/schedules", {
     token: adminToken,
-    body: { scheduleDate: holidayDate, className: "1", isHoliday: true, notes: "Libur uji" },
+    body: {
+      scheduleDate: holidayDate,
+      className: "1",
+      isHoliday: true,
+      notes: "Libur uji",
+    },
   });
   const copy4 = await call("POST", "/schedules/copy", {
     token: adminToken,
     body: { fromDate: source, toDate: target, className: "1" },
   });
-  check("hari libur ikut tersalin -> created 1", copy4.data?.created === 1, `created=${copy4.data?.created}`);
+  check(
+    "hari libur ikut tersalin -> created 1",
+    copy4.data?.created === 1,
+    `created=${copy4.data?.created}`,
+  );
 
   const afterHoliday = await call("GET", `/schedules/week?date=${target}`, {
     token: adminToken,
@@ -974,10 +1441,15 @@ section("17. Duplikasi jadwal antar minggu");
 section("18. Cakupan kelas — daftar & pembatasan baca");
 {
   const asAdmin = await call("GET", "/classes", { token: adminToken });
-  check("GET /classes sebagai admin -> 200", asAdmin.status === 200, `got ${asAdmin.status}`);
+  check(
+    "GET /classes sebagai admin -> 200",
+    asAdmin.status === 200,
+    `got ${asAdmin.status}`,
+  );
   check(
     "admin melihat semua kelas",
-    JSON.stringify(asAdmin.data?.classes) === JSON.stringify(["1", "2", "3", "4", "5", "6"]),
+    JSON.stringify(asAdmin.data?.classes) ===
+      JSON.stringify(["1", "2", "3", "4", "5", "6"]),
     JSON.stringify(asAdmin.data?.classes),
   );
 
@@ -992,7 +1464,11 @@ section("18. Cakupan kelas — daftar & pembatasan baca");
   const ownClass = await call("GET", "/schedules/today?class=1", {
     token: parentToken,
   });
-  check("orang tua membaca kelas anaknya -> 200", ownClass.status === 200, `got ${ownClass.status}`);
+  check(
+    "orang tua membaca kelas anaknya -> 200",
+    ownClass.status === 200,
+    `got ${ownClass.status}`,
+  );
   check(
     "jadwal membawa nama kelas",
     ownClass.data?.day?.className === "1",
@@ -1002,10 +1478,16 @@ section("18. Cakupan kelas — daftar & pembatasan baca");
   const otherClass = await call("GET", "/schedules/today?class=2", {
     token: parentToken,
   });
-  check("orang tua membaca kelas lain -> 403", otherClass.status === 403, `got ${otherClass.status}`);
+  check(
+    "orang tua membaca kelas lain -> 403",
+    otherClass.status === 403,
+    `got ${otherClass.status}`,
+  );
 
   // Tanpa `class`, orang tua otomatis diarahkan ke kelas anaknya.
-  const implicit = await call("GET", "/schedules/today", { token: parentToken });
+  const implicit = await call("GET", "/schedules/today", {
+    token: parentToken,
+  });
   check(
     "tanpa `class` -> kelas anaknya dipakai",
     implicit.data?.day?.className === "1",
@@ -1016,7 +1498,11 @@ section("18. Cakupan kelas — daftar & pembatasan baca");
 section("19. Korlas — wewenang & batas kelas");
 {
   const korlasLogin = await call("POST", "/auth/login", { body: KORLAS });
-  check("login korlas -> 200", korlasLogin.status === 200, `got ${korlasLogin.status}`);
+  check(
+    "login korlas -> 200",
+    korlasLogin.status === 200,
+    `got ${korlasLogin.status}`,
+  );
 
   const korlasToken = korlasLogin.data?.token;
   check(
@@ -1045,13 +1531,21 @@ section("19. Korlas — wewenang & batas kelas");
       items: [{ name: "Risol korlas", itemType: "main" }],
     },
   });
-  check("korlas membuat menu -> 201", menu.status === 201, `got ${menu.status}`);
+  check(
+    "korlas membuat menu -> 201",
+    menu.status === 201,
+    `got ${menu.status}`,
+  );
 
   const category = await call("POST", "/categories", {
     token: korlasToken,
     body: { name: `Kategori Korlas ${Date.now()}` },
   });
-  check("korlas membuat kategori -> 201", category.status === 201, `got ${category.status}`);
+  check(
+    "korlas membuat kategori -> 201",
+    category.status === 201,
+    `got ${category.status}`,
+  );
 
   const menuId = menu.data?.id;
   const from = "2032-03-01";
@@ -1066,7 +1560,9 @@ section("19. Korlas — wewenang & batas kelas");
     );
     for (const day of rows.data ?? []) {
       if (day.scheduleId) {
-        await call("DELETE", `/schedules/${day.scheduleId}`, { token: adminToken });
+        await call("DELETE", `/schedules/${day.scheduleId}`, {
+          token: adminToken,
+        });
       }
     }
   }
@@ -1076,28 +1572,48 @@ section("19. Korlas — wewenang & batas kelas");
     token: korlasToken,
     body: { scheduleDate: from, menuId },
   });
-  check("korlas membuat jadwal kelasnya -> 201", own.status === 201, `got ${own.status}`);
-  check("kelas terisi otomatis", own.data?.className === "1", own.data?.className);
+  check(
+    "korlas membuat jadwal kelasnya -> 201",
+    own.status === 201,
+    `got ${own.status}`,
+  );
+  check(
+    "kelas terisi otomatis",
+    own.data?.className === "1",
+    own.data?.className,
+  );
 
   const ownUpdate = await call("PUT", `/schedules/${own.data?.scheduleId}`, {
     token: korlasToken,
     body: { notes: "Diubah korlas" },
   });
-  check("korlas mengubah jadwal kelasnya -> 200", ownUpdate.status === 200, `got ${ownUpdate.status}`);
+  check(
+    "korlas mengubah jadwal kelasnya -> 200",
+    ownUpdate.status === 200,
+    `got ${ownUpdate.status}`,
+  );
 
   // Menulis ke kelas lain ditolak.
   const otherWrite = await call("POST", "/schedules", {
     token: korlasToken,
     body: { scheduleDate: "2032-03-02", className: "2", menuId },
   });
-  check("korlas menulis kelas lain -> 403", otherWrite.status === 403, `got ${otherWrite.status}`);
+  check(
+    "korlas menulis kelas lain -> 403",
+    otherWrite.status === 403,
+    `got ${otherWrite.status}`,
+  );
 
   // Baris milik kelas lain tidak boleh diubah maupun dihapus.
   const adminRow = await call("POST", "/schedules", {
     token: adminToken,
     body: { scheduleDate: "2032-03-02", className: "2", menuId },
   });
-  check("admin menyiapkan baris kelas 2 -> 201", adminRow.status === 201, `got ${adminRow.status}`);
+  check(
+    "admin menyiapkan baris kelas 2 -> 201",
+    adminRow.status === 201,
+    `got ${adminRow.status}`,
+  );
 
   const adminRowId = adminRow.data?.scheduleId;
 
@@ -1105,9 +1621,15 @@ section("19. Korlas — wewenang & batas kelas");
     token: korlasToken,
     body: { notes: "DIUBAH KORLAS" },
   });
-  check("korlas mengubah jadwal kelas lain -> 403", hijack.status === 403, `got ${hijack.status}`);
+  check(
+    "korlas mengubah jadwal kelas lain -> 403",
+    hijack.status === 403,
+    `got ${hijack.status}`,
+  );
 
-  const intact = await call("GET", `/schedules/${adminRowId}`, { token: adminToken });
+  const intact = await call("GET", `/schedules/${adminRowId}`, {
+    token: adminToken,
+  });
   check(
     "jadwal kelas lain tidak ikut berubah",
     intact.data?.notes !== "DIUBAH KORLAS",
@@ -1117,31 +1639,51 @@ section("19. Korlas — wewenang & batas kelas");
   const hijackDelete = await call("DELETE", `/schedules/${adminRowId}`, {
     token: korlasToken,
   });
-  check("korlas menghapus jadwal kelas lain -> 403", hijackDelete.status === 403, `got ${hijackDelete.status}`);
+  check(
+    "korlas menghapus jadwal kelas lain -> 403",
+    hijackDelete.status === 403,
+    `got ${hijackDelete.status}`,
+  );
 
-  // Salin minggu untuk kelasnya sendiri boleh, kelas lain tidak.
+  // Salin Sepekan untuk kelasnya sendiri boleh, kelas lain tidak.
   const copyOwn = await call("POST", "/schedules/copy", {
     token: korlasToken,
     body: { fromDate: from, toDate: to },
   });
-  check("korlas menyalin minggu kelasnya -> 201", copyOwn.status === 201, `got ${copyOwn.status}`);
+  check(
+    "korlas menyalin minggu kelasnya -> 201",
+    copyOwn.status === 201,
+    `got ${copyOwn.status}`,
+  );
 
   const copyOther = await call("POST", "/schedules/copy", {
     token: korlasToken,
     body: { fromDate: from, toDate: to, className: "2" },
   });
-  check("korlas menyalin minggu kelas lain -> 403", copyOther.status === 403, `got ${copyOther.status}`);
+  check(
+    "korlas menyalin minggu kelas lain -> 403",
+    copyOther.status === 403,
+    `got ${copyOther.status}`,
+  );
 
   // Hari libur & akun tetap khusus admin.
   const holiday = await call("POST", "/holidays", {
     token: korlasToken,
     body: { date: "2032-03-03", name: "Libur Korlas" },
   });
-  check("korlas menambah hari libur -> 403", holiday.status === 403, `got ${holiday.status}`);
+  check(
+    "korlas menambah hari libur -> 403",
+    holiday.status === 403,
+    `got ${holiday.status}`,
+  );
 
   for (const path of ["/parents", "/stats/summary"]) {
     const r = await call("GET", path, { token: korlasToken });
-    check(`GET ${path} sebagai korlas -> 403`, r.status === 403, `got ${r.status}`);
+    check(
+      `GET ${path} sebagai korlas -> 403`,
+      r.status === 403,
+      `got ${r.status}`,
+    );
   }
 
   // Bersihkan jejak uji.
@@ -1153,7 +1695,9 @@ section("19. Korlas — wewenang & batas kelas");
     );
     for (const day of rows.data ?? []) {
       if (day.scheduleId) {
-        await call("DELETE", `/schedules/${day.scheduleId}`, { token: adminToken });
+        await call("DELETE", `/schedules/${day.scheduleId}`, {
+          token: adminToken,
+        });
       }
     }
   }
@@ -1162,7 +1706,9 @@ section("19. Korlas — wewenang & batas kelas");
     await call("DELETE", `/menus/${menuId}?force=true`, { token: adminToken });
   }
   if (category.data?.id) {
-    await call("DELETE", `/categories/${category.data.id}`, { token: adminToken });
+    await call("DELETE", `/categories/${category.data.id}`, {
+      token: adminToken,
+    });
   }
 
   const leftover = await call(

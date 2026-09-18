@@ -92,7 +92,7 @@ function ScheduleAdminContent() {
     description: "",
   });
   const [copyModalOpen, setCopyModalOpen] = useState(false);
-  // Default: salin minggu ini ke minggu depan.
+  // Default: salin ahad ini ke ahad depan.
   const [copyForm, setCopyForm] = useState(() => ({
     fromDate: startOfWeek(today),
     toDate: addDays(startOfWeek(today), 7),
@@ -370,7 +370,7 @@ function ScheduleAdminContent() {
               onClick={() => setCopyModalOpen(true)}
             >
               <Copy className="h-4 w-4" />
-              Salin minggu
+              Salin Sepekan
             </Button>
             {/* Hari libur di tabel `holidays` bersifat global (semua kelas). */}
             {isAdmin && (
@@ -723,7 +723,7 @@ function ScheduleAdminContent() {
 
       <Modal
         open={copyModalOpen}
-        title="Salin jadwal antar minggu"
+        title="Salin jadwal Sepekan"
         onClose={() => setCopyModalOpen(false)}
         footer={
           <>

@@ -89,7 +89,7 @@ class ScheduleController {
     if (!scope.ok) return mapScopeError(c, scope.error);
 
     const data = await scheduleService.getWeek(db, scope.className, c.get("user").role, date);
-    return responseOK(c, "Jadwal mingguan", data);
+    return responseOK(c, "Jadwal Sepekan", data);
   };
 
   month = async (c: ScheduleContext) => {

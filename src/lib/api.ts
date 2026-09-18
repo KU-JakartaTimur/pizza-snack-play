@@ -12,6 +12,7 @@ import type {
   MenuInput,
   MenuItemType,
 } from "@/types/catalog";
+import type { ClaimInput, ScheduleClaimDto } from "@/types/claim";
 import type { ClassListDto } from "@/types/class";
 import type {
   CopyWeekInput,
@@ -193,6 +194,26 @@ export const api = {
 
     weeks: (year: number, month: number) =>
       unwrap<WeekDto[]>(http.get(`weeks${query({ year, month })}`)),
+  },
+
+  /**
+   * Pemilihan jadwal oleh orang tua — siapa cepat dia dapat.
+   * `take` melempar `ApiError` berstatus 409 bila tanggalnya sudah diambil
+   * orang tua lain; pesannya sudah menyebut nama pemiliknya.
+   */
+  claims: {
+    take: (body: ClaimInput) =>
+      unwrapFull<ScheduleClaimDto>(http.post("claims", { json: body })),
+
+    release: (id: number) => unwrapFull<null>(http.delete(`claims/${id}`)),
+
+    mine: (from: string, to: string) =>
+      unwrap<ScheduleClaimDto[]>(http.get(`claims/mine${query({ from, to })}`)),
+
+    list: (from: string, to: string, className?: string | null) =>
+      unwrap<ScheduleClaimDto[]>(
+        http.get(`claims${query({ from, to, class: className ?? undefined })}`),
+      ),
   },
 
   holidays: {

@@ -18,7 +18,7 @@ Setiap orang tua memiliki akun login pribadi untuk melihat jadwal menu snack har
 
 ## Tentang Aplikasi
 
-Jadwal piket snack sekolah sebelumnya disusun dalam dokumen teks manual — sulit dicari, tidak ada riwayat, dan orang tua harus bertanya untuk tahu menu hari ini. **Pizza Snack Play** mendigitalkan seluruh proses tersebut: admin mengelola menu & jadwal, orang tua login untuk melihat jadwal harian, mingguan, dan bulanan.
+Jadwal piket snack sekolah sebelumnya disusun dalam dokumen teks manual — sulit dicari, tidak ada riwayat, dan orang tua harus bertanya untuk tahu menu hari ini. **Pizza Snack Play** mendigitalkan seluruh proses tersebut: admin mengelola menu & jadwal, orang tua login untuk memilih menu, melihat jadwal harian, mingguan, dan bulanan.
 
 ---
 

@@ -382,8 +382,8 @@ class ScheduleController {
     );
     if (!scope.ok) return mapScopeError(c, scope.error);
 
-    const year = body.year;
-    const month = body.month;
+    const { year, month } = body;
+
     if (!Number.isInteger(year) || year! < 2000 || year! > 2100) {
       return responseBadRequest(c, "`year` tidak valid");
     }

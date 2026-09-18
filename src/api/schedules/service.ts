@@ -2,6 +2,7 @@ import type { Db } from "../../database/db";
 import type { Holiday, Schedule, Week } from "../../database/schema";
 import type { MenuDto, MenuItemType } from "../../types/catalog";
 import type { Role } from "../../types/auth";
+import type { ScheduleClaimSummaryDto } from "../../types/claim";
 import type {
   CopyWeekInput,
   CopyWeekResultDto,
@@ -21,6 +22,7 @@ import type {
   WeekScheduleDto,
 } from "../../types/schedule";
 import { catalogRepository } from "../catalog/repository";
+import { claimService } from "../claims/service";
 import {
   addDays,
   dayOfWeek,
@@ -52,6 +54,7 @@ interface ScheduleContext {
   holidaysByDate: Map<string, Holiday>;
   weeksByStart: Map<string, Week>;
   menusById: Map<number, MenuDto>;
+  claimsByScheduleId: Map<number, ScheduleClaimSummaryDto>;
   today: string;
 }
 
@@ -89,12 +92,18 @@ class ScheduleService {
       scheduleRepository.findWeeksOverlapping(db, from, to),
     ]);
 
-    const menusById = await catalogRepository.loadMenusByIds(
-      db,
-      scheduleRows
-        .map((row) => row.menuId)
-        .filter((id): id is number => id !== null),
-    );
+    const [menusById, claimsByScheduleId] = await Promise.all([
+      catalogRepository.loadMenusByIds(
+        db,
+        scheduleRows
+          .map((row) => row.menuId)
+          .filter((id): id is number => id !== null),
+      ),
+      claimService.summariesByScheduleIds(
+        db,
+        scheduleRows.map((row) => row.id),
+      ),
+    ]);
 
     return {
       className,
@@ -102,6 +111,7 @@ class ScheduleService {
       holidaysByDate: new Map(holidayRows.map((row) => [row.date, row])),
       weeksByStart: new Map(weekRows.map((row) => [row.weekStartDate, row])),
       menusById,
+      claimsByScheduleId,
       today: todayInWib(),
     };
   }
@@ -129,6 +139,7 @@ class ScheduleService {
       petugasName: schedule?.petugasName ?? null,
       petugasParentName: schedule?.petugasParentName ?? null,
       status: (schedule?.status as ScheduleStatus | undefined) ?? null,
+      claim: schedule ? (ctx.claimsByScheduleId.get(schedule.id) ?? null) : null,
     };
   }
 

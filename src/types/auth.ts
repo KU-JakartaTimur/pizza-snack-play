@@ -39,6 +39,11 @@ export interface AuthUser {
    * mis. `"1A"`. Dipakai UI untuk mengunci pilihan kelas.
    */
   className: string | null;
+  /**
+   * Id profil orang tua (`parents.id`), bukan `users.id`. Null untuk admin.
+   * Dipakai UI untuk mengenali klaim jadwal miliknya sendiri.
+   */
+  parentId: number | null;
   /** Hubungan dengan siswa (`ibu` | `ayah` | `wali`). Null untuk admin. */
   relationship: string | null;
   /**

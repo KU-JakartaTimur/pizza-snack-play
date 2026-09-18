@@ -443,10 +443,17 @@ INSERT INTO settings (key, value) VALUES
   ('active_month', '2026-09');
 
 INSERT INTO users (id, username, password_hash, full_name, role, class_name, is_active) VALUES
+<<<<<<< HEAD
   (1, 'admin', 'pbkdf2$100000$WI7gNPvGQRc95RW2aYIOwg$eUC7YvIawFIAlQFikQwGS52ia7pcJTeXUA1IUTeLgl4', 'Bu Guru Sari', 'admin', NULL, 1),
   (2, 'sari', 'pbkdf2$100000$xodu2rkXsl29XdW475MqqA$l0p6WgPNR95S7LHmkbQZH3HcjmbZLrYpj0mi5b7g0MI', 'Ibu Sari', 'parent', NULL, 1),
   (3, 'budi', 'pbkdf2$100000$xodu2rkXsl29XdW475MqqA$l0p6WgPNR95S7LHmkbQZH3HcjmbZLrYpj0mi5b7g0MI', 'Pak Budi', 'korlas', '1', 1),
   (4, 'dewi', 'pbkdf2$100000$xodu2rkXsl29XdW475MqqA$l0p6WgPNR95S7LHmkbQZH3HcjmbZLrYpj0mi5b7g0MI', 'Ibu Dewi', 'parent', NULL, 1);
+=======
+  (1, 'admin', 'pbkdf2$100000$zDO8IWnBPstZdzuWVv_eYw$B4swxbQJhcO9bNoxktgU812rWXa6WaScYlfBX-VjjF8', 'Bu Guru Sari', 'admin', NULL, 1),
+  (2, 'sari', 'pbkdf2$100000$03TuAvFTXOLeJA9nbmVEZg$FmnWj3we1djU07h0LnEZm5DyztusdpBroLOS_scZ6w8', 'Ibu Sari', 'parent', NULL, 1),
+  (3, 'budi', 'pbkdf2$100000$03TuAvFTXOLeJA9nbmVEZg$FmnWj3we1djU07h0LnEZm5DyztusdpBroLOS_scZ6w8', 'Pak Budi', 'korlas', '1A', 1),
+  (4, 'dewi', 'pbkdf2$100000$03TuAvFTXOLeJA9nbmVEZg$FmnWj3we1djU07h0LnEZm5DyztusdpBroLOS_scZ6w8', 'Ibu Dewi', 'parent', NULL, 1);
+>>>>>>> 2ad3c510a41db83a5b49cd8546c8a4b2fdd99ed3
 
 INSERT INTO parents (user_id, parent_name, relationship, phone) VALUES
   (2, 'Sari Wulandari', 'ibu', '081234567890'),

@@ -15,8 +15,13 @@ const scheduleWriters = requireRole("admin", "korlas");
  * Jadwal — dibaca oleh semua role, dengan cakupan kelas yang dipersempit
  * sesuai role (lihat `resolveReadClass`).
  *
- * Rute statis (`/today`, `/week`, `/month`, `/range`, `/search`) didaftarkan
- * sebelum `/:id` agar tidak tertangkap sebagai parameter ID.
+ * Rute statis (`/today`, `/week`, `/month`, `/range`, `/search`, `/lock`,
+ * `/publish`) didaftarkan sebelum `/:id` agar tidak tertangkap sebagai
+ * parameter ID.
+ *
+ * Kunci & publikasi: korlas dapat mengunci jadwal draft dan mempublikasi
+ * jadwal yang sudah terkunci penuh satu bulan. Buka kunci (unlock) hanya
+ * untuk admin.
  */
 export const schedulesRoute = new Hono<AuthEnv>()
   .get("/today", requireAuth, scheduleController.today)
@@ -27,6 +32,9 @@ export const schedulesRoute = new Hono<AuthEnv>()
   .get("/:id", requireAuth, scheduleController.detail)
   .post("/", requireAuth, scheduleWriters, scheduleController.create)
   .post("/copy", requireAuth, scheduleWriters, scheduleController.copy)
+  .post("/lock", requireAuth, scheduleWriters, scheduleController.lock)
+  .post("/publish", requireAuth, scheduleWriters, scheduleController.publish)
+  .post("/:id/unlock", requireAuth, admin, scheduleController.unlock)
   .put("/:id", requireAuth, scheduleWriters, scheduleController.update)
   .delete("/:id", requireAuth, scheduleWriters, scheduleController.remove);
 

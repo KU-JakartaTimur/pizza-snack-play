@@ -127,11 +127,21 @@ export const weeks = sqliteTable(
 // menu_id NULL + is_holiday=1 berarti libur.
 //
 // Jadwal bersifat PER KELAS: setiap kelas punya barisnya sendiri untuk
+<<<<<<< HEAD
 // satu tanggal. Menunya sendiri bersifat sekolah-wide — satu menu dipakai
 // semua kelas pada tanggal yang sama — sehingga yang membedakan antar baris
 // adalah `petugas_name` (siapa yang piket mengambil snack hari itu).
 // Karena itu keunikannya komposit (tanggal + kelas), bukan tanggal saja
 // seperti sebelumnya.
+=======
+// satu tanggal, sehingga korlas kelas 1A bisa menyusun menu yang berbeda
+// dari kelas 1B. Karena itu keunikannya komposit (tanggal + kelas),
+// bukan tanggal saja seperti sebelumnya.
+//
+// status: 'draft' (default, bisa diedit) | 'locked' (dikunci korlas,
+//   tidak bisa diedit) | 'published' (dipublikasi ke orang tua).
+//   Orang tua hanya melihat 'published'; korlas/admin melihat semua.
+>>>>>>> 2ad3c510a41db83a5b49cd8546c8a4b2fdd99ed3
 // ─────────────────────────────────────────────────────────────
 export const schedules = sqliteTable(
   "schedules",
@@ -159,6 +169,18 @@ export const schedules = sqliteTable(
     /** Nama orang tua/wali petugas — opsional, diisi bila diketahui. */
     petugasParentName: text("petugas_parent_name"),
     notes: text("notes"),
+    /** Status jadwal: 'draft' | 'locked' | 'published'. */
+    status: text("status").notNull().default("draft"),
+    /** User yang mengunci (FK ke users.id). */
+    lockedBy: integer("locked_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    lockedAt: text("locked_at"),
+    /** User yang mempublikasi (FK ke users.id). */
+    publishedBy: integer("published_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    publishedAt: text("published_at"),
     createdAt: text("created_at").notNull().default(now),
     updatedAt: text("updated_at").notNull().default(now),
   },
@@ -170,6 +192,7 @@ export const schedules = sqliteTable(
     index("idx_schedules_week").on(table.weekId),
     index("idx_schedules_menu").on(table.menuId),
     index("idx_schedules_class").on(table.className),
+    index("idx_schedules_status").on(table.status),
   ],
 );
 

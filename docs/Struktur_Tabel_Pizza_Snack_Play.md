@@ -9,7 +9,7 @@
 
 > **Catatan versi:** Dokumen ini awalnya ditulis untuk `bun:sqlite` lokal. Setelah template `bhvr-template` di-scaffold, database target adalah **Cloudflare D1**. DDL di bawah tetap valid karena D1 adalah SQLite — yang berubah hanya cara koneksi (`drizzle(env.DB)`) dan cara migrasi (`drizzle-kit` + `wrangler d1`).
 >
-> **Revisi terakhir:** tabel `students` ditambahkan agar **satu orang tua dapat memiliki lebih dari satu anak**. Kolom `parents.student_name` / `parents.student_class` dihapus setelah datanya dipindahkan. Jumlah tabel kini **12**.
+> **Revisi terakhir:** tabel `students` ditambahkan agar **satu orang tua dapat memiliki lebih dari satu anak**. Kolom `parents.student_name` / `parents.student_class` dihapus setelah datanya dipindahkan. Jumlah tabel kini **13** (12 + `piket_assignments` sejak v1.5).
 >
 > **Revisi jadwal per kelas (migrasi `0002_*.sql`):** `schedules` sekarang menyimpan **satu baris per kelas**
 > (`class_name NOT NULL`), dengan indeks unik gabungan `UNIQUE(schedule_date, class_name)` menggantikan
@@ -134,6 +134,19 @@ export default app;
                            ★ = kelas pemilik baris; wajib diisi.
                              Satu tanggal boleh punya baris
                              berbeda untuk tiap kelas.
+                                  │
+                                  │ 1 ──── n
+                                  ▼
+                      ┌──────────────────────────┐
+                      │   piket_assignments       │
+                      ├──────────────────────────┤
+                      │ id (PK)                   │
+                      │ schedule_id (FK) ─────────┼──→ schedules.id
+                      │ class_label (UQ w/ sched) │  "Kelas 1".."Kelas 5"
+                      │ student_name              │
+                      │ created_at                │
+                      └──────────────────────────┘
+                      UNIQUE(schedule_id, class_label)
 ```
 
 > Satu orang tua boleh memiliki **lebih dari satu anak** — relasi `parents 1 ── n students`.
@@ -251,11 +264,19 @@ CREATE TABLE IF NOT EXISTS schedules (
     menu_id        INTEGER,                          -- FK ke menus (NULL jika libur)
     is_holiday     INTEGER NOT NULL DEFAULT 0,       -- 1=libur, 0=ada snack
     notes          TEXT,                             -- catatan khusus
+    -- ★ Kunci & Publikasi (migrasi 0003)
+    status         TEXT NOT NULL DEFAULT 'draft',    -- 'draft' | 'locked' | 'published'
+    locked_by      INTEGER,                          -- FK ke users.id (siapa yang mengunci)
+    locked_at      TEXT,                             -- timestamp penguncian
+    published_by   INTEGER,                          -- FK ke users.id (siapa yang mempublikasi)
+    published_at   TEXT,                             -- timestamp publikasi
     created_at     TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at     TEXT NOT NULL DEFAULT (datetime('now')),
 
     FOREIGN KEY (week_id) REFERENCES weeks(id) ON DELETE SET NULL,
-    FOREIGN KEY (menu_id) REFERENCES menus(id) ON DELETE SET NULL
+    FOREIGN KEY (menu_id) REFERENCES menus(id) ON DELETE SET NULL,
+    FOREIGN KEY (locked_by) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (published_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
 -- ★ Unik GABUNGAN: satu kelas hanya boleh punya satu baris per tanggal,
@@ -264,7 +285,14 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_schedules_date_class ON schedules(schedule
 CREATE INDEX IF NOT EXISTS idx_schedules_week  ON schedules(week_id);
 CREATE INDEX IF NOT EXISTS idx_schedules_menu  ON schedules(menu_id);
 CREATE INDEX IF NOT EXISTS idx_schedules_class ON schedules(class_name);
+CREATE INDEX IF NOT EXISTS idx_schedules_status ON schedules(status);
 ```
+
+> **Status jadwal (migrasi `0003_schedule_lock_publish.sql`):**
+> Kolom `status`, `locked_by`, `locked_at`, `published_by`, `published_at` ditambahkan lewat
+> `ALTER TABLE ADD COLUMN` (semua nullable/nullable-with-default, aman untuk tabel berisi data).
+> Baris yang sudah ada saat migrasi di-`UPDATE` ke `status = 'published'` agar tidak menghilangkan
+> jadwal yang sebelumnya sudah terlihat oleh orang tua. Lihat fitur F8 di PRD untuk alur kerja.
 
 > **Kenapa `class_name` tidak jadi FK ke tabel `classes`?** Kelas sengaja tetap teks bebas agar
 > konsisten dengan `students.class_name` dan tidak menambah tabel baru. Konsekuensinya penamaan
@@ -409,6 +437,36 @@ CREATE TABLE IF NOT EXISTS import_logs (
 );
 ```
 
+### 2.13 Tabel: `piket_assignments` (Penugasan Siswa Piket) — Phase 4
+Menyimpan siswa yang bertugas piket (membawa/menyiapkan snack) per kelas per hari. Terhubung ke
+entri jadwal lewat `schedule_id`; bila jadwal dihapus, penugasan ikut terhapus (`ON DELETE CASCADE`).
+
+```sql
+CREATE TABLE IF NOT EXISTS piket_assignments (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    schedule_id  INTEGER NOT NULL,                  -- FK ke schedules
+    class_label  TEXT NOT NULL,                     -- label kelas dari file sumber, mis. "Kelas 1"
+    student_name TEXT NOT NULL,                     -- nama siswa yang bertugas piket
+    created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+
+    FOREIGN KEY (schedule_id) REFERENCES schedules(id) ON DELETE CASCADE
+);
+
+-- Satu kelas hanya boleh punya satu siswa piket per entri jadwal
+CREATE UNIQUE INDEX IF NOT EXISTS idx_piket_schedule_class ON piket_assignments(schedule_id, class_label);
+CREATE INDEX IF NOT EXISTS idx_piket_student ON piket_assignments(student_name);
+```
+
+> **Kenapa `class_label` bukan `class_name`?** File sumber `output_jadwal_piket.txt` memakai label
+> "Kelas 1", "Kelas 2", ..., "Kelas 5" yang berbeda dari `schedules.class_name` (mis. "1A", "1B", "2A").
+> `class_label` mempertahankan label asli file sumber; pemetaan ke `class_name` dilakukan saat impor/seed.
+> Penugasan terkait ke baris jadwal lewat `schedule_id`, bukan ke `class_name` langsung, sehingga
+> relasi tetap konsisten meskipun penamaan kelas berubah.
+>
+> **Satu siswa per kelas per hari:** `UNIQUE(schedule_id, class_label)` menegakkan bahwa setiap kelas
+> hanya boleh punya satu siswa piket per entri jadwal (satu hari). Bila suatu hari nanti dibutuhkan
+> lebih dari satu siswa per kelas, batasan unik ini perlu disesuaikan.
+
 ---
 
 ## 3. Relasi Antar Tabel (Summary)
@@ -421,6 +479,8 @@ CREATE TABLE IF NOT EXISTS import_logs (
 | `menu_categories` | `categories` | Many-to-Many | `category_id` |
 | `schedules` | `weeks` | Many-to-One (opsional) | `week_id` |
 | `schedules` | `menus` | Many-to-One (opsional) | `menu_id` |
+| `schedules` | `users` | Many-to-One (opsional) | `locked_by` — siapa yang mengunci |
+| `schedules` | `users` | Many-to-One (opsional) | `published_by` — siapa yang mempublikasi |
 | `parents` | `users` | Many-to-One | `user_id` |
 | `students` | `parents` | Many-to-One | `parent_id` |
 | `schedules` | `users` (korlas) | **Logis, bukan FK** | `schedules.class_name` = `users.class_name` |
@@ -455,13 +515,13 @@ INSERT INTO categories (name, slug, color) VALUES
 ### 4.2 Sample Menu & Items (September 2026 — Minggu 1)
 
 ```sql
--- Menu: Roti isi coklat + Jeruk
+-- Menu: Roti coklat + Jeruk
 INSERT INTO menus (name, description) VALUES
-('Roti isi coklat + Jeruk', 'Menu outing Selasa');
+('Roti coklat + Jeruk', 'Menu outing Selasa');
 
 INSERT INTO menu_items (menu_id, name, item_type, category_id) VALUES
-(1, 'Roti isi coklat', 'main', 6),  -- Roti/Bakery
-(1, 'Jeruk',           'fruit', 5); -- Buah Segar
+(1, 'Roti coklat', 'main', 6),  -- Roti/Bakery
+(1, 'Jeruk',       'fruit', 5); -- Buah Segar
 
 -- Menu: Tahu isi sayur + Melon
 INSERT INTO menus (name, description) VALUES
@@ -491,13 +551,14 @@ INSERT INTO menu_items (menu_id, name, item_type, category_id) VALUES
 ### 4.3 Sample Week & Schedules (September 2026 — Minggu 1)
 
 ```sql
--- Week: 1-5 September 2026
+-- Week: 1-4 September 2026 (Selasa-Jumat; Senin 31 Agustus masuk minggu sebelumnya)
 INSERT INTO weeks (week_start_date, week_end_date, month, year, label) VALUES
-('2026-09-01', '2026-09-05', 9, 2026, 'Minggu 1 September 2026');
+('2026-09-01', '2026-09-04', 9, 2026, 'Minggu 1 September 2026');
 
 -- Schedules for the week — SATU BARIS PER KELAS
 -- Kolom class_name wajib diisi; tanggal yang sama boleh berulang untuk kelas berbeda.
 INSERT INTO schedules (week_id, schedule_date, day_of_week, class_name, menu_id, is_holiday) VALUES
+<<<<<<< HEAD
 -- Kelas 1
 (1, '2026-09-01', 2, '1', 1, 0, 'Shezan', NULL, 'outing'),
 (1, '2026-09-02', 3, '1', 2, 0, 'Huma', NULL, NULL),
@@ -513,6 +574,23 @@ INSERT INTO schedules (week_id, schedule_date, day_of_week, class_name, menu_id,
 (1, '2026-09-02', 3, '3', 2, 0, 'Taqiya', NULL, NULL),
 (1, '2026-09-03', 4, '3', 3, 0, 'Nafiza', NULL, NULL),
 (1, '2026-09-04', 5, '3', 4, 0, 'Al falah', NULL, NULL);
+=======
+-- Kelas 1A
+(1, '2026-09-01', 2, '1A', 1, 0),  -- Selasa: Roti coklat + Jeruk
+(1, '2026-09-02', 3, '1A', 2, 0),  -- Rabu: Tahu isi sayur + Melon
+(1, '2026-09-03', 4, '1A', 3, 0),  -- Kamis: Pisang panggang coklat keju + Nanas madu
+(1, '2026-09-04', 5, '1A', 4, 0),  -- Jumat: Urap jagung + Semangka
+-- Kelas 1B (menu boleh berbeda pada tanggal yang sama)
+(1, '2026-09-01', 2, '1B', 1, 0),
+(1, '2026-09-02', 3, '1B', 5, 0),
+(1, '2026-09-03', 4, '1B', 3, 0),
+(1, '2026-09-04', 5, '1B', 6, 0),
+-- Kelas 2A
+(1, '2026-09-01', 2, '2A', 7, 0),
+(1, '2026-09-02', 3, '2A', 2, 0),
+(1, '2026-09-03', 4, '2A', 8, 0),
+(1, '2026-09-04', 5, '2A', 4, 0);
+>>>>>>> 2ad3c510a41db83a5b49cd8546c8a4b2fdd99ed3
 -- Catatan: 1 September 2026 adalah Selasa (hari Senin tidak ada di file, kemungkinan libur)
 
 -- Boleh juga menandai libur hanya untuk satu kelas (korlas), mis. kelas 1 ikut kegiatan:
@@ -883,6 +961,12 @@ export const schedules = sqliteTable('schedules', {
   menuId:       integer('menu_id').references(() => menus.id, { onDelete: 'set null' }),
   isHoliday:    integer('is_holiday').notNull().default(0),
   notes:        text('notes'),
+  // ★ Kunci & Publikasi (migrasi 0003)
+  status:       text('status').notNull().default('draft'),     // 'draft' | 'locked' | 'published'
+  lockedBy:     integer('locked_by').references(() => users.id, { onDelete: 'set null' }),
+  lockedAt:     text('locked_at'),
+  publishedBy:  integer('published_by').references(() => users.id, { onDelete: 'set null' }),
+  publishedAt:  text('published_at'),
   createdAt:    text('created_at').notNull().default(sql`(datetime('now'))`),
   updatedAt:    text('updated_at').notNull().default(sql`(datetime('now'))`),
 }, (table) => [
@@ -893,6 +977,7 @@ export const schedules = sqliteTable('schedules', {
   index('idx_schedules_week').on(table.weekId),
   index('idx_schedules_menu').on(table.menuId),
   index('idx_schedules_class').on(table.className),
+  index('idx_schedules_status').on(table.status),
 ]);
 
 // ─── holidays (global, sekolah-wide) ─────────────────
@@ -976,7 +1061,7 @@ export const importLogs = sqliteTable('import_logs', {
 
 ## 7. Pemetaan Data File → Tabel
 
-### File: `jadwal_piket_snack_pizza_snack_play.txt`
+### File: `data/output_jadwal_piket.txt` (sumber utama) & `data/jadwal_piket_snack.txt` (arsip)
 
 ```
 Raw Data                          →   Tabel Target
@@ -984,21 +1069,27 @@ Raw Data                          →   Tabel Target
 Bulan (September 2026)            →   settings / weeks.month + year
 Minggu (1-4 September)            →   weeks (week_start_date, week_end_date)
 Hari (Selasa)                     →   schedules.day_of_week
-"Roti isi coklat + jeruk"         →   menus.name + menu_items (2 rows)
-"Roti isi coklat"                 →   menu_items.name (item_type='main')
+"Roti coklat + jeruk"             →   menus.name + menu_items (2 rows)
+"Roti coklat"                     →   menu_items.name (item_type='main')
 "jeruk"                           →   menu_items.name (item_type='fruit')
 "Libur"                           →   schedules.is_holiday = 1
-Tanggal implisit (2 Sep 2026)     →   schedules.schedule_date
+Tanggal implisit (1 Sep 2026)     →   schedules.schedule_date
 ★ Satu tanggal                    →   schedules × jumlah kelas (satu baris per kelas)
 ★ Daftar kelas                    →   turunan students.class_name ∪ users.class_name ∪ schedules.class_name
+★ "Kelas 1: Shezan" (output)     →   piket_assignments (class_label + student_name)
 ```
 
-> **★ Ekspansi per kelas:** file sumber **tidak** memuat informasi kelas — ia hanya berisi tanggal
-> dan menu (model lama "satu jadwal untuk seluruh sekolah"). Sejak jadwal disimpan per kelas,
-> `scripts/seed.ts` mendaftar kelas yang ada (diturunkan dari `STUDENTS`) lalu menulis **satu baris
-> `schedules` untuk setiap kelas pada setiap tanggal**. Karena itu 43 tanggal menjadi **129 baris**
-> (43 × 3 kelas). Bila kelak sekolah ingin jadwal berbeda antar kelas, yang perlu diubah hanya
-> pasangan `(tanggal, kelas)` tertentu — struktur tabelnya sudah mendukung tanpa migrasi baru.
+> **★ Ekspansi per kelas:** file arsip `jadwal_piket_snack.txt` **tidak** memuat informasi kelas — ia hanya
+> berisi tanggal dan menu. Sejak jadwal disimpan per kelas, `scripts/seed.ts` mendaftar kelas yang ada
+> (diturunkan dari `STUDENTS`) lalu menulis **satu baris `schedules` untuk setiap kelas pada setiap
+> tanggal**. Karena itu 43 tanggal menjadi **129 baris** (43 × 3 kelas). Bila kelak sekolah ingin jadwal
+> berbeda antar kelas, yang perlu diubah hanya pasangan `(tanggal, kelas)` tertentu — struktur tabelnya
+> sudah mendukung tanpa migrasi baru.
+>
+> **★ Penugasan piket (output_jadwal_piket.txt):** file ini **juga** memuat nama siswa piket per kelas
+> per hari (mis. "Kelas 1: Shezan"). Baris "Kelas N: <nama>" dipetakan ke `piket_assignments` dengan
+> `class_label = "Kelas N"` dan `student_name = "<nama>"`, dikaitkan ke `schedule_id` yang sesuai.
+> Pemetaan label "Kelas N" ↔ `class_name` (mis. "1A") dilakukan saat seed, bukan saat runtime.
 
 ### Parsing Logic (untuk script seed)
 
@@ -1027,6 +1118,7 @@ For each month block in file:
 | `schedules` | `class_name` | `idx_schedules_class` | Daftar kelas turunan + filter kelas pada semua pembacaan |
 | `schedules` | `week_id` | `idx_schedules_week` | Filter by minggu |
 | `schedules` | `menu_id` | `idx_schedules_menu` | Cari semua tanggal untuk menu tertentu |
+| `schedules` | `status` | `idx_schedules_status` | Filter status: orang tua hanya melihat `published` (`WHERE status IN ('published')`) |
 | `menus` | `name` | `idx_menus_name` | Pencarian menu by nama |
 | `menus` | `is_active` | `idx_menus_active` | Filter menu aktif |
 | `menu_items` | `menu_id` | `idx_menu_items_menu_id` | Join ke parent menu |

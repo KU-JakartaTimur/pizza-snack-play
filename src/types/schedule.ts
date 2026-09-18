@@ -2,6 +2,9 @@
 
 import type { MenuDto, MenuItemType } from "./catalog";
 
+/** Status jadwal: draft (editable) → locked (dikunci) → published (tampil ke orang tua). */
+export type ScheduleStatus = "draft" | "locked" | "published";
+
 export interface WeekDto {
   id: number;
   weekStartDate: string;
@@ -17,6 +20,9 @@ export interface WeekDto {
  *
  * Jadwal bersifat per kelas, jadi setiap hari selalu menyertakan kelas mana
  * yang sedang dilihat.
+ *
+ * `status` hanya diisi untuk admin/korlas; orang tua selalu melihat 'published'
+ * (atau null bila jadwal belum dipublikasi).
  */
 export interface ScheduleDayDto {
   date: string;
@@ -30,10 +36,15 @@ export interface ScheduleDayDto {
   notes: string | null;
   scheduleId: number | null;
   menu: MenuDto | null;
+<<<<<<< HEAD
   /** Nama siswa yang bertugas piket (ambil snack) pada hari ini. */
   petugasName: string | null;
   /** Nama orang tua/wali petugas — bila diketahui. */
   petugasParentName: string | null;
+=======
+  /** Status jadwal — hanya relevan untuk admin/korlas. */
+  status: ScheduleStatus | null;
+>>>>>>> 2ad3c510a41db83a5b49cd8546c8a4b2fdd99ed3
 }
 
 export interface WeekScheduleDto {
@@ -73,6 +84,47 @@ export interface ScheduleInput {
   /** Nama orang tua/wali petugas. */
   petugasParentName?: string | null;
   notes?: string | null;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Kunci & Publikasi jadwal
+// ─────────────────────────────────────────────────────────────
+
+export interface LockScheduleInput {
+  /** Tanggal awal rentang yang dikunci (inklusif). */
+  fromDate: string;
+  /** Tanggal akhir rentang yang dikunci (inklusif). */
+  toDate: string;
+  /** Kelas yang dikunci. Wajib untuk admin; korlas diisi otomatis. */
+  className?: string;
+}
+
+export interface LockScheduleResultDto {
+  className: string;
+  fromDate: string;
+  toDate: string;
+  locked: number;
+  alreadyLocked: number;
+  /** Baris yang sudah published dilewati (tidak bisa dikunci ulang). */
+  skipped: number;
+}
+
+export interface PublishScheduleInput {
+  year: number;
+  month: number;
+  /** Kelas yang dipublikasi. Wajib untuk admin; korlas diisi otomatis. */
+  className?: string;
+}
+
+export interface PublishScheduleResultDto {
+  className: string;
+  year: number;
+  month: number;
+  published: number;
+  /** Baris draft yang belum dikunci (menggagalkan publikasi bila > 0). */
+  draftCount: number;
+  /** Baris yang sudah published sebelumnya (dilewati). */
+  alreadyPublished: number;
 }
 
 // ─────────────────────────────────────────────────────────────

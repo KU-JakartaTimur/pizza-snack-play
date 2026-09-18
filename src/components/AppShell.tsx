@@ -5,7 +5,6 @@ import {
   CalendarRange,
   LayoutDashboard,
   LogOut,
-  Pizza,
   Search,
   Tags,
   UserCircle,
@@ -16,6 +15,7 @@ import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/cn";
 import { ClassSwitcher } from "./ClassSwitcher";
 import type { Capability } from "./AdminOnly";
+import logo from "@/assets/logo.png";
 
 interface NavItem {
   to: string;
@@ -90,9 +90,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="flex h-16 items-center justify-between gap-4">
             <Link to="/hari-ini" className="flex items-center gap-2.5 shrink-0">
-              <span className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-linear-to-br from-brand-600 to-brand-800 text-white shadow-sm">
-                <Pizza className="h-5 w-5" />
-                <span className="absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-accent-500" />
+              <span className="relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl shadow-sm">
+                <img src={logo} alt="Pizza Snack Play" className="h-full w-full object-cover" />
               </span>
               <span className="hidden sm:block">
                 <span className="block font-bold leading-tight text-slate-900">

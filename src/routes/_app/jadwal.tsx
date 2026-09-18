@@ -6,8 +6,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Copy,
+  Lock,
   Plus,
+  Send,
   Trash2,
+  Unlock,
 } from "lucide-react";
 import { RoleGate } from "@/components/AdminOnly";
 import { PageHeader } from "@/components/AppShell";
@@ -36,13 +39,23 @@ import {
   todayInWib,
   yearOf,
 } from "@/lib/date";
-import type { ScheduleDayDto } from "@/types/schedule";
+import type { ScheduleDayDto, ScheduleStatus } from "@/types/schedule";
 
 export const Route = createFileRoute("/_app/jadwal")({
   component: ScheduleAdminPage,
 });
 
 const NO_MENU = "";
+
+/** Label dan warna badge untuk tiap status jadwal. */
+const STATUS_META: Record<
+  ScheduleStatus,
+  { label: string; tone: "neutral" | "warning" | "success" }
+> = {
+  draft: { label: "Draft", tone: "neutral" },
+  locked: { label: "Terkunci", tone: "warning" },
+  published: { label: "Dipublikasi", tone: "success" },
+};
 
 /**
  * Halaman kelola jadwal — admin dan korlas.
@@ -219,6 +232,77 @@ function ScheduleAdminContent() {
   const copySameWeek =
     startOfWeek(copyForm.fromDate) === startOfWeek(copyForm.toDate);
 
+  // ── Kunci & Publikasi ────────────────────────────────────────
+  // Rentang tanggal bulan yang sedang ditampilkan — dipakai untuk
+  // mengunci seluruh bulan sekaligus.
+  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const monthStart = `${year}-${String(month).padStart(2, "0")}-01`;
+  const monthEnd = `${year}-${String(month).padStart(2, "0")}-${String(daysInMonth).padStart(2, "0")}`;
+
+  // Hitung status jadwal dari data bulanan yang sudah dimuat.
+  const allDays = monthQuery.data?.weeks.flatMap((w) => w.days) ?? [];
+  const schedDays = allDays.filter((d) => d.scheduleId !== null);
+  const draftCount = schedDays.filter((d) => d.status === "draft").length;
+  const lockedCount = schedDays.filter((d) => d.status === "locked").length;
+  const publishedCount = schedDays.filter((d) => d.status === "published").length;
+  const canPublish = draftCount === 0 && lockedCount > 0;
+
+  const lockMutation = useMutation({
+    mutationFn: () =>
+      api.schedules.lock({
+        fromDate: monthStart,
+        toDate: monthEnd,
+        className: className!,
+      }),
+    onSuccess: async (result) => {
+      const { locked, alreadyLocked, skipped } = result.data;
+      setBanner({
+        kind: "ok",
+        text: `Terkunci ${locked} jadwal${alreadyLocked ? `, ${alreadyLocked} sudah terkunci` : ""}${skipped ? `, ${skipped} dilewati (sudah dipublikasi)` : ""}.`,
+      });
+      await invalidate();
+    },
+    onError: (error) =>
+      setBanner({
+        kind: "error",
+        text: error instanceof ApiError ? error.message : "Gagal mengunci jadwal",
+      }),
+  });
+
+  const publishMutation = useMutation({
+    mutationFn: () =>
+      api.schedules.publish({
+        year,
+        month,
+        className: className!,
+      }),
+    onSuccess: async (result) => {
+      setBanner({
+        kind: "ok",
+        text: `${result.data.published} jadwal berhasil dipublikasi ke semua orang tua.`,
+      });
+      await invalidate();
+    },
+    onError: (error) =>
+      setBanner({
+        kind: "error",
+        text: error instanceof ApiError ? error.message : "Gagal mempublikasi jadwal",
+      }),
+  });
+
+  const unlockMutation = useMutation({
+    mutationFn: (id: number) => api.schedules.unlock(id),
+    onSuccess: async (result) => {
+      setBanner({ kind: "ok", text: result.message });
+      await invalidate();
+    },
+    onError: (error) =>
+      setBanner({
+        kind: "error",
+        text: error instanceof ApiError ? error.message : "Gagal membuka kunci",
+      }),
+  });
+
   const shift = (delta: number) => {
     const next = month + delta;
     if (next < 1) {
@@ -239,7 +323,12 @@ function ScheduleAdminContent() {
   };
 
   const menus = menusQuery.data ?? [];
-  const busy = saveMutation.isPending || deleteMutation.isPending;
+  const busy =
+    saveMutation.isPending ||
+    deleteMutation.isPending ||
+    lockMutation.isPending ||
+    publishMutation.isPending ||
+    unlockMutation.isPending;
 
   return (
     <>
@@ -252,6 +341,29 @@ function ScheduleAdminContent() {
         }
         action={
           <div className="flex flex-wrap gap-2">
+            <Button
+              variant="secondary"
+              disabled={!className || draftCount === 0 || busy}
+              onClick={() => lockMutation.mutate()}
+              loading={lockMutation.isPending}
+              title="Kunci semua jadwal draft bulan ini"
+            >
+              <Lock className="h-4 w-4" />
+              Kunci bulan
+            </Button>
+            <Button
+              disabled={!className || !canPublish || busy}
+              onClick={() => publishMutation.mutate()}
+              loading={publishMutation.isPending}
+              title={
+                draftCount > 0
+                  ? "Masih ada jadwal draft — kunci dulu"
+                  : "Publikasi jadwal yang sudah dikunci ke semua orang tua"
+              }
+            >
+              <Send className="h-4 w-4" />
+              Publikasi
+            </Button>
             <Button
               variant="secondary"
               disabled={!className}
@@ -311,6 +423,23 @@ function ScheduleAdminContent() {
               : `${menus.length} menu aktif tersedia`}
           </p>
         </div>
+        {className && schedDays.length > 0 && (
+          <div className="flex flex-wrap items-center gap-4 border-t border-slate-100 px-5 py-2.5 text-xs">
+            <span className="text-slate-500">
+              Status:{" "}
+              <span className="font-medium text-slate-700">{draftCount}</span> draft
+              {" · "}
+              <span className="font-medium text-slate-700">{lockedCount}</span> terkunci
+              {" · "}
+              <span className="font-medium text-slate-700">{publishedCount}</span> dipublikasi
+            </span>
+            {draftCount > 0 && (
+              <span className="text-highlight-700">
+                Kunci dulu sebelum publikasi
+              </span>
+            )}
+          </div>
+        )}
       </Card>
 
       {className && monthQuery.isPending && <Spinner />}
@@ -328,7 +457,10 @@ function ScheduleAdminContent() {
           <Card key={week.startDate}>
             <CardHeader title={week.label} />
             <ul className="divide-y divide-slate-100">
-              {week.days.map((day) => (
+              {week.days.map((day) => {
+                const dayLocked =
+                  day.status === "locked" || day.status === "published";
+                return (
                 <li
                   key={day.date}
                   className="flex flex-wrap items-center gap-3 px-5 py-3"
@@ -346,6 +478,12 @@ function ScheduleAdminContent() {
                     </p>
                   </div>
 
+                  {day.status && (
+                    <Badge tone={STATUS_META[day.status].tone}>
+                      {STATUS_META[day.status].label}
+                    </Badge>
+                  )}
+
                   {day.isHoliday ? (
                     <div className="flex min-w-0 flex-1 items-center gap-2">
                       <Badge tone="warning">
@@ -357,7 +495,7 @@ function ScheduleAdminContent() {
                     <Select
                       className="min-w-0 flex-1"
                       value={day.menu?.id ?? NO_MENU}
-                      disabled={busy}
+                      disabled={busy || dayLocked}
                       onChange={(event) => {
                         const value = event.target.value;
                         saveMutation.mutate({
@@ -414,7 +552,7 @@ function ScheduleAdminContent() {
                     className="w-48 shrink-0"
                     placeholder="Catatan…"
                     defaultValue={day.notes ?? ""}
-                    disabled={busy}
+                    disabled={busy || dayLocked}
                     onBlur={(event) => {
                       const value = event.target.value.trim();
                       if (value === (day.notes ?? "")) return;
@@ -426,10 +564,25 @@ function ScheduleAdminContent() {
                   />
 
                   <div className="flex shrink-0 gap-1">
+                    {dayLocked && isAdmin && day.scheduleId && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={busy}
+                        onClick={() => {
+                          if (confirm(`Buka kunci jadwal ${day.date}?`)) {
+                            unlockMutation.mutate(day.scheduleId!);
+                          }
+                        }}
+                        title="Buka kunci jadwal"
+                      >
+                        <Unlock className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"
-                      disabled={busy}
+                      disabled={busy || dayLocked}
                       onClick={() =>
                         saveMutation.mutate({
                           day,
@@ -453,7 +606,7 @@ function ScheduleAdminContent() {
                         variant="ghost"
                         size="sm"
                         className="text-red-600 hover:bg-red-50"
-                        disabled={busy}
+                        disabled={busy || dayLocked}
                         onClick={() => {
                           if (confirm(`Hapus jadwal ${day.date}?`)) {
                             deleteMutation.mutate(day.scheduleId!);
@@ -466,7 +619,8 @@ function ScheduleAdminContent() {
                     )}
                   </div>
                 </li>
-              ))}
+                );
+              })}
             </ul>
           </Card>
         ))}

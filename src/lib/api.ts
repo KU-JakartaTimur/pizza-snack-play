@@ -16,8 +16,12 @@ import type { ClassListDto } from "@/types/class";
 import type {
   CopyWeekInput,
   CopyWeekResultDto,
+  LockScheduleInput,
+  LockScheduleResultDto,
   MenuHistoryDto,
   MonthScheduleDto,
+  PublishScheduleInput,
+  PublishScheduleResultDto,
   ScheduleDayDto,
   ScheduleInput,
   TodayScheduleDto,
@@ -166,6 +170,22 @@ export const api = {
       unwrapFull<CopyWeekResultDto>(
         http.post("schedules/copy", { json: body }),
       ),
+
+    /** Kunci jadwal draft pada rentang tanggal (korlas/admin). */
+    lock: (body: LockScheduleInput) =>
+      unwrapFull<LockScheduleResultDto>(
+        http.post("schedules/lock", { json: body }),
+      ),
+
+    /** Publikasi jadwal yang sudah dikunci untuk satu bulan (korlas/admin). */
+    publish: (body: PublishScheduleInput) =>
+      unwrapFull<PublishScheduleResultDto>(
+        http.post("schedules/publish", { json: body }),
+      ),
+
+    /** Buka kunci satu baris jadwal — kembalikan ke draft (admin saja). */
+    unlock: (id: number) =>
+      unwrapFull<ScheduleDayDto>(http.post(`schedules/${id}/unlock`)),
 
     weeks: (year: number, month: number) =>
       unwrap<WeekDto[]>(http.get(`weeks${query({ year, month })}`)),

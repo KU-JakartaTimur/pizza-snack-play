@@ -24,6 +24,7 @@ import type {
   PublishScheduleResultDto,
   ScheduleDayDto,
   ScheduleInput,
+  TodayAllClassesDto,
   TodayScheduleDto,
   WeekDto,
   WeekScheduleDto,
@@ -123,6 +124,9 @@ export const api = {
       unwrap<TodayScheduleDto>(
         http.get(`schedules/today${query({ class: className ?? undefined })}`),
       ),
+
+    /** Admin — jadwal hari ini untuk semua kelas sekaligus. */
+    todayAll: () => unwrap<TodayAllClassesDto>(http.get("schedules/today-all")),
 
     week: (date?: string, className?: string | null) =>
       unwrap<WeekScheduleDto>(

@@ -15,6 +15,7 @@ import type {
   ScheduleDayDto,
   ScheduleInput,
   ScheduleStatus,
+  TodayAllClassesDto,
   TodayScheduleDto,
   WeekDto,
   WeekScheduleDto,
@@ -31,6 +32,7 @@ import {
   startOfWeek,
   todayInWib,
 } from "../utils/date";
+import { classRepository } from "../classes/repository";
 import { scheduleRepository } from "./repository";
 
 export type ScheduleError =
@@ -175,6 +177,40 @@ class ScheduleService {
     return {
       day: this.buildDay(today, ctx),
       week: this.buildWeek(weekStart, ctx),
+    };
+  }
+
+  /**
+   * Jadwal hari ini untuk SEMUA kelas — khusus admin.
+   * Mengembalikan satu kartu per kelas yang dikenal sistem.
+   */
+  async getTodayAllClasses(db: Db): Promise<TodayAllClassesDto> {
+    const today = todayInWib();
+    const weekStart = startOfWeek(today);
+    const allClasses = await classRepository.listAll(db);
+
+    // Muat konteks minggu sekali (tanpa filter status)
+    const baseCtx = await this.loadContext(db, weekStart, endOfWeek(today), null);
+
+    const classes = await Promise.all(
+      allClasses.map(async (className) => {
+        const ctx = await this.loadContext(
+          db,
+          weekStart,
+          endOfWeek(today),
+          className,
+        );
+        return {
+          className,
+          day: this.buildDay(today, ctx),
+        };
+      }),
+    );
+
+    return {
+      today,
+      classes,
+      week: this.buildWeek(weekStart, baseCtx),
     };
   }
 

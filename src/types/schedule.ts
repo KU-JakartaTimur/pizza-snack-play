@@ -67,6 +67,16 @@ export interface TodayScheduleDto {
   week: WeekScheduleDto;
 }
 
+/** Jadwal hari ini untuk SEMUA kelas — khusus admin. */
+export interface TodayAllClassesDto {
+  today: string;
+  classes: Array<{
+    className: string;
+    day: ScheduleDayDto;
+  }>;
+  week: WeekScheduleDto;
+}
+
 export interface ScheduleInput {
   scheduleDate: string;
   /**

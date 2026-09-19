@@ -1,6 +1,7 @@
 import type { Context } from "hono";
 import { getDb } from "../../database/db";
 import type { CopyWeekInput, LockScheduleInput, PublishScheduleInput, ScheduleInput } from "../../types/schedule";
+import type { JwtPayload } from "../../types/auth";
 import type { AuthEnv } from "../middleware/auth";
 import {
   canWriteClass,
@@ -49,6 +50,35 @@ function mapScopeError(c: ScheduleContext, error: ClassScopeError) {
 }
 
 const FORBIDDEN_CLASS = "Kelas ini bukan cakupan Anda";
+
+/** Label kelas untuk pesan 409 — sebutkan kelasnya, bukan sekadar "ada draft". */
+function classLabel(classes: string[]): string {
+  return classes.map((name) => `kelas ${name}`).join(", ");
+}
+
+/**
+ * Cakupan kunci/publikasi.
+ *
+ * Berbeda dari `resolveWriteClass` yang dipakai menulis jadwal per baris:
+ * untuk kunci & publikasi, admin yang **tidak** menyebut kelas berarti
+ * "semua kelas" (`className: null`) — satu tindakan untuk kelas 1–6, sesuai
+ * kebiasaan di lapangan di mana jadwal ditetapkan serentak. Korlas tetap
+ * terkunci ke kelasnya sendiri; menyebut kelas lain ditolak.
+ */
+function resolveBulkClass(
+  user: JwtPayload,
+  requested: string | null,
+): { ok: true; className: string | null } | { ok: false; error: ClassScopeError } {
+  if (user.role === "admin") {
+    return { ok: true, className: requested };
+  }
+
+  const own = user.className?.trim() || null;
+  if (!own) return { ok: false, error: "forbidden_class" };
+  if (requested && requested !== own) return { ok: false, error: "forbidden_class" };
+
+  return { ok: true, className: own };
+}
 
 class ScheduleController {
   // ── Pembacaan ───────────────────────────────────────────────
@@ -333,8 +363,8 @@ class ScheduleController {
    * Kunci jadwal draft pada rentang tanggal.
    * `POST /schedules/lock` dengan `{ fromDate, toDate, className? }`
    *
-   * Admin boleh mengosongkan `className` (atau kirim `"*"`) untuk mengunci
-   * **semua kelas sekaligus**. Korlas otomatis terarah ke kelasnya sendiri.
+   * Admin tanpa `className` mengunci **semua kelas sekaligus** (kelas 1–6);
+   * korlas selalu kelasnya sendiri.
    */
   lock = async (c: ScheduleContext) => {
     let body: Partial<LockScheduleInput>;
@@ -344,19 +374,13 @@ class ScheduleController {
       return responseBadRequest(c, "Body harus berupa JSON");
     }
 
-    const user = c.get("user");
-
-    // Admin boleh kunci semua kelas sekaligus — `className` null/"*" = all.
-    // Korlas tetap terkunci ke kelasnya sendiri.
-    let className: string | null;
-    if (user.role === "admin") {
-      const raw = typeof body.className === "string" ? body.className.trim() : null;
-      className = !raw || raw === "*" ? null : raw;
-    } else {
-      const scope = resolveWriteClass(user, typeof body.className === "string" ? body.className : null);
-      if (!scope.ok) return mapScopeError(c, scope.error);
-      className = scope.className!;
-    }
+    const scope = resolveBulkClass(
+      c.get("user"),
+      typeof body.className === "string" && body.className.trim()
+        ? body.className
+        : null,
+    );
+    if (!scope.ok) return mapScopeError(c, scope.error);
 
     if (!isIsoDate(body.fromDate)) {
       return responseBadRequest(c, "`fromDate` wajib format YYYY-MM-DD");
@@ -367,21 +391,26 @@ class ScheduleController {
 
     const data = await scheduleService.lockSchedules(
       getDb(c.env),
-      className,
+      scope.className,
       { fromDate: body.fromDate, toDate: body.toDate },
       user.sub,
     );
 
-    return responseOK(c, "Jadwal berhasil dikunci", data);
+    return responseOK(
+      c,
+      scope.className
+        ? `Jadwal kelas ${scope.className} berhasil dikunci`
+        : `Jadwal ${data.classes.length} kelas berhasil dikunci`,
+      data,
+    );
   };
 
   /**
    * Publikasi jadwal yang sudah dikunci untuk satu bulan.
    * `POST /schedules/publish` dengan `{ year, month, className? }`
    *
-   * Admin boleh mengosongkan `className` (atau kirim `"*"`) untuk
-   * mempublikasi **semua kelas sekaligus**. Korlas hanya untuk kelas yang
-   * dikoordinasinya. Gagal **409** bila masih ada baris `draft`.
+   * Admin tanpa `className` mempublikasi **seluruh sekolah** sekaligus —
+   * orang tua kelas 1–6 melihat jadwalnya bersamaan.
    */
   publish = async (c: ScheduleContext) => {
     let body: Partial<PublishScheduleInput>;
@@ -391,19 +420,13 @@ class ScheduleController {
       return responseBadRequest(c, "Body harus berupa JSON");
     }
 
-    const user = c.get("user");
-
-    // Admin boleh publikasi semua kelas sekaligus.
-    // Korlas tetap terkunci ke kelasnya sendiri.
-    let className: string | null;
-    if (user.role === "admin") {
-      const raw = typeof body.className === "string" ? body.className.trim() : null;
-      className = !raw || raw === "*" ? null : raw;
-    } else {
-      const scope = resolveWriteClass(user, typeof body.className === "string" ? body.className : null);
-      if (!scope.ok) return mapScopeError(c, scope.error);
-      className = scope.className!;
-    }
+    const scope = resolveBulkClass(
+      c.get("user"),
+      typeof body.className === "string" && body.className.trim()
+        ? body.className
+        : null,
+    );
+    if (!scope.ok) return mapScopeError(c, scope.error);
 
     const { year, month } = body;
 
@@ -416,13 +439,31 @@ class ScheduleController {
 
     const result = await scheduleService.publishMonth(
       getDb(c.env),
-      className,
+      scope.className,
       { year: year!, month: month! },
       user.sub,
     );
 
-    if (typeof result === "string") return mapError(c, result);
-    return responseOK(c, "Jadwal berhasil dipublikasi", result);
+    if (typeof result === "string") {
+      // Sebutkan kelas yang menahannya supaya admin tahu harus mengunci
+      // kelas mana — penting justru pada operasi sekolah-wide.
+      const blockers = scheduleService.draftBlockers();
+      if (result === "drafts_remaining" && blockers.length > 0) {
+        return responseConflict(
+          c,
+          `Masih ada jadwal draft di ${classLabel(blockers.map((b) => b.className))} — kunci semua dahulu sebelum publikasi`,
+        );
+      }
+      return mapError(c, result);
+    }
+
+    return responseOK(
+      c,
+      scope.className
+        ? `Jadwal kelas ${scope.className} berhasil dipublikasi`
+        : `Jadwal ${result.classes.length} kelas berhasil dipublikasi`,
+      result,
+    );
   };
 
   /**

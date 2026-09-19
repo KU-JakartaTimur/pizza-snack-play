@@ -24,9 +24,13 @@ export interface AuthContextValue {
    * Dipakai untuk mengunci pemilih kelas di halaman kelola jadwal.
    */
   korlasClass: string | null;
-  /** Boleh mengubah jadwal: admin (semua kelas) atau korlas (kelasnya). */
+  /**
+   * Boleh menyunting jadwal (buat/ubah/hapus/salin) — admin (semua kelas)
+   * atau korlas (kelasnya). Kunci & buka kunci jadwal bukan bagian dari
+   * kemampuan ini; keduanya khusus admin.
+   */
   canManageSchedule: boolean;
-  /** Boleh mengelola katalog menu & kategori: admin atau korlas. */
+  /** Boleh mengelola katalog menu & kategori: **admin saja**. */
   canManageCatalog: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;

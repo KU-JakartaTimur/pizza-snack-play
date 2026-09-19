@@ -86,10 +86,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAdmin,
       isKorlas,
       korlasClass: isKorlas ? (state.user?.className ?? null) : null,
-      // Korlas boleh mengubah jadwal, tetapi hanya kelasnya — pembatasan
-      // itu ditegakkan API, bukan di sini.
+      // Korlas boleh menyusun jadwal kelasnya (menu, petugas, catatan, salin)
+      // dan mempublikasikannya — pembatasan kelasnya ditegakkan API, bukan
+      // di sini. Kunci jadwal sendiri khusus admin.
       canManageSchedule: isAdmin || isKorlas,
-      canManageCatalog: isAdmin || isKorlas,
+      // Katalog menu bersifat sekolah-wide — perubahannya terpusat di admin.
+      canManageCatalog: isAdmin,
       login,
       logout,
     };

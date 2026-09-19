@@ -108,36 +108,69 @@ export interface LockScheduleInput {
   fromDate: string;
   /** Tanggal akhir rentang yang dikunci (inklusif). */
   toDate: string;
-  /** Kelas yang dikunci. Wajib untuk admin; korlas diisi otomatis. */
+  /**
+   * Kelas yang dikunci. Wajib untuk korlas; admin boleh mengosongkan
+   * (atau kirim `"*"`) untuk mengunci **semua kelas sekaligus**.
+   */
   className?: string;
 }
 
-export interface LockScheduleResultDto {
+/** Hasil kunci untuk satu kelas. */
+export interface LockClassResult {
   className: string;
-  fromDate: string;
-  toDate: string;
   locked: number;
   alreadyLocked: number;
   /** Baris yang sudah published dilewati (tidak bisa dikunci ulang). */
   skipped: number;
 }
 
+export interface LockScheduleResultDto {
+  /** `null` bila kunci berlaku untuk semua kelas. */
+  className: string | null;
+  fromDate: string;
+  toDate: string;
+  /** Total baris yang dikunci di seluruh kelas (atau satu kelas). */
+  locked: number;
+  alreadyLocked: number;
+  /** Baris yang sudah published dilewati (tidak bisa dikunci ulang). */
+  skipped: number;
+  /** Rincian per kelas — hanya diisi saat kunci semua kelas. */
+  perClass?: LockClassResult[];
+}
+
 export interface PublishScheduleInput {
   year: number;
   month: number;
-  /** Kelas yang dipublikasi. Wajib untuk admin; korlas diisi otomatis. */
+  /**
+   * Kelas yang dipublikasi. Wajib untuk korlas; admin boleh mengosongkan
+   * (atau kirim `"*"`) untuk mempublikasi **semua kelas sekaligus**.
+   */
   className?: string;
 }
 
-export interface PublishScheduleResultDto {
+/** Hasil publikasi untuk satu kelas. */
+export interface PublishClassResult {
   className: string;
+  published: number;
+  draftCount: number;
+  alreadyPublished: number;
+  /** `true` bila publikasi kelas ini ditolak karena masih ada draft. */
+  blocked: boolean;
+}
+
+export interface PublishScheduleResultDto {
+  /** `null` bila publikasi berlaku untuk semua kelas. */
+  className: string | null;
   year: number;
   month: number;
+  /** Total baris yang dipublikasi di seluruh kelas (atau satu kelas). */
   published: number;
-  /** Baris draft yang belum dikunci (menggagalkan publikasi bila > 0). */
+  /** Total baris draft yang belum dikunci (menggagalkan publikasi bila > 0). */
   draftCount: number;
-  /** Baris yang sudah published sebelumnya (dilewati). */
+  /** Total baris yang sudah published sebelumnya (dilewati). */
   alreadyPublished: number;
+  /** Rincian per kelas — hanya diisi saat publikasi semua kelas. */
+  perClass?: PublishClassResult[];
 }
 
 // ─────────────────────────────────────────────────────────────

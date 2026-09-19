@@ -6,11 +6,13 @@ import type { ScheduleClaimSummaryDto } from "../../types/claim";
 import type {
   CopyWeekInput,
   CopyWeekResultDto,
+  LockClassResult,
   LockScheduleInput,
   LockScheduleResultDto,
   MenuHistoryDto,
   MenuHistoryMatchDto,
   MonthScheduleDto,
+  PublishClassResult,
   PublishScheduleInput,
   PublishScheduleResultDto,
   ScheduleDayDto,
@@ -585,88 +587,216 @@ class ScheduleService {
   // ── Kunci & Publikasi (korlas & admin) ─────────────────────
 
   /**
-   * Kunci semua jadwal 'draft' pada rentang `fromDate`–`toDate` untuk satu kelas.
+   * Kunci semua jadwal 'draft' pada rentang `fromDate`–`toDate`.
+   *
+   * Bila `className` diisi, kunci hanya untuk kelas tersebut (perilaku lama).
+   * Bila `className` null, kunci **semua kelas sekaligus** — admin only.
+   *
    * Baris yang sudah 'locked' atau 'published' dilewati.
-   * Dipanggil oleh korlas setelah selesai menyusun jadwal.
    */
   async lockSchedules(
     db: Db,
-    className: string,
+    className: string | null,
     input: LockScheduleInput,
     userId: number,
   ): Promise<LockScheduleResultDto> {
-    // Ambil status saat ini untuk menghitung yang sudah terkunci/dilewati.
-    const rows = await scheduleRepository.findSchedulesBetween(
-      db,
-      input.fromDate,
-      input.toDate,
-      className,
-    );
+    if (className !== null) {
+      // ── Per-class lock ──
+      const rows = await scheduleRepository.findSchedulesBetween(
+        db,
+        input.fromDate,
+        input.toDate,
+        className,
+      );
 
-    const draftCount = rows.filter((r) => r.status === "draft").length;
-    const alreadyLocked = rows.filter((r) => r.status === "locked").length;
-    const skipped = rows.filter((r) => r.status === "published").length;
+      const draftCount = rows.filter((r) => r.status === "draft").length;
+      const alreadyLocked = rows.filter((r) => r.status === "locked").length;
+      const skipped = rows.filter((r) => r.status === "published").length;
 
-    const locked = draftCount > 0
-      ? await scheduleRepository.lockDraftSchedulesBetween(
-          db,
-          input.fromDate,
-          input.toDate,
-          className,
-          userId,
-        )
-      : 0;
+      const locked = draftCount > 0
+        ? await scheduleRepository.lockDraftSchedulesBetween(
+            db,
+            input.fromDate,
+            input.toDate,
+            className,
+            userId,
+          )
+        : 0;
+
+      return {
+        className,
+        fromDate: input.fromDate,
+        toDate: input.toDate,
+        locked,
+        alreadyLocked,
+        skipped,
+      };
+    }
+
+    // ── All-classes lock ──
+    const allClasses = await classRepository.listAll(db);
+
+    // Ambil status saat ini per kelas untuk pelaporan.
+    const perClass: LockClassResult[] = [];
+
+    let totalLocked = 0;
+    let totalAlreadyLocked = 0;
+    let totalSkipped = 0;
+
+    for (const cls of allClasses) {
+      const rows = await scheduleRepository.findSchedulesBetween(
+        db,
+        input.fromDate,
+        input.toDate,
+        cls,
+      );
+
+      const draftCount = rows.filter((r) => r.status === "draft").length;
+      const alreadyLocked = rows.filter((r) => r.status === "locked").length;
+      const skipped = rows.filter((r) => r.status === "published").length;
+
+      const locked = draftCount > 0
+        ? await scheduleRepository.lockDraftSchedulesBetween(
+            db,
+            input.fromDate,
+            input.toDate,
+            cls,
+            userId,
+          )
+        : 0;
+
+      perClass.push({ className: cls, locked, alreadyLocked, skipped });
+      totalLocked += locked;
+      totalAlreadyLocked += alreadyLocked;
+      totalSkipped += skipped;
+    }
 
     return {
-      className,
+      className: null,
       fromDate: input.fromDate,
       toDate: input.toDate,
-      locked,
-      alreadyLocked,
-      skipped,
+      locked: totalLocked,
+      alreadyLocked: totalAlreadyLocked,
+      skipped: totalSkipped,
+      perClass,
     };
   }
 
   /**
-   * Publikasi semua jadwal 'locked' untuk satu bulan + kelas.
+   * Publikasi semua jadwal 'locked' untuk satu bulan.
+   *
+   * Bila `className` diisi, publikasi hanya untuk kelas tersebut.
+   * Bila `className` null, publikasi **semua kelas sekaligus** — admin only.
+   *
    * Gagal bila masih ada baris 'draft' — harus dikunci dulu.
    * Setelah publikasi, jadwal terlihat oleh semua orang tua.
    */
   async publishMonth(
     db: Db,
-    className: string,
+    className: string | null,
     input: PublishScheduleInput,
     userId: number,
   ): Promise<PublishScheduleResultDto | ScheduleError> {
-    const statusCounts = await scheduleRepository.countSchedulesByStatusForMonth(
-      db,
-      input.year,
-      input.month,
-      className,
-    );
+    if (className !== null) {
+      // ── Per-class publish ──
+      const statusCounts = await scheduleRepository.countSchedulesByStatusForMonth(
+        db,
+        input.year,
+        input.month,
+        className,
+      );
 
-    const counts = new Map(statusCounts.map((r) => [r.status, r.count]));
-    const draftCount = counts.get("draft") ?? 0;
+      const counts = new Map(statusCounts.map((r) => [r.status, r.count]));
+      const draftCount = counts.get("draft") ?? 0;
 
-    if (draftCount > 0) return "drafts_remaining";
+      if (draftCount > 0) return "drafts_remaining";
 
-    const alreadyPublished = counts.get("published") ?? 0;
+      const alreadyPublished = counts.get("published") ?? 0;
 
-    const published = await scheduleRepository.publishLockedSchedulesForMonth(
-      db,
-      input.year,
-      input.month,
-      className,
-      userId,
-    );
+      const published = await scheduleRepository.publishLockedSchedulesForMonth(
+        db,
+        input.year,
+        input.month,
+        className,
+        userId,
+      );
+
+      return {
+        className,
+        year: input.year,
+        month: input.month,
+        published,
+        draftCount,
+        alreadyPublished,
+      };
+    }
+
+    // ── All-classes publish ──
+    const allClasses = await classRepository.listAll(db);
+
+    const perClass: PublishClassResult[] = [];
+    let totalPublished = 0;
+    let totalDraftCount = 0;
+    let totalAlreadyPublished = 0;
+
+    for (const cls of allClasses) {
+      const statusCounts = await scheduleRepository.countSchedulesByStatusForMonth(
+        db,
+        input.year,
+        input.month,
+        cls,
+      );
+
+      const counts = new Map(statusCounts.map((r) => [r.status, r.count]));
+      const draftCount = counts.get("draft") ?? 0;
+      const alreadyPublished = counts.get("published") ?? 0;
+
+      if (draftCount > 0) {
+        // Kelas ini belum siakk dipublikasi — skip, tapi laporkan.
+        perClass.push({
+          className: cls,
+          published: 0,
+          draftCount,
+          alreadyPublished,
+          blocked: true,
+        });
+        totalDraftCount += draftCount;
+        continue;
+      }
+
+      const published = await scheduleRepository.publishLockedSchedulesForMonth(
+        db,
+        input.year,
+        input.month,
+        cls,
+        userId,
+      );
+
+      perClass.push({
+        className: cls,
+        published,
+        draftCount,
+        alreadyPublished,
+        blocked: false,
+      });
+      totalPublished += published;
+      totalAlreadyPublished += alreadyPublished;
+    }
+
+    // Bila ada draft di kelas manapun, kembalikan error agar admin tahu
+    // harus mengunci dulu.
+    if (totalDraftCount > 0) {
+      return "drafts_remaining";
+    }
 
     return {
-      className,
+      className: null,
       year: input.year,
       month: input.month,
-      published,
-      draftCount,
-      alreadyPublished,
+      published: totalPublished,
+      draftCount: totalDraftCount,
+      alreadyPublished: totalAlreadyPublished,
+      perClass,
     };
   }
 

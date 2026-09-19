@@ -62,6 +62,11 @@ const STATUS_META: Record<
  *
  * Admin memilih kelas lewat pemilih kelas di header; korlas terkunci ke
  * kelas yang dikoordinasinya (pembatasan sebenarnya tetap di API).
+ *
+ * Pembagiannya: korlas boleh menyusun jadwal kelasnya (menu, petugas, catatan,
+ * Salin Sepekan) selama barisnya masih `draft`, lalu **mempublikasikannya**.
+ * Kunci & buka kunci jadwal tetap di tangan admin, dan baris `locked`/
+ * `published` tidak dapat diubah siapa pun.
  */
 function ScheduleAdminPage() {
   return (
@@ -114,6 +119,8 @@ function ScheduleAdminContent() {
   const holidaysQuery = useQuery({
     queryKey: ["holidays"],
     queryFn: () => api.holidays.list(),
+    // Kartu & tombol hari libur hanya tampil untuk admin.
+    enabled: isAdmin,
   });
 
   const invalidate = async () => {
@@ -341,23 +348,29 @@ function ScheduleAdminContent() {
         }
         action={
           <div className="flex flex-wrap gap-2">
-            <Button
-              variant="secondary"
-              disabled={!className || draftCount === 0 || busy}
-              onClick={() => lockMutation.mutate()}
-              loading={lockMutation.isPending}
-              title="Kunci semua jadwal draft bulan ini"
-            >
-              <Lock className="h-4 w-4" />
-              Kunci bulan
-            </Button>
+            {/* Kunci & buka kunci jadwal tetap wewenang admin — korlas hanya
+                mempublikasi jadwal yang sudah dikunci. */}
+            {isAdmin && (
+              <Button
+                variant="secondary"
+                disabled={!className || draftCount === 0 || busy}
+                onClick={() => lockMutation.mutate()}
+                loading={lockMutation.isPending}
+                title="Kunci semua jadwal draft bulan ini"
+              >
+                <Lock className="h-4 w-4" />
+                Kunci bulan
+              </Button>
+            )}
             <Button
               disabled={!className || !canPublish || busy}
               onClick={() => publishMutation.mutate()}
               loading={publishMutation.isPending}
               title={
                 draftCount > 0
-                  ? "Masih ada jadwal draft — kunci dulu"
+                  ? isAdmin
+                    ? "Masih ada jadwal draft — kunci dulu"
+                    : "Masih ada jadwal draft — minta admin mengunci dulu"
                   : "Publikasi jadwal yang sudah dikunci ke semua orang tua"
               }
             >
@@ -435,7 +448,9 @@ function ScheduleAdminContent() {
             </span>
             {draftCount > 0 && (
               <span className="text-highlight-700">
-                Kunci dulu sebelum publikasi
+                {isAdmin
+                  ? "Kunci dulu sebelum publikasi"
+                  : "Menunggu admin mengunci jadwal draft"}
               </span>
             )}
           </div>

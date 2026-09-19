@@ -521,16 +521,20 @@ section("13. CRUD jadwal (admin)");
   const CLASS = "1";
 
   // Bersihkan sisa uji pada tanggal ini untuk kedua kelas yang dipakai.
+  // Baris yang sudah `locked`/`published` wajib dibuka kuncinya lebih dulu —
+  // tanpa itu DELETE dijawab 409 dan sisa uji akan menggagalkan pembuatan.
   for (const cls of [CLASS, "2"]) {
     const rows = await call(
       "GET",
       `/schedules/range?from=${date}&to=${date}&class=${cls}`,
       { token: adminToken },
     );
-    if (rows.data?.[0]?.scheduleId) {
-      await call("DELETE", `/schedules/${rows.data[0].scheduleId}`, {
+    const leftoverId = rows.data?.[0]?.scheduleId;
+    if (leftoverId) {
+      await call("POST", `/schedules/${leftoverId}/unlock`, {
         token: adminToken,
       });
+      await call("DELETE", `/schedules/${leftoverId}`, { token: adminToken });
     }
   }
 
@@ -1495,7 +1499,7 @@ section("18. Cakupan kelas — daftar & pembatasan baca");
   );
 }
 
-section("19. Korlas — wewenang & batas kelas");
+section("19. Korlas — jadwal kelasnya, kunci tetap admin");
 {
   const korlasLogin = await call("POST", "/auth/login", { body: KORLAS });
   check(
@@ -1505,10 +1509,13 @@ section("19. Korlas — wewenang & batas kelas");
   );
 
   const korlasToken = korlasLogin.data?.token;
+  // Kelas korlas dibaca dari profil, bukan di-hardcode — basis data lokal bisa
+  // saja sudah diubah lewat halaman admin.
+  const korlasClass = korlasLogin.data?.user?.className;
   check(
     "profil korlas membawa kelasnya",
-    korlasLogin.data?.user?.className === "1",
-    korlasLogin.data?.user?.className,
+    typeof korlasClass === "string" && korlasClass.length > 0,
+    korlasClass,
   );
   check(
     "korlas tetap melihat anaknya",
@@ -1519,11 +1526,17 @@ section("19. Korlas — wewenang & batas kelas");
   const classes = await call("GET", "/classes", { token: korlasToken });
   check(
     "korlas hanya melihat kelasnya",
-    JSON.stringify(classes.data?.classes) === JSON.stringify(["1"]),
+    JSON.stringify(classes.data?.classes) === JSON.stringify([korlasClass]),
     JSON.stringify(classes.data?.classes),
   );
 
-  // Katalog bersifat sekolah-wide, jadi korlas boleh mengelolanya.
+  // Kelas lain — dipakai untuk menguji batas cakupan korlas.
+  const allClasses = (await call("GET", "/classes", { token: adminToken })).data
+    ?.classes ?? [];
+  const otherClass =
+    allClasses.find((cls) => cls !== korlasClass) ?? `${korlasClass}x`;
+
+  // ── Katalog menu tetap terpusat di admin (sekolah-wide) ──────
   const menu = await call("POST", "/menus", {
     token: korlasToken,
     body: {
@@ -1532,8 +1545,8 @@ section("19. Korlas — wewenang & batas kelas");
     },
   });
   check(
-    "korlas membuat menu -> 201",
-    menu.status === 201,
+    "korlas membuat menu -> 403",
+    menu.status === 403,
     `got ${menu.status}`,
   );
 
@@ -1542,48 +1555,86 @@ section("19. Korlas — wewenang & batas kelas");
     body: { name: `Kategori Korlas ${Date.now()}` },
   });
   check(
-    "korlas membuat kategori -> 201",
-    category.status === 201,
+    "korlas membuat kategori -> 403",
+    category.status === 403,
     `got ${category.status}`,
   );
 
-  const menuId = menu.data?.id;
-  const from = "2032-03-01";
-  const to = "2032-03-08";
+  // Admin menyiapkan dua menu sebagai bahan uji ganti-menu.
+  const adminMenu = await call("POST", "/menus", {
+    token: adminToken,
+    body: {
+      name: `Menu Uji Korlas ${Date.now()}`,
+      items: [{ name: "Risol uji", itemType: "main" }],
+    },
+  });
+  const menuId = adminMenu.data?.id;
 
-  // Bersihkan sisa uji sebelumnya pada rentang ini.
-  for (const cls of ["1", "2"]) {
-    const rows = await call(
-      "GET",
-      `/schedules/range?from=${from}&to=${to}&class=${cls}`,
-      { token: adminToken },
-    );
-    for (const day of rows.data ?? []) {
-      if (day.scheduleId) {
+  const adminMenu2 = await call("POST", "/menus", {
+    token: adminToken,
+    body: {
+      name: `Menu Uji Korlas 2 ${Date.now()}`,
+      items: [{ name: "Buah uji", itemType: "fruit" }],
+    },
+  });
+  const secondMenuId = adminMenu2.data?.id;
+
+  const from = "2032-03-01";
+  const to = "2032-03-31";
+  const month = { year: 2032, month: 3 };
+
+  /** Hapus sisa uji pada rentang ini — buka kunci dulu bila perlu. */
+  const cleanup = async () => {
+    for (const cls of [korlasClass, otherClass]) {
+      const rows = await call(
+        "GET",
+        `/schedules/range?from=${from}&to=${to}&class=${cls}`,
+        { token: adminToken },
+      );
+      for (const day of rows.data ?? []) {
+        if (!day.scheduleId) continue;
+        await call("POST", `/schedules/${day.scheduleId}/unlock`, {
+          token: adminToken,
+        });
         await call("DELETE", `/schedules/${day.scheduleId}`, {
           token: adminToken,
         });
       }
     }
-  }
+  };
 
+  await cleanup();
+
+  // ── Korlas menyusun jadwal kelasnya sendiri ──────────────────
   // Kelas korlas diisi otomatis — tidak perlu menyebut `className`.
-  const own = await call("POST", "/schedules", {
+  const ownCreate = await call("POST", "/schedules", {
     token: korlasToken,
     body: { scheduleDate: from, menuId },
   });
   check(
     "korlas membuat jadwal kelasnya -> 201",
-    own.status === 201,
-    `got ${own.status}`,
+    ownCreate.status === 201,
+    `got ${ownCreate.status}`,
   );
   check(
     "kelas terisi otomatis",
-    own.data?.className === "1",
-    own.data?.className,
+    ownCreate.data?.className === korlasClass,
+    ownCreate.data?.className,
+  );
+  const ownId = ownCreate.data?.scheduleId;
+
+  // Mengganti menu pada tanggal itu (dropdown di halaman Jadwal).
+  const ownMenuChange = await call("PUT", `/schedules/${ownId}`, {
+    token: korlasToken,
+    body: { menuId: secondMenuId },
+  });
+  check(
+    "korlas mengganti menu jadwalnya -> 200",
+    ownMenuChange.status === 200 && ownMenuChange.data?.menu?.id === secondMenuId,
+    `got ${ownMenuChange.status} / menu ${ownMenuChange.data?.menu?.id}`,
   );
 
-  const ownUpdate = await call("PUT", `/schedules/${own.data?.scheduleId}`, {
+  const ownUpdate = await call("PUT", `/schedules/${ownId}`, {
     token: korlasToken,
     body: { notes: "Diubah korlas" },
   });
@@ -1593,10 +1644,30 @@ section("19. Korlas — wewenang & batas kelas");
     `got ${ownUpdate.status}`,
   );
 
-  // Menulis ke kelas lain ditolak.
+  const intact = await call("GET", `/schedules/${ownId}`, {
+    token: adminToken,
+  });
+  check(
+    "perubahan korlas tersimpan",
+    intact.data?.notes === "Diubah korlas",
+    intact.data?.notes,
+  );
+
+  // Salin Sepekan untuk kelasnya sendiri boleh.
+  const copyOwn = await call("POST", "/schedules/copy", {
+    token: korlasToken,
+    body: { fromDate: from, toDate: "2032-03-08" },
+  });
+  check(
+    "korlas menyalin minggu kelasnya -> 201",
+    copyOwn.status === 201,
+    `got ${copyOwn.status}`,
+  );
+
+  // ── Kelas lain tetap di luar jangkauan korlas ────────────────
   const otherWrite = await call("POST", "/schedules", {
     token: korlasToken,
-    body: { scheduleDate: "2032-03-02", className: "2", menuId },
+    body: { scheduleDate: from, className: otherClass, menuId },
   });
   check(
     "korlas menulis kelas lain -> 403",
@@ -1604,20 +1675,18 @@ section("19. Korlas — wewenang & batas kelas");
     `got ${otherWrite.status}`,
   );
 
-  // Baris milik kelas lain tidak boleh diubah maupun dihapus.
-  const adminRow = await call("POST", "/schedules", {
+  const otherRow = await call("POST", "/schedules", {
     token: adminToken,
-    body: { scheduleDate: "2032-03-02", className: "2", menuId },
+    body: { scheduleDate: from, className: otherClass, menuId },
   });
   check(
-    "admin menyiapkan baris kelas 2 -> 201",
-    adminRow.status === 201,
-    `got ${adminRow.status}`,
+    "admin menyiapkan baris kelas lain -> 201",
+    otherRow.status === 201,
+    `got ${otherRow.status}`,
   );
+  const otherId = otherRow.data?.scheduleId;
 
-  const adminRowId = adminRow.data?.scheduleId;
-
-  const hijack = await call("PUT", `/schedules/${adminRowId}`, {
+  const hijack = await call("PUT", `/schedules/${otherId}`, {
     token: korlasToken,
     body: { notes: "DIUBAH KORLAS" },
   });
@@ -1627,16 +1696,16 @@ section("19. Korlas — wewenang & batas kelas");
     `got ${hijack.status}`,
   );
 
-  const intact = await call("GET", `/schedules/${adminRowId}`, {
+  const otherIntact = await call("GET", `/schedules/${otherId}`, {
     token: adminToken,
   });
   check(
     "jadwal kelas lain tidak ikut berubah",
-    intact.data?.notes !== "DIUBAH KORLAS",
-    intact.data?.notes,
+    otherIntact.data?.notes !== "DIUBAH KORLAS",
+    otherIntact.data?.notes,
   );
 
-  const hijackDelete = await call("DELETE", `/schedules/${adminRowId}`, {
+  const hijackDelete = await call("DELETE", `/schedules/${otherId}`, {
     token: korlasToken,
   });
   check(
@@ -1645,20 +1714,9 @@ section("19. Korlas — wewenang & batas kelas");
     `got ${hijackDelete.status}`,
   );
 
-  // Salin Sepekan untuk kelasnya sendiri boleh, kelas lain tidak.
-  const copyOwn = await call("POST", "/schedules/copy", {
-    token: korlasToken,
-    body: { fromDate: from, toDate: to },
-  });
-  check(
-    "korlas menyalin minggu kelasnya -> 201",
-    copyOwn.status === 201,
-    `got ${copyOwn.status}`,
-  );
-
   const copyOther = await call("POST", "/schedules/copy", {
     token: korlasToken,
-    body: { fromDate: from, toDate: to, className: "2" },
+    body: { fromDate: from, toDate: "2032-03-08", className: otherClass },
   });
   check(
     "korlas menyalin minggu kelas lain -> 403",
@@ -1686,34 +1744,161 @@ section("19. Korlas — wewenang & batas kelas");
     );
   }
 
-  // Bersihkan jejak uji.
-  for (const cls of ["1", "2"]) {
-    const rows = await call(
-      "GET",
-      `/schedules/range?from=${from}&to=${to}&class=${cls}`,
-      { token: adminToken },
-    );
-    for (const day of rows.data ?? []) {
-      if (day.scheduleId) {
-        await call("DELETE", `/schedules/${day.scheduleId}`, {
-          token: adminToken,
-        });
-      }
-    }
-  }
+  // ── Kunci jadwal: wewenang admin ─────────────────────────────
+  const korlasLock = await call("POST", "/schedules/lock", {
+    token: korlasToken,
+    body: { fromDate: from, toDate: to },
+  });
+  check(
+    "korlas mengunci jadwal -> 403",
+    korlasLock.status === 403,
+    `got ${korlasLock.status}`,
+  );
 
-  if (menuId) {
-    await call("DELETE", `/menus/${menuId}?force=true`, { token: adminToken });
-  }
-  if (category.data?.id) {
-    await call("DELETE", `/categories/${category.data.id}`, {
-      token: adminToken,
-    });
+  // Masih ada baris draft di bulan itu → publikasi wajib ditolak.
+  const tooEarly = await call("POST", "/schedules/publish", {
+    token: korlasToken,
+    body: month,
+  });
+  check(
+    "korlas publikasi saat masih ada draft -> 409",
+    tooEarly.status === 409,
+    `got ${tooEarly.status}`,
+  );
+
+  // Admin mengunci kelas korlas — prasyarat publikasi.
+  const adminLock = await call("POST", "/schedules/lock", {
+    token: adminToken,
+    body: { fromDate: from, toDate: to, className: korlasClass },
+  });
+  check(
+    "admin mengunci kelas korlas -> 200",
+    adminLock.status === 200,
+    `got ${adminLock.status}`,
+  );
+
+  // Terkunci: korlas tidak bisa mengubah maupun menghapus lagi.
+  const lockedUpdate = await call("PUT", `/schedules/${ownId}`, {
+    token: korlasToken,
+    body: { notes: "Diubah setelah dikunci" },
+  });
+  check(
+    "korlas mengubah jadwal terkunci -> 409",
+    lockedUpdate.status === 409,
+    `got ${lockedUpdate.status}`,
+  );
+
+  const lockedDelete = await call("DELETE", `/schedules/${ownId}`, {
+    token: korlasToken,
+  });
+  check(
+    "korlas menghapus jadwal terkunci -> 409",
+    lockedDelete.status === 409,
+    `got ${lockedDelete.status}`,
+  );
+
+  const publishOwn = await call("POST", "/schedules/publish", {
+    token: korlasToken,
+    body: month,
+  });
+  check(
+    "korlas mempublikasi kelasnya -> 200",
+    publishOwn.status === 200,
+    `got ${publishOwn.status}`,
+  );
+  check(
+    "publikasi korlas jatuh ke kelasnya sendiri",
+    publishOwn.data?.className === korlasClass &&
+      (publishOwn.data?.published ?? 0) > 0,
+    `${publishOwn.data?.className} / ${publishOwn.data?.published}`,
+  );
+
+  const published = await call("GET", `/schedules/${ownId}`, {
+    token: adminToken,
+  });
+  check(
+    "baris kelas korlas berstatus published",
+    published.data?.status === "published",
+    published.data?.status,
+  );
+
+  // Published bersifat final — korlas tidak bisa menggantinya.
+  const publishedUpdate = await call("PUT", `/schedules/${ownId}`, {
+    token: korlasToken,
+    body: { notes: "Diubah setelah published" },
+  });
+  check(
+    "korlas mengubah jadwal published -> 409",
+    publishedUpdate.status === 409,
+    `got ${publishedUpdate.status}`,
+  );
+
+  // Kelas lain tidak boleh dipublikasi korlas.
+  const publishOther = await call("POST", "/schedules/publish", {
+    token: korlasToken,
+    body: { ...month, className: otherClass },
+  });
+  check(
+    "korlas mempublikasi kelas lain -> 403",
+    publishOther.status === 403,
+    `got ${publishOther.status}`,
+  );
+
+  const otherAfter = await call("GET", `/schedules/${otherId}`, {
+    token: adminToken,
+  });
+  check(
+    "kelas lain tidak ikut terpublikasi",
+    otherAfter.data?.status === "draft",
+    otherAfter.data?.status,
+  );
+
+  // ── Buka kunci: admin saja ───────────────────────────────────
+  const korlasUnlock = await call("POST", `/schedules/${ownId}/unlock`, {
+    token: korlasToken,
+  });
+  check(
+    "korlas membuka kunci -> 403",
+    korlasUnlock.status === 403,
+    `got ${korlasUnlock.status}`,
+  );
+
+  const adminUnlock = await call("POST", `/schedules/${ownId}/unlock`, {
+    token: adminToken,
+  });
+  check(
+    "admin membuka kunci -> 200",
+    adminUnlock.status === 200,
+    `got ${adminUnlock.status}`,
+  );
+  check(
+    "baris kembali ke draft",
+    adminUnlock.data?.status === "draft",
+    adminUnlock.data?.status,
+  );
+
+  const editableAgain = await call("PUT", `/schedules/${ownId}`, {
+    token: korlasToken,
+    body: { notes: "Revisi setelah dibuka kunci" },
+  });
+  check(
+    "korlas bisa mengedit lagi setelah dibuka kunci -> 200",
+    editableAgain.status === 200,
+    `got ${editableAgain.status}`,
+  );
+
+  // Bersihkan jejak uji.
+  await cleanup();
+
+  for (const id of [menuId, secondMenuId]) {
+    if (id) {
+      await call("DELETE", `/menus/${id}?force=true`, { token: adminToken });
+    }
   }
 
   const leftover = await call(
     "GET",
-    `/schedules/range?from=${from}&to=${to}&class=1`,
+    `/schedules/range?from=${from}&to=${to}&class=${korlasClass}`,
     { token: adminToken },
   );
   check(

@@ -8,6 +8,7 @@ import { classService } from "../classes/service";
  * Aturannya:
  * - `admin`  — boleh semua kelas, tetapi **wajib menyebut** kelas saat menulis.
  * - `korlas` — terkunci ke kelas yang dikoordinasinya, untuk baca maupun tulis.
+ *              Kunci/buka kunci jadwal bukan wewenangnya — itu admin.
  * - `parent` — hanya boleh membaca kelas anak-anaknya.
  */
 export type ClassScopeError = "class_required" | "forbidden_class";
@@ -58,6 +59,8 @@ export function resolveWriteClass(
       : { ok: false, error: "class_required" };
   }
 
+  if (user.role !== "korlas") return { ok: false, error: "forbidden_class" };
+
   const own = user.className?.trim() || null;
   if (!own) return { ok: false, error: "forbidden_class" };
   if (wanted && wanted !== own) return { ok: false, error: "forbidden_class" };
@@ -67,8 +70,10 @@ export function resolveWriteClass(
 
 /**
  * Bolehkah user mengubah baris jadwal milik `rowClass`?
+ *
  * Dipakai saat memperbarui/menghapus baris yang sudah ada, karena kelasnya
- * ditentukan oleh baris itu sendiri, bukan oleh input klien.
+ * ditentukan oleh baris itu sendiri, bukan oleh input klien. Korlas hanya
+ * boleh menyentuh baris kelasnya.
  */
 export function canWriteClass(user: JwtPayload, rowClass: string): boolean {
   if (user.role === "admin") return true;

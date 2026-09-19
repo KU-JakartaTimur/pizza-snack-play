@@ -327,11 +327,14 @@ class ScheduleController {
     return responseCreated(c, "Jadwal berhasil disalin", result);
   };
 
-  // ── Kunci & Publikasi (admin & korlas) ──────────────────────
+  // ── Kunci & Publikasi (kunci: admin · publikasi: admin & korlas) ──
 
   /**
-   * Kunci jadwal draft pada rentang tanggal untuk satu kelas.
+   * Kunci jadwal draft pada rentang tanggal.
    * `POST /schedules/lock` dengan `{ fromDate, toDate, className? }`
+   *
+   * Admin boleh mengosongkan `className` (atau kirim `"*"`) untuk mengunci
+   * **semua kelas sekaligus**. Korlas otomatis terarah ke kelasnya sendiri.
    */
   lock = async (c: ScheduleContext) => {
     let body: Partial<LockScheduleInput>;
@@ -341,11 +344,19 @@ class ScheduleController {
       return responseBadRequest(c, "Body harus berupa JSON");
     }
 
-    const scope = resolveWriteClass(
-      c.get("user"),
-      typeof body.className === "string" ? body.className : null,
-    );
-    if (!scope.ok) return mapScopeError(c, scope.error);
+    const user = c.get("user");
+
+    // Admin boleh kunci semua kelas sekaligus — `className` null/"*" = all.
+    // Korlas tetap terkunci ke kelasnya sendiri.
+    let className: string | null;
+    if (user.role === "admin") {
+      const raw = typeof body.className === "string" ? body.className.trim() : null;
+      className = !raw || raw === "*" ? null : raw;
+    } else {
+      const scope = resolveWriteClass(user, typeof body.className === "string" ? body.className : null);
+      if (!scope.ok) return mapScopeError(c, scope.error);
+      className = scope.className!;
+    }
 
     if (!isIsoDate(body.fromDate)) {
       return responseBadRequest(c, "`fromDate` wajib format YYYY-MM-DD");
@@ -356,9 +367,9 @@ class ScheduleController {
 
     const data = await scheduleService.lockSchedules(
       getDb(c.env),
-      scope.className!,
+      className,
       { fromDate: body.fromDate, toDate: body.toDate },
-      c.get("user").sub,
+      user.sub,
     );
 
     return responseOK(c, "Jadwal berhasil dikunci", data);
@@ -367,6 +378,10 @@ class ScheduleController {
   /**
    * Publikasi jadwal yang sudah dikunci untuk satu bulan.
    * `POST /schedules/publish` dengan `{ year, month, className? }`
+   *
+   * Admin boleh mengosongkan `className` (atau kirim `"*"`) untuk
+   * mempublikasi **semua kelas sekaligus**. Korlas hanya untuk kelas yang
+   * dikoordinasinya. Gagal **409** bila masih ada baris `draft`.
    */
   publish = async (c: ScheduleContext) => {
     let body: Partial<PublishScheduleInput>;
@@ -376,11 +391,19 @@ class ScheduleController {
       return responseBadRequest(c, "Body harus berupa JSON");
     }
 
-    const scope = resolveWriteClass(
-      c.get("user"),
-      typeof body.className === "string" ? body.className : null,
-    );
-    if (!scope.ok) return mapScopeError(c, scope.error);
+    const user = c.get("user");
+
+    // Admin boleh publikasi semua kelas sekaligus.
+    // Korlas tetap terkunci ke kelasnya sendiri.
+    let className: string | null;
+    if (user.role === "admin") {
+      const raw = typeof body.className === "string" ? body.className.trim() : null;
+      className = !raw || raw === "*" ? null : raw;
+    } else {
+      const scope = resolveWriteClass(user, typeof body.className === "string" ? body.className : null);
+      if (!scope.ok) return mapScopeError(c, scope.error);
+      className = scope.className!;
+    }
 
     const { year, month } = body;
 
@@ -393,9 +416,9 @@ class ScheduleController {
 
     const result = await scheduleService.publishMonth(
       getDb(c.env),
-      scope.className!,
+      className,
       { year: year!, month: month! },
-      c.get("user").sub,
+      user.sub,
     );
 
     if (typeof result === "string") return mapError(c, result);

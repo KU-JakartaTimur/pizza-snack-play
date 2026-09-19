@@ -16,7 +16,7 @@
     {
       "binding": "DB",
       "database_name": "pizza-snack-play",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "d81576ad-4768-4c77-a9a5-79084297ee0b",
       "migrations_dir": "drizzle/migrations"
     }
   ]

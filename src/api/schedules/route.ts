@@ -8,6 +8,14 @@ const admin = requireRole("admin");
 /**
  * Penulis jadwal: admin (semua kelas) dan korlas (kelasnya sendiri saja —
  * pembatasan kelasnya ditegakkan di controller, bukan di middleware).
+ *
+ * Korlas boleh menyusun jadwal kelasnya selama masih `draft` — termasuk
+ * memilih menu, mengisi petugas, menambah catatan, dan Salin Sepekan — lalu
+ * **mempublikasikannya**.
+ *
+ * Kunci (lock) dan buka kunci (unlock) tetap khusus admin: jadwal hanya boleh
+ * dibekukan oleh admin, dan baris `locked`/`published` tidak dapat diubah
+ * siapa pun (`409 not_editable`).
  */
 const scheduleWriters = requireRole("admin", "korlas");
 
@@ -19,9 +27,12 @@ const scheduleWriters = requireRole("admin", "korlas");
  * `/publish`) didaftarkan sebelum `/:id` agar tidak tertangkap sebagai
  * parameter ID.
  *
- * Kunci & publikasi: admin dapat mengunci/mempublikasi **semua kelas
- * sekaligus** (tanpa `className`) maupun satu kelas tertentu. Korlas hanya
- * kelas yang dikoordinasinya. Buka kunci (unlock) hanya untuk admin.
+ * Kunci (`/lock`) dan publikasi (`/publish`):
+ * - Admin dapat mengosongkan `className` (atau kirim `"*"`) untuk menerapkan
+ *   operasi ke **semua kelas sekaligus** (1–6). Menu snack sama untuk semua
+ *   kelas, namun klaim (pilih tanggal) tetap per-kelas — parent kelas 1
+ *   yang sudah memilih tanggal tidak memblokir parent kelas 2.
+ * - Korlas hanya bisa untuk kelasnya sendiri.
  */
 export const schedulesRoute = new Hono<AuthEnv>()
   .get("/today", requireAuth, scheduleController.today)
@@ -33,7 +44,7 @@ export const schedulesRoute = new Hono<AuthEnv>()
   .get("/:id", requireAuth, scheduleController.detail)
   .post("/", requireAuth, scheduleWriters, scheduleController.create)
   .post("/copy", requireAuth, scheduleWriters, scheduleController.copy)
-  .post("/lock", requireAuth, scheduleWriters, scheduleController.lock)
+  .post("/lock", requireAuth, admin, scheduleController.lock)
   .post("/publish", requireAuth, scheduleWriters, scheduleController.publish)
   .post("/:id/unlock", requireAuth, admin, scheduleController.unlock)
   .put("/:id", requireAuth, scheduleWriters, scheduleController.update)

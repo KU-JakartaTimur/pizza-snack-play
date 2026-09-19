@@ -316,7 +316,7 @@ async function runUAT() {
   // -------------------------------------------------------------
   await step(
     "UAT-20",
-    "Login Korlas ('budi' Kelas 1) & Wewenang Terbatas",
+    "Login Korlas ('budi') — Kelola Jadwal Kelasnya & Tombol Publikasi",
     async () => {
       await loginAs("budi", "snack123");
       await page.goto(`${BASE_URL}/jadwal`, { waitUntil: "networkidle0" });

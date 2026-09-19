@@ -23,8 +23,7 @@ const DENIED_MESSAGE: Record<Capability, string> = {
   admin: "Halaman ini hanya dapat diakses oleh admin.",
   schedule:
     "Halaman ini hanya dapat diakses oleh admin dan koordinator kelas (korlas).",
-  catalog:
-    "Halaman ini hanya dapat diakses oleh admin dan koordinator kelas (korlas).",
+  catalog: "Halaman ini hanya dapat diakses oleh admin.",
 };
 
 /**

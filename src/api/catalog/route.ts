@@ -5,9 +5,10 @@ import { catalogController } from "./controller";
 
 /**
  * Katalog bersifat sekolah-wide (dipakai bersama semua kelas), sehingga
- * korlas boleh ikut mengelolanya — bukan hanya kelasnya sendiri.
+ * perubahannya terpusat di tangan admin. Korlas hanya boleh membaca —
+ * wewenang tulisnya dibatasi ke publikasi jadwal kelasnya.
  */
-const catalogWriters = requireRole("admin", "korlas");
+const catalogWriters = requireRole("admin");
 
 /**
  * Baca katalog: tersedia untuk semua user yang sudah login

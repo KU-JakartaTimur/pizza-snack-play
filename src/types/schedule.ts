@@ -126,10 +126,13 @@ export interface LockScheduleResultDto {
   classes: string[];
   fromDate: string;
   toDate: string;
+  /** Total baris yang dikunci di seluruh kelas (atau satu kelas). */
   locked: number;
   alreadyLocked: number;
   /** Baris yang sudah published dilewati (tidak bisa dikunci ulang). */
   skipped: number;
+  /** Rincian per kelas — hanya diisi saat kunci semua kelas. */
+  perClass?: LockClassResult[];
 }
 
 export interface PublishScheduleInput {
@@ -158,6 +161,7 @@ export interface PublishScheduleResultDto {
   classes: string[];
   year: number;
   month: number;
+  /** Total baris yang dipublikasi di seluruh kelas (atau satu kelas). */
   published: number;
   /** Jumlah baris `locked` yang jadi sumber publikasi (sebelum diubah). */
   lockedCount: number;
@@ -170,6 +174,8 @@ export interface PublishScheduleResultDto {
   draftByClass: PublishDraftBlockerDto[];
   /** Baris yang sudah published sebelumnya (dilewati). */
   alreadyPublished: number;
+  /** Rincian per kelas — hanya diisi saat publikasi semua kelas. */
+  perClass?: PublishClassResult[];
 }
 
 // ─────────────────────────────────────────────────────────────

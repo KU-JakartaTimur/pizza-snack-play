@@ -1,9 +1,12 @@
 /**
  * Role pengguna.
  *
- * - `admin`  — akses penuh: jadwal semua kelas, katalog, akun, hari libur.
- * - `korlas` — koordinator kelas (orang tua yang ditunjuk): boleh mengubah
- *              jadwal **kelasnya sendiri** serta mengelola katalog menu.
+ * - `admin`  — akses penuh: jadwal semua kelas, katalog, akun, hari libur,
+ *              kunci & buka kunci jadwal.
+ * - `korlas` — koordinator kelas (orang tua yang ditunjuk): boleh menyusun
+ *              jadwal **kelasnya sendiri** (menu, petugas, catatan, Salin
+ *              Sepekan) selama masih `draft`, lalu **mempublikasikannya**.
+ *              Katalog menu/kategori dan kunci jadwal tetap wewenang admin.
  * - `parent` — orang tua biasa: hanya membaca jadwal kelas anaknya.
  */
 export type Role = "admin" | "korlas" | "parent";

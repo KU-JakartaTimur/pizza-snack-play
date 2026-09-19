@@ -357,7 +357,7 @@ class ScheduleController {
     return responseCreated(c, "Jadwal berhasil disalin", result);
   };
 
-  // ── Kunci & Publikasi (admin & korlas) ──────────────────────
+  // ── Kunci & Publikasi (kunci: admin · publikasi: admin & korlas) ──
 
   /**
    * Kunci jadwal draft pada rentang tanggal.
@@ -393,7 +393,7 @@ class ScheduleController {
       getDb(c.env),
       scope.className,
       { fromDate: body.fromDate, toDate: body.toDate },
-      c.get("user").sub,
+      user.sub,
     );
 
     return responseOK(
@@ -441,7 +441,7 @@ class ScheduleController {
       getDb(c.env),
       scope.className,
       { year: year!, month: month! },
-      c.get("user").sub,
+      user.sub,
     );
 
     if (typeof result === "string") {

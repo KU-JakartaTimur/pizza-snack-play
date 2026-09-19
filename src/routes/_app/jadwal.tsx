@@ -62,6 +62,11 @@ const STATUS_META: Record<
  *
  * Admin memilih kelas lewat pemilih kelas di header; korlas terkunci ke
  * kelas yang dikoordinasinya (pembatasan sebenarnya tetap di API).
+ *
+ * Pembagiannya: korlas boleh menyusun jadwal kelasnya (menu, petugas, catatan,
+ * Salin Sepekan) selama barisnya masih `draft`, lalu **mempublikasikannya**.
+ * Kunci & buka kunci jadwal tetap di tangan admin, dan baris `locked`/
+ * `published` tidak dapat diubah siapa pun.
  */
 function ScheduleAdminPage() {
   return (
@@ -118,6 +123,8 @@ function ScheduleAdminContent() {
   const holidaysQuery = useQuery({
     queryKey: ["holidays"],
     queryFn: () => api.holidays.list(),
+    // Kartu & tombol hari libur hanya tampil untuk admin.
+    enabled: isAdmin,
   });
 
   const invalidate = async () => {

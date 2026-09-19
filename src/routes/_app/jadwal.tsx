@@ -80,6 +80,10 @@ function ScheduleAdminContent() {
   // Korlas selalu memakai kelasnya sendiri, apa pun pilihan di header.
   const className = isAdmin ? activeClass : (korlasClass ?? activeClass);
 
+  // Pemilih kelas di header menentukan kelas mana yang ditampilkan berbaris,
+  // sementara kunci & publikasi admin berlaku untuk **semua kelas** (lihat
+  // `lockMutation`/`publishMutation` di bawah). Karena itu tabel tetap dimuat
+  // per kelas, tetapi penghitung status memakai `schoolQuery` lintas kelas.
   const [year, setYear] = useState(() => yearOf(today));
   const [month, setMonth] = useState(() => monthOf(today));
   const [banner, setBanner] = useState<{ kind: "ok" | "error"; text: string } | null>(
@@ -121,7 +125,6 @@ function ScheduleAdminContent() {
     await queryClient.invalidateQueries({ queryKey: ["holidays"] });
     await queryClient.invalidateQueries({ queryKey: ["stats"] });
   };
-
   const saveMutation = useMutation({
     mutationFn: async (vars: {
       day: ScheduleDayDto;
@@ -239,26 +242,85 @@ function ScheduleAdminContent() {
   const monthStart = `${year}-${String(month).padStart(2, "0")}-01`;
   const monthEnd = `${year}-${String(month).padStart(2, "0")}-${String(daysInMonth).padStart(2, "0")}`;
 
-  // Hitung status jadwal dari data bulanan yang sudah dimuat.
+  /**
+   * Status jadwal bulan ini untuk **seluruh kelas**.
+   *
+   * Kunci & publikasi oleh admin menyentuh kelas 1–6 sekaligus, jadi
+   * penghitungnya pun harus lintas kelas — kalau tidak, tombol "Publikasi"
+   * bisa tampak aktif padahal masih ada kelas lain yang menyisakan draft.
+   * Korlas tetap memakai data kelasnya sendiri (tanpa permintaan tambahan).
+   */
+  const schoolQuery = useQuery({
+    queryKey: ["schedules", "school-status", year, month],
+    queryFn: async () => {
+      const classes = (await api.classes.list()).classes;
+      const months = await Promise.all(
+        classes.map((item) => api.schedules.month(year, month, item)),
+      );
+
+      const days = months.flatMap((data) =>
+        data.weeks.flatMap((week) => week.days),
+      );
+      const scheduled = days.filter((day) => day.scheduleId !== null);
+
+      return {
+        classes,
+        draftCount: scheduled.filter((day) => day.status === "draft").length,
+        lockedCount: scheduled.filter((day) => day.status === "locked").length,
+        publishedCount: scheduled.filter((day) => day.status === "published")
+          .length,
+        /** Kelas yang masih menyisakan draft — untuk pesan yang informatif. */
+        draftClasses: [
+          ...new Set(
+            scheduled
+              .filter((day) => day.status === "draft")
+              .map((day) => day.className ?? "")
+              .filter(Boolean),
+          ),
+        ],
+      };
+    },
+    enabled: isAdmin,
+  });
+
+  // Hitung status jadwal dari data bulanan kelas yang sedang ditampilkan.
   const allDays = monthQuery.data?.weeks.flatMap((w) => w.days) ?? [];
   const schedDays = allDays.filter((d) => d.scheduleId !== null);
-  const draftCount = schedDays.filter((d) => d.status === "draft").length;
-  const lockedCount = schedDays.filter((d) => d.status === "locked").length;
-  const publishedCount = schedDays.filter((d) => d.status === "published").length;
+
+  // Admin melihat angka sekolah-wide; korlas cukup kelasnya sendiri.
+  const draftCount = isAdmin
+    ? (schoolQuery.data?.draftCount ?? 0)
+    : schedDays.filter((d) => d.status === "draft").length;
+  const lockedCount = isAdmin
+    ? (schoolQuery.data?.lockedCount ?? 0)
+    : schedDays.filter((d) => d.status === "locked").length;
+  const publishedCount = isAdmin
+    ? (schoolQuery.data?.publishedCount ?? 0)
+    : schedDays.filter((d) => d.status === "published").length;
+
+  // Kelas yang menahan publikasi — hanya bermakna untuk admin.
+  const draftClasses = schoolQuery.data?.draftClasses ?? [];
   const canPublish = draftCount === 0 && lockedCount > 0;
 
+  /**
+   * Admin mengirim tanpa `className` → server memperlakukan sebagai
+   * "semua kelas" (kelas 1–6 sekaligus). Korlas selalu menyertakan kelasnya.
+   */
   const lockMutation = useMutation({
     mutationFn: () =>
       api.schedules.lock({
         fromDate: monthStart,
         toDate: monthEnd,
-        className: className!,
+        ...(isAdmin ? {} : { className: className! }),
       }),
     onSuccess: async (result) => {
-      const { locked, alreadyLocked, skipped } = result.data;
+      const { locked, alreadyLocked, skipped, classes } = result.data;
+      const scope = isAdmin
+        ? `semua kelas (${classes.length} kelas)`
+        : `kelas ${classes[0] ?? className}`;
       setBanner({
         kind: "ok",
-        text: `Terkunci ${locked} jadwal${alreadyLocked ? `, ${alreadyLocked} sudah terkunci` : ""}${skipped ? `, ${skipped} dilewati (sudah dipublikasi)` : ""}.`,
+        text: `Terkunci ${locked} jadwal untuk ${scope}${alreadyLocked ? `, ${alreadyLocked} sudah terkunci` : ""}${skipped ? `, ${skipped} dilewati (sudah dipublikasi)` : ""}.`,
       });
       await invalidate();
     },
@@ -274,12 +336,16 @@ function ScheduleAdminContent() {
       api.schedules.publish({
         year,
         month,
-        className: className!,
+        ...(isAdmin ? {} : { className: className! }),
       }),
     onSuccess: async (result) => {
+      const { published, classes } = result.data;
+      const scope = isAdmin
+        ? `semua kelas (${classes.length} kelas)`
+        : `kelas ${classes[0] ?? className}`;
       setBanner({
         kind: "ok",
-        text: `${result.data.published} jadwal berhasil dipublikasi ke semua orang tua.`,
+        text: `${published} jadwal dipublikasi untuk ${scope} — sekarang terlihat oleh orang tua semua kelas tersebut.`,
       });
       await invalidate();
     },
@@ -335,9 +401,11 @@ function ScheduleAdminContent() {
       <PageHeader
         title="Kelola Jadwal"
         description={
-          className
-            ? `Tetapkan menu, tandai libur kelas, dan tambahkan catatan untuk kelas ${className}.`
-            : "Tetapkan menu dan catatan per hari."
+          isAdmin
+            ? "Tetapkan menu per kelas. Kunci & publikasi berlaku untuk semua kelas (1–6) sekaligus."
+            : className
+              ? `Tetapkan menu, tandai libur kelas, dan tambahkan catatan untuk kelas ${className}.`
+              : "Tetapkan menu dan catatan per hari."
         }
         action={
           <div className="flex flex-wrap gap-2">
@@ -346,10 +414,14 @@ function ScheduleAdminContent() {
               disabled={!className || draftCount === 0 || busy}
               onClick={() => lockMutation.mutate()}
               loading={lockMutation.isPending}
-              title="Kunci semua jadwal draft bulan ini"
+              title={
+                isAdmin
+                  ? "Kunci semua jadwal draft bulan ini untuk semua kelas (kelas 1–6)"
+                  : `Kunci semua jadwal draft bulan ini untuk kelas ${className ?? ""}`.trim()
+              }
             >
               <Lock className="h-4 w-4" />
-              Kunci bulan
+              {isAdmin ? "Kunci bulan (semua kelas)" : "Kunci bulan"}
             </Button>
             <Button
               disabled={!className || !canPublish || busy}
@@ -357,17 +429,22 @@ function ScheduleAdminContent() {
               loading={publishMutation.isPending}
               title={
                 draftCount > 0
-                  ? "Masih ada jadwal draft — kunci dulu"
-                  : "Publikasi jadwal yang sudah dikunci ke semua orang tua"
+                  ? isAdmin && draftClasses.length > 0
+                    ? `Masih ada jadwal draft di ${draftClasses.map((cls) => `kelas ${cls}`).join(", ")} — kunci dulu`
+                    : "Masih ada jadwal draft — kunci dulu"
+                  : isAdmin
+                    ? "Publikasi jadwal yang sudah dikunci ke orang tua semua kelas"
+                    : "Publikasi jadwal yang sudah dikunci ke semua orang tua"
               }
             >
               <Send className="h-4 w-4" />
-              Publikasi
+              {isAdmin ? "Publikasi (semua kelas)" : "Publikasi"}
             </Button>
             <Button
               variant="secondary"
               disabled={!className}
               onClick={() => setCopyModalOpen(true)}
+              title="Salin jadwal Senin–Jumat untuk kelas yang sedang ditampilkan"
             >
               <Copy className="h-4 w-4" />
               Salin Sepekan
@@ -423,10 +500,14 @@ function ScheduleAdminContent() {
               : `${menus.length} menu aktif tersedia`}
           </p>
         </div>
-        {className && schedDays.length > 0 && (
+        {className && (isAdmin ? publishedCount + lockedCount + draftCount > 0 : schedDays.length > 0) && (
           <div className="flex flex-wrap items-center gap-4 border-t border-slate-100 px-5 py-2.5 text-xs">
             <span className="text-slate-500">
-              Status:{" "}
+              Status{" "}
+              {isAdmin && (
+                <span className="font-medium text-slate-600">(semua kelas)</span>
+              )}
+              {": "}
               <span className="font-medium text-slate-700">{draftCount}</span> draft
               {" · "}
               <span className="font-medium text-slate-700">{lockedCount}</span> terkunci
@@ -435,7 +516,9 @@ function ScheduleAdminContent() {
             </span>
             {draftCount > 0 && (
               <span className="text-highlight-700">
-                Kunci dulu sebelum publikasi
+                {isAdmin && draftClasses.length > 0
+                  ? `Kunci dulu kelas ${draftClasses.join(", ")} sebelum publikasi`
+                  : "Kunci dulu sebelum publikasi"}
               </span>
             )}
           </div>

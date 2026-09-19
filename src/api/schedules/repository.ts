@@ -28,11 +28,32 @@ export interface MonthStatusRow {
   count: number;
 }
 
+/** Jumlah baris untuk satu status, dipecah per kelas. */
+export interface MonthStatusByClassRow {
+  className: string;
+  status: string;
+  count: number;
+}
+
+/**
+ * Rentang tanggal satu bulan penuh sebagai string ISO.
+ * Dipakai untuk kunci & publikasi; batas atas selalu `31` karena
+ * perbandingan tanggal dilakukan sebagai teks (`YYYY-MM-DD`), sehingga
+ * `2026-02-31` tetap menangkap seluruh hari di bulan Februari.
+ */
+function monthBounds(year: number, month: number): { from: string; to: string } {
+  const mm = String(month).padStart(2, "0");
+  return { from: `${year}-${mm}-01`, to: `${year}-${mm}-31` };
+}
+
 class ScheduleRepository {
   // ── Jadwal ──────────────────────────────────────────────────
 
   /**
-   * Jadwal satu kelas pada rentang tanggal, urut tanggal.
+   * Jadwal pada rentang tanggal, urut tanggal.
+   *
+   * `className` diisi → hanya kelas itu. `className` `null` → **semua kelas**,
+   * yaitu baris-baris yang dikunci/dipublikasi sekaligus oleh admin.
    * `statusFilter` opsional — bila diisi, hanya baris dengan status
    * tersebut yang dikembalikan (dipakai untuk membatasi orang tua
    * ke 'published' saja).
@@ -41,11 +62,11 @@ class ScheduleRepository {
     db: Db,
     from: string,
     to: string,
-    className: string,
+    className: string | null,
     statusFilter?: ScheduleStatus[],
   ): Promise<Schedule[]> {
     const conditions = [
-      eq(schedules.className, className),
+      ...(className ? [eq(schedules.className, className)] : []),
       gte(schedules.scheduleDate, from),
       lte(schedules.scheduleDate, to),
     ];
@@ -58,7 +79,22 @@ class ScheduleRepository {
       .select()
       .from(schedules)
       .where(and(...conditions))
-      .orderBy(asc(schedules.scheduleDate));
+      .orderBy(asc(schedules.scheduleDate), asc(schedules.className));
+  }
+
+  /**
+   * Alias eksplisit dari `findSchedulesBetween` untuk operasi sekolah-wide
+   * (kunci/publikasi semua kelas). Namanya sengaja berbeda agar pemanggil
+   * yang mengirim `null` terbaca jelas di kode service.
+   */
+  async findSchedulesBetweenAnyClass(
+    db: Db,
+    from: string,
+    to: string,
+    className: string | null,
+    statusFilter?: ScheduleStatus[],
+  ): Promise<Schedule[]> {
+    return this.findSchedulesBetween(db, from, to, className, statusFilter);
   }
 
   /** Baris jadwal satu kelas pada satu tanggal. */
@@ -153,15 +189,18 @@ class ScheduleRepository {
   // ── Kunci & Publikasi ───────────────────────────────────────
 
   /**
-   * Kunci semua jadwal draft pada rentang tanggal untuk satu kelas.
-   * Baris yang sudah 'locked' atau 'published' dilewati.
+   * Kunci semua jadwal draft pada rentang tanggal.
+   *
+   * `className` diisi → hanya kelas itu (korlas / admin per kelas).
+   * `className` `null` → **semua kelas sekaligus** (admin, satu klik untuk
+   * seluruh sekolah). Baris yang sudah 'locked' atau 'published' dilewati.
    * Mengembalikan jumlah baris yang dikunci.
    */
   async lockDraftSchedulesBetween(
     db: Db,
     from: string,
     to: string,
-    className: string,
+    className: string | null,
     userId: number,
   ): Promise<number> {
     const rows = await db
@@ -174,7 +213,7 @@ class ScheduleRepository {
       })
       .where(
         and(
-          eq(schedules.className, className),
+          ...(className ? [eq(schedules.className, className)] : []),
           eq(schedules.status, "draft"),
           gte(schedules.scheduleDate, from),
           lte(schedules.scheduleDate, to),
@@ -186,18 +225,19 @@ class ScheduleRepository {
   }
 
   /**
-   * Publikasi semua jadwal locked untuk satu bulan + kelas.
+   * Publikasi semua jadwal locked untuk satu bulan.
+   *
+   * `className` diisi → hanya kelas itu; `null` → seluruh sekolah.
    * Mengembalikan jumlah baris yang dipublikasi.
    */
   async publishLockedSchedulesForMonth(
     db: Db,
     year: number,
     month: number,
-    className: string,
+    className: string | null,
     userId: number,
   ): Promise<number> {
-    const from = `${year}-${String(month).padStart(2, "0")}-01`;
-    const to = `${year}-${String(month).padStart(2, "0")}-31`;
+    const { from, to } = monthBounds(year, month);
 
     const rows = await db
       .update(schedules)
@@ -209,7 +249,7 @@ class ScheduleRepository {
       })
       .where(
         and(
-          eq(schedules.className, className),
+          ...(className ? [eq(schedules.className, className)] : []),
           eq(schedules.status, "locked"),
           gte(schedules.scheduleDate, from),
           lte(schedules.scheduleDate, to),
@@ -221,7 +261,9 @@ class ScheduleRepository {
   }
 
   /**
-   * Hitung jumlah baris per status untuk satu bulan + kelas.
+   * Hitung jumlah baris per status untuk satu bulan.
+   *
+   * `className` diisi → hanya kelas itu; `null` → seluruh sekolah.
    * Dipakai untuk menentukan apakah publikasi sudah bisa dilakukan
    * (semua baris harus 'locked', tidak boleh ada 'draft').
    */
@@ -229,10 +271,9 @@ class ScheduleRepository {
     db: Db,
     year: number,
     month: number,
-    className: string,
+    className: string | null,
   ): Promise<MonthStatusRow[]> {
-    const from = `${year}-${String(month).padStart(2, "0")}-01`;
-    const to = `${year}-${String(month).padStart(2, "0")}-31`;
+    const { from, to } = monthBounds(year, month);
 
     return db
       .select({
@@ -242,12 +283,45 @@ class ScheduleRepository {
       .from(schedules)
       .where(
         and(
-          eq(schedules.className, className),
+          ...(className ? [eq(schedules.className, className)] : []),
           gte(schedules.scheduleDate, from),
           lte(schedules.scheduleDate, to),
         ),
       )
       .groupBy(schedules.status);
+  }
+
+  /**
+   * Jumlah baris per (kelas × status) untuk satu bulan, urut nama kelas.
+   *
+   * Dipakai saat publikasi seluruh sekolah gagal karena masih ada `draft`:
+   * pesan 409-nya bisa menyebut kelas mana saja yang belum dikunci, alih-alih
+   * hanya bilang "masih ada draft" tanpa petunjuk.
+   */
+  async countSchedulesByStatusPerClassForMonth(
+    db: Db,
+    year: number,
+    month: number,
+    status: ScheduleStatus,
+  ): Promise<MonthStatusByClassRow[]> {
+    const { from, to } = monthBounds(year, month);
+
+    return db
+      .select({
+        className: schedules.className,
+        status: schedules.status,
+        count: sql<number>`count(*)`,
+      })
+      .from(schedules)
+      .where(
+        and(
+          eq(schedules.status, status),
+          gte(schedules.scheduleDate, from),
+          lte(schedules.scheduleDate, to),
+        ),
+      )
+      .groupBy(schedules.className)
+      .orderBy(asc(schedules.className));
   }
 
   /**

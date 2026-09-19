@@ -19,9 +19,9 @@ const scheduleWriters = requireRole("admin", "korlas");
  * `/publish`) didaftarkan sebelum `/:id` agar tidak tertangkap sebagai
  * parameter ID.
  *
- * Kunci & publikasi: korlas dapat mengunci jadwal draft dan mempublikasi
- * jadwal yang sudah terkunci penuh satu bulan. Buka kunci (unlock) hanya
- * untuk admin.
+ * Kunci & publikasi: admin dapat mengunci/mempublikasi **semua kelas
+ * sekaligus** (tanpa `className`) maupun satu kelas tertentu. Korlas hanya
+ * kelas yang dikoordinasinya. Buka kunci (unlock) hanya untuk admin.
  */
 export const schedulesRoute = new Hono<AuthEnv>()
   .get("/today", requireAuth, scheduleController.today)

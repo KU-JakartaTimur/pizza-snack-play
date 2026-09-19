@@ -71,6 +71,20 @@ function toWeekDto(week: Week): WeekDto {
 
 class ScheduleService {
   /**
+   * Kelas yang masih menyisakan `draft` pada percobaan publikasi terakhir.
+   *
+   * Diisi `publishMonth` saat mengembalikan `drafts_remaining`, lalu dibaca
+   * controller untuk menyusun pesan 409 yang menyebut kelas penyebabnya.
+   * Dipakai karena `ScheduleError` sengaja tetap berupa union string.
+   */
+  private lastDraftBlockers: Array<{ className: string; count: number }> = [];
+
+  /** Kelas penyebab publikasi terakhir ditolak. Kosong bila tidak ada. */
+  draftBlockers(): Array<{ className: string; count: number }> {
+    return this.lastDraftBlockers;
+  }
+
+  /**
    * Muat semua data yang dibutuhkan untuk merender satu rentang tanggal
    * dalam 4 query — menghindari N+1 saat menampilkan jadwal sebulan.
    *
@@ -585,18 +599,24 @@ class ScheduleService {
   // ── Kunci & Publikasi (korlas & admin) ─────────────────────
 
   /**
-   * Kunci semua jadwal 'draft' pada rentang `fromDate`–`toDate` untuk satu kelas.
+   * Kunci semua jadwal 'draft' pada rentang `fromDate`–`toDate`.
+   *
+   * `className` `null` berarti **semua kelas sekaligus** — dipakai admin
+   * lewat tombol "Kunci bulan": satu bulan penuh untuk kelas 1–6 terkunci
+   * dalam satu tindakan, sehingga tidak ada kelas yang tertinggal. Korlas
+   * selalu memakai kelasnya sendiri (dijaga di controller).
+   *
    * Baris yang sudah 'locked' atau 'published' dilewati.
-   * Dipanggil oleh korlas setelah selesai menyusun jadwal.
    */
   async lockSchedules(
     db: Db,
-    className: string,
+    className: string | null,
     input: LockScheduleInput,
     userId: number,
   ): Promise<LockScheduleResultDto> {
     // Ambil status saat ini untuk menghitung yang sudah terkunci/dilewati.
-    const rows = await scheduleRepository.findSchedulesBetween(
+    // Untuk operasi sekolah-wide, hasilnya digabung dari seluruh kelas.
+    const rows = await scheduleRepository.findSchedulesBetweenAnyClass(
       db,
       input.fromDate,
       input.toDate,
@@ -619,6 +639,9 @@ class ScheduleService {
 
     return {
       className,
+      classes: [...new Set(rows.map((row) => row.className))].sort((a, b) =>
+        a.localeCompare(b, "id", { numeric: true }),
+      ),
       fromDate: input.fromDate,
       toDate: input.toDate,
       locked,
@@ -628,13 +651,20 @@ class ScheduleService {
   }
 
   /**
-   * Publikasi semua jadwal 'locked' untuk satu bulan + kelas.
-   * Gagal bila masih ada baris 'draft' — harus dikunci dulu.
-   * Setelah publikasi, jadwal terlihat oleh semua orang tua.
+   * Publikasi semua jadwal 'locked' untuk satu bulan.
+   *
+   * `className` `null` berarti **seluruh sekolah** — semua kelas dipublikasi
+   * bersamaan sehingga jadwal bulan itu terbuka untuk orang tua kelas 1–6
+   * pada saat yang sama.
+   *
+   * Gagal (`drafts_remaining`) bila masih ada baris 'draft' — harus dikunci
+   * dulu. Untuk operasi sekolah-wide, draft di kelas mana pun menahan
+   * publikasi seluruh sekolah; itu disengaja agar tidak ada kelas yang
+   * terbit dengan jadwal separuh jadi.
    */
   async publishMonth(
     db: Db,
-    className: string,
+    className: string | null,
     input: PublishScheduleInput,
     userId: number,
   ): Promise<PublishScheduleResultDto | ScheduleError> {
@@ -648,9 +678,23 @@ class ScheduleService {
     const counts = new Map(statusCounts.map((r) => [r.status, r.count]));
     const draftCount = counts.get("draft") ?? 0;
 
-    if (draftCount > 0) return "drafts_remaining";
+    // Sertakan kelas penyebabnya supaya admin tahu harus mengunci kelas mana.
+    if (draftCount > 0) {
+      this.lastDraftBlockers = (
+        await scheduleRepository.countSchedulesByStatusPerClassForMonth(
+          db,
+          input.year,
+          input.month,
+          "draft",
+        )
+      ).map((row) => ({ className: row.className, count: row.count }));
+      return "drafts_remaining";
+    }
+
+    this.lastDraftBlockers = [];
 
     const alreadyPublished = counts.get("published") ?? 0;
+    const lockedCount = counts.get("locked") ?? 0;
 
     const published = await scheduleRepository.publishLockedSchedulesForMonth(
       db,
@@ -662,10 +706,24 @@ class ScheduleService {
 
     return {
       className,
+      // Kelas yang ikut terbit. Untuk operasi sekolah-wide, daftarnya dibaca
+      // dari kelas yang punya baris `published` setelah operasi berjalan.
+      classes: className
+        ? [className]
+        : (
+            await scheduleRepository.countSchedulesByStatusPerClassForMonth(
+              db,
+              input.year,
+              input.month,
+              "published",
+            )
+          ).map((row) => row.className),
       year: input.year,
       month: input.month,
       published,
+      lockedCount,
       draftCount,
+      draftByClass: [],
       alreadyPublished,
     };
   }

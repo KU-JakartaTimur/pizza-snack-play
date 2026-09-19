@@ -108,12 +108,22 @@ export interface LockScheduleInput {
   fromDate: string;
   /** Tanggal akhir rentang yang dikunci (inklusif). */
   toDate: string;
-  /** Kelas yang dikunci. Wajib untuk admin; korlas diisi otomatis. */
+  /**
+   * Kelas yang dikunci.
+   *
+   * - **Admin:** boleh dikosongkan → berlaku untuk **semua kelas** sekaligus
+   *   (satu klik untuk seluruh sekolah). Bila diisi, hanya kelas itu.
+   * - **Korlas:** tidak perlu diisi — otomatis kelas yang dikoordinasinya,
+   *   dan kelas lain ditolak `403 forbidden_class`.
+   */
   className?: string;
 }
 
 export interface LockScheduleResultDto {
-  className: string;
+  /** Kelas yang dikunci; `null` berarti operasi berlaku untuk semua kelas. */
+  className: string | null;
+  /** Kelas-kelas yang benar-benar tersentuh operasi, urut abjad-numerik. */
+  classes: string[];
   fromDate: string;
   toDate: string;
   locked: number;
@@ -125,17 +135,39 @@ export interface LockScheduleResultDto {
 export interface PublishScheduleInput {
   year: number;
   month: number;
-  /** Kelas yang dipublikasi. Wajib untuk admin; korlas diisi otomatis. */
+  /**
+   * Kelas yang dipublikasi.
+   *
+   * - **Admin:** boleh dikosongkan → publikasi **semua kelas** sekaligus.
+   * - **Korlas:** otomatis kelas yang dikoordinasinya.
+   */
   className?: string;
 }
 
-export interface PublishScheduleResultDto {
+/** Satu kelas yang masih menyisakan baris `draft` saat publikasi gagal. */
+export interface PublishDraftBlockerDto {
   className: string;
+  /** Jumlah baris `draft` yang membuat publikasi tertahan. */
+  count: number;
+}
+
+export interface PublishScheduleResultDto {
+  /** Kelas yang dipublikasi; `null` berarti publikasi seluruh sekolah. */
+  className: string | null;
+  /** Kelas-kelas yang statusnya berubah menjadi `published`. */
+  classes: string[];
   year: number;
   month: number;
   published: number;
+  /** Jumlah baris `locked` yang jadi sumber publikasi (sebelum diubah). */
+  lockedCount: number;
   /** Baris draft yang belum dikunci (menggagalkan publikasi bila > 0). */
   draftCount: number;
+  /**
+   * Rincian draft per kelas — hanya terisi bila publikasi gagal
+   * (`409 drafts_remaining`) agar pesannya menyebut kelas penyebabnya.
+   */
+  draftByClass: PublishDraftBlockerDto[];
   /** Baris yang sudah published sebelumnya (dilewati). */
   alreadyPublished: number;
 }

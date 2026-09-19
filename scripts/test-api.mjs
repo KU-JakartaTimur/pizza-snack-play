@@ -101,9 +101,15 @@ section("1. Jadwal — hari ini");
     `days=${r.data?.week?.days?.length}`,
   );
   check(
-    "hari kerja (dayOfWeek 1-5)",
-    r.data?.day?.dayOfWeek >= 1 && r.data?.day?.dayOfWeek <= 5,
-    `dayOfWeek=${r.data?.day?.dayOfWeek}`,
+    // `todayInWib()` boleh jatuh di akhir pekan — itu bukan kegagalan.
+    // Yang diuji adalah `dayOfWeek` konsisten dengan nama harinya.
+    "dayOfWeek cocok dengan nama hari",
+    r.data?.day?.dayOfWeek === 6
+      ? r.data?.day?.dayName === "Sabtu"
+      : r.data?.day?.dayOfWeek === 0
+        ? r.data?.day?.dayName === "Minggu"
+        : r.data?.day?.dayOfWeek >= 1 && r.data?.day?.dayOfWeek <= 5,
+    `dayOfWeek=${r.data?.day?.dayOfWeek} dayName=${r.data?.day?.dayName}`,
   );
 }
 
@@ -1666,6 +1672,98 @@ section("19. Korlas — wewenang & batas kelas");
     `got ${copyOther.status}`,
   );
 
+  // Kunci & publikasi: korlas tetap terbatas pada kelasnya.
+  const korlasLockOther = await call("POST", "/schedules/lock", {
+    token: korlasToken,
+    body: { fromDate: from, toDate: to, className: "2" },
+  });
+  check(
+    "korlas mengunci kelas lain -> 403",
+    korlasLockOther.status === 403,
+    `got ${korlasLockOther.status}`,
+  );
+
+  // Korlas tanpa `className` = kelasnya sendiri; yang dikunci hanya kelas 1.
+  const korlasLock = await call("POST", "/schedules/lock", {
+    token: korlasToken,
+    body: { fromDate: from, toDate: to },
+  });
+  check(
+    "korlas mengunci kelasnya -> 200",
+    korlasLock.status === 200,
+    `got ${korlasLock.status}`,
+  );
+  check(
+    "kunci korlas hanya menyentuh kelas 1",
+    JSON.stringify(korlasLock.data?.classes) === JSON.stringify(["1"]),
+    JSON.stringify(korlasLock.data?.classes),
+  );
+
+  // Kelas 2 sengaja dibiarkan draft: publikasi seluruh sekolah harus ditolak
+  // dan pesannya menyebut kelas penyebabnya.
+  const blockedPublish = await call("POST", "/schedules/publish", {
+    token: adminToken,
+    body: { year: 2032, month: 3 },
+  });
+  check(
+    "publikasi semua kelas ditolak selama ada draft -> 409",
+    blockedPublish.status === 409,
+    `got ${blockedPublish.status}`,
+  );
+  check(
+    "pesan penolakan menyebut kelas penyebab draft",
+    typeof blockedPublish.json?.message === "string" &&
+      blockedPublish.json.message.includes("kelas 2"),
+    blockedPublish.json?.message,
+  );
+
+  // Admin mengunci semua kelas sekaligus — satu panggilan, tanpa `className`.
+  const allLock = await call("POST", "/schedules/lock", {
+    token: adminToken,
+    body: { fromDate: from, toDate: to },
+  });
+  check(
+    "admin mengunci semua kelas -> 200",
+    allLock.status === 200,
+    `got ${allLock.status}`,
+  );
+  check(
+    "kunci menyentuh kelas 1 dan 2",
+    ["1", "2"].every((cls) => (allLock.data?.classes ?? []).includes(cls)),
+    JSON.stringify(allLock.data?.classes),
+  );
+  check(
+    "kunci admin melengkapi kelas yang tersisa (kelas 2)",
+    allLock.data?.locked === 1,
+    `locked=${allLock.data?.locked}`,
+  );
+
+  // Publikasi seluruh sekolah dalam satu tindakan.
+  const allPublish = await call("POST", "/schedules/publish", {
+    token: adminToken,
+    body: { year: 2032, month: 3 },
+  });
+  check(
+    "admin mempublikasi semua kelas -> 200",
+    allPublish.status === 200,
+    `got ${allPublish.status}`,
+  );
+  check(
+    "semua kelas ikut terbit",
+    ["1", "2"].every((cls) => (allPublish.data?.classes ?? []).includes(cls)),
+    JSON.stringify(allPublish.data?.classes),
+  );
+
+  // Orang tua kelas 1 kini melihat jadwalnya.
+  const publishedWeek = await call("GET", `/schedules/week?date=${from}`, {
+    token: parentToken,
+  });
+  check(
+    "orang tua kelas 1 melihat jadwal published",
+    publishedWeek.data?.days?.some((day) => day.scheduleId !== null),
+    JSON.stringify(publishedWeek.data?.days?.map((d) => d.status)),
+  );
+
   // Hari libur & akun tetap khusus admin.
   const holiday = await call("POST", "/holidays", {
     token: korlasToken,
@@ -1686,7 +1784,9 @@ section("19. Korlas — wewenang & batas kelas");
     );
   }
 
-  // Bersihkan jejak uji.
+  // Bersihkan jejak uji. Baris `published` harus di-unlock dulu sebelum
+  // bisa dihapus (`not_editable`), karena publikasi di atas menyentuh
+  // kedua kelas.
   for (const cls of ["1", "2"]) {
     const rows = await call(
       "GET",
@@ -1695,6 +1795,9 @@ section("19. Korlas — wewenang & batas kelas");
     );
     for (const day of rows.data ?? []) {
       if (day.scheduleId) {
+        await call("POST", `/schedules/${day.scheduleId}/unlock`, {
+          token: adminToken,
+        });
         await call("DELETE", `/schedules/${day.scheduleId}`, {
           token: adminToken,
         });

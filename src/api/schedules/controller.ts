@@ -393,7 +393,7 @@ class ScheduleController {
       getDb(c.env),
       scope.className,
       { fromDate: body.fromDate, toDate: body.toDate },
-      user.sub,
+      c.get("user").sub,
     );
 
     return responseOK(
@@ -441,7 +441,7 @@ class ScheduleController {
       getDb(c.env),
       scope.className,
       { year: year!, month: month! },
-      user.sub,
+      c.get("user").sub,
     );
 
     if (typeof result === "string") {

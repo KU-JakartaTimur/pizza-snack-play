@@ -119,6 +119,17 @@ export interface LockScheduleInput {
   className?: string;
 }
 
+export interface LockClassResult {
+  /** Kelas yang dihitung. */
+  className: string;
+  /** Baris `draft` yang berhasil dikunci untuk kelas ini. */
+  locked: number;
+  /** Baris yang sebelumnya sudah `locked` (dilewati). */
+  alreadyLocked: number;
+  /** Baris `published` yang dilewati karena tidak bisa dikunci ulang. */
+  skipped: number;
+}
+
 export interface LockScheduleResultDto {
   /** Kelas yang dikunci; `null` berarti operasi berlaku untuk semua kelas. */
   className: string | null;
@@ -152,6 +163,19 @@ export interface PublishDraftBlockerDto {
   className: string;
   /** Jumlah baris `draft` yang membuat publikasi tertahan. */
   count: number;
+}
+
+export interface PublishClassResult {
+  /** Kelas yang diproses. */
+  className: string;
+  /** Baris yang berhasil dipublikasi untuk kelas ini. */
+  published: number;
+  /** Baris `draft` yang tersisa (penyebab kelas ini tertahan bila > 0). */
+  draftCount: number;
+  /** Baris yang sebelumnya sudah `published` (dilewati). */
+  alreadyPublished: number;
+  /** `true` bila kelas ini tidak ikut terbit karena masih ada draft. */
+  blocked: boolean;
 }
 
 export interface PublishScheduleResultDto {

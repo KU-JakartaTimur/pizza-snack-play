@@ -28,13 +28,6 @@ export interface MonthStatusRow {
   count: number;
 }
 
-/** Jumlah baris untuk satu status, dipecah per kelas. */
-export interface MonthStatusByClassRow {
-  className: string;
-  status: string;
-  count: number;
-}
-
 /**
  * Rentang tanggal satu bulan penuh sebagai string ISO.
  * Dipakai untuk kunci & publikasi; batas atas selalu `31` karena
@@ -80,21 +73,6 @@ class ScheduleRepository {
       .from(schedules)
       .where(and(...conditions))
       .orderBy(asc(schedules.scheduleDate), asc(schedules.className));
-  }
-
-  /**
-   * Alias eksplisit dari `findSchedulesBetween` untuk operasi sekolah-wide
-   * (kunci/publikasi semua kelas). Namanya sengaja berbeda agar pemanggil
-   * yang mengirim `null` terbaca jelas di kode service.
-   */
-  async findSchedulesBetweenAnyClass(
-    db: Db,
-    from: string,
-    to: string,
-    className: string | null,
-    statusFilter?: ScheduleStatus[],
-  ): Promise<Schedule[]> {
-    return this.findSchedulesBetween(db, from, to, className, statusFilter);
   }
 
   /** Baris jadwal satu kelas pada satu tanggal. */
@@ -383,39 +361,6 @@ class ScheduleRepository {
         ),
       )
       .groupBy(schedules.className, schedules.status);
-  }
-
-  /**
-   * Jumlah baris per (kelas × status) untuk satu bulan, urut nama kelas.
-   *
-   * Dipakai saat publikasi seluruh sekolah gagal karena masih ada `draft`:
-   * pesan 409-nya bisa menyebut kelas mana saja yang belum dikunci, alih-alih
-   * hanya bilang "masih ada draft" tanpa petunjuk.
-   */
-  async countSchedulesByStatusPerClassForMonth(
-    db: Db,
-    year: number,
-    month: number,
-    status: ScheduleStatus,
-  ): Promise<MonthStatusByClassRow[]> {
-    const { from, to } = monthBounds(year, month);
-
-    return db
-      .select({
-        className: schedules.className,
-        status: schedules.status,
-        count: sql<number>`count(*)`,
-      })
-      .from(schedules)
-      .where(
-        and(
-          eq(schedules.status, status),
-          gte(schedules.scheduleDate, from),
-          lte(schedules.scheduleDate, to),
-        ),
-      )
-      .groupBy(schedules.className)
-      .orderBy(asc(schedules.className));
   }
 
   /**

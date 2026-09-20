@@ -68,7 +68,8 @@
     "db:studio": "drizzle-kit studio",
     "test:auth": "bun run scripts/test-auth.mjs",
     "test:api": "bun run scripts/test-api.mjs",
-    "test": "bun run test:auth && bun run test:api"
+    "test:status": "bun run scripts/test-status.mjs",
+    "test": "bun run test:auth && bun run test:api && bun run test:status"
   },
   "type": "module"
 }

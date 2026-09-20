@@ -1,72 +1,49 @@
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  CalendarOff,
-  ChevronLeft,
-  ChevronRight,
-  Copy,
-  Lock,
-  Plus,
-  Send,
-  Trash2,
-  Unlock,
-} from "lucide-react";
 import { RoleGate } from "@/components/AdminOnly";
 import { PageHeader } from "@/components/AppShell";
 import {
-  Badge,
-  Button,
-  Card,
-  CardHeader,
-  Field,
-  Input,
-  Modal,
-  Select,
-  Spinner,
-} from "@/components/ui";
+  CopyWeekModal,
+  type CopyFormValue,
+} from "@/components/jadwal/CopyWeekModal";
+import { DayRow, type DayPatch } from "@/components/jadwal/DayRow";
+import { HolidayCard } from "@/components/jadwal/HolidayCard";
+import {
+  HolidayModal,
+  type HolidayFormValue,
+} from "@/components/jadwal/HolidayModal";
+import { MonthToolbar } from "@/components/jadwal/MonthToolbar";
+import { SchoolStatusSummary } from "@/components/jadwal/SchoolStatusSummary";
+import { Card, CardHeader, Spinner } from "@/components/ui";
 import { ApiError, api } from "@/lib/api";
 import { useActiveClass } from "@/lib/active-class";
 import { useAuth } from "@/lib/auth-context";
-import {
-  addDays,
-  endOfWeek,
-  formatCompactDate,
-  formatWeekLabel,
-  indonesianMonthName,
-  monthOf,
-  startOfWeek,
-  todayInWib,
-  yearOf,
-} from "@/lib/date";
-import type { ScheduleDayDto, ScheduleStatus } from "@/types/schedule";
+import { monthOf, monthRange, todayInWib, yearOf } from "@/lib/date";
+import type { ScheduleDayDto } from "@/types/schedule";
 
 export const Route = createFileRoute("/_app/jadwal")({
   component: ScheduleAdminPage,
 });
 
-const NO_MENU = "";
-
-/** Label dan warna badge untuk tiap status jadwal. */
-const STATUS_META: Record<
-  ScheduleStatus,
-  { label: string; tone: "neutral" | "warning" | "success" }
-> = {
-  draft: { label: "Draft", tone: "neutral" },
-  locked: { label: "Terkunci", tone: "warning" },
-  published: { label: "Dipublikasi", tone: "success" },
-};
+/** Pesan banner sukses / gagal di atas toolbar. */
+interface Banner {
+  kind: "ok" | "error";
+  text: string;
+}
 
 /**
  * Halaman kelola jadwal — admin dan korlas.
  *
- * Admin memilih kelas lewat pemilih kelas di header; korlas terkunci ke
- * kelas yang dikoordinasinya (pembatasan sebenarnya tetap di API).
+ * Pembagian hak (lihat PRD §7.5 & F8):
+ * - **Korlas**: menyusun jadwal kelasnya selama masih `draft` (menu, petugas,
+ *   catatan, Salin Sepekan), lalu mengunci & **mempublikasikannya** untuk
+ *   kelasnya sendiri.
+ * - **Admin**: hal yang sama, tetapi cakupannya **semua kelas sekaligus**
+ *   (mengirim permintaan tanpa `className`), plus buka kunci & hari libur.
  *
- * Pembagiannya: korlas boleh menyusun jadwal kelasnya (menu, petugas, catatan,
- * Salin Sepekan) selama barisnya masih `draft`, lalu **mempublikasikannya**.
- * Kunci & buka kunci jadwal tetap di tangan admin, dan baris `locked`/
- * `published` tidak dapat diubah siapa pun.
+ * Halaman ini hanya menyusun tata letak + query/mutasi. Rendering dipecah ke
+ * `src/components/jadwal/*`.
  */
 function ScheduleAdminPage() {
   return (
@@ -85,34 +62,35 @@ function ScheduleAdminContent() {
   // Korlas selalu memakai kelasnya sendiri, apa pun pilihan di header.
   const className = isAdmin ? activeClass : (korlasClass ?? activeClass);
 
-  // Pemilih kelas di header menentukan kelas mana yang ditampilkan berbaris,
-  // sementara kunci & publikasi admin berlaku untuk **semua kelas** (lihat
-  // `lockMutation`/`publishMutation` di bawah). Karena itu tabel tetap dimuat
-  // per kelas, tetapi penghitung status memakai `schoolQuery` lintas kelas.
   const [year, setYear] = useState(() => yearOf(today));
   const [month, setMonth] = useState(() => monthOf(today));
-  const [banner, setBanner] = useState<{ kind: "ok" | "error"; text: string } | null>(
-    null,
-  );
+  const [banner, setBanner] = useState<Banner | null>(null);
   const [holidayModalOpen, setHolidayModalOpen] = useState(false);
-  const [holidayForm, setHolidayForm] = useState({
-    date: today,
-    name: "",
-    description: "",
-  });
   const [copyModalOpen, setCopyModalOpen] = useState(false);
-  // Default: salin ahad ini ke ahad depan.
-  const [copyForm, setCopyForm] = useState(() => ({
-    fromDate: startOfWeek(today),
-    toDate: addDays(startOfWeek(today), 7),
-    overwrite: false,
-  }));
 
+  const { from: monthStart, to: monthEnd } = monthRange(year, month);
+
+  /**
+   * Tabel berbaris untuk **kelas yang sedang dipilih**.
+   * Kunci & publikasi menyentuh lebih banyak kelas — status cakupannya
+   * diambil dari `statusQuery` di bawah.
+   */
   const monthQuery = useQuery({
     queryKey: ["schedules", "month", year, month, className],
     queryFn: () => api.schedules.month(year, month, className),
-    // Tanpa kelas terpilih belum ada jadwal yang bisa ditampilkan.
     enabled: Boolean(className),
+  });
+
+  /**
+   * Ringkasan status per kelas — satu permintaan, bukan satu per kelas.
+   *
+   * Admin mengirim tanpa `className` → seluruh sekolah, karena tombol kunci &
+   * publikasi admin berlaku untuk semua kelas. Korlas dibatasi ke kelasnya.
+   */
+  const statusQuery = useQuery({
+    queryKey: ["schedules", "status", year, month, isAdmin ? null : className],
+    queryFn: () => api.schedules.status(year, month, isAdmin ? null : className),
+    enabled: isAdmin || Boolean(className),
   });
 
   const menusQuery = useQuery({
@@ -123,7 +101,6 @@ function ScheduleAdminContent() {
   const holidaysQuery = useQuery({
     queryKey: ["holidays"],
     queryFn: () => api.holidays.list(),
-    // Kartu & tombol hari libur hanya tampil untuk admin.
     enabled: isAdmin,
   });
 
@@ -132,17 +109,22 @@ function ScheduleAdminContent() {
     await queryClient.invalidateQueries({ queryKey: ["holidays"] });
     await queryClient.invalidateQueries({ queryKey: ["stats"] });
   };
+
+  /** Pembungkus seragam: sukses → banner hijau, gagal → banner merah. */
+  const bannerHandlers = (fallback: string) => ({
+    onSuccess: async (result: { message: string }) => {
+      setBanner({ kind: "ok", text: result.message });
+      await invalidate();
+    },
+    onError: (error: unknown) =>
+      setBanner({
+        kind: "error",
+        text: error instanceof ApiError ? error.message : fallback,
+      }),
+  });
+
   const saveMutation = useMutation({
-    mutationFn: async (vars: {
-      day: ScheduleDayDto;
-      patch: {
-        menuId?: number | null;
-        isHoliday?: boolean;
-        petugasName?: string | null;
-        petugasParentName?: string | null;
-        notes?: string | null;
-      };
-    }) => {
+    mutationFn: async (vars: { day: ScheduleDayDto; patch: DayPatch }) => {
       // Hari yang belum punya entri → buat baru; selebihnya → perbarui.
       if (vars.day.scheduleId) {
         return api.schedules.update(vars.day.scheduleId, vars.patch);
@@ -157,41 +139,24 @@ function ScheduleAdminContent() {
         notes: vars.patch.notes ?? null,
       });
     },
-    onSuccess: async (result) => {
-      setBanner({ kind: "ok", text: result.message });
-      await invalidate();
-    },
-    onError: (error) =>
-      setBanner({
-        kind: "error",
-        text: error instanceof ApiError ? error.message : "Gagal menyimpan jadwal",
-      }),
+    ...bannerHandlers("Gagal menyimpan jadwal"),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.schedules.remove(id),
-    onSuccess: async (result) => {
-      setBanner({ kind: "ok", text: result.message });
-      await invalidate();
-    },
-    onError: (error) =>
-      setBanner({
-        kind: "error",
-        text: error instanceof ApiError ? error.message : "Gagal menghapus jadwal",
-      }),
+    ...bannerHandlers("Gagal menghapus jadwal"),
   });
 
   const holidayMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (value: HolidayFormValue) =>
       api.holidays.create({
-        date: holidayForm.date,
-        name: holidayForm.name.trim(),
-        description: holidayForm.description.trim() || undefined,
+        date: value.date,
+        name: value.name,
+        description: value.description || undefined,
       }),
     onSuccess: async (result) => {
       setBanner({ kind: "ok", text: result.message });
       setHolidayModalOpen(false);
-      setHolidayForm({ date: today, name: "", description: "" });
       await invalidate();
     },
     onError: (error) =>
@@ -203,24 +168,16 @@ function ScheduleAdminContent() {
 
   const deleteHolidayMutation = useMutation({
     mutationFn: (id: number) => api.holidays.remove(id),
-    onSuccess: async (result) => {
-      setBanner({ kind: "ok", text: result.message });
-      await invalidate();
-    },
-    onError: (error) =>
-      setBanner({
-        kind: "error",
-        text: error instanceof ApiError ? error.message : "Gagal menghapus",
-      }),
+    ...bannerHandlers("Gagal menghapus"),
   });
 
   const copyMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (value: CopyFormValue) =>
       api.schedules.copy({
-        fromDate: copyForm.fromDate,
-        toDate: copyForm.toDate,
+        fromDate: value.fromDate,
+        toDate: value.toDate,
         className: className!,
-        overwrite: copyForm.overwrite,
+        overwrite: value.overwrite,
       }),
     onSuccess: async (result) => {
       const { created, updated, skipped, sourceLabel, targetLabel } = result.data;
@@ -238,77 +195,6 @@ function ScheduleAdminContent() {
       }),
   });
 
-  // Minggu sumber & tujuan dianggap sama bila Senin-nya sama.
-  const copySameWeek =
-    startOfWeek(copyForm.fromDate) === startOfWeek(copyForm.toDate);
-
-  // ── Kunci & Publikasi ────────────────────────────────────────
-  // Rentang tanggal bulan yang sedang ditampilkan — dipakai untuk
-  // mengunci seluruh bulan sekaligus.
-  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
-  const monthStart = `${year}-${String(month).padStart(2, "0")}-01`;
-  const monthEnd = `${year}-${String(month).padStart(2, "0")}-${String(daysInMonth).padStart(2, "0")}`;
-
-  /**
-   * Status jadwal bulan ini untuk **seluruh kelas**.
-   *
-   * Kunci & publikasi oleh admin menyentuh kelas 1–6 sekaligus, jadi
-   * penghitungnya pun harus lintas kelas — kalau tidak, tombol "Publikasi"
-   * bisa tampak aktif padahal masih ada kelas lain yang menyisakan draft.
-   * Korlas tetap memakai data kelasnya sendiri (tanpa permintaan tambahan).
-   */
-  const schoolQuery = useQuery({
-    queryKey: ["schedules", "school-status", year, month],
-    queryFn: async () => {
-      const classes = (await api.classes.list()).classes;
-      const months = await Promise.all(
-        classes.map((item) => api.schedules.month(year, month, item)),
-      );
-
-      const days = months.flatMap((data) =>
-        data.weeks.flatMap((week) => week.days),
-      );
-      const scheduled = days.filter((day) => day.scheduleId !== null);
-
-      return {
-        classes,
-        draftCount: scheduled.filter((day) => day.status === "draft").length,
-        lockedCount: scheduled.filter((day) => day.status === "locked").length,
-        publishedCount: scheduled.filter((day) => day.status === "published")
-          .length,
-        /** Kelas yang masih menyisakan draft — untuk pesan yang informatif. */
-        draftClasses: [
-          ...new Set(
-            scheduled
-              .filter((day) => day.status === "draft")
-              .map((day) => day.className ?? "")
-              .filter(Boolean),
-          ),
-        ],
-      };
-    },
-    enabled: isAdmin,
-  });
-
-  // Hitung status jadwal dari data bulanan kelas yang sedang ditampilkan.
-  const allDays = monthQuery.data?.weeks.flatMap((w) => w.days) ?? [];
-  const schedDays = allDays.filter((d) => d.scheduleId !== null);
-
-  // Admin melihat angka sekolah-wide; korlas cukup kelasnya sendiri.
-  const draftCount = isAdmin
-    ? (schoolQuery.data?.draftCount ?? 0)
-    : schedDays.filter((d) => d.status === "draft").length;
-  const lockedCount = isAdmin
-    ? (schoolQuery.data?.lockedCount ?? 0)
-    : schedDays.filter((d) => d.status === "locked").length;
-  const publishedCount = isAdmin
-    ? (schoolQuery.data?.publishedCount ?? 0)
-    : schedDays.filter((d) => d.status === "published").length;
-
-  // Kelas yang menahan publikasi — hanya bermakna untuk admin.
-  const draftClasses = schoolQuery.data?.draftClasses ?? [];
-  const canPublish = draftCount === 0 && lockedCount > 0;
-
   /**
    * Admin mengirim tanpa `className` → server memperlakukan sebagai
    * "semua kelas" (kelas 1–6 sekaligus). Korlas selalu menyertakan kelasnya.
@@ -322,8 +208,9 @@ function ScheduleAdminContent() {
       }),
     onSuccess: async (result) => {
       const { locked, alreadyLocked, skipped, classes } = result.data;
+      // Sebutkan kelasnya satu per satu supaya cakupan sekolah-wide terlihat.
       const scope = isAdmin
-        ? `semua kelas (${classes.length} kelas)`
+        ? `semua kelas (${classes.length} kelas: ${classes.join(", ")})`
         : `kelas ${classes[0] ?? className}`;
       setBanner({
         kind: "ok",
@@ -346,13 +233,13 @@ function ScheduleAdminContent() {
         ...(isAdmin ? {} : { className: className! }),
       }),
     onSuccess: async (result) => {
-      const { published, classes } = result.data;
+      const { published, classes, alreadyPublished } = result.data;
       const scope = isAdmin
-        ? `semua kelas (${classes.length} kelas)`
+        ? `semua kelas (${classes.length} kelas: ${classes.join(", ")})`
         : `kelas ${classes[0] ?? className}`;
       setBanner({
         kind: "ok",
-        text: `${published} jadwal dipublikasi untuk ${scope} — sekarang terlihat oleh orang tua semua kelas tersebut.`,
+        text: `${published} jadwal dipublikasi untuk ${scope}${alreadyPublished ? `, ${alreadyPublished} sudah dipublikasi` : ""} — sekarang terlihat oleh orang tua kelas tersebut.`,
       });
       await invalidate();
     },
@@ -365,15 +252,7 @@ function ScheduleAdminContent() {
 
   const unlockMutation = useMutation({
     mutationFn: (id: number) => api.schedules.unlock(id),
-    onSuccess: async (result) => {
-      setBanner({ kind: "ok", text: result.message });
-      await invalidate();
-    },
-    onError: (error) =>
-      setBanner({
-        kind: "error",
-        text: error instanceof ApiError ? error.message : "Gagal membuka kunci",
-      }),
+    ...bannerHandlers("Gagal membuka kunci"),
   });
 
   const shift = (delta: number) => {
@@ -389,19 +268,17 @@ function ScheduleAdminContent() {
     }
   };
 
-  const handleHolidaySubmit = (event: FormEvent) => {
-    event.preventDefault();
-    if (!holidayForm.name.trim()) return;
-    holidayMutation.mutate();
-  };
-
-  const menus = menusQuery.data ?? [];
   const busy =
     saveMutation.isPending ||
     deleteMutation.isPending ||
     lockMutation.isPending ||
     publishMutation.isPending ||
     unlockMutation.isPending;
+
+  const menus = menusQuery.data ?? [];
+  const weeks = monthQuery.data?.weeks ?? [];
+  const status = statusQuery.data;
+  const hasDrafts = (status?.totals.draftCount ?? 0) > 0;
 
   return (
     <>
@@ -411,59 +288,8 @@ function ScheduleAdminContent() {
           isAdmin
             ? "Tetapkan menu per kelas. Kunci & publikasi berlaku untuk semua kelas (1–6) sekaligus."
             : className
-              ? `Tetapkan menu, tandai libur kelas, dan tambahkan catatan untuk kelas ${className}.`
+              ? `Tetapkan menu, tandai libur kelas, dan tambahkan catatan untuk kelas ${className}. Anda juga dapat mempublikasikan jadwal kelas Anda.`
               : "Tetapkan menu dan catatan per hari."
-        }
-        action={
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant="secondary"
-              disabled={!className || draftCount === 0 || busy}
-              onClick={() => lockMutation.mutate()}
-              loading={lockMutation.isPending}
-              title={
-                isAdmin
-                  ? "Kunci semua jadwal draft bulan ini untuk semua kelas (kelas 1–6)"
-                  : `Kunci semua jadwal draft bulan ini untuk kelas ${className ?? ""}`.trim()
-              }
-            >
-              <Lock className="h-4 w-4" />
-              {isAdmin ? "Kunci bulan (semua kelas)" : "Kunci bulan"}
-            </Button>
-            <Button
-              disabled={!className || !canPublish || busy}
-              onClick={() => publishMutation.mutate()}
-              loading={publishMutation.isPending}
-              title={
-                draftCount > 0
-                  ? isAdmin && draftClasses.length > 0
-                    ? `Masih ada jadwal draft di ${draftClasses.map((cls) => `kelas ${cls}`).join(", ")} — kunci dulu`
-                    : "Masih ada jadwal draft — kunci dulu"
-                  : isAdmin
-                    ? "Publikasi jadwal yang sudah dikunci ke orang tua semua kelas"
-                    : "Publikasi jadwal yang sudah dikunci ke semua orang tua"
-              }
-            >
-              <Send className="h-4 w-4" />
-              {isAdmin ? "Publikasi (semua kelas)" : "Publikasi"}
-            </Button>
-            <Button
-              variant="secondary"
-              disabled={!className}
-              onClick={() => setCopyModalOpen(true)}
-              title="Salin jadwal Senin–Jumat untuk kelas yang sedang ditampilkan"
-            >
-              <Copy className="h-4 w-4" />
-              Salin Sepekan
-            </Button>
-            {/* Hari libur di tabel `holidays` bersifat global (semua kelas). */}
-            {isAdmin && (
-              <Button variant="secondary" onClick={() => setHolidayModalOpen(true)}>
-                <Plus className="h-4 w-4" />
-                Hari libur
-              </Button>
-            )}
-          </div>
         }
       />
 
@@ -488,410 +314,91 @@ function ScheduleAdminContent() {
         </div>
       )}
 
-      <Card className="mb-6">
-        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
-          <div className="flex items-center gap-2">
-            <Button variant="secondary" size="sm" onClick={() => shift(-1)}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="min-w-40 text-center font-semibold text-slate-900">
-              {indonesianMonthName(month)} {year}
-            </span>
-            <Button variant="secondary" size="sm" onClick={() => shift(1)}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-          <p className="text-xs text-slate-500">
-            {menusQuery.isPending
-              ? "Memuat menu…"
-              : `${menus.length} menu aktif tersedia`}
-          </p>
-        </div>
-        {className && (isAdmin ? publishedCount + lockedCount + draftCount > 0 : schedDays.length > 0) && (
-          <div className="flex flex-wrap items-center gap-4 border-t border-slate-100 px-5 py-2.5 text-xs">
-            <span className="text-slate-500">
-              Status{" "}
-              {isAdmin && (
-                <span className="font-medium text-slate-600">(semua kelas)</span>
-              )}
-              {": "}
-              <span className="font-medium text-slate-700">{draftCount}</span> draft
-              {" · "}
-              <span className="font-medium text-slate-700">{lockedCount}</span> terkunci
-              {" · "}
-              <span className="font-medium text-slate-700">{publishedCount}</span> dipublikasi
-            </span>
-            {draftCount > 0 && (
-              <span className="text-highlight-700">
-                {isAdmin && draftClasses.length > 0
-                  ? `Kunci dulu kelas ${draftClasses.join(", ")} sebelum publikasi`
-                  : "Kunci dulu sebelum publikasi"}
-              </span>
-            )}
-          </div>
-        )}
-      </Card>
+      <MonthToolbar
+        year={year}
+        month={month}
+        menuCount={menus.length}
+        menusLoading={menusQuery.isPending}
+        isAdmin={isAdmin}
+        className={className}
+        hasDrafts={hasDrafts}
+        canPublish={status?.canPublish ?? false}
+        draftClasses={status?.draftClasses ?? []}
+        busy={busy}
+        lockPending={lockMutation.isPending}
+        publishPending={publishMutation.isPending}
+        onShift={shift}
+        onLock={() => lockMutation.mutate()}
+        onPublish={() => publishMutation.mutate()}
+        onOpenCopy={() => setCopyModalOpen(true)}
+        onOpenHoliday={() => setHolidayModalOpen(true)}
+      />
+
+      <SchoolStatusSummary
+        status={status}
+        isPending={statusQuery.isPending}
+        isAdmin={isAdmin}
+        className={className}
+        busy={busy}
+        onPublish={() => publishMutation.mutate()}
+        publishing={publishMutation.isPending}
+      />
 
       {className && monthQuery.isPending && <Spinner />}
 
       {monthQuery.isError && (
         <Card className="mb-6">
-          <p className="px-5 py-6 text-sm text-red-600">
-            {monthQuery.error.message}
-          </p>
+          <p className="px-5 py-6 text-sm text-red-600">{monthQuery.error.message}</p>
         </Card>
       )}
 
       <div className="space-y-6">
-        {monthQuery.data?.weeks.map((week) => (
+        {weeks.map((week) => (
           <Card key={week.startDate}>
             <CardHeader title={week.label} />
             <ul className="divide-y divide-slate-100">
-              {week.days.map((day) => {
-                const dayLocked =
-                  day.status === "locked" || day.status === "published";
-                return (
-                <li
+              {week.days.map((day) => (
+                <DayRow
                   key={day.date}
-                  className="flex flex-wrap items-center gap-3 px-5 py-3"
-                >
-                  <div className="w-32 shrink-0">
-                    <p
-                      className={`text-sm font-medium ${
-                        day.isToday ? "text-highlight-700" : "text-slate-800"
-                      }`}
-                    >
-                      {day.dayName}
-                    </p>
-                    <p className="text-xs text-slate-400">
-                      {formatCompactDate(day.date)}
-                    </p>
-                  </div>
-
-                  {day.status && (
-                    <Badge tone={STATUS_META[day.status].tone}>
-                      {STATUS_META[day.status].label}
-                    </Badge>
-                  )}
-
-                  {day.isHoliday ? (
-                    <div className="flex min-w-0 flex-1 items-center gap-2">
-                      <Badge tone="warning">
-                        <CalendarOff className="h-3 w-3" />
-                        {day.holidayName ?? "Libur"}
-                      </Badge>
-                    </div>
-                  ) : (
-                    <Select
-                      className="min-w-0 flex-1"
-                      value={day.menu?.id ?? NO_MENU}
-                      disabled={busy || dayLocked}
-                      onChange={(event) => {
-                        const value = event.target.value;
-                        saveMutation.mutate({
-                          day,
-                          patch: {
-                            menuId: value === NO_MENU ? null : Number(value),
-                          },
-                        });
-                      }}
-                    >
-                      <option value={NO_MENU}>— belum ada menu —</option>
-                      {menus.map((menu) => (
-                        <option key={menu.id} value={menu.id}>
-                          {menu.name}
-                        </option>
-                      ))}
-                    </Select>
-                  )}
-
-                  {!day.isHoliday && (
-                    <>
-                      <Input
-                        className="w-36 shrink-0"
-                        placeholder="Petugas…"
-                        defaultValue={day.petugasName ?? ""}
-                        disabled={busy}
-                        onBlur={(event) => {
-                          const value = event.target.value.trim();
-                          if (value === (day.petugasName ?? "")) return;
-                          saveMutation.mutate({
-                            day,
-                            patch: { petugasName: value || null },
-                          });
-                        }}
-                      />
-                      <Input
-                        className="w-36 shrink-0"
-                        placeholder="Orang tua…"
-                        defaultValue={day.petugasParentName ?? ""}
-                        disabled={busy}
-                        onBlur={(event) => {
-                          const value = event.target.value.trim();
-                          if (value === (day.petugasParentName ?? "")) return;
-                          saveMutation.mutate({
-                            day,
-                            patch: { petugasParentName: value || null },
-                          });
-                        }}
-                      />
-                    </>
-                  )}
-
-                  <Input
-                    className="w-48 shrink-0"
-                    placeholder="Catatan…"
-                    defaultValue={day.notes ?? ""}
-                    disabled={busy || dayLocked}
-                    onBlur={(event) => {
-                      const value = event.target.value.trim();
-                      if (value === (day.notes ?? "")) return;
-                      saveMutation.mutate({
-                        day,
-                        patch: { notes: value || null },
-                      });
-                    }}
-                  />
-
-                  <div className="flex shrink-0 gap-1">
-                    {dayLocked && isAdmin && day.scheduleId && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        disabled={busy}
-                        onClick={() => {
-                          if (confirm(`Buka kunci jadwal ${day.date}?`)) {
-                            unlockMutation.mutate(day.scheduleId!);
-                          }
-                        }}
-                        title="Buka kunci jadwal"
-                      >
-                        <Unlock className="h-4 w-4" />
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      disabled={busy || dayLocked}
-                      onClick={() =>
-                        saveMutation.mutate({
-                          day,
-                          patch: { isHoliday: !day.isHoliday },
-                        })
-                      }
-                      title={
-                        day.isHoliday
-                          ? `Batalkan libur kelas ${className ?? ""}`.trim()
-                          : `Tandai libur kelas ${className ?? ""}`.trim()
-                      }
-                    >
-                      <CalendarOff
-                        className={`h-4 w-4 ${
-                          day.isHoliday ? "text-highlight-700" : "text-slate-400"
-                        }`}
-                      />
-                    </Button>
-                    {day.scheduleId && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-600 hover:bg-red-50"
-                        disabled={busy || dayLocked}
-                        onClick={() => {
-                          if (confirm(`Hapus jadwal ${day.date}?`)) {
-                            deleteMutation.mutate(day.scheduleId!);
-                          }
-                        }}
-                        title="Hapus jadwal"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                </li>
-                );
-              })}
+                  day={day}
+                  menus={menus}
+                  busy={busy}
+                  canUnlock={isAdmin}
+                  className={className}
+                  onSave={(target, patch) =>
+                    saveMutation.mutate({ day: target, patch })
+                  }
+                  onUnlock={(id) => unlockMutation.mutate(id)}
+                  onDelete={(id) => deleteMutation.mutate(id)}
+                />
+              ))}
             </ul>
           </Card>
         ))}
       </div>
 
       {isAdmin && (
-        <Card className="mt-6">
-          <CardHeader
-            title="Hari Libur"
-            description="Tanggal yang ditandai libur berlaku untuk semua kelas dan muncul di semua halaman jadwal."
-          />
-          {holidaysQuery.data && holidaysQuery.data.length > 0 ? (
-            <ul className="divide-y divide-slate-100">
-              {holidaysQuery.data.map((holiday) => (
-                <li
-                  key={holiday.id}
-                  className="flex items-center justify-between gap-4 px-5 py-3"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-slate-800">
-                      {holiday.name}
-                    </p>
-                    <p className="text-xs text-slate-400">
-                      {formatCompactDate(holiday.date)}
-                      {holiday.description ? ` · ${holiday.description}` : ""}
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-red-600 hover:bg-red-50"
-                    onClick={() => deleteHolidayMutation.mutate(holiday.id)}
-                    title="Hapus"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="px-5 py-4 text-sm text-slate-500">
-              Belum ada hari libur khusus.
-            </p>
-          )}
-        </Card>
+        <HolidayCard
+          holidays={holidaysQuery.data ?? []}
+          onDelete={(id) => deleteHolidayMutation.mutate(id)}
+        />
       )}
 
-      <Modal
+      <HolidayModal
         open={holidayModalOpen}
-        title="Tambah hari libur"
+        saving={holidayMutation.isPending}
+        defaultDate={today}
         onClose={() => setHolidayModalOpen(false)}
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setHolidayModalOpen(false)}>
-              Batal
-            </Button>
-            <Button
-              onClick={handleHolidaySubmit}
-              loading={holidayMutation.isPending}
-              type="submit"
-            >
-              Simpan
-            </Button>
-          </>
-        }
-      >
-        <form onSubmit={handleHolidaySubmit} className="space-y-4">
-          <Field label="Tanggal">
-            <Input
-              type="date"
-              value={holidayForm.date}
-              onChange={(event) =>
-                setHolidayForm({ ...holidayForm, date: event.target.value })
-              }
-            />
-          </Field>
+        onSubmit={(value) => holidayMutation.mutate(value)}
+      />
 
-          <Field label="Nama hari libur">
-            <Input
-              value={holidayForm.name}
-              onChange={(event) =>
-                setHolidayForm({ ...holidayForm, name: event.target.value })
-              }
-              placeholder="mis. Hari Kemerdekaan RI"
-              autoFocus
-            />
-          </Field>
-
-          <Field label="Keterangan" hint="Opsional.">
-            <Input
-              value={holidayForm.description}
-              onChange={(event) =>
-                setHolidayForm({ ...holidayForm, description: event.target.value })
-              }
-              placeholder="mis. Libur nasional"
-            />
-          </Field>
-        </form>
-      </Modal>
-
-      <Modal
+      <CopyWeekModal
         open={copyModalOpen}
-        title="Salin jadwal Sepekan"
+        saving={copyMutation.isPending}
+        today={today}
         onClose={() => setCopyModalOpen(false)}
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setCopyModalOpen(false)}>
-              Batal
-            </Button>
-            <Button
-              onClick={() => copyMutation.mutate()}
-              loading={copyMutation.isPending}
-              disabled={copySameWeek}
-            >
-              Salin sekarang
-            </Button>
-          </>
-        }
-      >
-        <p className="text-sm text-slate-600">
-          Menyalin menu Senin–Jumat dari minggu sumber ke minggu tujuan. Hari di
-          minggu tujuan yang belum punya jadwal akan dibuatkan otomatis.
-        </p>
-
-        <Field
-          label="Minggu sumber"
-          hint={formatWeekLabel(
-            startOfWeek(copyForm.fromDate),
-            endOfWeek(copyForm.fromDate),
-          )}
-        >
-          <Input
-            type="date"
-            value={copyForm.fromDate}
-            onChange={(event) =>
-              setCopyForm({ ...copyForm, fromDate: event.target.value })
-            }
-          />
-        </Field>
-
-        <Field
-          label="Minggu tujuan"
-          hint={formatWeekLabel(
-            startOfWeek(copyForm.toDate),
-            endOfWeek(copyForm.toDate),
-          )}
-        >
-          <Input
-            type="date"
-            value={copyForm.toDate}
-            onChange={(event) =>
-              setCopyForm({ ...copyForm, toDate: event.target.value })
-            }
-          />
-        </Field>
-
-        {copySameWeek && (
-          <p className="rounded-lg border border-highlight-200 bg-highlight-50 px-3 py-2 text-xs text-highlight-800">
-            Minggu sumber dan tujuan sama — pilih tanggal di minggu yang berbeda.
-          </p>
-        )}
-
-        <label className="flex items-start gap-2.5 rounded-lg border border-slate-200 px-3 py-2.5">
-          <input
-            type="checkbox"
-            className="mt-0.5 h-4 w-4 accent-brand-600"
-            checked={copyForm.overwrite}
-            onChange={(event) =>
-              setCopyForm({ ...copyForm, overwrite: event.target.checked })
-            }
-          />
-          <span>
-            <span className="block text-sm font-medium text-slate-800">
-              Timpa jadwal yang sudah ada
-            </span>
-            <span className="block text-xs text-slate-500">
-              Bila tidak dicentang, hari yang sudah punya jadwal akan dilewati.
-            </span>
-          </span>
-        </label>
-      </Modal>
+        onSubmit={(value) => copyMutation.mutate(value)}
+      />
     </>
   );
 }

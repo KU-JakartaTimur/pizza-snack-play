@@ -11,11 +11,12 @@ const admin = requireRole("admin");
  *
  * Korlas boleh menyusun jadwal kelasnya selama masih `draft` — termasuk
  * memilih menu, mengisi petugas, menambah catatan, dan Salin Sepekan — lalu
- * **mempublikasikannya**.
+ * **mengunci (lock) dan mempublikasikannya** untuk kelasnya sendiri.
+ * Lihat PRD §7.5 & F8: kunci dan publikasi = admin + korlas.
  *
- * Kunci (lock) dan buka kunci (unlock) tetap khusus admin: jadwal hanya boleh
- * dibekukan oleh admin, dan baris `locked`/`published` tidak dapat diubah
- * siapa pun (`409 not_editable`).
+ * Yang tetap khusus admin: **buka kunci** (unlock) dan penulisan baris
+ * `locked`/`published` (baris tersebut tidak dapat diubah siapa pun —
+ * `409 not_editable`).
  */
 const scheduleWriters = requireRole("admin", "korlas");
 
@@ -23,9 +24,9 @@ const scheduleWriters = requireRole("admin", "korlas");
  * Jadwal — dibaca oleh semua role, dengan cakupan kelas yang dipersempit
  * sesuai role (lihat `resolveReadClass`).
  *
- * Rute statis (`/today`, `/week`, `/month`, `/range`, `/search`, `/lock`,
- * `/publish`) didaftarkan sebelum `/:id` agar tidak tertangkap sebagai
- * parameter ID.
+ * Rute statis (`/today`, `/week`, `/month`, `/status`, `/range`, `/search`,
+ * `/lock`, `/publish`) didaftarkan sebelum `/:id` agar tidak tertangkap
+ * sebagai parameter ID.
  *
  * Kunci (`/lock`) dan publikasi (`/publish`):
  * - Admin dapat mengosongkan `className` (atau kirim `"*"`) untuk menerapkan
@@ -39,6 +40,7 @@ export const schedulesRoute = new Hono<AuthEnv>()
   .get("/today-all", requireAuth, admin, scheduleController.todayAll)
   .get("/week", requireAuth, scheduleController.week)
   .get("/month", requireAuth, scheduleController.month)
+  .get("/status", requireAuth, scheduleController.status)
   .get("/range", requireAuth, scheduleController.range)
   .get("/search", requireAuth, scheduleController.search)
   .get("/:id", requireAuth, scheduleController.detail)

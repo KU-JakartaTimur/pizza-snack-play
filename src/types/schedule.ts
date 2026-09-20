@@ -83,6 +83,60 @@ export interface TodayAllClassesDto {
   week: WeekScheduleDto;
 }
 
+/** Satu hari libur global (tabel `holidays`) — berlaku untuk semua kelas. */
+export interface HolidayDto {
+  id: number;
+  date: string;
+  name: string;
+  description: string | null;
+}
+
+/**
+ * Ringkasan status jadwal satu bulan, dipecah per kelas.
+ *
+ * Dipakai agar UI tidak perlu memuat jadwal penuh setiap kelas hanya untuk
+ * menghitung berapa yang masih draft/terkunci/dipublikasi (pola 1+N).
+ */
+export interface MonthStatusClassDto {
+  className: string;
+  /** Baris jadwal dengan status draft — menahan publikasi. */
+  draftCount: number;
+  lockedCount: number;
+  publishedCount: number;
+  /** Total baris jadwal kelas ini pada bulan tersebut. */
+  totalCount: number;
+}
+
+/** Jawaban endpoint `/schedules/status`. */
+export interface MonthStatusDto {
+  year: number;
+  month: number;
+  monthName: string;
+  /** Cakupan data: `null` = seluruh kelas (admin), atau satu kelas (korlas). */
+  className: string | null;
+  /** Semua kelas yang dikenal sistem, urut alami (kelas 1, 2, …). */
+  classes: string[];
+  /** Rincian per kelas — termasuk kelas tanpa jadwal (semua angka 0). */
+  perClass: MonthStatusClassDto[];
+  /** Jumlah lintas kelas — untuk penghitung dan tombol kunci/publikasi. */
+  totals: {
+    draftCount: number;
+    lockedCount: number;
+    publishedCount: number;
+    totalCount: number;
+  };
+  /**
+   * Kelas yang masih menyisakan draft. Kosong berarti publikasi boleh
+   * dijalankan. Dipakai untuk pesan "kunci dulu kelas X, Y".
+   */
+  draftClasses: string[];
+  /**
+   * `true` bila tombol publikasi sebaiknya aktif: tidak ada draft tersisa
+   * dan setidaknya ada satu jadwal terkunci (pada cakupan ini).
+   */
+  canPublish: boolean;
+}
+
 export interface ScheduleInput {
   scheduleDate: string;
   /**

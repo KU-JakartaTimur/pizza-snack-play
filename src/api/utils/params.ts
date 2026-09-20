@@ -1,9 +1,27 @@
 /** Pembantu parsing & validasi parameter request. */
 
+/** Batas bawah & atas tahun yang diterima untuk query bulanan. */
+export const MIN_YEAR = 2000;
+export const MAX_YEAR = 2100;
+
 /** Parse ID numerik positif dari path/query. `null` bila tidak valid. */
 export function parseId(raw: string | undefined | null): number | null {
   const id = Number.parseInt(raw ?? "", 10);
   return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+/**
+ * Validasi parameter `year` + `month`.
+ * Mengembalikan pesan error, atau `null` bila keduanya valid.
+ */
+export function validateYearMonth(year: number, month: number): string | null {
+  if (!Number.isInteger(year) || year < MIN_YEAR || year > MAX_YEAR) {
+    return "Parameter `year` tidak valid";
+  }
+  if (!Number.isInteger(month) || month < 1 || month > 12) {
+    return "Parameter `month` harus 1–12";
+  }
+  return null;
 }
 
 /** Batas jumlah hari untuk query rentang bebas. */

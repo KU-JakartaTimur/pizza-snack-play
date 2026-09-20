@@ -269,85 +269,28 @@ class ScheduleRepository {
       .groupBy(schedules.status);
   }
 
-  // ── Kunci & Publikasi — SEMUA KELAS ─────────────────────────
+  // ── Ringkasan status lintas kelas ───────────────────────────
 
   /**
-   * Kunci semua jadwal draft pada rentang tanggal untuk **semua kelas**.
-   * Baris yang sudah 'locked' atau 'published' dilewati.
-   * Mengembalikan jumlah baris yang dikunci.
+   * Hitung jumlah baris per (kelas, status) untuk satu bulan, **semua kelas**.
+   *
+   * Dipakai oleh ringkasan status sekolah: admin perlu tahu kelas mana yang
+   * masih menyisakan draft sebelum publikasi serentak, dan kelas mana yang
+   * sudah terkunci/dipublikasi. Satu query menggantikan pemuatan jadwal
+   * penuh per kelas (pola 1+N).
+   *
+   * Catatan: mengembalikan hanya kelas yang **punya** baris jadwal bulan ini.
+   * Kelas tanpa jadwal tidak muncul — pemanggil menggabungkannya dengan
+   * daftar kelas aktif bila perlu menampilkan angka nol.
    */
-  async lockDraftSchedulesBetweenAllClasses(
-    db: Db,
-    from: string,
-    to: string,
-    userId: number,
-  ): Promise<number> {
-    const rows = await db
-      .update(schedules)
-      .set({
-        status: "locked",
-        lockedBy: userId,
-        lockedAt: sql`(datetime('now'))`,
-        updatedAt: sql`(datetime('now'))`,
-      })
-      .where(
-        and(
-          eq(schedules.status, "draft"),
-          gte(schedules.scheduleDate, from),
-          lte(schedules.scheduleDate, to),
-        ),
-      )
-      .returning({ id: schedules.id });
-
-    return rows.length;
-  }
-
-  /**
-   * Publikasi semua jadwal locked untuk satu bulan, **semua kelas**.
-   * Mengembalikan jumlah baris yang dipublikasi.
-   */
-  async publishLockedSchedulesForMonthAllClasses(
+  async countSchedulesByClassForMonth(
     db: Db,
     year: number,
     month: number,
-    userId: number,
-  ): Promise<number> {
-    const from = `${year}-${String(month).padStart(2, "0")}-01`;
-    const to = `${year}-${String(month).padStart(2, "0")}-31`;
+  ): Promise<Array<{ className: string; status: ScheduleStatus; count: number }>> {
+    const { from, to } = monthBounds(year, month);
 
     const rows = await db
-      .update(schedules)
-      .set({
-        status: "published",
-        publishedBy: userId,
-        publishedAt: sql`(datetime('now'))`,
-        updatedAt: sql`(datetime('now'))`,
-      })
-      .where(
-        and(
-          eq(schedules.status, "locked"),
-          gte(schedules.scheduleDate, from),
-          lte(schedules.scheduleDate, to),
-        ),
-      )
-      .returning({ id: schedules.id });
-
-    return rows.length;
-  }
-
-  /**
-   * Hitung jumlah baris per (status, kelas) untuk satu bulan, semua kelas.
-   * Dipakai saat admin kunci/publikasi semua kelas sekaligus.
-   */
-  async countSchedulesByStatusForMonthAllClasses(
-    db: Db,
-    year: number,
-    month: number,
-  ): Promise<Array<{ className: string; status: string; count: number }>> {
-    const from = `${year}-${String(month).padStart(2, "0")}-01`;
-    const to = `${year}-${String(month).padStart(2, "0")}-31`;
-
-    return db
       .select({
         className: schedules.className,
         status: schedules.status,
@@ -355,12 +298,15 @@ class ScheduleRepository {
       })
       .from(schedules)
       .where(
-        and(
-          gte(schedules.scheduleDate, from),
-          lte(schedules.scheduleDate, to),
-        ),
+        and(gte(schedules.scheduleDate, from), lte(schedules.scheduleDate, to)),
       )
       .groupBy(schedules.className, schedules.status);
+
+    return rows.map((row) => ({
+      className: row.className,
+      status: row.status as ScheduleStatus,
+      count: Number(row.count),
+    }));
   }
 
   /**

@@ -10,7 +10,7 @@ import {
   type ClassScopeError,
 } from "../utils/classScope";
 import { isIsoDate } from "../utils/date";
-import { MAX_SEARCH_DAYS, parseId, validateRange } from "../utils/params";
+import { MAX_SEARCH_DAYS, parseId, validateRange, validateYearMonth } from "../utils/params";
 import {
   responseBadRequest,
   responseConflict,
@@ -126,12 +126,8 @@ class ScheduleController {
     const year = Number.parseInt(c.req.query("year") ?? "", 10);
     const month = Number.parseInt(c.req.query("month") ?? "", 10);
 
-    if (!Number.isInteger(year) || year < 2000 || year > 2100) {
-      return responseBadRequest(c, "Parameter `year` tidak valid");
-    }
-    if (!Number.isInteger(month) || month < 1 || month > 12) {
-      return responseBadRequest(c, "Parameter `month` harus 1–12");
-    }
+    const error = validateYearMonth(year, month);
+    if (error) return responseBadRequest(c, error);
 
     const db = getDb(c.env);
     const scope = await resolveReadClass(db, c.get("user"), c.req.query("class"));
@@ -145,6 +141,41 @@ class ScheduleController {
       c.get("user").role,
     );
     return responseOK(c, "Jadwal bulanan", data);
+  };
+
+  /**
+   * Ringkasan status jadwal satu bulan per kelas.
+   * `GET /schedules/status`
+   *
+   * Admin **tanpa** `?class=` → seluruh kelas (`className` `null`), karena
+   * kunci & publikasi admin menyentuh semua kelas sekaligus. Perhatikan
+   * `resolveReadClass` **tidak** bisa dipakai langsung di sini: untuk admin
+   * tanpa parameter ia mengembalikan kelas pertama, bukan `null` — jadi
+   * cakupan sekolah-wide harus ditetapkan sebelum memanggilnya.
+   */
+  status = async (c: ScheduleContext) => {
+    const year = Number.parseInt(c.req.query("year") ?? "", 10);
+    const month = Number.parseInt(c.req.query("month") ?? "", 10);
+
+    const error = validateYearMonth(year, month);
+    if (error) return responseBadRequest(c, error);
+
+    const db = getDb(c.env);
+    const user = c.get("user");
+    const requested = c.req.query("class")?.trim() || null;
+
+    let scopeClass: string | null;
+    if (user.role === "admin") {
+      // Tanpa `?class=` → seluruh sekolah; dengan `?class=` → persempit.
+      scopeClass = requested;
+    } else {
+      const scope = await resolveReadClass(db, user, requested);
+      if (!scope.ok) return mapScopeError(c, scope.error);
+      scopeClass = scope.className;
+    }
+
+    const data = await scheduleService.getMonthStatus(db, year, month, scopeClass);
+    return responseOK(c, "Status jadwal bulanan", data);
   };
 
   range = async (c: ScheduleContext) => {
@@ -430,12 +461,8 @@ class ScheduleController {
 
     const { year, month } = body;
 
-    if (!Number.isInteger(year) || year! < 2000 || year! > 2100) {
-      return responseBadRequest(c, "`year` tidak valid");
-    }
-    if (!Number.isInteger(month) || month! < 1 || month! > 12) {
-      return responseBadRequest(c, "`month` harus 1–12");
-    }
+    const error = validateYearMonth(year ?? NaN, month ?? NaN);
+    if (error) return responseBadRequest(c, error);
 
     const result = await scheduleService.publishMonth(
       getDb(c.env),

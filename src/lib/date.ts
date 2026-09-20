@@ -151,6 +151,22 @@ export function yearOf(value: string): number {
   return parseIsoDate(value).getUTCFullYear();
 }
 
+/**
+ * Rentang tanggal satu bulan penuh sebagai string ISO.
+ *
+ * Batas atas selalu `31` — dengan sengaja. Perbandingan tanggal di server
+ * dilakukan sebagai teks (`YYYY-MM-DD`), sehingga `2026-02-31` tetap
+ * menangkap seluruh hari di bulan Februari tanpa perlu tahu jumlah harinya.
+ * Sama persis dengan `monthBounds` di `src/api/schedules/repository.ts`.
+ */
+export function monthRange(
+  year: number,
+  month: number,
+): { from: string; to: string } {
+  const mm = String(month).padStart(2, "0");
+  return { from: `${year}-${mm}-01`, to: `${year}-${mm}-31` };
+}
+
 /** Daftar bulan untuk dropdown, `{ value, label }`. */
 export function monthOptions(): { value: number; label: string }[] {
   return MONTH_NAMES_ID.map((label, index) => ({ value: index + 1, label }));

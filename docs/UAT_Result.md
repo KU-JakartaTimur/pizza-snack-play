@@ -285,4 +285,33 @@ Pengujian mencakup seluruh alur bisnis utama:
 
 ---
 
+## 6. Uji Regresi — Cakupan Sekolah-wide & Endpoint Status (20 September 2026)
+
+Perubahan v1.9 (lihat [PRD v1.9](PRD_Pizza_Snack_Play.md)) tidak mengubah 21 skenario di atas,
+tetapi menambah satu endpoint serta memecah UI. Regresi dijalankan terhadap dev server lokal:
+
+| Suite                           | Hasil          | Catatan                                                                 |
+| :------------------------------ | :------------- | :---------------------------------------------------------------------- |
+| `bun run test:auth`             | **33 / 33**    | Tidak berubah                                                           |
+| `bun run test:api`              | **224 / 224**  | Termasuk 38 assertion wewenang korlas & kunci/publikasi sekolah-wide     |
+| `bun run test:status`           | **22 / 22**    | **Baru** — cakupan admin (seluruh kelas) vs korlas (kelas sendiri)       |
+| `scripts/test-claim-cross-class.mjs` | **10 / 10** | Rebutan tanggal tetap per kelas                                         |
+
+**Verifikasi cakupan sekolah-wide.** `GET /schedules/status` tanpa `?class=` oleh admin
+mengembalikan **seluruh** kelas (`classes` = 1–6) dengan rincian `perClass` masing-masing;
+korlas `budi` hanya menerima kelas `1`. Angka `totals` diverifikasi sama dengan penjumlahan
+`perClass`, dan `canPublish` mengikuti aturan `draftCount === 0 && lockedCount > 0`.
+
+**Dua cacat yang ditemukan & diperbaiki saat pengujian:**
+
+1. `resolveReadClass` mengembalikan **kelas pertama** (bukan `null`) saat admin mengosongkan
+   `?class=`. Endpoint status sempat ikut terpersempit ke kelas 1 — persis gejala "tidak
+   kesemua kelas". Handler kini menetapkan cakupan admin secara eksplisit sebelum memanggil
+   `resolveReadClass`.
+2. Assertion `dayOfWeek cocok dengan nama hari` di `test:api` gagal setiap **hari Minggu**:
+   `dayOfWeek` menormalkan Minggu ke `7`, sedangkan pengujian hanya menangani `6` dan `0`.
+   Pengujian diperbaiki.
+
+---
+
 _Laporan ini dihasilkan secara otomatis oleh UAT Test Runner `scripts/run-uat.mjs`._

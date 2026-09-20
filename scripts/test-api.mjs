@@ -103,11 +103,13 @@ section("1. Jadwal — hari ini");
   check(
     // `todayInWib()` boleh jatuh di akhir pekan — itu bukan kegagalan.
     // Yang diuji adalah `dayOfWeek` konsisten dengan nama harinya.
+    // Catatan: `dayOfWeek` menormalkan Minggu menjadi **7** (bukan 0),
+    // sesuai konvensi ISO 1=Senin … 7=Minggu.
     "dayOfWeek cocok dengan nama hari",
-    r.data?.day?.dayOfWeek === 6
-      ? r.data?.day?.dayName === "Sabtu"
-      : r.data?.day?.dayOfWeek === 0
-        ? r.data?.day?.dayName === "Minggu"
+    r.data?.day?.dayOfWeek === 7
+      ? r.data?.day?.dayName === "Minggu"
+      : r.data?.day?.dayOfWeek === 6
+        ? r.data?.day?.dayName === "Sabtu"
         : r.data?.day?.dayOfWeek >= 1 && r.data?.day?.dayOfWeek <= 5,
     `dayOfWeek=${r.data?.day?.dayOfWeek} dayName=${r.data?.day?.dayName}`,
   );

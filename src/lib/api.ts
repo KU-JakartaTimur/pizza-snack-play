@@ -17,10 +17,12 @@ import type { ClassListDto } from "@/types/class";
 import type {
   CopyWeekInput,
   CopyWeekResultDto,
+  HolidayDto,
   LockScheduleInput,
   LockScheduleResultDto,
   MenuHistoryDto,
   MonthScheduleDto,
+  MonthStatusDto,
   PublishScheduleInput,
   PublishScheduleResultDto,
   ScheduleDayDto,
@@ -143,6 +145,17 @@ export const api = {
         ),
       ),
 
+    /**
+     * Ringkasan status bulanan per kelas. Admin tanpa `className` melihat
+     * seluruh sekolah; korlas selalu kelasnya sendiri.
+     */
+    status: (year: number, month: number, className?: string | null) =>
+      unwrap<MonthStatusDto>(
+        http.get(
+          `schedules/status${query({ year, month, class: className ?? undefined })}`,
+        ),
+      ),
+
     range: (from: string, to: string, className?: string | null) =>
       unwrap<ScheduleDayDto[]>(
         http.get(
@@ -218,9 +231,7 @@ export const api = {
 
   holidays: {
     list: (from?: string, to?: string) =>
-      unwrap<{ id: number; date: string; name: string; description: string | null }[]>(
-        http.get(`holidays${query({ from, to })}`),
-      ),
+      unwrap<HolidayDto[]>(http.get(`holidays${query({ from, to })}`)),
 
     create: (body: { date: string; name: string; description?: string }) =>
       unwrapFull<unknown>(http.post("holidays", { json: body })),

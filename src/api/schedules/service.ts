@@ -12,6 +12,8 @@ import type {
   MenuHistoryDto,
   MenuHistoryMatchDto,
   MonthScheduleDto,
+  MonthStatusClassDto,
+  MonthStatusDto,
   PublishClassResult,
   PublishScheduleInput,
   PublishScheduleResultDto,
@@ -184,6 +186,80 @@ class ScheduleService {
    */
   private statusFilterForRole(role: Role): ScheduleStatus[] | undefined {
     return role === "parent" ? ["published"] : undefined;
+  }
+
+  /**
+   * Ringkasan status satu bulan, dipecah per kelas.
+   *
+   * Menggantikan pola lama "muat jadwal penuh tiap kelas lalu hitung di
+   * klien": di sini seluruh agregasi dilakukan dengan **satu** query
+   * `GROUP BY class_name, status`.
+   *
+   * `className` `null` → seluruh kelas (dipakai admin, karena kunci &
+   * publikasi admin menyentuh semua kelas sekaligus). Nilai konkret →
+   * dibatasi ke kelas itu, dan daftar `classes` dipersempit juga agar UI
+   * korlas tidak menampilkan kelas lain.
+   */
+  async getMonthStatus(
+    db: Db,
+    year: number,
+    month: number,
+    className: string | null,
+  ): Promise<MonthStatusDto> {
+    const allClasses = await classRepository.listAll(db);
+    const scopedClasses =
+      className === null ? allClasses : allClasses.filter((c) => c === className);
+
+    const rows = await scheduleRepository.countSchedulesByClassForMonth(
+      db,
+      year,
+      month,
+    );
+    const relevantRows =
+      className === null ? rows : rows.filter((row) => row.className === className);
+
+    // Mulai dari daftar kelas agar kelas tanpa jadwal tetap muncul dengan nol.
+    const perClass: MonthStatusClassDto[] = scopedClasses.map((name) => {
+      const forClass = relevantRows.filter((row) => row.className === name);
+      const countOf = (status: ScheduleStatus) =>
+        forClass.find((row) => row.status === status)?.count ?? 0;
+
+      const draftCount = countOf("draft");
+      const lockedCount = countOf("locked");
+      const publishedCount = countOf("published");
+
+      return {
+        className: name,
+        draftCount,
+        lockedCount,
+        publishedCount,
+        totalCount: draftCount + lockedCount + publishedCount,
+      };
+    });
+
+    const totals = perClass.reduce(
+      (acc, item) => ({
+        draftCount: acc.draftCount + item.draftCount,
+        lockedCount: acc.lockedCount + item.lockedCount,
+        publishedCount: acc.publishedCount + item.publishedCount,
+        totalCount: acc.totalCount + item.totalCount,
+      }),
+      { draftCount: 0, lockedCount: 0, publishedCount: 0, totalCount: 0 },
+    );
+
+    return {
+      year,
+      month,
+      monthName: indonesianMonthName(month),
+      className,
+      classes: scopedClasses,
+      perClass,
+      totals,
+      draftClasses: perClass
+        .filter((item) => item.draftCount > 0)
+        .map((item) => item.className),
+      canPublish: totals.draftCount === 0 && totals.lockedCount > 0,
+    };
   }
 
   async getToday(

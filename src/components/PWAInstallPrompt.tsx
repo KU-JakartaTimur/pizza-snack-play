@@ -18,6 +18,10 @@ export function PWAInstallPrompt() {
   const [dismissed, setDismissed] = useState(false);
   const [showIOSHint, setShowIOSHint] = useState(false);
 
+  // Saat PWA terpasang, bilah bawah mengambang menempati bagian bawah layar —
+  // notifikasi SW digeser ke atasnya agar tidak tertutup.
+  const bottomOffset = pwa.isInstalled ? "bottom-28" : "bottom-0";
+
   // Deteksi iOS
   const isIOS =
     typeof navigator !== "undefined" &&
@@ -29,7 +33,7 @@ export function PWAInstallPrompt() {
   // Service Worker update available
   if (pwa.updateAvailable) {
     return (
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-brand-200 bg-brand-50 px-4 py-3 shadow-lg">
+      <div className={`fixed left-0 right-0 z-50 border-t border-brand-200 bg-brand-50 px-4 py-3 shadow-lg ${bottomOffset}`}>
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <RefreshCw className="h-5 w-5 shrink-0 text-brand-600" />
@@ -56,7 +60,7 @@ export function PWAInstallPrompt() {
   // iOS manual install hint
   if (isIOS && showIOSHint) {
     return (
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-brand-200 bg-brand-50 px-4 py-4 shadow-lg">
+      <div className={`fixed left-0 right-0 z-50 border-t border-brand-200 bg-brand-50 px-4 py-4 shadow-lg ${bottomOffset}`}>
         <div className="mx-auto max-w-md">
           <div className="flex items-start justify-between gap-3">
             <div className="space-y-2">

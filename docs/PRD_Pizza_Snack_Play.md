@@ -323,6 +323,15 @@ sering jadi masalah bukan pembagiannya, melainkan **dua orang merasa sama-sama s
     
   ada pembaruan yang menunggu.
 - **Manifest** — nama, ikon 192px & 512px, `display: standalone`, tema ungu `#51277C`.
+- **Bilah navigasi bawah (khusus PWA terpasang)** — begitu aplikasi dipasang, navigasi
+  dipindahkan dari header ke bilah mengambang di bawah layar: kapsul putih berisi empat tab
+  (Hari Ini, Pilih Jadwal, Cari Menu, Profil), masing-masing dengan ikon di atas label dan
+  titik penanda tab aktif, plus tombol bulat ungu di tengah-atasnya. Tombol tengah membuka
+  panel **Semua Menu** berisi seluruh tujuan navigasi yang tidak muat sebagai tab — termasuk
+  yang bergantung peran (Dashboard, Kategori, Kelola Jadwal, Akun Orang Tua). Bilah menu di
+  header disembunyikan saat bilah bawah aktif agar tujuan yang sama tidak tampil dua kali.
+  Di browser biasa (belum dipasang) bilah ini **tidak dirender sama sekali** — deteksinya
+  lewat `display-mode: standalone` (cadangan `navigator.standalone` untuk iOS).
 
 > **Catatan implementasi:** `beforeinstallprompt` hanya menyala **sekali** dan terjadi jauh sebelum
 >   
@@ -331,6 +340,10 @@ sering jadi masalah bukan pembagiannya, melainkan **dua orang merasa sama-sama s
 > sesi diverifikasi ke `/auth/me`. Karena itu event-nya ditangkap skrip inline di `<head>` lalu
 >   
 > dibaca kembali oleh hook. Tanpa penangkap itu tombol Pasang tidak pernah muncul.
+>
+> Daftar tujuan navigasi tinggal di `src/components/navItems.ts` sebagai **sumber tunggal**;
+> `AppShell` (bilah atas) dan `BottomNav` (bilah bawah) menyaring daftar yang sama lewat
+> `visibleNavItems()`, sehingga menu tidak bisa lepas sinkron antar keduanya.
 
 ---
 

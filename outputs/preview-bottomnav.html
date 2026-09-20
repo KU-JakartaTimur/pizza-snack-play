@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pratinjau BottomNav — Pizza Snack Play</title>
+<style>
+  /* Salinan token tema dari src/index.css, agar pratinjau setia pada warna asli. */
+  :root {
+    --brand-50:#f7f4fb; --brand-600:#51277c; --brand-700:#46206b;
+    --brand-950:#1e0c2f; --canvas:#f8fafc;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin:0; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--canvas); color:#0f172a;
+    display:flex; flex-direction:column; align-items:center;
+    min-height:100vh; padding:28px 16px 48px; gap:10px;
+  }
+  h1 { font-size:1.05rem; margin:0 0 4px; color:#1e293b; font-weight:700; }
+  h2 { font-size:.78rem; margin:0 0 2px; color:#475569; font-weight:600; }
+  p.note { font-size:.75rem; color:#64748b; margin:0; max-width:32rem; text-align:center; }
+  .stage {
+    position:relative; width:min(100%,30rem); border-radius:14px;
+    border:1px solid #e2e8f0; background:#fff; min-height:250px;
+    display:flex; align-items:flex-end; justify-content:center;
+    overflow:hidden; margin-bottom:8px;
+    box-shadow:0 1px 2px rgba(15,23,42,.04);
+  }
+  .stage-label {
+    position:absolute; top:10px; left:14px; font-size:.65rem;
+    color:#94a3b8; letter-spacing:.06em; text-transform:uppercase; font-weight:600;
+  }
+  .stage.plain { align-items:center; }
+  .empty {
+    text-align:center; color:#94a3b8; font-size:.78rem; padding:0 24px;
+  }
+  .empty strong { color:#64748b; display:block; margin-bottom:4px; font-size:.85rem; }
+  /* ── Bilah bawah: cermin dari BottomNav.tsx ── */
+  .nav { position:relative; width:min(92%,26rem); margin-bottom:16px; }
+  .fab {
+    position:absolute; top:-28px; left:50%; transform:translateX(-50%);
+    z-index:10; display:flex; height:56px; width:56px; align-items:center;
+    justify-content:center; border-radius:9999px; border:0; cursor:pointer;
+    background:var(--brand-600); color:#fff;
+    box-shadow:0 10px 15px -3px rgba(81,39,124,.3);
+  }
+  .fab:hover { background:var(--brand-700); }
+  .pill {
+    display:flex; align-items:center; justify-content:space-between;
+    border-radius:1.75rem; border:1px solid rgba(226,232,240,.8);
+    background:#fff; padding:10px 8px;
+    box-shadow:0 20px 25px -5px rgba(15,23,42,.1);
+  }
+  .tab {
+    display:flex; flex:1; flex-direction:column; align-items:center;
+    gap:2px; padding:6px 4px; border-radius:1rem;
+    text-decoration:none; color:#94a3b8; cursor:pointer;
+  }
+  .tab.active { color:var(--brand-600); }
+  .tab .lbl { font-size:.68rem; }
+  .tab.active .lbl { font-weight:600; }
+  .dot { height:4px; width:4px; border-radius:9999px; background:transparent; }
+  .tab.active .dot { background:var(--brand-600); }
+  svg { display:block; }
+  /* ── Panel "Semua Menu" ── */
+  .sheet {
+    position:absolute; inset:0; background:rgba(30,12,47,.45);
+    display:flex; align-items:flex-end;
+  }
+  .sheet-body {
+    width:100%; background:#fff; border-radius:1.5rem 1.5rem 0 0;
+    padding-bottom:20px; box-shadow:0 -10px 30px rgba(15,23,42,.2);
+  }
+  .sheet-head {
+    display:flex; align-items:center; justify-content:space-between;
+    border-bottom:1px solid #e2e8f0; padding:15px 20px;
+    font-weight:600; color:#0f172a; font-size:.9rem;
+  }
+  .sheet-grid { display:grid; grid-template-columns:1fr 1fr; gap:4px; padding:12px; }
+  .sheet-item {
+    display:flex; align-items:center; gap:10px; border-radius:.75rem;
+    padding:12px; font-size:.8rem; font-weight:500;
+    color:#475569; text-decoration:none;
+  }
+  .sheet-item.active { background:var(--brand-50); color:var(--brand-700); }
+</style>
+</head>
+<body>
+  <h1>Pratinjau Bilah Bawah — Pizza Snack Play</h1>
+  <p class="note">Bilah ini <strong>hanya dirender bila aplikasi sudah dipasang (PWA standalone)</strong>.
+     Di browser biasa, menu tetap di header seperti sekarang.</p>
+
+  <h2>A. Saat PWA terpasang — tab aktif “Hari Ini”</h2>
+  <div class="stage">
+    <span class="stage-label">display-mode: standalone</span>
+    <nav class="nav">
+      <button class="fab" aria-label="Menu lainnya">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/>
+          <line x1="4" x2="20" y1="18" y2="18"/>
+        </svg>
+      </button>
+      <div class="pill">
+        <a class="tab active">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 2v4"/><path d="M16 2v4"/>
+            <rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>
+          </svg>
+          <span class="lbl">Hari Ini</span><span class="dot"></span>
+        </a>
+        <a class="tab">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 14h2a2 2 0 1 0 0-4h-3c-.6 0-1.1.2-1.4.6L3 16"/>
+            <path d="m7 20 1.6-1.4c.3-.4.8-.6 1.4-.6h4c1.1 0 2.1-.4 2.8-1.2l4.6-4.4a2 2 0 0 0-2.75-2.91l-4.2 3.9"/>
+            <path d="m2 15 6 6"/><path d="M19.5 8.5c.7-.7 1.5-1.6 1.5-2.7A2.73 2.73 0 0 0 16 4a2.78 2.78 0 0 0-5 1.8c0 1.2.8 2 1.5 2.8L16 12Z"/>
+          </svg>
+          <span class="lbl">Pilih Jadwal</span><span class="dot"></span>
+        </a>
+        <a class="tab">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+          </svg>
+          <span class="lbl">Cari Menu</span><span class="dot"></span>
+        </a>
+        <a class="tab">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/>
+            <path d="M7 20.66V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.66"/>
+          </svg>
+          <span class="lbl">Profil</span><span class="dot"></span>
+        </a>
+      </div>
+    </nav>
+  </div>
+
+  <h2>B. Tombol tengah ditekan — panel “Semua Menu”</h2>
+  <div class="stage">
+    <span class="stage-label">panel tujuan navigasi</span>
+    <nav class="nav" style="margin-bottom:16px">
+      <button class="fab" aria-label="Menu lainnya">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/>
+          <line x1="4" x2="20" y1="18" y2="18"/>
+        </svg>
+      </button>
+      <div class="pill">
+        <a class="tab active">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 2v4"/><path d="M16 2v4"/>
+            <rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>
+          </svg>
+          <span class="lbl">Hari Ini</span><span class="dot"></span>
+        </a>
+        <a class="tab">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 14h2a2 2 0 1 0 0-4h-3c-.6 0-1.1.2-1.4.6L3 16"/>
+            <path d="m7 20 1.6-1.4c.3-.4.8-.6 1.4-.6h4c1.1 0 2.1-.4 2.8-1.2l4.6-4.4a2 2 0 0 0-2.75-2.91l-4.2 3.9"/>
+            <path d="m2 15 6 6"/><path d="M19.5 8.5c.7-.7 1.5-1.6 1.5-2.7A2.73 2.73 0 0 0 16 4a2.78 2.78 0 0 0-5 1.8c0 1.2.8 2 1.5 2.8L16 12Z"/>
+          </svg>
+          <span class="lbl">Pilih Jadwal</span><span class="dot"></span>
+        </a>
+        <a class="tab">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+          </svg>
+          <span class="lbl">Cari Menu</span><span class="dot"></span>
+        </a>
+        <a class="tab">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/>
+            <path d="M7 20.66V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.66"/>
+          </svg>
+          <span class="lbl">Profil</span><span class="dot"></span>
+        </a>
+      </div>
+    </nav>
+    <div class="sheet">
+      <div class="sheet-body">
+        <div class="sheet-head"><span>Semua Menu</span><span style="color:#94a3b8">×</span></div>
+        <div class="sheet-grid">
+          <a class="sheet-item active">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>
+            </svg>
+            Pekan Ini
+          </a>
+          <a class="sheet-item">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>
+            </svg>
+            Bulanan
+          </a>
+          <a class="sheet-item">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/>
+              <path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>
+            </svg>
+            Menu
+          </a>
+          <a class="sheet-item">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/>
+              <circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/>
+            </svg>
+            Kategori
+          </a>
+          <a class="sheet-item">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>
+            </svg>
+            Kelola Jadwal
+          </a>
+          <a class="sheet-item">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+              <path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+            Akun Orang Tua
+          </a>
+          <a class="sheet-item">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/>
+              <rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>
+            </svg>
+            Dashboard
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2>C. Saat PWA belum dipasang — bilah bawah tidak dirender</h2>
+  <div class="stage plain">
+    <span class="stage-label">browser biasa</span>
+    <div class="empty">
+      <strong>Tidak ada bilah bawah</strong>
+      Menu tetap di header. Pengguna memasang aplikasi lebih dulu lewat banner
+      “Pasang Pizza Snack Play”, baru bilah ini muncul.
+    </div>
+  </div>
+</body>
+</html>

@@ -1,46 +1,14 @@
 import type { ReactNode } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import {
-  CalendarDays,
-  CalendarRange,
-  HandHeart,
-  LayoutDashboard,
-  LogOut,
-  Search,
-  Tags,
-  UserCircle,
-  Users,
-  UtensilsCrossed,
-} from "lucide-react";
+import { LogOut, UserCircle } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/cn";
+import { BottomNav } from "./BottomNav";
 import { ClassSwitcher } from "./ClassSwitcher";
 import { PWAInstallPrompt } from "./PWAInstallPrompt";
-import type { Capability } from "./AdminOnly";
+import { visibleNavItems } from "./navItems";
+import { usePWA } from "@/hooks/usePWA";
 import logo from "@/assets/logo.png";
-
-interface NavItem {
-  to: string;
-  label: string;
-  icon: typeof CalendarDays;
-  /** Kemampuan minimum untuk melihat menu ini; kosong = semua role. */
-  need?: Capability;
-  /** Sembunyikan dari admin — admin tidak punya profil orang tua. */
-  parentsOnly?: boolean;
-}
-
-const NAV_ITEMS: NavItem[] = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, need: "admin" },
-  { to: "/hari-ini", label: "Hari Ini", icon: CalendarDays },
-  { to: "/minggu-ini", label: "Pekan Ini", icon: CalendarRange },
-  { to: "/bulan", label: "Bulanan", icon: CalendarDays },
-  { to: "/pilih-jadwal", label: "Pilih Jadwal", icon: HandHeart, parentsOnly: true },
-  { to: "/pencarian", label: "Cari Menu", icon: Search },
-  { to: "/menu", label: "Menu", icon: UtensilsCrossed },
-  { to: "/kategori", label: "Kategori", icon: Tags, need: "catalog" },
-  { to: "/jadwal", label: "Kelola Jadwal", icon: CalendarRange, need: "schedule" },
-  { to: "/orang-tua", label: "Akun Orang Tua", icon: Users, need: "admin" },
-];
 
 export function AppShell({ children }: { children: ReactNode }) {
   const {
@@ -56,13 +24,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
 
-  const items = NAV_ITEMS.filter((item) => {
-    if (item.parentsOnly && isAdmin) return false;
-    if (!item.need) return true;
-    if (item.need === "admin") return isAdmin;
-    if (item.need === "schedule") return canManageSchedule;
-    return canManageCatalog;
-  });
+  // Saat PWA terpasang, bilah menu dipindahkan ke bawah layar.
+  const { isInstalled } = usePWA();
+
+  const items = visibleNavItems({ isAdmin, canManageSchedule, canManageCatalog });
 
   // Korlas tetap orang tua murid, tapi perannya ditampilkan tersendiri
   // beserta kelas yang dikoordinasinya.
@@ -138,7 +103,17 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
           </div>
 
-          <nav className="-mb-px flex gap-1 overflow-x-auto pb-px">
+          {/*
+            Bilah menu atas disembunyikan saat PWA terpasang: bilah bawah
+            mengambil alih perannya, dan menampilkan keduanya sekaligus hanya
+            menduplikasi tujuan yang sama.
+          */}
+          <nav
+            className={cn(
+              "-mb-px flex gap-1 overflow-x-auto pb-px",
+              isInstalled && "hidden",
+            )}
+          >
             {items.map(({ to, label, icon: Icon }) => {
               const active = pathname === to;
               return (
@@ -172,6 +147,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       </footer>
 
       <PWAInstallPrompt />
+      {/* Bilah bawah hanya muncul bila aplikasi sudah dipasang (PWA). */}
+      <BottomNav />
     </div>
   );
 }

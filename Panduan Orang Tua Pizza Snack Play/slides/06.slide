@@ -1,0 +1,82 @@
+<Slide
+    style={{
+        width: '1280px',
+        height: '720px',
+        background: 'linear-gradient(135deg, #51277C 0%, #7A45A8 100%)',
+        paddingTop: 60,
+        paddingBottom: 60,
+        paddingLeft: 72,
+        paddingRight: 72,
+        justifyContent: 'center',
+        position: 'relative',
+        overflow: 'hidden',
+    }}
+>
+    {/* dekorasi: ponsel + panah unduh */}
+    <Box
+        style={{
+            position: 'absolute',
+            bottom: -120,
+            right: -70,
+            width: 440,
+            height: 440,
+            borderRadius: 220,
+            background: '#AFC440',
+            opacity: 0.14,
+        }}
+    />
+    <Box style={{ position: 'absolute', top: 74, right: 92, opacity: 0.20 }}>
+        <svg width={230} height={250} viewBox='0 0 230 250'>
+            <rect x='52' y='10' width='126' height='210' rx='22' fill='none' stroke='#FFFFFF' strokeWidth='6' />
+            <rect x='96' y='24' width='38' height='7' rx='4' fill='#FFFFFF' />
+            <path d='M92 150 v46 M74 180 l18 18 l18 -18' fill='none' stroke='#FFFFFF' strokeWidth='8' strokeLinecap='round' strokeLinejoin='round' />
+            <path d='M52 196 h126' stroke='#FFFFFF' strokeWidth='6' />
+        </svg>
+    </Box>
+
+    {/* isi */}
+    <Box style={{ position: 'relative', zIndex: 1, width: '62%' }}>
+        <Box style={{ flexDirection: 'row', alignItems: 'center', gap: 14, alignSelf: 'flex-start' }}>
+            <Text
+                style={{
+                    fontSize: 76,
+                    fontWeight: 'bold',
+                    color: '#F3B26C',
+                    fontFamily: 'Trebuchet MS',
+                    lineHeight: 1,
+                }}
+            >
+                02
+            </Text>
+            <Box style={{ width: 3, height: 52, background: 'rgba(255,255,255,0.45)' }} />
+            <Text style={{ fontSize: 19, color: 'rgba(255,255,255,0.8)', fontFamily: 'Verdana' }}>
+                Bagian kedua
+            </Text>
+        </Box>
+
+        <Text
+            style={{
+                marginTop: 26,
+                fontSize: 60,
+                fontWeight: 'bold',
+                color: '#FFFFFF',
+                fontFamily: 'Trebuchet MS',
+                lineHeight: 1.15,
+            }}
+        >
+            Cara mulai
+        </Text>
+
+        <Text
+            style={{
+                marginTop: 24,
+                fontSize: 22,
+                color: 'rgba(255,255,255,0.88)',
+                fontFamily: 'Verdana',
+                lineHeight: 1.5,
+            }}
+        >
+            Dua langkah saja, lalu aplikasinya siap dipakai.
+        </Text>
+    </Box>
+</Slide>

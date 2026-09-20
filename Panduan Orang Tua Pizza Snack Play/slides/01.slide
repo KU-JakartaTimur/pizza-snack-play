@@ -1,0 +1,156 @@
+<Slide
+    style={{
+        width: '1280px',
+        height: '720px',
+        background: '#FAF7F2',
+        flexDirection: 'row',
+        padding: 0,
+        position: 'relative',
+        overflow: 'hidden',
+    }}
+>
+    {/* dekorasi latar — lingkaran besar semi-transparan */}
+    <Box
+        style={{
+            position: 'absolute',
+            top: -140,
+            right: -120,
+            width: 520,
+            height: 520,
+            borderRadius: 260,
+            background: 'linear-gradient(135deg, #51277C 0%, #7A45A8 100%)',
+            opacity: 0.10,
+        }}
+    />
+    <Box
+        style={{
+            position: 'absolute',
+            bottom: -90,
+            left: -80,
+            width: 360,
+            height: 360,
+            borderRadius: 180,
+            background: 'linear-gradient(135deg, #AFC440 0%, #F3B26C 100%)',
+            opacity: 0.14,
+        }}
+    />
+
+    {/* ── kolom kiri: judul ── */}
+    <Box
+        style={{
+            position: 'relative',
+            zIndex: 1,
+            width: '56%',
+            paddingTop: 96,
+            paddingBottom: 96,
+            paddingLeft: 64,
+            paddingRight: 32,
+            justifyContent: 'center',
+        }}
+    >
+        <Box
+            style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 10,
+                alignSelf: 'flex-start',
+                background: '#51277C',
+                borderRadius: 999,
+                paddingTop: 9,
+                paddingBottom: 9,
+                paddingLeft: 20,
+                paddingRight: 22,
+            }}
+        >
+            <FAIcon name='users' style={{ fill: '#F3B26C', width: 20, height: 20 }} />
+            <Text style={{ fontSize: 17, color: '#FFFFFF', fontFamily: 'Verdana', fontWeight: 'bold' }}>
+                Panduan Orang Tua Murid
+            </Text>
+        </Box>
+
+        <Text
+            style={{
+                marginTop: 26,
+                fontSize: 66,
+                fontWeight: 'bold',
+                color: '#51277C',
+                fontFamily: 'Trebuchet MS',
+                lineHeight: 1.15,
+            }}
+        >
+            Pizza Snack Play
+        </Text>
+
+        <Box style={{ marginTop: 18, width: 96, height: 7, borderRadius: 4, background: '#AFC440' }} />
+
+        <Text
+            style={{
+                marginTop: 26,
+                fontSize: 23,
+                color: '#2A2333',
+                fontFamily: 'Verdana',
+                lineHeight: 1.55,
+            }}
+        >
+            Jadwal snack anak, giliran piket, dan menu hari ini —
+            <span style={{ fontWeight: 'bold', color: '#51277C' }}> semuanya langsung kelihatan di HP</span>
+            {' '}Bapak dan Ibu.
+        </Text>
+
+        <Text
+            style={{
+                marginTop: 22,
+                fontSize: 19,
+                color: '#6B6478',
+                fontFamily: 'Verdana',
+                lineHeight: 1.5,
+            }}
+        >
+            Tidak perlu lagi tanya-tanya ke grup.
+        </Text>
+    </Box>
+
+    {/* ── kolom kanan: logo + ilustrasi ── */}
+    <Box
+        style={{
+            position: 'relative',
+            zIndex: 1,
+            width: '44%',
+            justifyContent: 'center',
+            alignItems: 'center',
+        }}
+    >
+        <Image
+            src="assets/app_logo.png"
+            style={{ width: 400, height: 388, objectFit: 'contain' }}
+        />
+
+        <Box
+            style={{
+                marginTop: 18,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 12,
+                background: 'rgba(81,39,124,0.07)',
+                borderRadius: 14,
+                paddingTop: 12,
+                paddingBottom: 12,
+                paddingLeft: 22,
+                paddingRight: 22,
+            }}
+        >
+            <svg width={34} height={34} viewBox='0 0 24 24'>
+                <path
+                    d='M7 2v3M17 2v3M3 9h18M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z'
+                    fill='none'
+                    stroke='#51277C'
+                    strokeWidth='2'
+                    strokeLinecap='round'
+                />
+            </svg>
+            <Text style={{ fontSize: 18, color: '#51277C', fontFamily: 'Verdana', fontWeight: 'bold' }}>
+                Senin sampai Jumat
+            </Text>
+        </Box>
+    </Box>
+</Slide>

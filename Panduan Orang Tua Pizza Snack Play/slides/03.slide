@@ -1,0 +1,100 @@
+<Slide
+    style={{
+        width: '1280px',
+        height: '720px',
+        background: 'linear-gradient(135deg, #51277C 0%, #7A45A8 100%)',
+        paddingTop: 60,
+        paddingBottom: 60,
+        paddingLeft: 72,
+        paddingRight: 72,
+        justifyContent: 'center',
+        position: 'relative',
+        overflow: 'hidden',
+    }}
+>
+    {/* dekorasi: lingkaran + kisi kalender */}
+    <Box
+        style={{
+            position: 'absolute',
+            top: -100,
+            right: -60,
+            width: 420,
+            height: 420,
+            borderRadius: 210,
+            background: '#AFC440',
+            opacity: 0.14,
+        }}
+    />
+    <Box style={{ position: 'absolute', bottom: 46, right: 78, opacity: 0.16 }}>
+        <svg width={240} height={190} viewBox='0 0 240 190'>
+            <rect x='10' y='26' width='220' height='156' rx='16' fill='none' stroke='#FFFFFF' strokeWidth='6' />
+            <path d='M10 62h220' stroke='#FFFFFF' strokeWidth='6' />
+            <path d='M60 8v30M180 8v30' stroke='#FFFFFF' strokeWidth='8' strokeLinecap='round' />
+            <rect x='42' y='84' width='34' height='26' rx='6' fill='#FFFFFF' />
+            <rect x='102' y='84' width='34' height='26' rx='6' fill='#FFFFFF' />
+            <rect x='162' y='84' width='34' height='26' rx='6' fill='#FFFFFF' />
+            <rect x='42' y='128' width='34' height='26' rx='6' fill='#FFFFFF' />
+            <rect x='102' y='128' width='34' height='26' rx='6' fill='#FFFFFF' />
+            <rect x='162' y='128' width='34' height='26' rx='6' fill='#F3B26C' />
+        </svg>
+    </Box>
+
+    {/* isi */}
+    <Box style={{ position: 'relative', zIndex: 1, width: '62%' }}>
+        <Box
+            style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 14,
+                alignSelf: 'flex-start',
+            }}
+        >
+            <Text
+                style={{
+                    fontSize: 76,
+                    fontWeight: 'bold',
+                    color: '#F3B26C',
+                    fontFamily: 'Trebuchet MS',
+                    lineHeight: 1,
+                }}
+            >
+                01
+            </Text>
+            <Box style={{ width: 3, height: 52, background: 'rgba(255,255,255,0.45)' }} />
+            <Text
+                style={{
+                    fontSize: 19,
+                    color: 'rgba(255,255,255,0.8)',
+                    fontFamily: 'Verdana',
+                }}
+            >
+                Bagian pertama
+            </Text>
+        </Box>
+
+        <Text
+            style={{
+                marginTop: 26,
+                fontSize: 60,
+                fontWeight: 'bold',
+                color: '#FFFFFF',
+                fontFamily: 'Trebuchet MS',
+                lineHeight: 1.15,
+            }}
+        >
+            Kenapa ada{'\n'}aplikasi ini
+        </Text>
+
+        <Text
+            style={{
+                marginTop: 24,
+                fontSize: 22,
+                color: 'rgba(255,255,255,0.88)',
+                fontFamily: 'Verdana',
+                lineHeight: 1.5,
+            }}
+        >
+            Kita mulai dari keluhan yang paling sering terdengar.
+        </Text>
+    </Box>
+</Slide>

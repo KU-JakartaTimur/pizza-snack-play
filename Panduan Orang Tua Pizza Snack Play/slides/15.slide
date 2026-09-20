@@ -1,0 +1,104 @@
+<Slide
+    style={{
+        width: '1280px',
+        height: '720px',
+        background: '#FAF7F2',
+        justifyContent: 'center',
+        alignItems: 'center',
+        position: 'relative',
+        overflow: 'hidden',
+    }}
+>
+    {/* cahaya latar */}
+    <Box
+        style={{
+            position: 'absolute',
+            top: 90,
+            width: 520,
+            height: 520,
+            borderRadius: 260,
+            background: 'linear-gradient(135deg, #51277C 0%, #7A45A8 100%)',
+            opacity: 0.10,
+        }}
+    />
+    <Box
+        style={{
+            position: 'absolute',
+            bottom: -80,
+            left: -80,
+            width: 320,
+            height: 320,
+            borderRadius: 160,
+            background: 'linear-gradient(135deg, #AFC440 0%, #F3B26C 100%)',
+            opacity: 0.18,
+        }}
+    />
+
+    <Box style={{ position: 'relative', zIndex: 1, alignItems: 'center', paddingLeft: 72, paddingRight: 72 }}>
+        <Image
+            src="assets/app_logo.png"
+            style={{ width: 200, height: 194, objectFit: 'contain' }}
+        />
+
+        <Text
+            style={{
+                marginTop: 26,
+                fontSize: 60,
+                fontWeight: 'bold',
+                color: '#51277C',
+                fontFamily: 'Trebuchet MS',
+                lineHeight: 1.15,
+            }}
+        >
+            Terima kasih
+        </Text>
+
+        <Box style={{ marginTop: 18, width: 96, height: 7, borderRadius: 4, background: '#AFC440' }} />
+
+        <Text
+            style={{
+                marginTop: 22,
+                fontSize: 22,
+                color: '#2A2333',
+                fontFamily: 'Verdana',
+                lineHeight: 1.5,
+                textAlign: 'center',
+            }}
+        >
+            Mari pasang aplikasinya hari ini juga.
+        </Text>
+
+        <Text
+            style={{
+                marginTop: 14,
+                fontSize: 19,
+                color: '#6B6478',
+                fontFamily: 'Verdana',
+                lineHeight: 1.5,
+                textAlign: 'center',
+            }}
+        >
+            Ada pertanyaan? Sampaikan kepada korlas kelas atau admin sekolah.
+        </Text>
+
+        <Box
+            style={{
+                marginTop: 26,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 12,
+                background: '#F3B26C',
+                borderRadius: 999,
+                paddingTop: 13,
+                paddingBottom: 13,
+                paddingLeft: 28,
+                paddingRight: 30,
+            }}
+        >
+            <FAIcon name='star' style={{ fill: '#51277C', width: 22, height: 22 }} />
+            <Text style={{ fontSize: 19, color: '#51277C', fontFamily: 'Trebuchet MS', fontWeight: 'bold' }}>
+                Pizza Snack Play
+            </Text>
+        </Box>
+    </Box>
+</Slide>

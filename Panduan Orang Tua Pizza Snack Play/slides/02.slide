@@ -1,0 +1,194 @@
+<Slide
+    style={{
+        width: '1280px',
+        height: '720px',
+        background: '#FAF7F2',
+        paddingTop: 20,
+        paddingBottom: 20,
+        paddingLeft: 64,
+        paddingRight: 64,
+    }}
+>
+    {/* ── A · blok judul (20–130) ── */}
+    <Box style={{ height: 110, justifyContent: 'center' }}>
+        <Text
+            style={{
+                fontSize: 34,
+                fontWeight: 'bold',
+                color: '#51277C',
+                fontFamily: 'Trebuchet MS',
+                lineHeight: 1.3,
+            }}
+        >
+            Isi panduan ini
+        </Text>
+        <Box style={{ marginTop: 10, width: 72, height: 6, borderRadius: 3, background: '#51277C' }} />
+    </Box>
+
+    {/* ── B · area konten (130–660) ── */}
+    <Box style={{ height: 530, flexDirection: 'row', gap: 28 }}>
+        {/* kolom kiri 32% — penanda jumlah bagian */}
+        <Box
+            style={{
+                width: '32%',
+                height: '100%',
+                background: 'linear-gradient(135deg, #51277C 0%, #7A45A8 100%)',
+                borderRadius: 18,
+                padding: 28,
+                justifyContent: 'space-between',
+            }}
+        >
+            <Box>
+                <Text
+                    style={{
+                        fontSize: 96,
+                        fontWeight: 'bold',
+                        color: '#FFFFFF',
+                        fontFamily: 'Trebuchet MS',
+                        lineHeight: 1,
+                    }}
+                >
+                    4
+                </Text>
+                <Text
+                    style={{
+                        marginTop: 6,
+                        fontSize: 24,
+                        fontWeight: 'bold',
+                        color: '#F3B26C',
+                        fontFamily: 'Trebuchet MS',
+                    }}
+                >
+                    bagian
+                </Text>
+            </Box>
+            <Text
+                style={{
+                    fontSize: 17,
+                    color: 'rgba(255,255,255,0.88)',
+                    fontFamily: 'Verdana',
+                    lineHeight: 1.5,
+                }}
+            >
+                Singkat saja. Bagian 2 dan 3 yang paling sering dipakai sehari-hari.
+            </Text>
+        </Box>
+
+        {/* kolom kanan 68% — daftar bagian */}
+        <Box style={{ width: '68%', height: '100%', justifyContent: 'space-between' }}>
+            {[
+                {
+                    n: '01',
+                    t: 'Kenapa ada aplikasi ini',
+                    d: 'Masalah yang selama ini bikin repot, dan apa yang berubah.',
+                    p: '3–5',
+                },
+                {
+                    n: '02',
+                    t: 'Cara mulai',
+                    d: 'Memasang aplikasi di HP, lalu masuk memakai akun dari sekolah.',
+                    p: '6–8',
+                },
+                {
+                    n: '03',
+                    t: 'Dipakai tiap hari',
+                    d: 'Melihat jadwal snack, mengambil tanggal piket, mencari menu.',
+                    p: '9–12',
+                },
+                {
+                    n: '04',
+                    t: 'Yang perlu diingat',
+                    d: 'Empat aturan yang paling sering ditanyakan orang tua.',
+                    p: '13–14',
+                },
+            ].map((it, i) => (
+                <Box
+                    key={i}
+                    style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 20,
+                        height: 122,
+                        background: '#FFFFFF',
+                        borderRadius: 16,
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                        paddingLeft: 24,
+                        paddingRight: 28,
+                        borderLeft: '8px solid #AFC440',
+                    }}
+                >
+                    <Box
+                        style={{
+                            width: 56,
+                            height: 56,
+                            borderRadius: 28,
+                            background: 'rgba(81,39,124,0.09)',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                        }}
+                    >
+                        <Text
+                            style={{
+                                fontSize: 24,
+                                fontWeight: 'bold',
+                                color: '#51277C',
+                                fontFamily: 'Trebuchet MS',
+                            }}
+                        >
+                            {it.n}
+                        </Text>
+                    </Box>
+                    <Box style={{ flex: 1 }}>
+                        <Text
+                            style={{
+                                fontSize: 25,
+                                fontWeight: 'bold',
+                                color: '#2A2333',
+                                fontFamily: 'Trebuchet MS',
+                                lineHeight: 1.3,
+                            }}
+                        >
+                            {it.t}
+                        </Text>
+                        <Text
+                            style={{
+                                marginTop: 5,
+                                fontSize: 18,
+                                color: '#6B6478',
+                                fontFamily: 'Verdana',
+                                lineHeight: 1.45,
+                            }}
+                        >
+                            {it.d}
+                        </Text>
+                    </Box>
+                    <Text
+                        style={{
+                            fontSize: 17,
+                            color: '#51277C',
+                            fontFamily: 'Verdana',
+                            fontWeight: 'bold',
+                        }}
+                    >
+                        {it.p}
+                    </Text>
+                </Box>
+            ))}
+        </Box>
+    </Box>
+
+    {/* ── C · bilah kaki (660–700) ── */}
+    <Box
+        style={{
+            height: 40,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+        }}
+    >
+        <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>
+            Pizza Snack Play · Panduan Orang Tua
+        </Text>
+        <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>02 / 15</Text>
+    </Box>
+</Slide>

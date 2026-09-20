@@ -1,0 +1,173 @@
+<Slide
+    style={{
+        width: '1280px',
+        height: '720px',
+        background: '#FAF7F2',
+        paddingTop: 20,
+        paddingBottom: 20,
+        paddingLeft: 64,
+        paddingRight: 64,
+        position: 'relative',
+        overflow: 'hidden',
+    }}
+>
+    {/* sorotan latar Hero */}
+    <Box
+        style={{
+            position: 'absolute',
+            top: 120,
+            left: -60,
+            width: 420,
+            height: 420,
+            borderRadius: 210,
+            background: '#F3B26C',
+            opacity: 0.20,
+        }}
+    />
+
+    {/* ── A · blok judul ── */}
+    <Box style={{ height: 110, justifyContent: 'center', position: 'relative', zIndex: 1 }}>
+        <Text
+            style={{
+                fontSize: 34,
+                fontWeight: 'bold',
+                color: '#51277C',
+                fontFamily: 'Trebuchet MS',
+                lineHeight: 1.3,
+            }}
+        >
+            Ambil tanggal piket
+        </Text>
+        <Box style={{ marginTop: 10, width: 72, height: 6, borderRadius: 3, background: '#51277C' }} />
+    </Box>
+
+    {/* ── B · area konten ── */}
+    <Box style={{ height: 530, flexDirection: 'row', gap: 30, position: 'relative', zIndex: 1 }}>
+        {/* kiri · frasa raksasa + penjelasan */}
+        <Box style={{ width: '52%', justifyContent: 'center' }}>
+            <Text
+                style={{
+                    fontSize: 72,
+                    fontWeight: 'bold',
+                    color: '#51277C',
+                    fontFamily: 'Trebuchet MS',
+                    lineHeight: 1.05,
+                }}
+            >
+                Siapa cepat,{'\n'}dia dapat.
+            </Text>
+
+            <Box style={{ marginTop: 24, width: 110, height: 7, borderRadius: 4, background: '#F3B26C' }} />
+
+            <Text
+                style={{
+                    marginTop: 22,
+                    fontSize: 19,
+                    color: '#2A2333',
+                    fontFamily: 'Verdana',
+                    lineHeight: 1.55,
+                }}
+            >
+                Tanggal yang belum ada petugasnya bisa diambil sendiri. Satu ketuk langsung tercatat.
+            </Text>
+
+            <Text
+                style={{
+                    marginTop: 14,
+                    fontSize: 19,
+                    color: '#6B6478',
+                    fontFamily: 'Verdana',
+                    lineHeight: 1.55,
+                }}
+            >
+                Kalau keduluan, aplikasi menyebut siapa yang lebih dulu mengambilnya. Jadi tidak ada lagi dua orang merasa sama-sama sudah dapat.
+            </Text>
+
+            <Box
+                style={{
+                    marginTop: 22,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 12,
+                    alignSelf: 'flex-start',
+                    background: '#FFFFFF',
+                    borderRadius: 14,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    paddingTop: 12,
+                    paddingBottom: 12,
+                    paddingLeft: 20,
+                    paddingRight: 22,
+                }}
+            >
+                <FAIcon name='undo' style={{ fill: '#51277C', width: 22, height: 22 }} />
+                <Text style={{ fontSize: 18, color: '#2A2333', fontFamily: 'Verdana' }}>
+                    Masih bisa dibatalkan sendiri
+                </Text>
+            </Box>
+        </Box>
+
+        {/* kanan · kartu tanggal */}
+        <Box
+            style={{
+                width: '48%',
+                justifyContent: 'center',
+                alignItems: 'center',
+            }}
+        >
+            <svg width={480} height={420} viewBox='0 0 480 420'>
+                {/* kartu tersedia */}
+                <rect x='8' y='8' width='464' height='236' rx='20' fill='#FFFFFF' stroke='#E6DFD2' strokeWidth='3' />
+                <path d='M8 88 h464 v-32 a20 20 0 0 0 -20 -20 h-424 a20 20 0 0 0 -20 20 z' fill='#51277C' />
+                <rect x='8' y='56' width='464' height='32' fill='#51277C' />
+                <text x='36' y='62' fontFamily='Trebuchet MS' fontSize='23' fontWeight='bold' fill='#FFFFFF'>
+                    Selasa, 1 September
+                </text>
+                <text x='36' y='158' fontFamily='Trebuchet MS' fontSize='64' fontWeight='bold' fill='#51277C'>
+                    1
+                </text>
+                <text x='36' y='192' fontFamily='Verdana' fontSize='17' fill='#6B6478'>
+                    Belum ada petugas
+                </text>
+                <rect x='272' y='132' width='176' height='62' rx='18' fill='#F3B26C' />
+                <text x='360' y='172' fontFamily='Trebuchet MS' fontSize='26' fontWeight='bold' fill='#51277C' textAnchor='middle'>
+                    Ambil
+                </text>
+
+                {/* kartu sudah diambil */}
+                <rect x='8' y='268' width='464' height='144' rx='20' fill='#FFFFFF' stroke='#AFC440' strokeWidth='4' />
+                <circle cx='60' cy='340' r='30' fill='#AFC440' />
+                <path
+                    d='M46 340 l10 11 l19 -22'
+                    fill='none'
+                    stroke='#FFFFFF'
+                    strokeWidth='7'
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                />
+                <text x='108' y='334' fontFamily='Trebuchet MS' fontSize='23' fontWeight='bold' fill='#2A2333'>
+                    Diambil Bu Sari
+                </text>
+                <text x='108' y='364' fontFamily='Verdana' fontSize='17' fill='#6B6478'>
+                    Tanggal ini sudah punya petugas
+                </text>
+            </svg>
+        </Box>
+    </Box>
+
+    {/* ── C · bilah kaki ── */}
+    <Box
+        style={{
+            height: 40,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            position: 'relative',
+            zIndex: 1,
+        }}
+    >
+        <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>
+            Pizza Snack Play · Panduan Orang Tua
+        </Text>
+        <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>11 / 15</Text>
+    </Box>
+</Slide>

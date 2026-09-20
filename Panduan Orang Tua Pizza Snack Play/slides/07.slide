@@ -1,0 +1,218 @@
+<Slide
+    style={{
+        width: '1280px',
+        height: '720px',
+        background: '#FAF7F2',
+        paddingTop: 20,
+        paddingBottom: 20,
+        paddingLeft: 64,
+        paddingRight: 64,
+    }}
+>
+    {/* ── A · blok judul ── */}
+    <Box style={{ height: 110, justifyContent: 'center' }}>
+        <Text
+            style={{
+                fontSize: 34,
+                fontWeight: 'bold',
+                color: '#51277C',
+                fontFamily: 'Trebuchet MS',
+                lineHeight: 1.3,
+            }}
+        >
+            Pasang ke layar utama HP
+        </Text>
+        <Box style={{ marginTop: 10, width: 72, height: 6, borderRadius: 3, background: '#51277C' }} />
+    </Box>
+
+    {/* ── B · area konten ── */}
+    <Box style={{ height: 530, flexDirection: 'row', gap: 30 }}>
+        {/* kiri 55% · ilustrasi */}
+        <Box
+            style={{
+                width: '55%',
+                height: '100%',
+                background: 'rgba(81,39,124,0.06)',
+                borderRadius: 20,
+                justifyContent: 'center',
+                alignItems: 'center',
+            }}
+        >
+            <svg width={600} height={430} viewBox='0 0 600 430'>
+                {/* ponsel kiri — browser */}
+                <rect x='24' y='34' width='204' height='362' rx='30' fill='#FFFFFF' stroke='#E3DCCF' strokeWidth='4' />
+                <rect x='104' y='50' width='44' height='9' rx='5' fill='#DCD5C9' />
+                <rect x='48' y='76' width='156' height='34' rx='10' fill='#EFEAE1' />
+                <rect x='48' y='126' width='156' height='10' rx='5' fill='#DED7CB' />
+                <rect x='48' y='148' width='118' height='10' rx='5' fill='#EDE8DF' />
+                <rect x='48' y='186' width='156' height='10' rx='5' fill='#EDE8DF' />
+                <rect x='48' y='208' width='132' height='10' rx='5' fill='#EDE8DF' />
+                <rect x='48' y='246' width='156' height='10' rx='5' fill='#EDE8DF' />
+                {/* tombol Pasang */}
+                <rect x='48' y='292' width='156' height='54' rx='14' fill='#F3B26C' />
+                <text x='126' y='326' fontFamily='Trebuchet MS' fontSize='24' fontWeight='bold' fill='#51277C' textAnchor='middle'>
+                    Pasang
+                </text>
+
+                {/* panah */}
+                <path
+                    d='M248 215 h60 M292 195 l20 20 l-20 20'
+                    fill='none'
+                    stroke='#51277C'
+                    strokeWidth='7'
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                />
+
+                {/* ponsel kanan — layar utama */}
+                <rect x='330' y='54' width='244' height='322' rx='30' fill='#FFFFFF' stroke='#E3DCCF' strokeWidth='4' />
+                <rect x='430' y='70' width='44' height='9' rx='5' fill='#DCD5C9' />
+                {/* ikon-ikon lain */}
+                <rect x='358' y='100' width='48' height='48' rx='13' fill='#EFEAE1' />
+                <rect x='424' y='100' width='48' height='48' rx='13' fill='#EFEAE1' />
+                <rect x='490' y='100' width='48' height='48' rx='13' fill='#EFEAE1' />
+                <rect x='358' y='170' width='48' height='48' rx='13' fill='#EFEAE1' />
+                <rect x='424' y='170' width='48' height='48' rx='13' fill='#EFEAE1' />
+                <rect x='490' y='170' width='48' height='48' rx='13' fill='#EFEAE1' />
+                <rect x='358' y='240' width='48' height='48' rx='13' fill='#EFEAE1' />
+                <rect x='490' y='240' width='48' height='48' rx='13' fill='#EFEAE1' />
+                {/* ikon aplikasi — baru muncul */}
+                <rect x='418' y='234' width='64' height='64' rx='16' fill='#B6E9EC' />
+                <rect x='430' y='246' width='30' height='26' rx='5' fill='#FFFFFF' />
+                <path d='M430 246 h30' stroke='#51277C' strokeWidth='4' />
+                <path d='M472 288 l-14 -14 a20 20 0 0 1 14 -6 z' fill='#F3B26C' />
+                <circle cx='404' cy='228' r='13' fill='#AFC440' />
+                <text x='404' y='235' fontFamily='Verdana' fontSize='14' fontWeight='bold' fill='#FFFFFF' textAnchor='middle'>
+                    1
+                </text>
+            </svg>
+        </Box>
+
+        {/* kanan 45% · langkah */}
+        <Box style={{ width: '45%', height: '100%' }}>
+            <Box style={{ gap: 10 }}>
+                {[
+                    { a: 'Buka alamat aplikasi', d: 'Lewat browser HP — Chrome atau Edge.' },
+                    { a: 'Ketuk tombol "Pasang"', d: 'Muncul sendiri di bagian bawah layar.' },
+                    { a: 'Ikon muncul di layar utama', d: 'Berciri pizza dan kalender, warna hijau muda.' },
+                    { a: 'Ketuk ikonnya', d: 'Terbuka seperti aplikasi biasa. Tidak perlu mengetik alamat lagi.' },
+                ].map((s, i) => (
+                    <Box
+                        key={i}
+                        style={{
+                            height: 96,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: 16,
+                            background: '#FFFFFF',
+                            borderRadius: 14,
+                            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                            paddingLeft: 18,
+                            paddingRight: 20,
+                        }}
+                    >
+                        <Box
+                            style={{
+                                width: 44,
+                                height: 44,
+                                borderRadius: 22,
+                                background: '#51277C',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                            }}
+                        >
+                            <Text
+                                style={{
+                                    fontSize: 22,
+                                    fontWeight: 'bold',
+                                    color: '#FFFFFF',
+                                    fontFamily: 'Trebuchet MS',
+                                }}
+                            >
+                                {i + 1}
+                            </Text>
+                        </Box>
+                        <Box style={{ flex: 1 }}>
+                            <Text
+                                style={{
+                                    fontSize: 20,
+                                    fontWeight: 'bold',
+                                    color: '#2A2333',
+                                    fontFamily: 'Trebuchet MS',
+                                    lineHeight: 1.3,
+                                }}
+                            >
+                                {s.a}
+                            </Text>
+                            <Text
+                                style={{
+                                    marginTop: 3,
+                                    fontSize: 17,
+                                    color: '#6B6478',
+                                    fontFamily: 'Verdana',
+                                    lineHeight: 1.4,
+                                }}
+                            >
+                                {s.d}
+                            </Text>
+                        </Box>
+                    </Box>
+                ))}
+            </Box>
+
+            {/* catatan iOS */}
+            <Box
+                style={{
+                    marginTop: 20,
+                    height: 96,
+                    background: '#FFFFFF',
+                    borderLeft: '8px solid #F3B26C',
+                    borderRadius: 14,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    paddingTop: 16,
+                    paddingBottom: 16,
+                    paddingLeft: 20,
+                    paddingRight: 20,
+                    justifyContent: 'center',
+                }}
+            >
+                <Text
+                    style={{
+                        fontSize: 18,
+                        fontWeight: 'bold',
+                        color: '#51277C',
+                        fontFamily: 'Trebuchet MS',
+                    }}
+                >
+                    Kalau memakai iPhone
+                </Text>
+                <Text
+                    style={{
+                        marginTop: 5,
+                        fontSize: 17,
+                        color: '#6B6478',
+                        fontFamily: 'Verdana',
+                        lineHeight: 1.4,
+                    }}
+                >
+                    Tombol Bagikan, lalu pilih "Add to Home Screen".
+                </Text>
+            </Box>
+        </Box>
+    </Box>
+
+    {/* ── C · bilah kaki ── */}
+    <Box
+        style={{
+            height: 40,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+        }}
+    >
+        <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>
+            Pizza Snack Play · Panduan Orang Tua
+        </Text>
+        <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>07 / 15</Text>
+    </Box>
+</Slide>

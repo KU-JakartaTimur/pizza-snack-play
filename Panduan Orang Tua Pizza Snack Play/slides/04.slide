@@ -1,0 +1,273 @@
+<Slide
+    style={{
+        width: '1280px',
+        height: '720px',
+        background: '#FAF7F2',
+        paddingTop: 20,
+        paddingBottom: 20,
+        paddingLeft: 64,
+        paddingRight: 64,
+    }}
+>
+    {/* ── A · blok judul ── */}
+    <Box style={{ height: 110, justifyContent: 'center' }}>
+        <Text
+            style={{
+                fontSize: 34,
+                fontWeight: 'bold',
+                color: '#51277C',
+                fontFamily: 'Trebuchet MS',
+                lineHeight: 1.3,
+            }}
+        >
+            Dulu, begini masalahnya
+        </Text>
+        <Box style={{ marginTop: 10, width: 72, height: 6, borderRadius: 3, background: '#51277C' }} />
+    </Box>
+
+    {/* ── B · area konten ── */}
+    <Box style={{ height: 530, flexDirection: 'row', gap: 28 }}>
+        {/* kiri 60% — ilustrasi grup & kertas jadwal */}
+        <Box
+            style={{
+                width: '60%',
+                height: '100%',
+                background: 'rgba(81,39,124,0.06)',
+                borderRadius: 20,
+                justifyContent: 'center',
+                alignItems: 'center',
+            }}
+        >
+            <svg width={620} height={430} viewBox='0 0 620 430'>
+                {/* kertas jadwal cetak, miring */}
+                <g transform='rotate(-7 150 215)'>
+                    <rect x='26' y='34' width='250' height='350' rx='12' fill='#FFFFFF' stroke='#DCD5C9' strokeWidth='3' />
+                    <rect x='58' y='74' width='170' height='15' rx='7' fill='#51277C' opacity='0.55' />
+                    <rect x='58' y='118' width='186' height='10' rx='5' fill='#E6E0D5' />
+                    <rect x='58' y='146' width='150' height='10' rx='5' fill='#EFEAE1' />
+                    <rect x='58' y='174' width='176' height='10' rx='5' fill='#EFEAE1' />
+                    <rect x='58' y='202' width='132' height='10' rx='5' fill='#EFEAE1' />
+                    <rect x='58' y='230' width='164' height='10' rx='5' fill='#EFEAE1' />
+                    <rect x='58' y='258' width='120' height='10' rx='5' fill='#EFEAE1' />
+                    <rect x='58' y='286' width='158' height='10' rx='5' fill='#EFEAE1' />
+                    <rect x='58' y='314' width='140' height='10' rx='5' fill='#E6E0D5' />
+                </g>
+
+                {/* gelembung chat bertumpuk */}
+                <g>
+                    <rect x='296' y='46' width='300' height='92' rx='18' fill='#FFFFFF' stroke='#E3DCCF' strokeWidth='3' />
+                    <path d='M320 138 l0 26 l26 -26 z' fill='#FFFFFF' stroke='#E3DCCF' strokeWidth='3' />
+                    <rect x='322' y='70' width='230' height='12' rx='6' fill='#C9C1B4' />
+                    <rect x='322' y='94' width='170' height='12' rx='6' fill='#DED7CB' />
+                </g>
+                <g>
+                    <rect x='330' y='166' width='286' height='92' rx='18' fill='#AFC440' opacity='0.30' />
+                    <path d='M354 258 l0 24 l24 -24 z' fill='#AFC440' opacity='0.30' />
+                    <rect x='356' y='190' width='210' height='12' rx='6' fill='#6E7A32' opacity='0.55' />
+                    <rect x='356' y='214' width='150' height='12' rx='6' fill='#6E7A32' opacity='0.40' />
+                </g>
+                <g>
+                    <rect x='288' y='286' width='312' height='96' rx='18' fill='#FFFFFF' stroke='#E3DCCF' strokeWidth='3' />
+                    <path d='M566 382 l0 24 l-24 -24 z' fill='#FFFFFF' stroke='#E3DCCF' strokeWidth='3' />
+                    <rect x='314' y='310' width='200' height='12' rx='6' fill='#C9C1B4' />
+                    <rect x='314' y='334' width='150' height='12' rx='6' fill='#DED7CB' />
+                </g>
+
+                {/* tanda tanya besar */}
+                <circle cx='546' cy='62' r='44' fill='#F3B26C' />
+                <text
+                    x='546'
+                    y='82'
+                    fontFamily='Trebuchet MS'
+                    fontSize='54'
+                    fontWeight='bold'
+                    fill='#51277C'
+                    textAnchor='middle'
+                >
+                    ?
+                </text>
+            </svg>
+        </Box>
+
+        {/* kanan 40% — tiga masalah */}
+        <Box style={{ width: '40%', height: '100%', justifyContent: 'space-between' }}>
+            <Box
+                style={{
+                    height: 166,
+                    background: '#FFFFFF',
+                    borderRadius: 16,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    padding: 20,
+                }}
+            >
+                <Box style={{ flexDirection: 'row', gap: 14, alignItems: 'flex-start' }}>
+                    <Box
+                        style={{
+                            width: 48,
+                            height: 48,
+                            borderRadius: 24,
+                            background: 'rgba(81,39,124,0.10)',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                        }}
+                    >
+                        <FAIcon name='comment' style={{ fill: '#51277C', width: 26, height: 26 }} />
+                    </Box>
+                    <Box style={{ flex: 1 }}>
+                        <Text
+                            style={{
+                                fontSize: 24,
+                                fontWeight: 'bold',
+                                color: '#2A2333',
+                                fontFamily: 'Trebuchet MS',
+                                lineHeight: 1.3,
+                            }}
+                        >
+                            Menu harus ditanya
+                        </Text>
+                    </Box>
+                </Box>
+                <Text
+                    style={{
+                        marginTop: 12,
+                        fontSize: 18,
+                        color: '#6B6478',
+                        fontFamily: 'Verdana',
+                        lineHeight: 1.45,
+                    }}
+                >
+                    Tidak ada satu tempat yang jadi rujukan. Jawabannya kadang lambat, kadang beda-beda.
+                </Text>
+                <Box style={{ marginTop: 'auto' }}>
+                    <Text style={{ fontSize: 15, color: '#51277C', fontFamily: 'Verdana', fontWeight: 'bold' }}>
+                        Setiap hari
+                    </Text>
+                </Box>
+            </Box>
+
+            <Box
+                style={{
+                    height: 166,
+                    background: '#FFFFFF',
+                    borderRadius: 16,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    padding: 20,
+                }}
+            >
+                <Box style={{ flexDirection: 'row', gap: 14, alignItems: 'flex-start' }}>
+                    <Box
+                        style={{
+                            width: 48,
+                            height: 48,
+                            borderRadius: 24,
+                            background: 'rgba(81,39,124,0.10)',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                        }}
+                    >
+                        <FAIcon name='file' style={{ fill: '#51277C', width: 26, height: 26 }} />
+                    </Box>
+                    <Box style={{ flex: 1 }}>
+                        <Text
+                            style={{
+                                fontSize: 24,
+                                fontWeight: 'bold',
+                                color: '#2A2333',
+                                fontFamily: 'Trebuchet MS',
+                                lineHeight: 1.3,
+                            }}
+                        >
+                            Riwayat hilang
+                        </Text>
+                    </Box>
+                </Box>
+                <Text
+                    style={{
+                        marginTop: 12,
+                        fontSize: 18,
+                        color: '#6B6478',
+                        fontFamily: 'Verdana',
+                        lineHeight: 1.45,
+                    }}
+                >
+                    Menu bulan lalu tidak tersimpan rapi. Ingin tahu rotasinya, harus buka-buka lagi.
+                </Text>
+                <Box style={{ marginTop: 'auto' }}>
+                    <Text style={{ fontSize: 15, color: '#51277C', fontFamily: 'Verdana', fontWeight: 'bold' }}>
+                        Tidak bisa dilacak
+                    </Text>
+                </Box>
+            </Box>
+
+            <Box
+                style={{
+                    height: 166,
+                    background: '#FFFFFF',
+                    borderRadius: 16,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    padding: 20,
+                    borderLeft: '8px solid #F3B26C',
+                }}
+            >
+                <Box style={{ flexDirection: 'row', gap: 14, alignItems: 'flex-start' }}>
+                    <Box
+                        style={{
+                            width: 48,
+                            height: 48,
+                            borderRadius: 24,
+                            background: 'rgba(243,178,108,0.28)',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                        }}
+                    >
+                        <FAIcon name='exclamation-circle' style={{ fill: '#51277C', width: 26, height: 26 }} />
+                    </Box>
+                    <Box style={{ flex: 1 }}>
+                        <Text
+                            style={{
+                                fontSize: 24,
+                                fontWeight: 'bold',
+                                color: '#2A2333',
+                                fontFamily: 'Trebuchet MS',
+                                lineHeight: 1.3,
+                            }}
+                        >
+                            Rebutan tanggal
+                        </Text>
+                    </Box>
+                </Box>
+                <Text
+                    style={{
+                        marginTop: 12,
+                        fontSize: 18,
+                        color: '#6B6478',
+                        fontFamily: 'Verdana',
+                        lineHeight: 1.45,
+                    }}
+                >
+                    Dua orang bisa merasa sama-sama sudah mengambil tanggal yang sama.
+                </Text>
+                <Box style={{ marginTop: 'auto' }}>
+                    <Text style={{ fontSize: 15, color: '#51277C', fontFamily: 'Verdana', fontWeight: 'bold' }}>
+                        Paling sering jadi masalah
+                    </Text>
+                </Box>
+            </Box>
+        </Box>
+    </Box>
+
+    {/* ── C · bilah kaki ── */}
+    <Box
+        style={{
+            height: 40,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+        }}
+    >
+        <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>
+            Pizza Snack Play · Panduan Orang Tua
+        </Text>
+        <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>04 / 15</Text>
+    </Box>
+</Slide>

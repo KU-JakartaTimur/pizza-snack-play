@@ -1,0 +1,242 @@
+<Slide
+    style={{
+        width: '1280px',
+        height: '720px',
+        background: '#FAF7F2',
+        paddingTop: 20,
+        paddingBottom: 20,
+        paddingLeft: 64,
+        paddingRight: 64,
+    }}
+>
+    {/* ── A · blok judul ── */}
+    <Box style={{ height: 110, justifyContent: 'center' }}>
+        <Text
+            style={{
+                fontSize: 34,
+                fontWeight: 'bold',
+                color: '#51277C',
+                fontFamily: 'Trebuchet MS',
+                lineHeight: 1.3,
+            }}
+        >
+            Cari menu
+        </Text>
+        <Box style={{ marginTop: 10, width: 72, height: 6, borderRadius: 3, background: '#51277C' }} />
+    </Box>
+
+    {/* ── B · area konten ── */}
+    <Box style={{ height: 530, flexDirection: 'row', gap: 28 }}>
+        {/* kiri 30% · panel ungu */}
+        <Box
+            style={{
+                width: '30%',
+                height: '100%',
+                background: 'linear-gradient(135deg, #51277C 0%, #7A45A8 100%)',
+                borderRadius: 20,
+                padding: 26,
+                justifyContent: 'space-between',
+                alignItems: 'center',
+            }}
+        >
+            <Box style={{ alignItems: 'center' }}>
+                <Text style={{ fontSize: 16, color: 'rgba(255,255,255,0.75)', fontFamily: 'Verdana' }}>
+                    Fitur pendukung
+                </Text>
+                <Text
+                    style={{
+                        marginTop: 8,
+                        fontSize: 40,
+                        fontWeight: 'bold',
+                        color: '#FFFFFF',
+                        fontFamily: 'Trebuchet MS',
+                    }}
+                >
+                    Cari
+                </Text>
+            </Box>
+
+            <svg width={190} height={190} viewBox='0 0 190 190'>
+                <circle cx='82' cy='82' r='54' fill='none' stroke='#FFFFFF' strokeWidth='12' />
+                <path d='M122 122 l44 44' stroke='#F3B26C' strokeWidth='14' strokeLinecap='round' />
+                <circle cx='82' cy='82' r='34' fill='#AFC440' opacity='0.35' />
+                <circle cx='70' cy='72' r='7' fill='#FFFFFF' />
+                <circle cx='94' cy='88' r='7' fill='#FFFFFF' />
+                <circle cx='76' cy='98' r='7' fill='#FFFFFF' />
+            </svg>
+
+            <Text
+                style={{
+                    fontSize: 17,
+                    color: 'rgba(255,255,255,0.9)',
+                    fontFamily: 'Verdana',
+                    lineHeight: 1.5,
+                    textAlign: 'center',
+                }}
+            >
+                Dipakai kalau ingin tahu riwayat menu.
+            </Text>
+        </Box>
+
+        {/* kanan 70% · tiga keterangan */}
+        <Box style={{ width: '70%', height: '100%', justifyContent: 'space-between' }}>
+            <Box
+                style={{
+                    height: 166,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 20,
+                    background: '#FFFFFF',
+                    borderRadius: 16,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    paddingLeft: 24,
+                    paddingRight: 26,
+                    borderLeft: '8px solid #AFC440',
+                }}
+            >
+                <Box
+                    style={{
+                        width: 54,
+                        height: 54,
+                        borderRadius: 27,
+                        background: 'rgba(81,39,124,0.10)',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                    }}
+                >
+                    <FAIcon name='search' style={{ fill: '#51277C', width: 28, height: 28 }} />
+                </Box>
+                <Box style={{ flex: 1 }}>
+                    <Text
+                        style={{
+                            fontSize: 24,
+                            fontWeight: 'bold',
+                            color: '#2A2333',
+                            fontFamily: 'Trebuchet MS',
+                            lineHeight: 1.3,
+                        }}
+                    >
+                        Ketik nama makanan atau buah
+                    </Text>
+                    <Text
+                        style={{
+                            marginTop: 6,
+                            fontSize: 18,
+                            color: '#6B6478',
+                            fontFamily: 'Verdana',
+                            lineHeight: 1.45,
+                        }}
+                    >
+                        Misalnya "jeruk" atau "roti". Aplikasi langsung menemukannya.
+                    </Text>
+                </Box>
+            </Box>
+
+            <Box
+                style={{
+                    height: 166,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 20,
+                    background: '#FFFFFF',
+                    borderRadius: 16,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    paddingLeft: 24,
+                    paddingRight: 26,
+                    borderLeft: '8px solid #AFC440',
+                }}
+            >
+                <Box
+                    style={{
+                        width: 54,
+                        height: 54,
+                        borderRadius: 27,
+                        background: 'rgba(81,39,124,0.10)',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                    }}
+                >
+                    <FAIcon name='calendar' style={{ fill: '#51277C', width: 28, height: 28 }} />
+                </Box>
+                <Box style={{ flex: 1 }}>
+                    <Text
+                        style={{
+                            fontSize: 24,
+                            fontWeight: 'bold',
+                            color: '#2A2333',
+                            fontFamily: 'Trebuchet MS',
+                            lineHeight: 1.3,
+                        }}
+                    >
+                        Tahu kapan terakhir disajikan
+                    </Text>
+                    <Text
+                        style={{
+                            marginTop: 6,
+                            fontSize: 18,
+                            color: '#6B6478',
+                            fontFamily: 'Verdana',
+                            lineHeight: 1.45,
+                        }}
+                    >
+                        Hasilnya berupa daftar tanggal, jadi rotasi menunya kelihatan.
+                    </Text>
+                </Box>
+            </Box>
+
+            <Box
+                style={{
+                    height: 166,
+                    background: '#FFFFFF',
+                    borderRadius: 16,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    padding: 22,
+                    borderLeft: '8px solid #F3B26C',
+                }}
+            >
+                <Text
+                    style={{
+                        fontSize: 24,
+                        fontWeight: 'bold',
+                        color: '#2A2333',
+                        fontFamily: 'Trebuchet MS',
+                        lineHeight: 1.3,
+                    }}
+                >
+                    Berguna kalau anak punya pantangan
+                </Text>
+                <Text
+                    style={{
+                        marginTop: 8,
+                        fontSize: 18,
+                        color: '#6B6478',
+                        fontFamily: 'Verdana',
+                        lineHeight: 1.45,
+                    }}
+                >
+                    Bisa dicek lebih dulu sebelum hari itu tiba. Kalau perlu, hubungi korlas kelas agar menu diganti.
+                </Text>
+                <Box style={{ marginTop: 'auto' }}>
+                    <Text style={{ fontSize: 15, color: '#51277C', fontFamily: 'Verdana', fontWeight: 'bold' }}>
+                        Contoh: cari "udang", lalu lihat tanggalnya
+                    </Text>
+                </Box>
+            </Box>
+        </Box>
+    </Box>
+
+    {/* ── C · bilah kaki ── */}
+    <Box
+        style={{
+            height: 40,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+        }}
+    >
+        <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>
+            Pizza Snack Play · Panduan Orang Tua
+        </Text>
+        <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>12 / 15</Text>
+    </Box>
+</Slide>

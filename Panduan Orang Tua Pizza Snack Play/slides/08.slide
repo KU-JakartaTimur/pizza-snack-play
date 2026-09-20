@@ -1,0 +1,187 @@
+<Slide
+    style={{
+        width: '1280px',
+        height: '720px',
+        background: '#FAF7F2',
+        paddingTop: 20,
+        paddingBottom: 20,
+        paddingLeft: 64,
+        paddingRight: 64,
+    }}
+>
+    {/* ── A · blok judul ── */}
+    <Box style={{ height: 110, justifyContent: 'center' }}>
+        <Text
+            style={{
+                fontSize: 34,
+                fontWeight: 'bold',
+                color: '#51277C',
+                fontFamily: 'Trebuchet MS',
+                lineHeight: 1.3,
+            }}
+        >
+            Masuk memakai akun dari sekolah
+        </Text>
+        <Box style={{ marginTop: 10, width: 72, height: 6, borderRadius: 3, background: '#51277C' }} />
+    </Box>
+
+    {/* ── B · area konten ── */}
+    <Box style={{ height: 530, flexDirection: 'row', gap: 28 }}>
+        {/* kiri 30% · panel ungu */}
+        <Box
+            style={{
+                width: '30%',
+                height: '100%',
+                background: 'linear-gradient(135deg, #51277C 0%, #7A45A8 100%)',
+                borderRadius: 20,
+                padding: 26,
+                justifyContent: 'space-between',
+                alignItems: 'center',
+            }}
+        >
+            <Box style={{ alignItems: 'center' }}>
+                <Text
+                    style={{
+                        fontSize: 16,
+                        color: 'rgba(255,255,255,0.75)',
+                        fontFamily: 'Verdana',
+                    }}
+                >
+                    Langkah 2
+                </Text>
+                <Text
+                    style={{
+                        marginTop: 8,
+                        fontSize: 40,
+                        fontWeight: 'bold',
+                        color: '#FFFFFF',
+                        fontFamily: 'Trebuchet MS',
+                    }}
+                >
+                    Masuk
+                </Text>
+            </Box>
+
+            <svg width={170} height={170} viewBox='0 0 170 170'>
+                <rect x='34' y='74' width='102' height='80' rx='14' fill='#F3B26C' />
+                <path
+                    d='M58 74 v-20 a27 27 0 0 1 54 0 v20'
+                    fill='none'
+                    stroke='#FFFFFF'
+                    strokeWidth='10'
+                    strokeLinecap='round'
+                />
+                <circle cx='85' cy='108' r='10' fill='#51277C' />
+                <rect x='81' y='114' width='8' height='20' rx='4' fill='#51277C' />
+                <circle cx='132' cy='44' r='22' fill='none' stroke='#AFC440' strokeWidth='8' />
+                <path d='M148 60 l16 16' stroke='#AFC440' strokeWidth='8' strokeLinecap='round' />
+            </svg>
+
+            <Text
+                style={{
+                    fontSize: 17,
+                    color: 'rgba(255,255,255,0.9)',
+                    fontFamily: 'Verdana',
+                    lineHeight: 1.5,
+                    textAlign: 'center',
+                }}
+            >
+                Wajib masuk dulu sebelum jadwal bisa dilihat.
+            </Text>
+        </Box>
+
+        {/* kanan 70% · empat keterangan */}
+        <Box style={{ width: '70%', height: '100%', justifyContent: 'space-between' }}>
+            {[
+                {
+                    i: 'user',
+                    t: 'Akunnya dibuatkan sekolah',
+                    d: 'Username dan password diberikan oleh admin sekolah. Bapak/Ibu tidak perlu mendaftar sendiri.',
+                },
+                {
+                    i: 'users',
+                    t: 'Satu akun bisa untuk beberapa anak',
+                    d: 'Punya dua anak di kelas berbeda? Cukup satu akun — pilih kelasnya di bagian atas layar.',
+                },
+                {
+                    i: 'key',
+                    t: 'Password bisa diganti sendiri',
+                    d: 'Ada menu Profil di dalam aplikasi. Kalau lupa, minta reset kepada admin sekolah.',
+                },
+                {
+                    i: 'shield',
+                    t: 'Kenapa harus masuk?',
+                    d: 'Supaya jadwal dan nama anak hanya dilihat oleh orang tuanya sendiri, bukan orang lain.',
+                },
+            ].map((c, idx) => (
+                <Box
+                    key={idx}
+                    style={{
+                        height: 123,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 20,
+                        background: '#FFFFFF',
+                        borderRadius: 16,
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                        paddingLeft: 24,
+                        paddingRight: 26,
+                        borderLeft: '8px solid #AFC440',
+                    }}
+                >
+                    <Box
+                        style={{
+                            width: 54,
+                            height: 54,
+                            borderRadius: 27,
+                            background: 'rgba(81,39,124,0.10)',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                        }}
+                    >
+                        <FAIcon name={c.i} style={{ fill: '#51277C', width: 28, height: 28 }} />
+                    </Box>
+                    <Box style={{ flex: 1 }}>
+                        <Text
+                            style={{
+                                fontSize: 24,
+                                fontWeight: 'bold',
+                                color: '#2A2333',
+                                fontFamily: 'Trebuchet MS',
+                                lineHeight: 1.3,
+                            }}
+                        >
+                            {c.t}
+                        </Text>
+                        <Text
+                            style={{
+                                marginTop: 5,
+                                fontSize: 18,
+                                color: '#6B6478',
+                                fontFamily: 'Verdana',
+                                lineHeight: 1.45,
+                            }}
+                        >
+                            {c.d}
+                        </Text>
+                    </Box>
+                </Box>
+            ))}
+        </Box>
+    </Box>
+
+    {/* ── C · bilah kaki ── */}
+    <Box
+        style={{
+            height: 40,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+        }}
+    >
+        <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>
+            Pizza Snack Play · Panduan Orang Tua
+        </Text>
+        <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>08 / 15</Text>
+    </Box>
+</Slide>

@@ -33,6 +33,13 @@ export interface AuthContextValue {
   /** Boleh mengelola katalog menu & kategori: **admin saja**. */
   canManageCatalog: boolean;
   login: (username: string, password: string) => Promise<void>;
+  /**
+   * Ambil ulang profil dari server (`/auth/me`) dan perbarui `user` beserta
+   * `students` di konteks. Dipakai setelah user mengubah datanya sendiri —
+   * mis. menambah anak dari menu Profil — agar header, pemilih kelas, dan
+   * halaman lain ikut menyesuaikan tanpa perlu login ulang.
+   */
+  refresh: () => Promise<void>;
   logout: () => void;
 }
 

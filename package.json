@@ -69,7 +69,8 @@
     "test:auth": "bun run scripts/test-auth.mjs",
     "test:api": "bun run scripts/test-api.mjs",
     "test:status": "bun run scripts/test-status.mjs",
-    "test": "bun run test:auth && bun run test:api && bun run test:status"
+    "test:profile": "bun run scripts/test-profile-students.mjs",
+    "test": "bun run test:auth && bun run test:api && bun run test:status && bun run test:profile"
   },
   "type": "module"
 }

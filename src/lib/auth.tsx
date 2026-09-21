@@ -72,6 +72,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState({ token: null, user: null, isReady: true });
   }, []);
 
+  /**
+   * Segarkan profil dari server. Dipanggil setelah user mengubah datanya
+   * sendiri (mis. menambah anak di menu Profil) supaya `students` di konteks
+   * tidak tertinggal. Tidak melakukan apa-apa bila tidak ada sesi.
+   */
+  const refresh = useCallback(async () => {
+    const token = readStoredToken();
+    if (!token) return;
+
+    const profile = await api.auth.me();
+    setState({ token, user: profile.user, isReady: true });
+  }, []);
+
   const value = useMemo<AuthContextValue>(() => {
     const role = state.user?.role;
     const isAdmin = role === "admin";
@@ -93,9 +106,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Katalog menu bersifat sekolah-wide — perubahannya terpusat di admin.
       canManageCatalog: isAdmin,
       login,
+      refresh,
       logout,
     };
-  }, [state, login, logout]);
+  }, [state, login, refresh, logout]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

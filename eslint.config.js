@@ -5,7 +5,15 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-	{ ignores: ["dist"] },
+	{
+		ignores: [
+			"dist",
+			// Profil browser sementara dari skrip verifikasi tampilan
+			// (`outputs/check-*.mjs`). Sistem menolak membacanya (EPERM), dan
+			// percobaan membaca membuat ESLint gagal total.
+			"outputs/.edge-profile/**",
+		],
+	},
 	{
 		extends: [js.configs.recommended, ...tseslint.configs.recommended],
 		files: ["**/*.{ts,tsx}"],

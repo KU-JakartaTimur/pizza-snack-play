@@ -4,6 +4,7 @@ import type {
   LoginResponse,
   ProfileResponse,
   AuthUser,
+  StudentProfile,
 } from "@/types/auth";
 import type {
   CategoryDto,
@@ -112,6 +113,26 @@ export const api = {
 
     changePassword: (body: { currentPassword: string; newPassword: string }) =>
       unwrapFull<null>(http.put("auth/password", { json: body })),
+  },
+
+  /**
+   * Layanan mandiri orang tua (menu Profil): mengelola daftar anaknya sendiri.
+   * Cakupannya dikunci di server dari token — tidak ada `parentId` di request.
+   */
+  profile: {
+    students: () => unwrap<StudentProfile[]>(http.get("profile/students")),
+
+    addStudent: (body: { name: string; className: string }) =>
+      unwrapFull<StudentProfile>(http.post("profile/students", { json: body })),
+
+    updateStudent: (id: number, body: { name?: string; className?: string | null }) =>
+      unwrapFull<StudentProfile>(http.put(`profile/students/${id}`, { json: body })),
+
+    removeStudent: (id: number) =>
+      unwrapFull<null>(http.delete(`profile/students/${id}`)),
+
+    /** Semua kelas yang dikenal sistem — saran isian kolom kelas. */
+    classOptions: () => unwrap<ClassListDto>(http.get("profile/classes")),
   },
 
   /**

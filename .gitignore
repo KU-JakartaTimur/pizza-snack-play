@@ -207,3 +207,9 @@ dist
 # outputs/
 # Seluruh folder, bukan per tanggal — satu baris per hari selalu berujung konflik merge.
 .workbuddy-ai/memory/
+
+# Profil browser sementara milik skrip verifikasi tampilan.
+# Wajib diabaikan: berkas profil browser ditolak sistem (EPERM) saat dibaca,
+# dan pemindai kelas Tailwind yang mencoba membacanya membuat build CSS gagal
+# (halaman tampil kosong / 500 pada /src/index.css).
+outputs/.edge-profile/

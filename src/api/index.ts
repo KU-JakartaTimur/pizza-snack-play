@@ -5,6 +5,7 @@ import { categoriesRoute, menusRoute } from "./catalog/route";
 import { claimsRoute } from "./claims/route";
 import { classesRoute } from "./classes/route";
 import { parentsRoute } from "./parents/route";
+import { profileRoute } from "./profile/route";
 import {
   holidaysRoute,
   schedulesRoute,
@@ -35,6 +36,7 @@ app.route("/holidays", holidaysRoute);
 app.route("/menus", menusRoute);
 app.route("/categories", categoriesRoute);
 app.route("/parents", parentsRoute);
+app.route("/profile", profileRoute);
 app.route("/stats", statsRoute);
 
 export default app;

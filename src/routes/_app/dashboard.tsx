@@ -51,7 +51,7 @@ function DashboardContent() {
     <>
       <PageHeader
         title="Dashboard"
-        description="Ringkasan data jadwal snack sekolah."
+        description="Ringkasan data Jadwal Snack Anak Itu Menyenangkan!"
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

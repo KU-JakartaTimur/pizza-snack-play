@@ -23,6 +23,16 @@ export interface LoginInput {
   expiresIn: number;
 }
 
+/** Kegagalan "Login as" — dipetakan ke pesan Indonesia di controller. */
+export type ImpersonateFailure = "not_found" | "inactive" | "not_impersonable";
+
+export interface ImpersonateInput {
+  /** `users.id` akun yang akan dibuka sesinya. */
+  userId: number;
+  secret: string;
+  expiresIn: number;
+}
+
 export const DEFAULT_EXPIRES_IN = 60 * 60 * 24 * 7; // 7 hari
 
 /** Parse `JWT_EXPIRES_IN` dari env; fallback ke 7 hari bila tidak valid. */
@@ -66,6 +76,34 @@ function toPublicUser(
   };
 }
 
+/**
+ * Terbitkan JWT untuk seorang user. Dipakai jalur masuk mana pun (login biasa
+ * maupun "Login as") supaya isi tokennya dijamin sama — pembatasan kelas dan
+ * role di API bersandar pada klaim di sini.
+ */
+async function issueToken(
+  user: { id: number; username: string; role: string; className: string | null },
+  secret: string,
+  expiresIn: number,
+): Promise<{ token: string; expiresAt: number }> {
+  const expiresAt = Math.floor(Date.now() / 1000) + expiresIn;
+
+  const token = await sign(
+    {
+      sub: user.id,
+      username: user.username,
+      role: user.role,
+      // Korlas membawa kelasnya di token; API memakainya untuk membatasi
+      // jadwal yang boleh diubah. Mengubah kelas/role butuh login ulang.
+      className: user.className,
+      exp: expiresAt,
+    },
+    secret,
+  );
+
+  return { token, expiresAt };
+}
+
 class AuthService {
   /**
    * Verifikasi kredensial dan terbitkan JWT.
@@ -84,23 +122,54 @@ class AuthService {
     );
     if (!passwordMatches) return "invalid_credentials";
 
-    const expiresAt = Math.floor(Date.now() / 1000) + input.expiresIn;
-
-    const token = await sign(
-      {
-        sub: user.id,
-        username: user.username,
-        role: user.role,
-        // Korlas membawa kelasnya di token; API memakainya untuk membatasi
-        // jadwal yang boleh diubah. Mengubah kelas/role butuh login ulang.
-        className: user.className,
-        exp: expiresAt,
-      },
+    const { token, expiresAt } = await issueToken(
+      user,
       input.secret,
+      input.expiresIn,
     );
 
     await authRepository.touchLastLogin(db, user.id);
 
+    const profile = await this.parentProfileFor(db, user.id, user.role);
+
+    return {
+      token,
+      expiresAt,
+      user: toPublicUser(user, profile),
+    };
+  }
+
+  /**
+   * Terbitkan sesi atas nama user lain **tanpa password** — dipakai admin
+   * untuk menelusuri tampilan korlas/orang tua ("Login as").
+   *
+   * Yang dilewati hanyalah pemeriksaan password: token yang keluar tetap
+   * membawa identitas asli target, sehingga seluruh pembatasan kelas dan role
+   * di API berlaku persis seperti ia masuk sendiri. Karena itu endpoint
+   * pemanggilnya wajib khusus admin.
+   */
+  async impersonate(
+    db: Db,
+    input: ImpersonateInput,
+  ): Promise<LoginResult | ImpersonateFailure> {
+    const user = await authRepository.findById(db, input.userId);
+
+    if (!user) return "not_found";
+    if (user.isActive !== 1) return "inactive";
+    // Sesama admin tidak perlu dibuka: satu sesi admin sudah mencakup seluruh
+    // sekolah, dan membukanya hanya memperluas permukaan penyalahgunaan.
+    if (user.role !== "parent" && user.role !== "korlas") {
+      return "not_impersonable";
+    }
+
+    const { token, expiresAt } = await issueToken(
+      user,
+      input.secret,
+      input.expiresIn,
+    );
+
+    // `lastLoginAt` sengaja tidak disentuh — kolom itu catatan login pemilik
+    // akun, bukan kunjungan admin ke tampilannya.
     const profile = await this.parentProfileFor(db, user.id, user.role);
 
     return {

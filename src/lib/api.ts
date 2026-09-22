@@ -118,6 +118,14 @@ export const api = {
     login: (body: { username: string; password: string }) =>
       unwrapFull<LoginResponse>(http.post("auth/login", { json: body })),
 
+    /**
+     * "Login as" — **admin saja**. Membuka sesi atas nama korlas/orang tua
+     * tanpa password; hasilnya sama bentuknya dengan `login` supaya klien
+     * bisa memperlakukannya sebagai pergantian sesi biasa.
+     */
+    impersonate: (userId: number) =>
+      unwrapFull<LoginResponse>(http.post("auth/impersonate", { json: { userId } })),
+
     logout: () => unwrap<null>(http.post("auth/logout")),
 
     me: () => unwrap<ProfileResponse>(http.get("auth/me")),

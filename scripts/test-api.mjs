@@ -1898,6 +1898,197 @@ section("19. Korlas — jadwal kelasnya, kunci tetap admin");
   );
 }
 
+// ── 7. Login as ───────────────────────────────────────────────
+
+section("20. Login as — admin membuka sesi korlas/orang tua");
+{
+  // Akun uji dicari lewat modul orang tua (admin-only) agar `userId` tidak
+  // di-hardcode — basis data lokal bisa saja sudah diubah lewat halaman admin.
+  const parents =
+    (await call("GET", "/parents?perPage=100", { token: adminToken })).data
+      ?.items ?? [];
+  const sari = parents.find((p) => p.username === PARENT.username);
+  const budi = parents.find((p) => p.username === KORLAS.username);
+
+  check("akun uji orang tua ditemukan", Boolean(sari), PARENT.username);
+  check("akun uji korlas ditemukan", Boolean(budi), KORLAS.username);
+
+  // ── Batas akses endpoint ────────────────────────────────────
+  const anonymous = await call("POST", "/auth/impersonate", {
+    body: { userId: sari?.userId },
+  });
+  check(
+    "tanpa token -> 401",
+    anonymous.status === 401,
+    `got ${anonymous.status}`,
+  );
+
+  for (const [label, token] of [
+    ["orang tua", parentToken],
+    ["korlas", (await call("POST", "/auth/login", { body: KORLAS })).data?.token],
+  ]) {
+    const r = await call("POST", "/auth/impersonate", {
+      token,
+      body: { userId: sari?.userId },
+    });
+    check(
+      `${label} memakai Login as -> 403`,
+      r.status === 403,
+      `got ${r.status}`,
+    );
+  }
+
+  // ── Sasaran yang ditolak ────────────────────────────────────
+  const missing = await call("POST", "/auth/impersonate", {
+    token: adminToken,
+    body: { userId: 999999 },
+  });
+  check(
+    "akun tidak ada -> 404",
+    missing.status === 404,
+    `got ${missing.status}`,
+  );
+
+  const badId = await call("POST", "/auth/impersonate", {
+    token: adminToken,
+    body: { userId: "bukan-angka" },
+  });
+  check(
+    "`userId` tidak valid -> 400",
+    badId.status === 400,
+    `got ${badId.status}`,
+  );
+
+  const adminUserId = (await call("GET", "/auth/me", { token: adminToken })).data
+    ?.user?.id;
+  const asAdmin = await call("POST", "/auth/impersonate", {
+    token: adminToken,
+    body: { userId: adminUserId },
+  });
+  check(
+    "sesama admin tidak bisa dibuka -> 400",
+    asAdmin.status === 400,
+    `got ${asAdmin.status}`,
+  );
+
+  // ── Admin masuk sebagai orang tua ───────────────────────────
+  // `lastLoginAt` diambil sebelum & sesudah: Login as bukan login pemilik
+  // akun, jadi kolom itu tidak boleh tersentuh.
+  const before = (await call("GET", `/parents/${sari?.id}`, { token: adminToken }))
+    .data?.lastLoginAt;
+
+  const asParent = await call("POST", "/auth/impersonate", {
+    token: adminToken,
+    body: { userId: sari?.userId },
+  });
+  check(
+    "admin masuk sebagai orang tua -> 200",
+    asParent.status === 200,
+    `got ${asParent.status}`,
+  );
+  // Pesannya dibangun dari `users.fullName` — bukan `parents.parentName`,
+  // yang bisa saja berbeda isinya.
+  const targetName =
+    asParent.data?.user?.fullName ?? asParent.data?.user?.username ?? "";
+  check(
+    "pesan sukses menyebut nama akunnya",
+    typeof asParent.json?.message === "string" &&
+      targetName.length > 0 &&
+      asParent.json.message.includes(targetName),
+    `${asParent.json?.message} vs ${targetName}`,
+  );
+  check(
+    "token membawa role target, bukan admin",
+    asParent.data?.user?.role === "parent",
+    asParent.data?.user?.role,
+  );
+  check(
+    "profil anak ikut terbawa",
+    (asParent.data?.user?.students?.length ?? 0) > 0,
+    JSON.stringify(asParent.data?.user?.students),
+  );
+
+  const parentToken2 = asParent.data?.token;
+
+  const after = (await call("GET", `/parents/${sari?.id}`, { token: adminToken }))
+    .data?.lastLoginAt;
+  check(
+    "`lastLoginAt` pemilik akun tidak tersentuh",
+    before === after,
+    `${before} -> ${after}`,
+  );
+
+  // ── Wewenang tidak bertambah: yang berlaku adalah milik target ──
+  const whoAmI = await call("GET", "/auth/me", { token: parentToken2 });
+  check(
+    "GET /auth/me memakai identitas target",
+    whoAmI.data?.user?.username === PARENT.username,
+    whoAmI.data?.user?.username,
+  );
+
+  const classes = await call("GET", "/classes", { token: parentToken2 });
+  check(
+    "cakupan kelas menyempit ke kelas anaknya",
+    JSON.stringify(classes.data?.classes) === JSON.stringify(["1"]),
+    JSON.stringify(classes.data?.classes),
+  );
+
+  for (const [label, method, path, body] of [
+    ["mengelola akun", "GET", "/parents", undefined],
+    ["menyusun jadwal", "POST", "/schedules", { scheduleDate: "2033-01-03", menuId: 1 }],
+    ["mempublikasi jadwal", "POST", "/schedules/publish", { year: 2033, month: 1 }],
+    ["menambah hari libur", "POST", "/holidays", { date: "2033-01-04", name: "Libur uji" }],
+    ["membuka sesi lain", "POST", "/auth/impersonate", { userId: budi?.userId }],
+  ]) {
+    const r = await call(method, path, { token: parentToken2, body });
+    check(
+      `sesi orang tua ${label} -> 403`,
+      r.status === 403,
+      `got ${r.status}`,
+    );
+  }
+
+  // ── Admin masuk sebagai korlas ──────────────────────────────
+  const asKorlas = await call("POST", "/auth/impersonate", {
+    token: adminToken,
+    body: { userId: budi?.userId },
+  });
+  check(
+    "admin masuk sebagai korlas -> 200",
+    asKorlas.status === 200,
+    `got ${asKorlas.status}`,
+  );
+  check(
+    "token korlas membawa kelas yang dikoordinasinya",
+    asKorlas.data?.user?.role === "korlas" &&
+      asKorlas.data?.user?.className === budi?.className,
+    `role=${asKorlas.data?.user?.role} kelas=${asKorlas.data?.user?.className}`,
+  );
+
+  // Kunci jadwal tetap wewenang admin — sesi korlas tidak boleh mewarisinya
+  // dari admin yang membukanya.
+  const korlasLock = await call("POST", "/schedules/lock", {
+    token: asKorlas.data?.token,
+    body: { fromDate: "2033-02-01", toDate: "2033-02-28", className: "2" },
+  });
+  check(
+    "sesi korlas tidak mewarisi wewenang admin -> 403",
+    korlasLock.status === 403,
+    `got ${korlasLock.status}`,
+  );
+
+  // Sesi hasil Login as tetap sesi biasa: yang keluar darinya juga 403.
+  const nested = await call("POST", "/auth/impersonate", {
+    token: asKorlas.data?.token,
+    body: { userId: sari?.userId },
+  });
+  check(
+    "sesi hasil Login as tidak bisa Login as lagi -> 403",
+    nested.status === 403,
+    `got ${nested.status}`,
+  );
+}
+
 // ── Ringkasan ─────────────────────────────────────────────────
 
 console.log(`\n=== HASIL: ${pass} pass, ${fail} fail ===`);

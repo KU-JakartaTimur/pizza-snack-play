@@ -6,6 +6,7 @@ import { useHasNoClass } from "@/hooks/useClasses";
 import { AccountMenu } from "./AccountMenu";
 import { BottomNav } from "./BottomNav";
 import { ClassNotice } from "./ClassNotice";
+import { ImpersonationBar } from "./ImpersonationBar";
 import { PWAInstallPrompt } from "./PWAInstallPrompt";
 import { visibleNavItems, type NavItem } from "./navItems";
 import { usePWA } from "@/hooks/usePWA";
@@ -19,7 +20,8 @@ import logo from "@/assets/logo.png";
  * identitas & keluar, `HeaderNav` daftar menu, `BottomNav` bilah bawah.
  */
 export function AppShell({ children }: { children: ReactNode }) {
-  const { isAdmin, canManageSchedule, canManageCatalog } = useAuth();
+  const { isAdmin, isImpersonating, canManageSchedule, canManageCatalog } =
+    useAuth();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
 
   // Saat PWA terpasang, bilah menu dipindahkan ke bawah layar.
@@ -62,8 +64,18 @@ export function AppShell({ children }: { children: ReactNode }) {
         </p>
       </footer>
 
-      {/* Keduanya menempel di bawah layar — tampilkan satu saja. */}
-      {hasNoClass ? <ClassNotice /> : <PWAInstallPrompt />}
+      {/*
+        Ketiganya menempel di bawah layar — tampilkan satu saja, dengan
+        urutan prioritas: keadaan sesi (sedang memakai akun orang lain) lebih
+        dulu, baru hal yang perlu diperbaiki user, terakhir ajakan memasang PWA.
+      */}
+      {isImpersonating ? (
+        <ImpersonationBar />
+      ) : hasNoClass ? (
+        <ClassNotice />
+      ) : (
+        <PWAInstallPrompt />
+      )}
       {/* Bilah bawah hanya muncul bila aplikasi sudah dipasang (PWA). */}
       <BottomNav />
     </div>

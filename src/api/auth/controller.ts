@@ -7,6 +7,7 @@ import {
   responseUnauthorized,
 } from "../utils/response";
 import type { AuthEnv } from "../middleware/auth";
+import { parseId } from "../utils/params";
 import { authService, resolveExpiresIn } from "./service";
 
 type AuthContext = Context<AuthEnv>;
@@ -19,6 +20,11 @@ interface LoginBody {
 interface ChangePasswordBody {
   currentPassword?: unknown;
   newPassword?: unknown;
+}
+
+interface ImpersonateBody {
+  /** `users.id` akun yang akan dibuka sesinya. */
+  userId?: unknown;
 }
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -59,6 +65,61 @@ class AuthController {
     }
 
     return responseOK(c, "Login berhasil", result);
+  };
+
+  /**
+   * "Login as" — admin membuka sesi atas nama korlas/orang tua tanpa password.
+   *
+   * Dijaga `requireRole("admin")` di route. Token yang dikembalikan berisi
+   * identitas target apa adanya, jadi tidak ada wewenang yang bertambah:
+   * admin hanya melihat apa yang dilihat akun itu.
+   */
+  impersonate = async (c: AuthContext) => {
+    let body: ImpersonateBody;
+    try {
+      body = await c.req.json<ImpersonateBody>();
+    } catch {
+      return responseBadRequest(c, "Body harus berupa JSON");
+    }
+
+    // `userId` boleh datang sebagai angka maupun teks dari klien.
+    const { userId: rawUserId } = body;
+    const userId = parseId(
+      typeof rawUserId === "number" || typeof rawUserId === "string"
+        ? String(rawUserId)
+        : undefined,
+    );
+    if (userId === null) {
+      return responseBadRequest(c, "`userId` tidak valid");
+    }
+
+    const result = await authService.impersonate(getDb(c.env), {
+      userId,
+      secret: c.env.JWT_SECRET,
+      expiresIn: resolveExpiresIn(c.env.JWT_EXPIRES_IN),
+    });
+
+    if (result === "not_found") {
+      return responseNotFound(c, "Akun tidak ditemukan");
+    }
+
+    if (result === "inactive") {
+      return responseBadRequest(
+        c,
+        "Akun sedang nonaktif. Aktifkan dulu sebelum masuk sebagai akun ini.",
+      );
+    }
+
+    if (result === "not_impersonable") {
+      return responseBadRequest(
+        c,
+        "Login as hanya untuk akun orang tua atau korlas",
+      );
+    }
+
+    const { fullName, username } = result.user;
+
+    return responseOK(c, `Masuk sebagai ${fullName ?? username}`, result);
   };
 
   /**

@@ -4,6 +4,12 @@ import type { AuthUser, StudentProfile } from "@/types/auth";
 /** Kunci `localStorage` untuk JWT. Dipakai juga oleh `lib/http.ts`. */
 export const TOKEN_KEY = "psp_token";
 
+/**
+ * Kunci `localStorage` untuk sesi admin yang sedang dititipkan selama
+ * "Login as". Isinya `{ token, user }` milik admin — jalan pulangnya.
+ */
+export const IMPERSONATOR_KEY = "psp_impersonator";
+
 /** Hasil login yang berhasil — dipakai halaman masuk untuk popup sambutan. */
 export interface LoginResult {
   /** Pesan sukses dari server, mis. "Login berhasil". */
@@ -45,6 +51,21 @@ export interface AuthContextValue {
    * tanpa perlu menebak siapa yang baru masuk.
    */
   login: (username: string, password: string) => Promise<LoginResult>;
+  /**
+   * Admin yang sesinya sedang dititipkan — terisi hanya selama "Login as"
+   * berlangsung, `null` pada sesi biasa. Dipakai bilah pengingat di bawah
+   * layar agar admin tidak lupa dirinya sedang memakai akun orang lain.
+   */
+  impersonator: AuthUser | null;
+  /** `true` selama sesi yang aktif dibuka lewat "Login as". */
+  isImpersonating: boolean;
+  /**
+   * **Admin saja.** Masuk sebagai korlas/orang tua tanpa password. Sesi admin
+   * disimpan lebih dulu sehingga `stopImpersonating()` bisa mengembalikannya.
+   */
+  impersonate: (userId: number) => Promise<LoginResult>;
+  /** Kembali ke sesi admin yang dititipkan. Tidak melakukan apa-apa bila tidak ada. */
+  stopImpersonating: () => void;
   /**
    * Ambil ulang profil dari server (`/auth/me`) dan perbarui `user` beserta
    * `students` di konteks. Dipakai setelah user mengubah datanya sendiri —

@@ -8,6 +8,7 @@ import {
   Button,
   Card,
   CardHeader,
+  ConfirmDialog,
   EmptyState,
   ErrorState,
   Field,
@@ -15,7 +16,7 @@ import {
   Modal,
   Spinner,
 } from "@/components/ui";
-import { ApiError, api, errorMessage } from "@/lib/api";
+import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import type { StudentProfile } from "@/types/auth";
 
@@ -166,6 +167,9 @@ function ChildrenCard() {
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<StudentProfile | null>(null);
+  // Anak yang menunggu ditegaskan penghapusannya — dialog konfirmasi
+  // menggantikan `confirm()` bawaan peramban.
+  const [pendingDelete, setPendingDelete] = useState<StudentProfile | null>(null);
   const [form, setForm] = useState({ name: "", className: "" });
   const [formError, setFormError] = useState<string | null>(null);
   const [banner, setBanner] = useState<{ kind: "ok" | "error"; text: string } | null>(
@@ -238,10 +242,12 @@ function ChildrenCard() {
   const removeMutation = useMutation({
     mutationFn: (student: StudentProfile) => api.profile.removeStudent(student.id),
     onSuccess: async (result) => {
+      setPendingDelete(null);
       setBanner({ kind: "ok", text: result.message });
       await syncAfterChange();
     },
     onError: (error) => {
+      setPendingDelete(null);
       setBanner({ kind: "error", text: errorMessage(error) });
     },
   });
@@ -291,11 +297,7 @@ function ChildrenCard() {
         <Spinner label="Memuat data anak…" />
       ) : studentsQuery.isError ? (
         <ErrorState
-          message={
-            studentsQuery.error instanceof ApiError
-              ? studentsQuery.error.message
-              : "Tidak bisa memuat data anak"
-          }
+          message={errorMessage(studentsQuery.error, "Tidak bisa memuat data anak")}
           onRetry={() => void studentsQuery.refetch()}
         />
       ) : list.length === 0 ? (
@@ -341,11 +343,7 @@ function ChildrenCard() {
                   size="sm"
                   className="text-red-600 hover:bg-red-50"
                   disabled={removeMutation.isPending}
-                  onClick={() => {
-                    if (confirm(`Hapus data anak "${student.name}"?`)) {
-                      removeMutation.mutate(student);
-                    }
-                  }}
+                  onClick={() => setPendingDelete(student)}
                   title="Hapus data anak"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -408,6 +406,25 @@ function ChildrenCard() {
           )}
         </form>
       </Modal>
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Hapus data anak?"
+        description={
+          <>
+            Data <strong>{pendingDelete?.name}</strong> akan dihapus dari daftar
+            Anda. Anak terakhir tidak bisa dihapus — minimal satu anak harus
+            terdaftar.
+          </>
+        }
+        confirmLabel="Hapus"
+        tone="danger"
+        loading={removeMutation.isPending}
+        onConfirm={() =>
+          pendingDelete && removeMutation.mutate(pendingDelete)
+        }
+        onClose={() => setPendingDelete(null)}
+      />
     </Card>
   );
 }

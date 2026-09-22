@@ -17,6 +17,7 @@ import {
   Badge,
   Button,
   Card,
+  ConfirmDialog,
   EmptyState,
   ErrorState,
   Field,
@@ -25,7 +26,7 @@ import {
   Select,
   Spinner,
 } from "@/components/ui";
-import { ApiError, api } from "@/lib/api";
+import { api, errorMessage } from "@/lib/api";
 import type { ManagedRole, ParentDto, ParentRelationship } from "@/types/account";
 
 export const Route = createFileRoute("/_app/orang-tua")({
@@ -106,6 +107,16 @@ function ParentsContent() {
   const [resetTarget, setResetTarget] = useState<ParentDto | null>(null);
   const [resetPassword, setResetPassword] = useState("");
 
+  /**
+   * Akun yang menunggu ditegaskan penghapusannya. Satu state untuk dua
+   * tindakan yang berbeda kadarnya — `hard: false` menonaktifkan (bisa
+   * dikembalikan), `hard: true` menghapus permanen.
+   */
+  const [pendingRemove, setPendingRemove] = useState<{
+    parent: ParentDto;
+    hard: boolean;
+  } | null>(null);
+
   const parentsQuery = useQuery({
     queryKey: ["parents", { search, page }],
     queryFn: () =>
@@ -162,23 +173,21 @@ function ParentsContent() {
       await invalidate();
     },
     onError: (error) =>
-      setFormError(
-        error instanceof ApiError ? error.message : "Tidak bisa menyimpan akun",
-      ),
+      setFormError(errorMessage(error, "Tidak bisa menyimpan akun")),
   });
 
   const removeMutation = useMutation({
     mutationFn: (vars: { id: number; hard: boolean }) =>
       api.parents.remove(vars.id, vars.hard),
     onSuccess: async (result) => {
+      setPendingRemove(null);
       setBanner({ kind: "ok", text: result.message });
       await invalidate();
     },
-    onError: (error) =>
-      setBanner({
-        kind: "error",
-        text: error instanceof ApiError ? error.message : "Gagal menghapus akun",
-      }),
+    onError: (error) => {
+      setPendingRemove(null);
+      setBanner({ kind: "error", text: errorMessage(error, "Gagal menghapus akun") });
+    },
   });
 
   const resetMutation = useMutation({
@@ -193,7 +202,7 @@ function ParentsContent() {
     onError: (error) =>
       setBanner({
         kind: "error",
-        text: error instanceof ApiError ? error.message : "Gagal mereset password",
+        text: errorMessage(error, "Gagal mereset password"),
       }),
   });
 
@@ -419,11 +428,9 @@ function ParentsContent() {
                           size="sm"
                           className="text-highlight-700 hover:bg-highlight-50"
                           disabled={busy}
-                          onClick={() => {
-                            if (confirm(`Nonaktifkan akun "${parent.username}"?`)) {
-                              removeMutation.mutate({ id: parent.id, hard: false });
-                            }
-                          }}
+                          onClick={() =>
+                            setPendingRemove({ parent, hard: false })
+                          }
                           title="Nonaktifkan"
                         >
                           <UserX className="h-4 w-4" />
@@ -433,15 +440,7 @@ function ParentsContent() {
                           size="sm"
                           className="text-red-600 hover:bg-red-50"
                           disabled={busy}
-                          onClick={() => {
-                            if (
-                              confirm(
-                                `Hapus permanen akun "${parent.username}"? Tindakan ini tidak bisa dibatalkan.`,
-                              )
-                            ) {
-                              removeMutation.mutate({ id: parent.id, hard: true });
-                            }
-                          }}
+                          onClick={() => setPendingRemove({ parent, hard: true })}
                           title="Hapus permanen"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -695,6 +694,42 @@ function ParentsContent() {
           />
         </Field>
       </Modal>
+
+      {/*
+        Satu dialog untuk dua kadar tindakan: menonaktifkan akun masih bisa
+        dibatalkan (akun tinggal diaktifkan lagi), menghapus permanen tidak.
+        Teksnya dibedakan supaya bedanya tidak tersamar.
+      */}
+      <ConfirmDialog
+        open={pendingRemove !== null}
+        title={pendingRemove?.hard ? "Hapus permanen?" : "Nonaktifkan akun?"}
+        description={
+          pendingRemove?.hard ? (
+            <>
+              Akun <strong>{pendingRemove.parent.username}</strong> beserta
+              seluruh datanya akan dihapus permanen. Tindakan ini tidak bisa
+              dibatalkan.
+            </>
+          ) : (
+            <>
+              Akun <strong>{pendingRemove?.parent.username}</strong> akan
+              dinonaktifkan sehingga tidak bisa masuk. Datanya tetap tersimpan
+              dan bisa diaktifkan kembali kapan saja.
+            </>
+          )
+        }
+        confirmLabel={pendingRemove?.hard ? "Hapus permanen" : "Nonaktifkan"}
+        tone={pendingRemove?.hard ? "danger" : "primary"}
+        loading={removeMutation.isPending}
+        onConfirm={() =>
+          pendingRemove &&
+          removeMutation.mutate({
+            id: pendingRemove.parent.id,
+            hard: pendingRemove.hard,
+          })
+        }
+        onClose={() => setPendingRemove(null)}
+      />
     </>
   );
 }

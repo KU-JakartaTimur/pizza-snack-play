@@ -8,6 +8,7 @@ import {
   Badge,
   Button,
   Card,
+  ConfirmDialog,
   EmptyState,
   ErrorState,
   Field,
@@ -15,7 +16,7 @@ import {
   Modal,
   Spinner,
 } from "@/components/ui";
-import { ApiError, api } from "@/lib/api";
+import { api, errorMessage } from "@/lib/api";
 import type { CategoryDto } from "@/types/catalog";
 
 export const Route = createFileRoute("/_app/kategori")({
@@ -37,6 +38,10 @@ function CategoriesContent() {
 
   const [editing, setEditing] = useState<CategoryDto | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  // Kategori yang menunggu ditegaskan penghapusannya. Dialog konfirmasi
+  // menggantikan `confirm()` bawaan peramban, yang tidak bisa diberi nada
+  // maupun gaya dan memblokir seluruh halaman.
+  const [pendingDelete, setPendingDelete] = useState<CategoryDto | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [formError, setFormError] = useState<string | null>(null);
   const [banner, setBanner] = useState<{ kind: "ok" | "error"; text: string } | null>(
@@ -64,22 +69,20 @@ function CategoriesContent() {
       await invalidate();
     },
     onError: (error) =>
-      setFormError(
-        error instanceof ApiError ? error.message : "Tidak bisa menyimpan data",
-      ),
+      setFormError(errorMessage(error, "Tidak bisa menyimpan data")),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.categories.remove(id),
     onSuccess: async (result) => {
+      setPendingDelete(null);
       setBanner({ kind: "ok", text: result.message });
       await invalidate();
     },
-    onError: (error) =>
-      setBanner({
-        kind: "error",
-        text: error instanceof ApiError ? error.message : "Gagal menghapus",
-      }),
+    onError: (error) => {
+      setPendingDelete(null);
+      setBanner({ kind: "error", text: errorMessage(error, "Gagal menghapus") });
+    },
   });
 
   const openCreate = () => {
@@ -184,13 +187,7 @@ function CategoriesContent() {
                     variant="ghost"
                     size="sm"
                     className="text-red-600 hover:bg-red-50"
-                    onClick={() => {
-                      if (
-                        confirm(`Hapus kategori "${category.name}"?`)
-                      ) {
-                        deleteMutation.mutate(category.id);
-                      }
-                    }}
+                    onClick={() => setPendingDelete(category)}
                     title="Hapus"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -254,6 +251,25 @@ function CategoriesContent() {
           )}
         </form>
       </Modal>
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Hapus kategori?"
+        description={
+          <>
+            Kategori <strong>{pendingDelete?.name}</strong> akan dihapus.
+            Kategori yang masih dipakai menu lain tidak bisa dihapus — lepaskan
+            dulu dari menunya.
+          </>
+        }
+        confirmLabel="Hapus"
+        tone="danger"
+        loading={deleteMutation.isPending}
+        onConfirm={() =>
+          pendingDelete && deleteMutation.mutate(pendingDelete.id)
+        }
+        onClose={() => setPendingDelete(null)}
+      />
     </>
   );
 }

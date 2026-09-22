@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { CalendarOff, Trash2, Unlock } from "lucide-react";
-import { Badge, Button, Input, Select } from "@/components/ui";
+import { Badge, Button, ConfirmDialog, Input, Select } from "@/components/ui";
 import { formatCompactDate } from "@/lib/date";
 import type { MenuDto } from "@/types/catalog";
 import type { ScheduleDayDto } from "@/types/schedule";
@@ -44,6 +45,13 @@ export function DayRow({
   onDelete,
 }: DayRowProps) {
   const dayLocked = isDayLocked(day.status);
+
+  /**
+   * Tindakan yang menunggu ditegaskan. Keduanya mengubah jadwal secara
+   * merusak — satu membuka kunci, satu membuang barisnya — jadi keduanya
+   * lewat dialog konfirmasi, bukan `confirm()` bawaan peramban.
+   */
+  const [pending, setPending] = useState<"unlock" | "delete" | null>(null);
 
   /** Kirim perubahan hanya bila nilai teksnya berubah. */
   const saveText = (
@@ -133,11 +141,7 @@ export function DayRow({
             variant="ghost"
             size="sm"
             disabled={busy}
-            onClick={() => {
-              if (confirm(`Buka kunci jadwal ${day.date}?`)) {
-                onUnlock(day.scheduleId!);
-              }
-            }}
+            onClick={() => setPending("unlock")}
             title="Buka kunci jadwal"
           >
             <Unlock className="h-4 w-4" />
@@ -168,17 +172,43 @@ export function DayRow({
             size="sm"
             className="text-red-600 hover:bg-red-50"
             disabled={busy || dayLocked}
-            onClick={() => {
-              if (confirm(`Hapus jadwal ${day.date}?`)) {
-                onDelete(day.scheduleId!);
-              }
-            }}
+            onClick={() => setPending("delete")}
             title="Hapus jadwal"
           >
             <Trash2 className="h-4 w-4" />
           </Button>
         )}
       </div>
+
+      <ConfirmDialog
+        open={pending !== null}
+        title={pending === "unlock" ? "Buka kunci jadwal?" : "Hapus jadwal?"}
+        description={
+          pending === "unlock" ? (
+            <>
+              Jadwal <strong>{formatCompactDate(day.date)}</strong> akan kembali
+              ke status draf sehingga bisa disunting lagi.
+            </>
+          ) : (
+            <>
+              Jadwal <strong>{formatCompactDate(day.date)}</strong>
+              {className ? ` kelas ${className}` : ""} akan dihapus, termasuk
+              menu, petugas, dan catatannya.
+            </>
+          )
+        }
+        confirmLabel={pending === "unlock" ? "Buka kunci" : "Hapus"}
+        tone={pending === "unlock" ? "primary" : "danger"}
+        loading={busy}
+        onConfirm={() => {
+          const scheduleId = day.scheduleId;
+          if (!scheduleId) return;
+          setPending(null);
+          if (pending === "unlock") onUnlock(scheduleId);
+          else onDelete(scheduleId);
+        }}
+        onClose={() => setPending(null)}
+      />
     </li>
   );
 }

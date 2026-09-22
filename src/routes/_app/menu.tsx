@@ -7,6 +7,7 @@ import {
   Badge,
   Button,
   Card,
+  ConfirmDialog,
   EmptyState,
   ErrorState,
   Field,
@@ -16,7 +17,7 @@ import {
   Spinner,
   Textarea,
 } from "@/components/ui";
-import { ApiError, api } from "@/lib/api";
+import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import type { MenuDto, MenuInput, MenuItemType } from "@/types/catalog";
 
@@ -63,6 +64,9 @@ function MenusPage() {
   const [editing, setEditing] = useState<MenuDto | null>(null);
   const [form, setForm] = useState<MenuForm>(EMPTY_FORM);
   const [formError, setFormError] = useState<string | null>(null);
+  // Menu yang menunggu ditegaskan penghapusannya — dialog konfirmasi
+  // menggantikan `confirm()` bawaan peramban.
+  const [pendingDelete, setPendingDelete] = useState<MenuDto | null>(null);
   const [banner, setBanner] = useState<{ kind: "ok" | "error"; text: string } | null>(
     null,
   );
@@ -104,22 +108,23 @@ function MenusPage() {
       await invalidate();
     },
     onError: (error) =>
-      setFormError(
-        error instanceof ApiError ? error.message : "Tidak bisa menyimpan menu",
-      ),
+      setFormError(errorMessage(error, "Tidak bisa menyimpan menu")),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.menus.remove(id),
     onSuccess: async (result) => {
+      setPendingDelete(null);
       setBanner({ kind: "ok", text: result.message });
       await invalidate();
     },
-    onError: (error) =>
+    onError: (error) => {
+      setPendingDelete(null);
       setBanner({
         kind: "error",
-        text: error instanceof ApiError ? error.message : "Gagal menghapus menu",
-      }),
+        text: errorMessage(error, "Gagal menghapus menu"),
+      });
+    },
   });
 
   const openCreate = () => {
@@ -320,11 +325,7 @@ function MenusPage() {
                         variant="ghost"
                         size="sm"
                         className="text-red-600 hover:bg-red-50"
-                        onClick={() => {
-                          if (confirm(`Hapus menu "${menu.name}"?`)) {
-                            deleteMutation.mutate(menu.id);
-                          }
-                        }}
+                        onClick={() => setPendingDelete(menu)}
                         title="Hapus"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -474,6 +475,23 @@ function MenusPage() {
           )}
         </form>
       </Modal>
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Hapus menu?"
+        description={
+          <>
+            Menu <strong>{pendingDelete?.name}</strong> akan dihapus. Bila menu
+            ini sudah dipakai pada jadwal, ia hanya dinonaktifkan (diarsipkan)
+            agar riwayat jadwal tetap utuh.
+          </>
+        }
+        confirmLabel="Hapus"
+        tone="danger"
+        loading={deleteMutation.isPending}
+        onConfirm={() => pendingDelete && deleteMutation.mutate(pendingDelete.id)}
+        onClose={() => setPendingDelete(null)}
+      />
     </>
   );
 }

@@ -213,3 +213,7 @@ dist
 # dan pemindai kelas Tailwind yang mencoba membacanya membuat build CSS gagal
 # (halaman tampil kosong / 500 pada /src/index.css).
 outputs/.edge-profile/
+
+# Berkas Excel hasil unduhan saat verifikasi tampilan — dibuat ulang setiap
+# `outputs/check-export-excel.mjs` dijalankan, jadi tidak perlu ikut berversi.
+outputs/exports/

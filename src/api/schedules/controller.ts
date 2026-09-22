@@ -19,6 +19,13 @@ import {
   responseNotFound,
   responseOK,
 } from "../utils/response";
+import { XLSX_CONTENT_TYPE } from "../utils/xlsx";
+import {
+  buildMonthSheet,
+  buildWeekSheet,
+  monthFilename,
+  weekFilename,
+} from "./export";
 import { scheduleRepository } from "./repository";
 import { scheduleService, type ScheduleError } from "./service";
 
@@ -54,6 +61,26 @@ const FORBIDDEN_CLASS = "Kelas ini bukan cakupan Anda";
 /** Label kelas untuk pesan 409 — sebutkan kelasnya, bukan sekadar "ada draft". */
 function classLabel(classes: string[]): string {
   return classes.map((name) => `kelas ${name}`).join(", ");
+}
+
+/**
+ * Bungkus byte `.xlsx` menjadi respons unduhan.
+ *
+ * Nama berkas hanya bisa dikirim lewat `Content-Disposition` — itu satu-satunya
+ * cara browser menamai berkas yang disimpan, karena nama di URL selalu
+ * ditimpa. `no-store` dipasang karena isi berkas berubah begitu jadwal diubah.
+ */
+function xlsxResponse(
+  c: ScheduleContext,
+  bytes: Uint8Array<ArrayBuffer>,
+  filename: string,
+) {
+  return c.body(bytes, 200, {
+    "Content-Type": XLSX_CONTENT_TYPE,
+    "Content-Disposition": `attachment; filename="${filename}"`,
+    "Content-Length": String(bytes.length),
+    "Cache-Control": "no-store",
+  });
 }
 
 /**
@@ -253,6 +280,54 @@ class ScheduleController {
       scope.className,
     );
     return responseOK(c, "Riwayat menu", data);
+  };
+
+  /**
+   * Unduh jadwal sebagai berkas Excel.
+   * `GET /schedules/export?scope=week|month&date=…|year=…&month=…&class=…`
+   *
+   * Cakupan kelasnya memakai aturan baca yang sama dengan `/week` dan `/month`
+   * (`resolveReadClass`), jadi kelas yang terunduh selalu kelas yang sedang
+   * dilihat di layar. Dibatasi admin & korlas di route: berkasnya memuat
+   * seluruh status jadwal (draft/terkunci/dipublikasi), bukan hanya yang
+   * sudah dipublikasi seperti yang boleh dilihat orang tua.
+   */
+  exportSchedule = async (c: ScheduleContext) => {
+    const scopeParam = c.req.query("scope");
+    if (scopeParam !== "week" && scopeParam !== "month") {
+      return responseBadRequest(c, "Parameter `scope` harus `week` atau `month`");
+    }
+
+    const db = getDb(c.env);
+    const user = c.get("user");
+    const scope = await resolveReadClass(db, user, c.req.query("class"));
+    if (!scope.ok) return mapScopeError(c, scope.error);
+
+    if (scopeParam === "week") {
+      const date = c.req.query("date");
+
+      if (date !== undefined && !isIsoDate(date)) {
+        return responseBadRequest(c, "Parameter `date` harus format YYYY-MM-DD");
+      }
+
+      const data = await scheduleService.getWeek(db, scope.className, user.role, date);
+      return xlsxResponse(c, buildWeekSheet(data), weekFilename(data));
+    }
+
+    const year = Number.parseInt(c.req.query("year") ?? "", 10);
+    const month = Number.parseInt(c.req.query("month") ?? "", 10);
+
+    const error = validateYearMonth(year, month);
+    if (error) return responseBadRequest(c, error);
+
+    const data = await scheduleService.getMonth(
+      db,
+      year,
+      month,
+      scope.className,
+      user.role,
+    );
+    return xlsxResponse(c, buildMonthSheet(data), monthFilename(data));
   };
 
   // ── Penulisan (admin & korlas) ──────────────────────────────

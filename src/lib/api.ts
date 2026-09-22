@@ -74,6 +74,38 @@ async function messageFrom(error: HTTPError): Promise<string> {
   return `Terjadi kesalahan (${error.response.status})`;
 }
 
+/** Nama berkas dari header `Content-Disposition`, fallback bila tidak ada. */
+function filenameFrom(header: string | null, fallback: string): string {
+  const match = header?.match(/filename="?([^";]+)"?/i);
+  return match?.[1]?.trim() || fallback;
+}
+
+/**
+ * Unduhan berkas — tidak memakai envelope `{ message, data }` seperti
+ * pemanggil lain, karena responsnya biner. Nama berkas tetap dibaca dari
+ * `Content-Disposition` supaya penamaan ditentukan server, bukan klien.
+ */
+async function unwrapFile(
+  promise: Promise<Response>,
+  fallbackName: string,
+): Promise<{ blob: Blob; filename: string }> {
+  try {
+    const response = await promise;
+    return {
+      blob: await response.blob(),
+      filename: filenameFrom(
+        response.headers.get("Content-Disposition"),
+        fallbackName,
+      ),
+    };
+  } catch (error) {
+    if (error instanceof HTTPError) {
+      throw new ApiError(await messageFrom(error), error.response.status);
+    }
+    throw error;
+  }
+}
+
 /** Buka envelope `{ message, data }` dan kembalikan `data` saja. */
 async function unwrap<T>(promise: Promise<Response>): Promise<T> {
   try {
@@ -247,6 +279,34 @@ export const api = {
 
     weeks: (year: number, month: number) =>
       unwrap<WeekDto[]>(http.get(`weeks${query({ year, month })}`)),
+
+    /**
+     * Unduh jadwal sebagai berkas Excel — **admin & korlas saja**.
+     *
+     * `className` sebaiknya diisi kelas yang sedang tampil di layar, supaya
+     * berkasnya sama persis dengan yang dilihat pemakai. Bila dikosongkan,
+     * server memakai kelas pertama cakupan user (perilaku `resolveReadClass`
+     * yang sama dengan `/week` dan `/month`).
+     */
+    exportXlsx: (params: {
+      scope: "week" | "month";
+      date?: string;
+      year?: number;
+      month?: number;
+      className?: string | null;
+    }) =>
+      unwrapFile(
+        http.get(
+          `schedules/export${query({
+            scope: params.scope,
+            date: params.date,
+            year: params.year,
+            month: params.month,
+            class: params.className ?? undefined,
+          })}`,
+        ),
+        `jadwal-${params.scope}.xlsx`,
+      ),
   },
 
   /**

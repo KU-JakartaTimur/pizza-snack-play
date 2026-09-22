@@ -2089,6 +2089,223 @@ section("20. Login as — admin membuka sesi korlas/orang tua");
   );
 }
 
+// ── 8. Ekspor Excel ───────────────────────────────────────────
+
+section("21. Ekspor Excel — admin & korlas");
+{
+  const XLSX_TYPE =
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+  /**
+   * Ambil respons mentah. `call()` tidak bisa dipakai di sini karena ia
+   * membaca JSON, sedangkan isi endpoint ini biner.
+   */
+  const raw = (path, token) =>
+    fetch(`${BASE}${path}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+
+  /**
+   * Berkas disusun dengan metode ZIP *store* (tanpa kompresi), jadi nama
+   * bagian arsip dan seluruh XML-nya bisa dicari langsung di dalam byte.
+   */
+  const asText = async (response) =>
+    Buffer.from(new Uint8Array(await response.arrayBuffer())).toString("latin1");
+
+  const korlasLogin = await call("POST", "/auth/login", { body: KORLAS });
+  const korlasToken = korlasLogin.data?.token;
+  const korlasClass = korlasLogin.data?.user?.className;
+
+  const adminClasses =
+    (await call("GET", "/classes", { token: adminToken })).data?.classes ?? [];
+  const kelasUji = adminClasses[0];
+  const kelasLain = adminClasses.find((name) => name !== korlasClass);
+
+  check("ada kelas untuk diuji", Boolean(kelasUji), JSON.stringify(adminClasses));
+
+  // ── Penjagaan akses: hanya admin & korlas ───────────────────
+  const anonymous = await raw("/schedules/export?scope=week");
+  check("tanpa token -> 401", anonymous.status === 401, `got ${anonymous.status}`);
+
+  const byParent = await raw("/schedules/export?scope=week", parentToken);
+  check(
+    "orang tua mengunduh jadwal -> 403",
+    byParent.status === 403,
+    `got ${byParent.status}`,
+  );
+
+  const parentMonth = await raw(
+    "/schedules/export?scope=month&year=2026&month=9",
+    parentToken,
+  );
+  check(
+    "orang tua mengunduh bulanan -> 403",
+    parentMonth.status === 403,
+    `got ${parentMonth.status}`,
+  );
+
+  // ── Sepekan (admin) ─────────────────────────────────────────
+  const week = await raw(
+    `/schedules/export?scope=week&class=${encodeURIComponent(kelasUji)}`,
+    adminToken,
+  );
+  check("admin mengunduh sepekan -> 200", week.status === 200, `got ${week.status}`);
+  check(
+    "Content-Type berkas Excel",
+    week.headers.get("content-type") === XLSX_TYPE,
+    week.headers.get("content-type"),
+  );
+
+  const weekDisposition = week.headers.get("content-disposition") ?? "";
+  check(
+    "nama berkas sepekan menyebut kelas & tanggal",
+    /^attachment; filename="jadwal-sepekan-kelas-.+-\d{4}-\d{2}-\d{2}\.xlsx"$/.test(
+      weekDisposition,
+    ),
+    weekDisposition,
+  );
+  check(
+    "berkas ditandai tidak boleh di-cache",
+    week.headers.get("cache-control") === "no-store",
+    week.headers.get("cache-control"),
+  );
+
+  const weekBytes = new Uint8Array(await week.arrayBuffer());
+  check(
+    "berkas berawalan tanda tangan ZIP (PK)",
+    weekBytes[0] === 0x50 && weekBytes[1] === 0x4b,
+    `${weekBytes[0]},${weekBytes[1]}`,
+  );
+  check(
+    "Content-Length sesuai panjang isi",
+    week.headers.get("content-length") === String(weekBytes.length),
+    `${week.headers.get("content-length")} vs ${weekBytes.length}`,
+  );
+
+  const weekText = Buffer.from(weekBytes).toString("latin1");
+  for (const part of [
+    "[Content_Types].xml",
+    "xl/workbook.xml",
+    "xl/styles.xml",
+    "xl/worksheets/sheet1.xml",
+  ]) {
+    check(`isi arsip memuat ${part}`, weekText.includes(part));
+  }
+
+  for (const label of [
+    "Jadwal Snack Sepekan",
+    "Hari",
+    "Tanggal",
+    "Komponen menu",
+    "Orang tua petugas",
+    "Senin",
+    "Jumat",
+    "Ringkasan",
+  ]) {
+    check(`lembar sepekan memuat "${label}"`, weekText.includes(label));
+  }
+
+  // ── Sepekan (korlas) ────────────────────────────────────────
+  const korlasWeek = await raw("/schedules/export?scope=week", korlasToken);
+  check(
+    "korlas mengunduh sepekan -> 200",
+    korlasWeek.status === 200,
+    `got ${korlasWeek.status}`,
+  );
+  check(
+    "nama berkas korlas menyebut kelasnya",
+    /filename="jadwal-sepekan-kelas-[^"]+\.xlsx"/.test(
+      korlasWeek.headers.get("content-disposition") ?? "",
+    ),
+    korlasWeek.headers.get("content-disposition"),
+  );
+
+  const korlasText = await asText(korlasWeek);
+  check(
+    "lembar korlas menyebut kelas yang dikoordinasinya",
+    korlasText.includes(`Kelas ${korlasClass}`),
+    `Kelas ${korlasClass}`,
+  );
+
+  if (kelasLain) {
+    // Korlas boleh **membaca** kelas lain (aturan `resolveReadClass` yang sama
+    // dengan `/week` & `/month` — lihat bagian 19), jadi mengunduh kelas lain
+    // pun terbuka; yang tertutup adalah wewenang menulisnya. Yang diuji di
+    // sini: `class` benar-benar dihormati, bukan diam-diam ditimpa kelasnya.
+    const other = await raw(
+      `/schedules/export?scope=week&class=${encodeURIComponent(kelasLain)}`,
+      korlasToken,
+    );
+    check(
+      "korlas mengunduh kelas lain -> 200 (baca lintas kelas)",
+      other.status === 200,
+      `got ${other.status}`,
+    );
+
+    const otherText = await asText(other);
+    check(
+      "kelas yang diminta benar-benar dipakai",
+      otherText.includes(`Kelas ${kelasLain}`) &&
+        !otherText.includes(`Kelas ${korlasClass}`),
+      `diminta Kelas ${kelasLain}, punya Kelas ${korlasClass}`,
+    );
+  }
+
+  // ── Bulanan (admin) ─────────────────────────────────────────
+  const month = await raw(
+    `/schedules/export?scope=month&year=2026&month=9&class=${encodeURIComponent(kelasUji)}`,
+    adminToken,
+  );
+  check("admin mengunduh bulanan -> 200", month.status === 200, `got ${month.status}`);
+  check(
+    "nama berkas bulanan memuat tahun-bulan",
+    /filename="jadwal-bulanan-2026-09-kelas-[^"]+\.xlsx"/.test(
+      month.headers.get("content-disposition") ?? "",
+    ),
+    month.headers.get("content-disposition"),
+  );
+
+  const monthText = await asText(month);
+  check(
+    "lembar bulanan memuat judul bulan",
+    monthText.includes("Jadwal Snack September 2026"),
+  );
+  // Kepala tabel diulang per pekan — satu bulan pasti lebih dari satu blok.
+  check(
+    "kepala tabel diulang tiap pekan",
+    (monthText.match(/Komponen menu/g) ?? []).length > 1,
+    `${(monthText.match(/Komponen menu/g) ?? []).length} blok`,
+  );
+  check(
+    "nama lembar bulanan = bulan + tahun",
+    monthText.includes('name="September 2026"'),
+  );
+
+  // Bulan tanpa jadwal tetap harus menghasilkan berkas yang bisa dibuka,
+  // bukan galat — admin kadang mengunduh sebelum jadwalnya disusun.
+  const emptyMonth = await raw(
+    "/schedules/export?scope=month&year=2033&month=1",
+    adminToken,
+  );
+  check(
+    "bulan tanpa jadwal tetap menghasilkan berkas -> 200",
+    emptyMonth.status === 200,
+    `got ${emptyMonth.status}`,
+  );
+
+  // ── Validasi parameter ──────────────────────────────────────
+  for (const [label, path] of [
+    ["`scope` kosong", "/schedules/export"],
+    ["`scope` asing", "/schedules/export?scope=year"],
+    ["`date` salah format", "/schedules/export?scope=week&date=22-09-2026"],
+    ["`year`/`month` kosong", "/schedules/export?scope=month"],
+    ["`month` di luar 1–12", "/schedules/export?scope=month&year=2026&month=13"],
+  ]) {
+    const r = await raw(path, adminToken);
+    check(`${label} -> 400`, r.status === 400, `got ${r.status}`);
+  }
+}
+
 // ── Ringkasan ─────────────────────────────────────────────────
 
 console.log(`\n=== HASIL: ${pass} pass, ${fail} fail ===`);

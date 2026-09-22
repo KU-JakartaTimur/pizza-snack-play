@@ -25,8 +25,8 @@ const scheduleWriters = requireRole("admin", "korlas");
  * sesuai role (lihat `resolveReadClass`).
  *
  * Rute statis (`/today`, `/week`, `/month`, `/status`, `/range`, `/search`,
- * `/lock`, `/publish`) didaftarkan sebelum `/:id` agar tidak tertangkap
- * sebagai parameter ID.
+ * `/export`, `/lock`, `/publish`) didaftarkan sebelum `/:id` agar tidak
+ * tertangkap sebagai parameter ID.
  *
  * Kunci (`/lock`) dan publikasi (`/publish`):
  * - Admin dapat mengosongkan `className` (atau kirim `"*"`) untuk menerapkan
@@ -43,6 +43,12 @@ export const schedulesRoute = new Hono<AuthEnv>()
   .get("/status", requireAuth, scheduleController.status)
   .get("/range", requireAuth, scheduleController.range)
   .get("/search", requireAuth, scheduleController.search)
+  /**
+   * Unduh jadwal sebagai berkas Excel (`.xlsx`) — **admin & korlas saja**.
+   * Orang tua tidak butuh: jadwalnya sudah tampil di layar, dan berkasnya
+   * memuat status internal (draft/terkunci) yang bukan urusannya.
+   */
+  .get("/export", requireAuth, scheduleWriters, scheduleController.exportSchedule)
   .get("/:id", requireAuth, scheduleController.detail)
   .post("/", requireAuth, scheduleWriters, scheduleController.create)
   .post("/copy", requireAuth, scheduleWriters, scheduleController.copy)

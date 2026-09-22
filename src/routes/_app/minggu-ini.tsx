@@ -4,9 +4,11 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/AppShell";
 import { ScheduleDayCard } from "@/components/ScheduleDayCard";
+import { ExportButton } from "@/components/jadwal/ExportButton";
 import { Button, Card, ErrorState, Spinner } from "@/components/ui";
 import { useActiveClass } from "@/lib/active-class";
 import { api } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import { addDays, formatWeekLabel, todayInWib } from "@/lib/date";
 
 export const Route = createFileRoute("/_app/minggu-ini")({
@@ -17,6 +19,7 @@ function WeekPage() {
   // `anchor` adalah tanggal mana pun dalam minggu yang sedang dilihat.
   const [anchor, setAnchor] = useState(todayInWib);
   const activeClass = useActiveClass();
+  const { canManageSchedule } = useAuth();
 
   const weekQuery = useQuery({
     queryKey: ["schedules", "week", anchor, activeClass],
@@ -74,6 +77,19 @@ function WeekPage() {
             </button>
           </div>
         </div>
+
+        {canManageSchedule && (
+          <div className="border-t border-slate-200 px-5 py-3">
+            {/* Kelas yang diunduh sengaja `shownClass` — persis yang tampil
+                di layar, bukan sekadar kelas aktif di pemilih kelas. */}
+            <ExportButton
+              scope="week"
+              date={anchor}
+              className={shownClass}
+              disabled={!weekQuery.data}
+            />
+          </div>
+        )}
       </Card>
 
       {weekQuery.isPending && <Spinner />}

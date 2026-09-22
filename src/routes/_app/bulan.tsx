@@ -4,9 +4,11 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/AppShell";
 import { ScheduleDayCard } from "@/components/ScheduleDayCard";
+import { ExportButton } from "@/components/jadwal/ExportButton";
 import { Button, Card, ErrorState, Spinner } from "@/components/ui";
 import { useActiveClass } from "@/lib/active-class";
 import { api } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import { indonesianMonthName, monthOf, yearOf, todayInWib } from "@/lib/date";
 
 export const Route = createFileRoute("/_app/bulan")({
@@ -18,6 +20,7 @@ function MonthPage() {
   const [year, setYear] = useState(() => yearOf(today));
   const [month, setMonth] = useState(() => monthOf(today));
   const activeClass = useActiveClass();
+  const { canManageSchedule } = useAuth();
 
   const monthQuery = useQuery({
     queryKey: ["schedules", "month", year, month, activeClass],
@@ -93,6 +96,20 @@ function MonthPage() {
             </div>
           )}
         </div>
+
+        {canManageSchedule && (
+          <div className="border-t border-slate-200 px-5 py-3">
+            {/* Kelas yang diunduh sengaja kelas yang tampil di layar, bukan
+                sekadar kelas aktif di pemilih kelas. */}
+            <ExportButton
+              scope="month"
+              year={year}
+              month={month}
+              className={monthQuery.data?.className ?? activeClass}
+              disabled={!monthQuery.data}
+            />
+          </div>
+        )}
       </Card>
 
       {monthQuery.isPending && <Spinner />}

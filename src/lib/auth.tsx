@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { AuthUser } from "@/types/auth";
 import { api } from "./api";
-import { AuthContext, TOKEN_KEY, type AuthContextValue } from "./auth-context";
+import {
+  AuthContext,
+  TOKEN_KEY,
+  type AuthContextValue,
+  type LoginResult,
+} from "./auth-context";
 
 interface AuthState {
   token: string | null;
@@ -33,9 +38,11 @@ function initialState(): AuthState {
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>(initialState);
+  const { token, isReady } = state;
 
+  // Token yang tersimpan belum dipercaya begitu saja: verifikasi ke server
+  // sekali saat aplikasi dimuat, lalu bersihkan sesi bila ditolak.
   useEffect(() => {
-    const { token, isReady } = state;
     if (!token || isReady) return;
 
     let cancelled = false;
@@ -56,14 +63,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [state]);
+  }, [token, isReady]);
 
-  const login = useCallback(async (username: string, password: string) => {
-    const { data } = await api.auth.login({ username, password });
-    localStorage.setItem(TOKEN_KEY, data.token);
-    // Sesi sudah lengkap — tidak perlu verifikasi ulang.
-    setState({ token: data.token, user: data.user, isReady: true });
-  }, []);
+  const login = useCallback(
+    async (username: string, password: string): Promise<LoginResult> => {
+      const { message, data } = await api.auth.login({ username, password });
+      localStorage.setItem(TOKEN_KEY, data.token);
+      // Sesi sudah lengkap — tidak perlu verifikasi ulang.
+      setState({ token: data.token, user: data.user, isReady: true });
+      return { message, user: data.user };
+    },
+    [],
+  );
 
   const logout = useCallback(() => {
     // JWT stateless — cukup buang token; panggilan server hanya untuk audit.

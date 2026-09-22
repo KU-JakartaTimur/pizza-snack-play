@@ -15,7 +15,7 @@ import {
   Modal,
   Spinner,
 } from "@/components/ui";
-import { ApiError, api } from "@/lib/api";
+import { ApiError, api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import type { StudentProfile } from "@/types/auth";
 
@@ -64,11 +64,7 @@ function ProfilePage() {
       setNewPassword("");
       setConfirmPassword("");
     } catch (error) {
-      setMessage({
-        kind: "error",
-        text:
-          error instanceof ApiError ? error.message : "Tidak bisa menghubungi server",
-      });
+      setMessage({ kind: "error", text: errorMessage(error) });
     } finally {
       setSubmitting(false);
     }
@@ -235,9 +231,7 @@ function ChildrenCard() {
       await syncAfterChange();
     },
     onError: (error) => {
-      setFormError(
-        error instanceof ApiError ? error.message : "Tidak bisa menghubungi server",
-      );
+      setFormError(errorMessage(error));
     },
   });
 
@@ -248,11 +242,7 @@ function ChildrenCard() {
       await syncAfterChange();
     },
     onError: (error) => {
-      setBanner({
-        kind: "error",
-        text:
-          error instanceof ApiError ? error.message : "Tidak bisa menghubungi server",
-      });
+      setBanner({ kind: "error", text: errorMessage(error) });
     },
   });
 

@@ -23,6 +23,29 @@ if (!fs.existsSync(SHOTS)) fs.mkdirSync(SHOTS, { recursive: true });
 const log = (label, value) => console.log(`${label}: ${value}`);
 const sleep = (ms) => Bun.sleep(ms);
 
+/**
+ * Masuk sebagai `username`, lalu tutup popup "Login berhasil" lewat tombol
+ * "Mulai". Sejak popup sambutan ada, pengalihan ke aplikasi tidak lagi
+ * otomatis — lihat `outputs/check-auth-popup.mjs`.
+ */
+async function loginAs(page, username, password = "snack123") {
+  await page.goto("/login", { baseUrl: BASE });
+  await page.setValue('input[placeholder="mis. sari"]', username);
+  await page.setValue('input[type="password"]', password);
+  await page.clickByText("Masuk");
+  await page.waitFor(
+    `document.querySelector('[role="dialog"]')?.innerText.includes('Login berhasil')`,
+    "popup login berhasil",
+  );
+  await page.evaluate(`(function () {
+    const dialog = document.querySelector('[role="dialog"]');
+    [...dialog.querySelectorAll("button")]
+      .find((button) => button.textContent.includes("Mulai"))
+      .click();
+  })()`);
+  await page.waitFor("location.pathname !== '/login'", "masuk ke aplikasi");
+}
+
 // Profil WAJIB di luar folder proyek — lihat SKILL.md.
 const page = await launchEdge({
   port: 9333,
@@ -33,11 +56,7 @@ try {
   // ── 1. Login sebagai orang tua ──────────────────────────────
   await page.goto("/login", { baseUrl: BASE });
   await page.evaluate("localStorage.clear()");
-  await page.goto("/login", { baseUrl: BASE });
-  await page.setValue('input[placeholder="mis. sari"]', "sari");
-  await page.setValue('input[type="password"]', "snack123");
-  await page.clickByText("Masuk");
-  await page.waitFor("location.pathname !== '/login'", "login selesai");
+  await loginAs(page, "sari");
   log("1. login berhasil", await page.evaluate("location.pathname"));
 
   // ── 2. Menu Profil ──────────────────────────────────────────
@@ -131,11 +150,7 @@ try {
 
   // ── 6. Admin tidak melihat kartu Data Anak ──────────────────
   await page.evaluate("localStorage.clear()");
-  await page.goto("/login", { baseUrl: BASE });
-  await page.setValue('input[placeholder="mis. sari"]', "admin");
-  await page.setValue('input[type="password"]', "snack123");
-  await page.clickByText("Masuk");
-  await page.waitFor("location.pathname !== '/login'", "login admin");
+  await loginAs(page, "admin");
   await page.goto("/profil", { baseUrl: BASE });
   await sleep(700);
   log(

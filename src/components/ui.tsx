@@ -1,11 +1,20 @@
-import type {
-  ButtonHTMLAttributes,
-  InputHTMLAttributes,
-  ReactNode,
-  SelectHTMLAttributes,
-  TextareaHTMLAttributes,
+import {
+  useEffect,
+  type ButtonHTMLAttributes,
+  type InputHTMLAttributes,
+  type ReactNode,
+  type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
 } from "react";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { createPortal } from "react-dom";
+import {
+  AlertCircle,
+  AlertTriangle,
+  CheckCircle2,
+  HelpCircle,
+  Loader2,
+  type LucideIcon,
+} from "lucide-react";
 import { cn, cnControl } from "@/lib/cn";
 
 // ── Button ────────────────────────────────────────────────────
@@ -273,6 +282,17 @@ export function EmptyState({
 
 // ── Modal ─────────────────────────────────────────────────────
 
+/**
+ * Cangkang dialog: latar gelap + kotak putih berjudul dengan tombol tutup.
+ *
+ * Digambar lewat portal ke `document.body`, bukan di tempat ia ditulis. Ini
+ * bukan hiasan: header aplikasi memakai `backdrop-blur`, dan elemen ber-filter
+ * menjadi acuan posisi untuk keturunan `fixed` — dialog yang dideklarasikan di
+ * dalam header akan terkurung dan terpotong olehnya.
+ *
+ * `Esc` menutup dialog. Klik pada latar sengaja **tidak** menutup, agar isian
+ * formulir tidak hilang karena salah sentuh.
+ */
 export function Modal({
   open,
   title,
@@ -286,10 +306,24 @@ export function Modal({
   children: ReactNode;
   footer?: ReactNode;
 }) {
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open, onClose]);
+
   if (!open) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-brand-950/45 p-4 sm:p-8">
+  return createPortal(
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-brand-950/45 p-4 sm:p-8"
+    >
       <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl border border-slate-200 my-auto">
         <div className="brand-stripe rounded-t-2xl" />
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
@@ -310,6 +344,118 @@ export function Modal({
           </div>
         )}
       </div>
+    </div>,
+    document.body,
+  );
+}
+
+// ── Dialog siap pakai ─────────────────────────────────────────
+
+export type DialogTone = "primary" | "danger" | "success";
+
+/** Ikon dan warna lingkaran ikon per nada dialog — dijaga di satu tempat. */
+const DIALOG_TONES: Record<DialogTone, { icon: LucideIcon; badge: string }> = {
+  primary: { icon: HelpCircle, badge: "bg-brand-50 text-brand-700" },
+  danger: { icon: AlertTriangle, badge: "bg-red-50 text-red-600" },
+  success: { icon: CheckCircle2, badge: "bg-accent-50 text-accent-700" },
+};
+
+/** Isi dialog: ikon bernada di kiri, penjelasan di kanan. */
+function DialogBody({ tone, children }: { tone: DialogTone; children: ReactNode }) {
+  const { icon: Icon, badge } = DIALOG_TONES[tone];
+
+  return (
+    <div className="flex items-start gap-3">
+      <span
+        className={cn(
+          "flex h-9 w-9 shrink-0 items-center justify-center rounded-full",
+          badge,
+        )}
+      >
+        <Icon className="h-5 w-5" />
+      </span>
+      <div className="pt-1.5 text-sm text-slate-600">{children}</div>
     </div>
+  );
+}
+
+/**
+ * Dialog konfirmasi untuk tindakan yang perlu ditegaskan lebih dulu —
+ * mis. keluar dari sesi atau menghapus data. Pakai `tone="danger"` bila
+ * tindakannya membuang sesuatu.
+ */
+export function ConfirmDialog({
+  open,
+  title,
+  description,
+  confirmLabel = "Ya, lanjutkan",
+  cancelLabel = "Batal",
+  tone = "primary",
+  loading = false,
+  onConfirm,
+  onClose,
+}: {
+  open: boolean;
+  title: string;
+  description: ReactNode;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  tone?: DialogTone;
+  /** Menahan kedua tombol selama tindakannya masih diproses. */
+  loading?: boolean;
+  onConfirm: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <Modal
+      open={open}
+      title={title}
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose} disabled={loading}>
+            {cancelLabel}
+          </Button>
+          <Button
+            variant={tone === "danger" ? "danger" : "primary"}
+            onClick={onConfirm}
+            loading={loading}
+          >
+            {confirmLabel}
+          </Button>
+        </>
+      }
+    >
+      <DialogBody tone={tone}>{description}</DialogBody>
+    </Modal>
+  );
+}
+
+/**
+ * Dialog pemberitahuan bahwa sebuah tindakan berhasil — dipakai bila pengguna
+ * perlu tahu hasilnya sebelum melanjutkan (mis. sesudah login).
+ */
+export function SuccessDialog({
+  open,
+  title,
+  description,
+  actionLabel = "OK",
+  onClose,
+}: {
+  open: boolean;
+  title: string;
+  description: ReactNode;
+  actionLabel?: string;
+  onClose: () => void;
+}) {
+  return (
+    <Modal
+      open={open}
+      title={title}
+      onClose={onClose}
+      footer={<Button onClick={onClose}>{actionLabel}</Button>}
+    >
+      <DialogBody tone="success">{description}</DialogBody>
+    </Modal>
   );
 }

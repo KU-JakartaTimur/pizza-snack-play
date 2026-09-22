@@ -4,6 +4,13 @@ import type { AuthUser, StudentProfile } from "@/types/auth";
 /** Kunci `localStorage` untuk JWT. Dipakai juga oleh `lib/http.ts`. */
 export const TOKEN_KEY = "psp_token";
 
+/** Hasil login yang berhasil — dipakai halaman masuk untuk popup sambutan. */
+export interface LoginResult {
+  /** Pesan sukses dari server, mis. "Login berhasil". */
+  message: string;
+  user: AuthUser;
+}
+
 export interface AuthContextValue {
   user: AuthUser | null;
   /**
@@ -32,7 +39,12 @@ export interface AuthContextValue {
   canManageSchedule: boolean;
   /** Boleh mengelola katalog menu & kategori: **admin saja**. */
   canManageCatalog: boolean;
-  login: (username: string, password: string) => Promise<void>;
+  /**
+   * Masuk dan simpan sesinya. Mengembalikan pesan sukses beserta profil
+   * pemakainya supaya pemanggil bisa menyambut (mis. popup "Login berhasil")
+   * tanpa perlu menebak siapa yang baru masuk.
+   */
+  login: (username: string, password: string) => Promise<LoginResult>;
   /**
    * Ambil ulang profil dari server (`/auth/me`) dan perbarui `user` beserta
    * `students` di konteks. Dipakai setelah user mengubah datanya sendiri —

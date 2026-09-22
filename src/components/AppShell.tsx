@@ -1,27 +1,23 @@
 import type { ReactNode } from "react";
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { LogOut, UserCircle } from "lucide-react";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/cn";
+import { AccountMenu } from "./AccountMenu";
 import { BottomNav } from "./BottomNav";
-import { ClassSwitcher } from "./ClassSwitcher";
 import { PWAInstallPrompt } from "./PWAInstallPrompt";
-import { visibleNavItems } from "./navItems";
+import { visibleNavItems, type NavItem } from "./navItems";
 import { usePWA } from "@/hooks/usePWA";
 import logo from "@/assets/logo.png";
 
+/**
+ * Kerangka halaman yang butuh login: header lengket (logo, akun, menu), isi
+ * halaman, catatan kaki, dan bilah navigasi bawah untuk PWA terpasang.
+ *
+ * Perilaku tiap bagian dirawat di komponennya sendiri — `AccountMenu` memegang
+ * identitas & keluar, `HeaderNav` daftar menu, `BottomNav` bilah bawah.
+ */
 export function AppShell({ children }: { children: ReactNode }) {
-  const {
-    user,
-    students,
-    isAdmin,
-    isKorlas,
-    korlasClass,
-    canManageSchedule,
-    canManageCatalog,
-    logout,
-  } = useAuth();
-  const navigate = useNavigate();
+  const { isAdmin, canManageSchedule, canManageCatalog } = useAuth();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
 
   // Saat PWA terpasang, bilah menu dipindahkan ke bawah layar.
@@ -29,77 +25,15 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const items = visibleNavItems({ isAdmin, canManageSchedule, canManageCatalog });
 
-  // Korlas tetap orang tua murid, tapi perannya ditampilkan tersendiri
-  // beserta kelas yang dikoordinasinya.
-  const roleLabel = isAdmin
-    ? "Admin"
-    : isKorlas
-      ? `Korlas${korlasClass ? ` ${korlasClass}` : ""}`
-      : "Orang tua";
-
-  // Ringkas daftar anak agar muat di header; rinciannya lewat tooltip.
-  const studentLabel =
-    students.length === 0
-      ? ""
-      : students.length === 1
-        ? ` · ${students[0].name}`
-        : ` · ${students.length} anak`;
-
-  const studentTooltip = students
-    .map((s) => `${s.name}${s.className ? ` (${s.className})` : ""}`)
-    .join(", ");
-
-  const handleLogout = () => {
-    logout();
-    void navigate({ to: "/login" });
-  };
-
   return (
     <div className="min-h-screen bg-canvas">
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
         <div className="brand-stripe" />
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="flex h-16 items-center justify-between gap-4">
-            <Link to="/hari-ini" className="flex items-center gap-2.5 shrink-0">
-              <span className="relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl shadow-sm">
-                <img src={logo} alt="Pizza Snack Play" className="h-full w-full object-cover" />
-              </span>
-              <span className="hidden sm:block">
-                <span className="block font-bold leading-tight text-slate-900">
-                  Pizza Snack Play
-                </span>
-                <span className="block text-xs text-slate-500">
-                  Jadwal snack sekolah
-                </span>
-              </span>
-            </Link>
-
+            <HomeLink />
             <div className="flex items-center gap-3">
-              <ClassSwitcher />
-              <div className="hidden text-right sm:block">
-                <p className="text-sm font-medium text-slate-800 leading-tight">
-                  {user?.fullName ?? user?.username}
-                </p>
-                <p className="text-xs text-slate-500" title={studentTooltip || undefined}>
-                  {roleLabel}
-                  {studentLabel}
-                </p>
-              </div>
-              <Link
-                to="/profil"
-                className="rounded-lg p-2 text-slate-500 hover:bg-brand-50 hover:text-brand-700"
-                title="Profil & ubah password"
-              >
-                <UserCircle className="h-5 w-5" />
-              </Link>
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="rounded-lg p-2 text-slate-500 hover:bg-red-50 hover:text-red-600"
-                title="Keluar"
-              >
-                <LogOut className="h-5 w-5" />
-              </button>
+              <AccountMenu />
             </div>
           </div>
 
@@ -108,31 +42,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             mengambil alih perannya, dan menampilkan keduanya sekaligus hanya
             menduplikasi tujuan yang sama.
           */}
-          <nav
-            className={cn(
-              "-mb-px flex gap-1 overflow-x-auto pb-px",
-              isInstalled && "hidden",
-            )}
-          >
-            {items.map(({ to, label, icon: Icon }) => {
-              const active = pathname === to;
-              return (
-                <Link
-                  key={to}
-                  to={to}
-                  className={cn(
-                    "flex shrink-0 items-center gap-2 border-b-2 px-3 py-2.5 text-sm font-medium transition-colors",
-                    active
-                      ? "border-brand-600 text-brand-700"
-                      : "border-transparent text-slate-500 hover:border-accent-400 hover:text-brand-700",
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  {label}
-                </Link>
-              );
-            })}
-          </nav>
+          <HeaderNav items={items} pathname={pathname} hidden={isInstalled} />
         </div>
       </header>
 
@@ -150,6 +60,61 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* Bilah bawah hanya muncul bila aplikasi sudah dipasang (PWA). */}
       <BottomNav />
     </div>
+  );
+}
+
+/** Logo + nama aplikasi, sekaligus jalan pulang ke halaman utama. */
+function HomeLink() {
+  return (
+    <Link to="/hari-ini" className="flex items-center gap-2.5 shrink-0">
+      <span className="relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl shadow-sm">
+        <img
+          src={logo}
+          alt="Pizza Snack Play"
+          className="h-full w-full object-cover"
+        />
+      </span>
+      <span className="hidden sm:block">
+        <span className="block font-bold leading-tight text-slate-900">
+          Pizza Snack Play
+        </span>
+        <span className="block text-xs text-slate-500">Jadwal snack sekolah</span>
+      </span>
+    </Link>
+  );
+}
+
+/** Menu utama di bawah header; `hidden` menyembunyikannya saat PWA terpasang. */
+function HeaderNav({
+  items,
+  pathname,
+  hidden,
+}: {
+  items: NavItem[];
+  pathname: string;
+  hidden: boolean;
+}) {
+  return (
+    <nav className={cn("-mb-px flex gap-1 overflow-x-auto pb-px", hidden && "hidden")}>
+      {items.map(({ to, label, icon: Icon }) => {
+        const active = pathname === to;
+        return (
+          <Link
+            key={to}
+            to={to}
+            className={cn(
+              "flex shrink-0 items-center gap-2 border-b-2 px-3 py-2.5 text-sm font-medium transition-colors",
+              active
+                ? "border-brand-600 text-brand-700"
+                : "border-transparent text-slate-500 hover:border-accent-400 hover:text-brand-700",
+            )}
+          >
+            <Icon className="h-4 w-4" />
+            {label}
+          </Link>
+        );
+      })}
+    </nav>
   );
 }
 

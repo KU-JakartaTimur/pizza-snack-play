@@ -52,6 +52,17 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Pesan siap tampil dari error apa pun: pesan dari server bila errornya
+ * berasal dari API, selain itu `fallback` (mis. jaringan mati).
+ */
+export function errorMessage(
+  error: unknown,
+  fallback = "Tidak bisa menghubungi server",
+): string {
+  return error instanceof ApiError ? error.message : fallback;
+}
+
 /** Ambil body JSON dari error response ky, fallback ke pesan generik. */
 async function messageFrom(error: HTTPError): Promise<string> {
   try {

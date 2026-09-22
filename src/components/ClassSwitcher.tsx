@@ -1,42 +1,39 @@
 import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { GraduationCap } from "lucide-react";
 import { Select } from "@/components/ui";
-import { setActiveClass, useActiveClass } from "@/lib/active-class";
-import { api } from "@/lib/api";
-
-/**
- * Referensi tetap untuk kasus "belum ada data" — mencegah array baru dibuat
- * setiap render, yang akan membuat `useEffect` di bawah berjalan terus.
- */
-const EMPTY_CLASSES: string[] = [];
+import { useActiveClass, setActiveClass } from "@/lib/active-class";
+import { useClasses } from "@/hooks/useClasses";
 
 /**
  * Pemilih kelas untuk user yang punya akses ke lebih dari satu kelas.
  *
- * Korlas (satu kelas) dan orang tua dengan anak di satu kelas saja tidak
- * melihat pemilih ini — kelasnya sudah ditentukan server.
+ * Isinya ditentukan server (`/api/classes`): admin dan korlas melihat semua
+ * kelas, orang tua hanya kelas anak-anaknya. Orang tua dengan anak di satu
+ * kelas saja tidak melihat pemilih ini — kelasnya sudah ditentukan server.
+ *
+ * Bila user tidak punya kelas sama sekali, pemilih ini tidak dirender dan
+ * `<ClassNotice />` yang memberi tahu apa yang perlu dilengkapi.
  */
 export function ClassSwitcher() {
   const active = useActiveClass();
+  const { classes, defaultClass, isLoading } = useClasses();
 
-  const classesQuery = useQuery({
-    queryKey: ["classes"],
-    queryFn: api.classes.list,
-    // Daftar kelas jarang berubah; hindari permintaan berulang antar halaman.
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const classes = classesQuery.data?.classes ?? EMPTY_CLASSES;
-  const fallback = classesQuery.data?.default ?? null;
-
-  // Samakan pilihan dengan kelas default server bila belum dipilih, atau
-  // bila pilihan lama sudah tidak valid (mis. setelah berganti akun).
   useEffect(() => {
-    if (classes.length === 0) return;
+    // Daftar kelas belum turun — jangan sentuh pilihan yang tersimpan.
+    if (isLoading) return;
+
+    // Tidak ada kelas sama sekali: kosongkan pilihan lama agar halaman tidak
+    // meminta kelas yang sudah bukan haknya (server menjawab 403).
+    if (classes.length === 0) {
+      setActiveClass(null);
+      return;
+    }
+
+    // Samakan dengan kelas default server bila belum dipilih, atau bila
+    // pilihan lama sudah tidak valid (mis. setelah berganti akun).
     if (active && classes.includes(active)) return;
-    setActiveClass(fallback ?? classes[0]);
-  }, [classes, active, fallback]);
+    setActiveClass(defaultClass ?? classes[0]);
+  }, [isLoading, classes, active, defaultClass]);
 
   if (classes.length <= 1) return null;
 

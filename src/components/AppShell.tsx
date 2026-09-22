@@ -2,8 +2,10 @@ import type { ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/cn";
+import { useHasNoClass } from "@/hooks/useClasses";
 import { AccountMenu } from "./AccountMenu";
 import { BottomNav } from "./BottomNav";
+import { ClassNotice } from "./ClassNotice";
 import { PWAInstallPrompt } from "./PWAInstallPrompt";
 import { visibleNavItems, type NavItem } from "./navItems";
 import { usePWA } from "@/hooks/usePWA";
@@ -22,6 +24,10 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   // Saat PWA terpasang, bilah menu dipindahkan ke bawah layar.
   const { isInstalled } = usePWA();
+
+  // User tanpa kelas perlu diberi tahu; notifikasinya lebih penting daripada
+  // ajakan memasang PWA, dan keduanya sama-sama menempel di bawah layar.
+  const hasNoClass = useHasNoClass();
 
   const items = visibleNavItems({ isAdmin, canManageSchedule, canManageCatalog });
 
@@ -56,7 +62,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         </p>
       </footer>
 
-      <PWAInstallPrompt />
+      {/* Keduanya menempel di bawah layar — tampilkan satu saja. */}
+      {hasNoClass ? <ClassNotice /> : <PWAInstallPrompt />}
       {/* Bilah bawah hanya muncul bila aplikasi sudah dipasang (PWA). */}
       <BottomNav />
     </div>
@@ -78,7 +85,7 @@ function HomeLink() {
         <span className="block font-bold leading-tight text-slate-900">
           Pizza Snack Play
         </span>
-        <span className="block text-xs text-slate-500">Jadwal snack sekolah</span>
+        <span className="block text-xs text-slate-500">Pilih Jadwal Snack Anak Itu Menyenangkan!</span>
       </span>
     </Link>
   );

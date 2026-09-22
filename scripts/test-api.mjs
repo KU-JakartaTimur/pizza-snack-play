@@ -1531,18 +1531,34 @@ section("19. Korlas — jadwal kelasnya, kunci tetap admin");
     JSON.stringify(korlasLogin.data?.user?.students),
   );
 
-  const classes = await call("GET", "/classes", { token: korlasToken });
-  check(
-    "korlas hanya melihat kelasnya",
-    JSON.stringify(classes.data?.classes) === JSON.stringify([korlasClass]),
-    JSON.stringify(classes.data?.classes),
-  );
-
   // Kelas lain — dipakai untuk menguji batas cakupan korlas.
   const allClasses = (await call("GET", "/classes", { token: adminToken })).data
     ?.classes ?? [];
   const otherClass =
     allClasses.find((cls) => cls !== korlasClass) ?? `${korlasClass}x`;
+
+  // Korlas boleh **membaca** seluruh kelas seperti admin; yang tetap tertutup
+  // adalah wewenang menulis kelas lain (diuji di bawah).
+  const classes = await call("GET", "/classes", { token: korlasToken });
+  check(
+    "korlas melihat seluruh kelas seperti admin",
+    JSON.stringify(classes.data?.classes) === JSON.stringify(allClasses),
+    JSON.stringify(classes.data?.classes),
+  );
+  check(
+    "kelas korlas sendiri menjadi pilihan default",
+    classes.data?.default === korlasClass,
+    `default=${classes.data?.default} kelas=${korlasClass}`,
+  );
+
+  const otherRead = await call("GET", `/schedules/today?class=${otherClass}`, {
+    token: korlasToken,
+  });
+  check(
+    "korlas membaca jadwal kelas lain -> 200",
+    otherRead.status === 200,
+    `got ${otherRead.status}`,
+  );
 
   // ── Katalog menu tetap terpusat di admin (sekolah-wide) ──────
   const menu = await call("POST", "/menus", {

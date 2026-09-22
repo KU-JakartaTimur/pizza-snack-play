@@ -7,8 +7,9 @@ import { classService } from "../classes/service";
  *
  * Aturannya:
  * - `admin`  — boleh semua kelas, tetapi **wajib menyebut** kelas saat menulis.
- * - `korlas` — terkunci ke kelas yang dikoordinasinya, untuk baca maupun tulis.
- *              Kunci/buka kunci jadwal bukan wewenangnya — itu admin.
+ * - `korlas` — boleh **membaca** semua kelas (sama seperti admin), tetapi hanya
+ *              boleh **menulis** kelas yang dikoordinasinya. Kunci/buka kunci
+ *              jadwal bukan wewenangnya — itu admin.
  * - `parent` — hanya boleh membaca kelas anak-anaknya.
  */
 export type ClassScopeError = "class_required" | "forbidden_class";

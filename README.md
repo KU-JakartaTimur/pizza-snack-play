@@ -18,7 +18,7 @@ Setiap orang tua memiliki akun login pribadi untuk melihat jadwal menu snack har
 
 ## Tentang Aplikasi
 
-Jadwal piket snack sekolah sebelumnya disusun dalam dokumen teks manual — sulit dicari, tidak ada riwayat, dan orang tua harus bertanya untuk tahu menu hari ini. **Pizza Snack Play** mendigitalkan seluruh proses tersebut: admin mengelola menu & jadwal, orang tua login untuk memilih menu, melihat jadwal harian, Sepekan, dan bulanan.
+Jadwal piket snack sekolah sebelumnya disusun dalam dokumen teks manual — sulit dicari, tidak ada riwayat, dan orang tua harus bertanya untuk tahu menu hari ini. **Pizza Snack Play** mendigitalkan seluruh proses tersebut: admin mengelola menu & jadwal, orang tua login untuk memilih menu, melihat jadwal harian, Sepekan, dan bulanan, sedangkan admin & korlas dapat mengunduh jadwal itu sebagai berkas Excel untuk dibagikan atau dicetak.
 
 ---
 
@@ -41,10 +41,13 @@ Jadwal piket snack sekolah sebelumnya disusun dalam dokumen teks manual — suli
 | **PWA**                      | Pasang ke layar utama + service worker (cache offline)                                                                                 | Semua          | ✅         |
 | **Kelola Hari Libur**        | Tambah/hapus hari libur bernama (berlaku semua kelas)                                                                                  | Admin          | ✅         |
 | **Pencarian Riwayat Menu**   | "Kapan jeruk pernah disajikan?" — cari menu/komponen lintas bulan                                                                      | Semua          | ✅         |
-| **Kelola Akun Orang Tua**    | Buat, ubah, nonaktifkan, hapus, reset password — satu akun boleh punya **lebih dari satu anak**, dan dapat diangkat menjadi **korlas** | Admin          | ✅         |
+| **Kelola Akun Orang Tua**    | Buat, ubah, nonaktifkan, hapus, reset password, **buka kunci** — satu akun boleh punya **lebih dari satu anak**, dan dapat diangkat menjadi **korlas** | Admin          | ✅         |
 | **Dashboard**                | Ringkasan jumlah akun, menu, jadwal, dan hari libur                                                                                    | Admin          | ✅         |
 | **Ubah Password**            | Setiap pengguna dapat mengganti password sendiri                                                                                       | Semua          | ✅         |
-| **Ekspor PDF/Excel**         | Cetak jadwal Sepekan/bulanan                                                                                                           | Admin, Parent  | ⏳ Rencana |
+| **Ekspor Excel**             | Unduh jadwal Sepekan/bulanan sebagai `.xlsx` — kolomnya sama dengan yang tampil di layar, siap dibagikan atau dicetak                | Admin, Korlas  | ✅         |
+| **Batas Percobaan Masuk**    | 5 kali salah password berturut-turut dalam 15 menit → akun terkunci (`423`); admin membukanya dari halaman Akun Orang Tua            | Semua          | ✅         |
+| **Kelola Anak Sendiri**      | Orang tua & korlas menambah, mengubah, dan menghapus **anaknya sendiri** dari menu Profil — tanpa menunggu admin                     | Parent, Korlas | ✅         |
+| **Mode Tiru**                | Admin masuk sebagai orang tua tertentu tanpa password untuk membantu, ditandai bilah kuning selama sesi berlangsung                  | Admin          | ✅         |
 
 ---
 
@@ -118,6 +121,7 @@ Diubah di **satu tempat**, bukan per komponen, supaya seluruh UI tetap seragam.
 ```
 pizza-snack-play/
 ├── public/                       # Static assets
+│   ├── logo.png                  # Sumber ikon (diolah scripts/generate-pwa-icons.py)
 │   ├── manifest.json             # Web App Manifest (PWA)
 │   ├── sw.js                     # Service Worker (cache + update)
 │   └── pwa/                      # Ikon PWA 192px & 512px
@@ -128,20 +132,24 @@ pizza-snack-play/
 │   │   ├── catalog/              # Menu + kategori (katalog bersama)
 │   │   ├── claims/               # Pilih jadwal — klaim tanggal oleh orang tua
 │   │   ├── classes/              # Daftar kelas yang boleh diakses user
-│   │   ├── schedules/            # Jadwal per kelas, minggu, hari libur, kunci & publikasi
-│   │   ├── parents/              # CRUD akun orang tua (termasuk angkat korlas)
+│   │   ├── schedules/            # Jadwal per kelas, minggu, hari libur, kunci & publikasi, ekspor Excel
+│   │   ├── parents/              # CRUD akun orang tua (termasuk angkat korlas & buka kunci)
+│   │   ├── profile/              # Layanan mandiri: orang tua kelola anaknya sendiri
 │   │   ├── stats/                # Ringkasan dashboard
 │   │   ├── middleware/           # requireAuth, requireRole
-│   │   └── utils/                # response, password, date, slug, params, classScope
+│   │   └── utils/                # response, password, date, slug, params, classScope, sql, xlsx
 │   ├── database/
 │   │   ├── db.ts                 # Inisialisasi Drizzle + D1 binding + tipe Db
 │   │   └── schema.ts             # Drizzle schema (13 tabel)
 │   ├── components/               # Komponen UI bersama
 │   │   ├── AppShell.tsx          # Header, navigasi, footer
 │   │   ├── AdminOnly.tsx         # RoleGate (admin / schedule / catalog)
+│   │   ├── BottomNav.tsx         # Bilah bawah (hanya saat PWA terpasang)
+│   │   ├── navItems.ts           # Sumber tunggal daftar tujuan navigasi
 │   │   ├── ClassSwitcher.tsx     # Pemilih kelas di header
 │   │   ├── PWAInstallPrompt.tsx  # Banner pasang PWA + notifikasi update SW
 │   │   ├── ScheduleDayCard.tsx   # Kartu satu hari jadwal
+│   │   ├── jadwal/               # Bagian jadwal: ExportButton, CopyWeekModal, MonthToolbar, …
 │   │   └── ui.tsx                # Button, Card, Input, Modal, Badge, dll.
 │   ├── hooks/
 │   │   └── usePWA.ts             # State installability + update service worker
@@ -169,6 +177,7 @@ pizza-snack-play/
 │   │   ├── date.ts               # Utilitas tanggal WIB (sisi klien)
 │   │   ├── item-types.ts         # Label & urutan jenis komponen menu
 │   │   ├── cn.ts                 # Penggabung class Tailwind
+│   │   ├── download.ts           # Simpan blob hasil unduhan ke berkas
 │   │   └── http.ts               # HTTP client (ky) + injeksi JWT
 │   ├── types/                    # Tipe bersama API ↔ frontend
 │   │   ├── apiResponse.ts        # Envelope { message, data }
@@ -189,11 +198,17 @@ pizza-snack-play/
 │   └── seed.sql                  # Seed SQL (di luar folder migrations)
 ├── scripts/
 │   ├── seed.ts                   # Parser jadwal -> drizzle/seed.sql
-│   ├── test-auth.mjs             # 33 test end-to-end auth
-│   └── test-api.mjs              # 211 test end-to-end API
+│   ├── generate-pwa-icons.py     # Bangkitkan ikon PWA + favicon dari logo.png
+│   ├── test-auth.mjs             # 33 uji end-to-end auth
+│   ├── test-api.mjs              # 309 uji end-to-end API
+│   ├── test-status.mjs           # 22 uji status jadwal bulanan
+│   ├── test-profile-students.mjs # 33 uji layanan mandiri anak (idempoten)
+│   ├── test-claim-cross-class.mjs# Uji klaim tanggal lintas kelas
+│   └── run-uat.mjs               # Skenario UAT
 ├── docs/
 │   ├── PRD_Pizza_Snack_Play.md
-│   └── Struktur_Tabel_Pizza_Snack_Play.md
+│   ├── Struktur_Tabel_Pizza_Snack_Play.md
+│   └── UAT_Result.md
 ├── .env.example
 ├── drizzle.config.ts
 ├── vite.config.ts
@@ -224,6 +239,8 @@ Middleware dipasang berurutan: `requireAuth` (401 bila tanpa token) lalu
 | `utils/date.ts`     | Perhitungan tanggal berbasis WIB (UTC+7)                                                                                                                            |
 | `utils/params.ts`   | Parsing ID, validasi rentang tanggal                                                                                                                                |
 | `utils/sql.ts`      | `escapeLike` / `likePattern` — membuat pola `LIKE` aman dari wildcard user                                                                                          |
+| `utils/classScope.ts` | `resolveReadClass` / `resolveWriteClass` / `canWriteClass` — menentukan cakupan kelas user saat baca & tulis                                                       |
+| `utils/xlsx.ts`     | Penulis berkas `.xlsx` **tanpa dependency** (ZIP mode store + SpreadsheetML) — dipakai `schedules/export.ts`                                                        |
 | `utils/slug.ts`     | Pembuat slug dari nama kategori                                                                                                                                     |
 
 ---
@@ -240,7 +257,7 @@ Middleware dipasang berurutan: `requireAuth` (401 bila tanpa token) lalu
 | `schedules`       | Tabel inti — **(tanggal × kelas)** → menu, `is_holiday`, petugas piket, dan `status` (`draft`/`locked`/`published`) |
 | `schedule_claims` | Klaim satu tanggal oleh satu orang tua — **`UNIQUE(schedule_id)`** yang menjadi penjaga rebutan                     |
 | `holidays`        | Daftar hari libur nasional/sekolah — berlaku untuk **semua kelas**                                                  |
-| `users`           | Akun login (`admin` / `korlas` / `parent`), JWT auth, password hashing, `class_name` untuk korlas                   |
+| `users`           | Akun login (`admin` / `korlas` / `parent`), JWT auth, password hashing, `class_name` untuk korlas, **penghitung gagal masuk** (`failed_login_attempts`, `last_failed_login_at`, `locked_at`) |
 | `parents`         | Profil orang tua (nama, hubungan, kontak) — 1 baris per orang tua                                                   |
 | `students`        | Anak dari orang tua (nama + kelas) — **satu orang tua boleh punya banyak anak**                                     |
 | `settings`        | Konfigurasi global (nama sekolah, tahun ajaran)                                                                     |
@@ -263,6 +280,7 @@ Semua endpoint berada di bawah `basePath /api`. Kecuali `POST /api/auth/login`, 
 | `POST` | `/auth/logout`   | Auth   | Titik keluar eksplisit (JWT stateless)   |
 | `GET`  | `/auth/me`       | Auth   | Profil user + data siswa (bila `parent`) |
 | `PUT`  | `/auth/password` | Auth   | Ubah password sendiri                    |
+| `POST` | `/auth/impersonate` | Admin | **Mode tiru** — masuk sebagai orang tua tertentu tanpa password, untuk membantu dari layar yang sama |
 
 ### Kelas
 
@@ -282,6 +300,8 @@ Meminta kelas di luar cakupan dijawab **403**.
 | `GET`    | `/schedules/today-all`                  | Admin         | Jadwal hari ini untuk **semua kelas** sekaligus                                                   |
 | `GET`    | `/schedules/week?date=&class=`          | Auth          | Senin–Jumat pada minggu tersebut                                                                  |
 | `GET`    | `/schedules/month?year=&month=&class=`  | Auth          | Rekap bulanan, dikelompokkan per minggu                                                           |
+| `GET`    | `/schedules/status?year=&month=&class=` | Auth          | Status penyusunan per minggu pada bulan itu; admin tanpa `class` = seluruh sekolah               |
+| `GET`    | `/schedules/export?scope=&class=`       | Admin, Korlas | Unduh jadwal sebagai `.xlsx` — `scope=week` (+`date`) atau `scope=month` (+`year`,`month`)       |
 | `GET`    | `/schedules/range?from=&to=&class=`     | Auth          | Rentang bebas (maks. 92 hari)                                                                     |
 | `GET`    | `/schedules/search?q=&from=&to=&class=` | Auth          | Cari tanggal di mana menu/komponen pernah dijadwalkan (maks. 400 hari)                            |
 | `GET`    | `/schedules/:id`                        | Auth          | Detail satu entri jadwal                                                                          |
@@ -346,6 +366,21 @@ di tangan admin. Korlas hanya membaca katalog — wewenang tulisnya ada di jadwa
 | `POST`   | `/parents/:id/unlock`                     | Admin | Buka kunci akun akibat percobaan masuk yang gagal                            |
 | `GET`    | `/stats/summary`                          | Admin | Ringkasan dashboard                                                          |
 
+### Profil (layanan mandiri)
+
+Modul ini dipakai **orang tua & korlas untuk mengurus anaknya sendiri** dari menu Profil — terpisah
+dari `/api/parents` yang khusus admin. `parentId` selalu diambil dari **token**, bukan dari request,
+sehingga satu orang tua tidak mungkin menyentuh anak milik orang tua lain: anak orang lain dijawab
+**404** (bukan 403) agar keberadaannya tidak terbocorkan.
+
+| Method   | Endpoint                  | Role           | Keterangan                                                       |
+| -------- | ------------------------- | -------------- | ---------------------------------------------------------------- |
+| `GET`    | `/profile/students`       | Parent, Korlas | Daftar anak sendiri                                              |
+| `POST`   | `/profile/students`       | Parent, Korlas | Tambah anak — nama & kelas **wajib**                             |
+| `PUT`    | `/profile/students/:id`   | Parent, Korlas | Ubah nama/kelas; kelas dikosongkan dengan `className: null`      |
+| `DELETE` | `/profile/students/:id`   | Parent, Korlas | Hapus anak — **anak terakhir tidak boleh dihapus** (`400`)       |
+| `GET`    | `/profile/classes`        | Parent, Korlas | Saran kelas untuk `datalist` di form (bukan pembatas)            |
+
 ### Batas percobaan masuk
 
 Setelah **5 kali gagal berturut-turut dalam 15 menit**, akun dikunci dan login
@@ -394,6 +429,16 @@ curl "http://localhost:5173/api/schedules/month?year=2026&month=9" \
 # Kapan "jeruk" pernah disajikan di kelas 1? (6 bulan terakhir)
 curl "http://localhost:5173/api/schedules/search?q=jeruk&from=2026-03-21&to=2026-09-17&class=1" \
   -H "Authorization: Bearer <token>"
+
+# Unduh jadwal September 2026 kelas 1 sebagai Excel (admin/korlas)
+curl -L "http://localhost:5173/api/schedules/export?scope=month&year=2026&month=9&class=1" \
+  -H "Authorization: Bearer <token>" \
+  -o jadwal-bulanan-2026-09-kelas-1.xlsx
+
+# …atau Sepekan yang berisi tanggal tertentu
+curl -L "http://localhost:5173/api/schedules/export?scope=week&date=2026-09-21&class=1" \
+  -H "Authorization: Bearer <token>" \
+  -o jadwal-sepekan-kelas-1-2026-09-21.xlsx
 
 # Salin jadwal kelas 1 dari minggu 14–18 Sep ke minggu 21–25 Sep (lewati hari yang sudah terisi)
 curl -X POST http://localhost:5173/api/schedules/copy \
@@ -559,9 +604,12 @@ bun run lint       # ESLint
 | `db:seed:local`    | `wrangler d1 execute ... --local --file=./drizzle/seed.sql` | Seed D1 lokal                                  |
 | `db:push`          | `drizzle-kit push`                                          | Push schema langsung (dev)                     |
 | `db:studio`        | `drizzle-kit studio`                                        | GUI inspeksi database                          |
-| `test`             | `test:auth && test:api`                                     | Semua test end-to-end                          |
+| `dev:prod`         | `tsc -b && vite build && wrangler dev --remote`             | Dev server memakai D1 **remote**               |
+| `test`             | `test:auth && test:api && test:status && test:profile`      | Semua test end-to-end                          |
 | `test:auth`        | `bun run scripts/test-auth.mjs`                             | Test auth (33 skenario)                        |
-| `test:api`         | `bun run scripts/test-api.mjs`                              | Test API (211 skenario)                        |
+| `test:api`         | `bun run scripts/test-api.mjs`                              | Test API (309 skenario)                        |
+| `test:status`      | `bun run scripts/test-status.mjs`                           | Test status jadwal bulanan (22 skenario)       |
+| `test:profile`     | `bun run scripts/test-profile-students.mjs`                 | Test layanan mandiri anak (33 skenario)        |
 
 ---
 
@@ -595,13 +643,15 @@ jadwal maupun memakai Pilih Jadwal sampai `students`-nya diisi.
 
 | Phase                            | Scope                                                                                                                                | Status        |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------- |
-| **1. MVP**                       | Scaffold, skema DB (12 tabel), migrasi D1, seed data, auth JWT, RBAC, backend CRUD, frontend jadwal + admin                          | ✅ Selesai    |
+| **1. MVP**                       | Scaffold, skema DB (13 tabel), migrasi D1, seed data, auth JWT, RBAC, backend CRUD, frontend jadwal + admin                          | ✅ Selesai    |
 | **2. Pencarian & Duplikasi**     | Pencarian riwayat menu lintas bulan, salin jadwal Sepekan                                                                            | ✅ Selesai    |
 | **3. Jadwal Per Kelas & Korlas** | Jadwal disimpan **per kelas**, pemilih kelas, role `korlas` (kelola katalog menu/kategori + jadwal kelasnya sendiri)                 | ✅ Selesai    |
 | **4. Kunci, Publikasi & PWA**    | Siklus `draft` → `locked` → `published`, petugas piket per kelas, ringkasan semua kelas untuk admin, pemasangan PWA + service worker | ✅ Selesai    |
 | **5. Pilih Jadwal**              | Orang tua berebut tanggal yang dibiarkan kosong korlas; klaim menjadi sumber kebenaran petugas                                       | ✅ Selesai    |
-| **6. Ekspor & Cetak**            | Halaman cetak ramah printer + ekspor CSV Sepekan/bulanan                                                                             | ⏳ Berikutnya |
-| **7. Notifikasi**                | Push notification (PWA), WhatsApp broadcast (opsional)                                                                               | ⏳ Rencana    |
+| **6. Ekspor Excel**              | Unduh jadwal Sepekan/bulanan sebagai `.xlsx` (admin & korlas) — ditulis sendiri, tanpa dependency                   | ✅ Selesai    |
+| **7. Keamanan Akun**             | Batas percobaan masuk (5× gagal → terkunci) + tombol buka kunci di halaman Akun Orang Tua                            | ✅ Selesai    |
+| **8. Ekspor & Cetak lanjutan**   | Halaman cetak ramah printer + ekspor CSV Sepekan/bulanan                                                            | ⏳ Berikutnya |
+| **9. Notifikasi**                | Push notification (PWA), WhatsApp broadcast (opsional)                                                               | ⏳ Rencana    |
 
 ---
 
@@ -633,6 +683,9 @@ jadwal maupun memakai Pilih Jadwal sampai `students`-nya diisi.
 - **Transaksi D1:** Tidak ada transaksi interaktif panjang — gunakan `db.batch([...])`.
 - **Secrets:** `JWT_SECRET` dan token Cloudflare disimpan sebagai Worker Secret, bukan di repo.
 - **Local vs Remote D1:** `wrangler dev` memakai D1 lokal (miniflare) di `.wrangler/state/` — datanya terpisah dari remote, tapi dipakai bersama oleh `wrangler d1 execute --local` dan dev server.
+- **Ekspor Excel tanpa dependency:** `.xlsx` hanyalah sebuah ZIP berisi XML, jadi `src/api/utils/xlsx.ts` menulisnya sendiri — ZIP mode **store** (tanpa DEFLATE, karena `CompressionStream` tidak selalu ada di runtime edge), tabel CRC-32, dan SpreadsheetML dengan string inline. Alasannya: Worker tidak perlu paket tambahan, dan berkasnya tetap terbuka di Excel, LibreOffice, maupun Google Sheets. Isi lembar dirakit di `src/api/schedules/export.ts` dari **DTO yang sama** dengan yang dipak UI, jadi hasil unduhan tidak pernah berbeda dari yang tampil di layar — termasuk hari dari bulan sebelah yang ikut tampil pada blok pekan pertama/terakhir.
+- **Penghitung gagal masuk dihitung di SQL, bukan dibaca dulu:** `registerFailedLogin` memakai `CASE WHEN last_failed_login_at < datetime('now','-900 seconds') THEN 1 ELSE failed_login_attempts + 1 END`. Kalau penghitungnya dibaca lalu ditulis dari aplikasi, dua percobaan yang berbarengan bisa sama-sama membaca nilai lama dan lolos. Kuncinya **tidak kedaluwarsa sendiri** — sengaja, karena yang bisa memastikan pemiliknya sah hanya admin sekolah.
+- **Mode tiru menyimpan sesi admin:** sebelum token orang tua dipakai, token admin dipindahkan ke `psp_impersonator` di `localStorage`, sehingga `stopImpersonating()` bisa mengembalikan sesi aslinya. Bilah kuning di atas layar menandakan sesi tiru sedang aktif — tanpa penanda itu mudah lupa sedang masuk sebagai orang lain.
 
 ---
 
@@ -641,8 +694,26 @@ jadwal maupun memakai Pilih Jadwal sampai `students`-nya diisi.
 - [PRD — Product Requirements Document v1.4](docs/PRD_Pizza_Snack_Play.md)
 - [Struktur Tabel — DDL + Drizzle + Seed + Queries](docs/Struktur_Tabel_Pizza_Snack_Play.md)
 - [UAT Result](docs/UAT_Result.md)
+- [Panduan Orang Tua — dek sosialisasi 15 halaman](Panduan%20Orang%20Tua%20Pizza%20Snack%20Play/STORY.md) (`.pptx` + sumber `slides/*.slide`)
 
 ## Testing
+
+Uji end-to-end memakai dev server yang hidup dan D1 lokal ter-seed
+(`bun run dev` + `bun run db:migrate:local` + `bun run db:seed:local`).
+
+```bash
+bun run test              # keempat suite di bawah, berurutan
+bun run test:auth         # 33 skenario  — login, JWT, role, ubah password
+bun run test:api          # 309 skenario — jadwal, klaim, katalog, akun, ekspor Excel, batas masuk
+bun run test:status       # 22 skenario  — status jadwal bulanan
+bun run test:profile      # 33 skenario  — layanan mandiri anak (idempoten)
+```
+
+Semua suite idempoten: aman dijalankan berulang, dan membersihkan data buatan
+ujinya sendiri. Port dev server ditulis di konstanta `BASE` masing-masing script
+(default `http://localhost:5173/api`) — sesuaikan bila portnya bergeser.
+
+Skenario UAT manual (daftar peran & langkah) terpisah:
 
 ```bash
 bun run scripts/run-uat.mjs

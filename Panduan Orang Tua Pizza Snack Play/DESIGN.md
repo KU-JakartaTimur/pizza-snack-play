@@ -149,6 +149,15 @@ SVG 仅用于结构化 / 抽象元素，**不冒充摄影或人物群像**。
 
 **FAIcon 统一规范**：全部实心（`solid`）风格，统一 32×32（卡内）或 96×96（巨型锚点），着色仅用 `primary` / `secondary` / `accent`。**严禁 emoji**。
 
+**Ikon wajib inline `<svg>`, bukan `<FAIcon>`**: `icon://fa/...` tidak pernah terselesaikan di mesin
+ini — 17 ikon dek pernah tersimpan sebagai gambar "broken image" abu-abu (`#CBCDD1`). Karena itu
+setiap ikon ditulis sebagai `<svg viewBox="..."><path fill="..." d="..."/></svg>` dengan path Font
+Awesome Free 6.5.2 **solid** yang disematkan langsung; ukuran & warna tetap mengikuti aturan di atas.
+Kalau butuh ikon baru, ambil path-nya dari
+`https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/svgs/solid/<nama>.svg`
+(nama FA6 untuk yang berganti: `circle-exclamation`, `rotate-left`, `magnifying-glass`, `house`),
+lalu sematkan.
+
 ---
 
 ## 6. 页面映射表（契约）

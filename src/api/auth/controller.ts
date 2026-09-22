@@ -2,13 +2,19 @@ import type { Context } from "hono";
 import { getDb } from "../../database/db";
 import {
   responseBadRequest,
+  responseLocked,
   responseNotFound,
   responseOK,
   responseUnauthorized,
 } from "../utils/response";
 import type { AuthEnv } from "../middleware/auth";
 import { parseId } from "../utils/params";
-import { authService, resolveExpiresIn } from "./service";
+import {
+  authService,
+  MAX_LOGIN_ATTEMPTS,
+  resolveExpiresIn,
+  type LoginOutcome,
+} from "./service";
 
 type AuthContext = Context<AuthEnv>;
 
@@ -29,6 +35,41 @@ interface ImpersonateBody {
 
 const MIN_PASSWORD_LENGTH = 8;
 
+/**
+ * Pesan penolakan login.
+ *
+ * Kredensial salah tetap dijawab generik — tidak menyebut username mana yang
+ * benar-benar ada — tetapi menyertakan sisa kesempatan, supaya pengguna tahu
+ * kapan ia akan terkunci alih-alih terkunci tanpa peringatan.
+ *
+ * Akun terkunci justru **disebut apa adanya** dan dijawab `423`: menutupinya
+ * hanya membuat pengguna mencoba terus, padahal menunggu tidak menolong —
+ * yang perlu dilakukan adalah menghubungi admin.
+ */
+function mapLoginFailure(
+  c: AuthContext,
+  outcome: Extract<LoginOutcome, { ok: false }>,
+) {
+  if (outcome.reason === "locked") {
+    return responseLocked(
+      c,
+      `Akun terkunci karena ${MAX_LOGIN_ATTEMPTS} kali gagal masuk. Hubungi admin untuk membukanya.`,
+    );
+  }
+
+  if (outcome.reason === "inactive") {
+    return responseUnauthorized(c, "Akun dinonaktifkan. Hubungi admin.");
+  }
+
+  const left = outcome.attemptsLeft ?? 0;
+  return responseUnauthorized(
+    c,
+    left > 0
+      ? `Username atau password salah. Sisa ${left} kesempatan sebelum akun terkunci.`
+      : "Username atau password salah",
+  );
+}
+
 class AuthController {
   login = async (c: AuthContext) => {
     let body: LoginBody;
@@ -48,23 +89,16 @@ class AuthController {
       return responseBadRequest(c, "Username dan password wajib diisi");
     }
 
-    const result = await authService.login(getDb(c.env), {
+    const outcome = await authService.login(getDb(c.env), {
       username: username.trim(),
       password,
       secret: c.env.JWT_SECRET,
       expiresIn: resolveExpiresIn(c.env.JWT_EXPIRES_IN),
     });
 
-    if (result === "inactive") {
-      return responseUnauthorized(c, "Akun dinonaktifkan. Hubungi admin.");
-    }
+    if (!outcome.ok) return mapLoginFailure(c, outcome);
 
-    if (result === "invalid_credentials") {
-      // Pesan sengaja generik agar tidak membocorkan username mana yang ada.
-      return responseUnauthorized(c, "Username atau password salah");
-    }
-
-    return responseOK(c, "Login berhasil", result);
+    return responseOK(c, "Login berhasil", outcome.data);
   };
 
   /**

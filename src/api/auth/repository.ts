@@ -51,6 +51,69 @@ class AuthRepository {
       .where(eq(users.id, id));
   }
 
+  /**
+   * Catat satu kegagalan masuk, lalu kembalikan jumlah kegagalan
+   * **berturut-turut** yang baru.
+   *
+   * Penghitungannya sengaja dilakukan di SQL, bukan di JavaScript:
+   *
+   * - Jendela waktunya ikut dihitung. Bila kegagalan terakhir sudah lewat
+   *   `windowSeconds`, hitungannya dimulai lagi dari 1 — supaya salah ketik
+   *   yang berjauhan tidak menumpuk menjadi penguncian.
+   * - Tidak perlu bolak-balik membaca lalu menulis, sehingga dua percobaan
+   *   yang tiba bersamaan tidak saling menimpa (baca-lalu-tulis bisa membuat
+   *   keduanya menulis angka yang sama, dan kegagalan jadi tidak terhitung).
+   *
+   * Timestamp dibandingkan sebagai teks `YYYY-MM-DD HH:MM:SS` UTC — format
+   * yang sama dengan `datetime('now')`, jadi urutannya sahih.
+   */
+  async registerFailedLogin(
+    db: Db,
+    id: number,
+    windowSeconds: number,
+  ): Promise<number> {
+    const rows = await db
+      .update(users)
+      .set({
+        failedLoginAttempts: sql`CASE
+          WHEN ${users.lastFailedLoginAt} IS NULL
+            OR ${users.lastFailedLoginAt} < datetime('now', ${`-${windowSeconds} seconds`})
+          THEN 1
+          ELSE ${users.failedLoginAttempts} + 1
+        END`,
+        lastFailedLoginAt: sql`(datetime('now'))`,
+      })
+      .where(eq(users.id, id))
+      .returning({ attempts: users.failedLoginAttempts });
+
+    return rows[0]?.attempts ?? 0;
+  }
+
+  /** Kunci akun — login berikutnya ditolak sampai dibuka admin. */
+  async lock(db: Db, id: number): Promise<void> {
+    await db
+      .update(users)
+      .set({ lockedAt: sql`(datetime('now'))`, updatedAt: sql`(datetime('now'))` })
+      .where(eq(users.id, id));
+  }
+
+  /**
+   * Bersihkan seluruh jejak kegagalan: penghitung, waktu kegagalan terakhir,
+   * dan kunci. Dipakai di dua tempat yang tujuannya sama — login berhasil
+   * (akun kembali bersih) dan admin membuka kunci akun.
+   */
+  async clearLoginFailures(db: Db, id: number): Promise<void> {
+    await db
+      .update(users)
+      .set({
+        failedLoginAttempts: 0,
+        lastFailedLoginAt: null,
+        lockedAt: null,
+        updatedAt: sql`(datetime('now'))`,
+      })
+      .where(eq(users.id, id));
+  }
+
   async updatePassword(
     db: Db,
     id: number,

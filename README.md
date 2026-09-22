@@ -342,8 +342,30 @@ di tangan admin. Korlas hanya membaca katalog — wewenang tulisnya ada di jadwa
 | `POST`   | `/parents`                                | Admin | Buat akun + profil orang tua + daftar anak (min. 1)                          |
 | `PUT`    | `/parents/:id`                            | Admin | Ubah akun; daftar anak **menggantikan** yang lama bila dikirim               |
 | `DELETE` | `/parents/:id?hard=`                      | Admin | Nonaktifkan, atau hapus permanen bila `hard=true`                            |
-| `POST`   | `/parents/:id/reset-password`             | Admin | Reset password                                                               |
+| `POST`   | `/parents/:id/reset-password`             | Admin | Reset password (sekaligus membuka kunci akun)                                |
+| `POST`   | `/parents/:id/unlock`                     | Admin | Buka kunci akun akibat percobaan masuk yang gagal                            |
 | `GET`    | `/stats/summary`                          | Admin | Ringkasan dashboard                                                          |
+
+### Batas percobaan masuk
+
+Setelah **5 kali gagal berturut-turut dalam 15 menit**, akun dikunci dan login
+dijawab `423` dengan pesan agar menghubungi admin. Password yang benar pun
+ditolak selama akun masih terkunci. Login yang berhasil mengosongkan
+penghitungnya, dan admin membuka kunci lewat tombol **buka kunci** di halaman
+Akun Orang Tua (atau `POST /parents/:id/unlock`).
+
+> **Bila akun admin sendiri terkunci**, tidak ada admin lain yang bisa
+> membukanya dari dalam aplikasi. Bukalah langsung di database:
+>
+> ```bash
+> # lokal
+> bunx wrangler d1 execute pizza-snack-play --local --command \
+>   "UPDATE users SET failed_login_attempts = 0, last_failed_login_at = NULL, locked_at = NULL WHERE username = 'admin'"
+>
+> # produksi — tambahkan --remote
+> bunx wrangler d1 execute pizza-snack-play --remote --command \
+>   "UPDATE users SET failed_login_attempts = 0, last_failed_login_at = NULL, locked_at = NULL WHERE username = 'admin'"
+> ```
 
 ### Contoh
 

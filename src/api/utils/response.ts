@@ -60,6 +60,16 @@ export const responseConflict = (c: Context, message: string = "Conflict") => {
   return sendResponse(c, 409, message);
 };
 
+/**
+ * `423 Locked` — dipakai saat akun dikunci karena terlalu banyak percobaan
+ * masuk yang gagal. Statusnya dibedakan dari `401` supaya klien bisa
+ * membedakan "password salah, coba lagi" dari "berhenti mencoba, hubungi
+ * admin" tanpa membaca teks pesannya.
+ */
+export const responseLocked = (c: Context, message: string = "Locked") => {
+  return sendResponse(c, 423, message);
+};
+
 export const responseInternalError = (
   c: Context,
   message: string = "Internal server error",

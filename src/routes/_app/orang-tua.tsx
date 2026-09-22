@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   KeyRound,
+  LockOpen,
   Pencil,
   Plus,
   Search,
@@ -117,6 +118,9 @@ function ParentsContent() {
     hard: boolean;
   } | null>(null);
 
+  /** Akun terkunci yang menunggu ditegaskan pembukaan kuncinya. */
+  const [pendingUnlock, setPendingUnlock] = useState<ParentDto | null>(null);
+
   const parentsQuery = useQuery({
     queryKey: ["parents", { search, page }],
     queryFn: () =>
@@ -206,6 +210,22 @@ function ParentsContent() {
       }),
   });
 
+  const unlockMutation = useMutation({
+    mutationFn: (id: number) => api.parents.unlock(id),
+    onSuccess: async (result) => {
+      setPendingUnlock(null);
+      setBanner({ kind: "ok", text: result.message });
+      await invalidate();
+    },
+    onError: (error) => {
+      setPendingUnlock(null);
+      setBanner({
+        kind: "error",
+        text: errorMessage(error, "Gagal membuka kunci akun"),
+      });
+    },
+  });
+
   const openCreate = () => {
     setEditing(null);
     setForm(EMPTY_FORM);
@@ -285,7 +305,7 @@ function ParentsContent() {
   };
 
   const data = parentsQuery.data;
-  const busy = removeMutation.isPending;
+  const busy = removeMutation.isPending || unlockMutation.isPending;
 
   return (
     <>
@@ -396,11 +416,17 @@ function ParentsContent() {
                       )}
                     </td>
                     <td className="px-5 py-3">
-                      {parent.isActive ? (
-                        <Badge tone="success">Aktif</Badge>
-                      ) : (
-                        <Badge tone="danger">Nonaktif</Badge>
-                      )}
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {parent.isActive ? (
+                          <Badge tone="success">Aktif</Badge>
+                        ) : (
+                          <Badge tone="danger">Nonaktif</Badge>
+                        )}
+                        {/* Akun bisa aktif sekaligus terkunci: penguncian
+                            datang dari percobaan masuk yang gagal, bukan
+                            dari admin, jadi keduanya ditampilkan terpisah. */}
+                        {parent.lockedAt && <Badge tone="warning">Terkunci</Badge>}
+                      </div>
                     </td>
                     <td className="px-5 py-3">
                       <div className="flex justify-end gap-1">
@@ -423,6 +449,21 @@ function ParentsContent() {
                         >
                           <KeyRound className="h-4 w-4" />
                         </Button>
+                        {/* Hanya muncul untuk akun yang benar-benar terkunci,
+                            supaya deretan tombol tidak penuh tindakan yang
+                            tidak berlaku untuk sebagian besar baris. */}
+                        {parent.lockedAt && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-accent-700 hover:bg-accent-50"
+                            disabled={busy}
+                            onClick={() => setPendingUnlock(parent)}
+                            title="Buka kunci akun"
+                          >
+                            <LockOpen className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="sm"
@@ -729,6 +770,29 @@ function ParentsContent() {
           })
         }
         onClose={() => setPendingRemove(null)}
+      />
+
+      {/*
+        Konfirmasi sebelum membuka kunci. Bukan sekadar formalitas: akun yang
+        terkunci berarti seseorang gagal masuk berkali-kali, dan admin perlu
+        tahu itu sebelum mengembalikan aksesnya.
+      */}
+      <ConfirmDialog
+        open={pendingUnlock !== null}
+        title="Buka kunci akun?"
+        description={
+          <>
+            Akun <strong>{pendingUnlock?.username}</strong> terkunci karena
+            percobaan masuk yang gagal berulang kali. Setelah dibuka, ia bisa
+            masuk lagi dengan password yang sama — passwordnya tidak berubah.
+          </>
+        }
+        confirmLabel="Buka kunci"
+        loading={unlockMutation.isPending}
+        onConfirm={() =>
+          pendingUnlock && unlockMutation.mutate(pendingUnlock.id)
+        }
+        onClose={() => setPendingUnlock(null)}
       />
     </>
   );

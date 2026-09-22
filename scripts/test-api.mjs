@@ -2306,6 +2306,188 @@ section("21. Ekspor Excel — admin & korlas");
   }
 }
 
+// ── 9. Batas percobaan masuk ──────────────────────────────────
+
+section("22. Batas percobaan masuk — kunci setelah 5 kali gagal");
+{
+  const PASSWORD = "rahasia123";
+  const username = `ujikunci${Date.now()}`;
+
+  const login = (name, password) =>
+    call("POST", "/auth/login", { body: { username: name, password } });
+
+  // Akun sekali pakai: akun demo (sari/budi) dipakai uji lain, jadi jangan
+  // sampai ikut terkunci. Dibuat lewat API admin supaya bentuknya sama
+  // dengan akun sungguhan, lalu dihapus lagi di akhir blok ini.
+  const created = await call("POST", "/parents", {
+    token: adminToken,
+    body: {
+      username,
+      password: PASSWORD,
+      parentName: "Uji Batas Masuk",
+      students: [{ name: "Anak Uji", className: "1" }],
+    },
+  });
+  const parentId = created.data?.id;
+
+  check(
+    "akun uji dibuat",
+    created.status === 201 && typeof parentId === "number",
+    `status ${created.status}`,
+  );
+
+  if (parentId) {
+    const wrong = "password-salah";
+
+    // ── Kegagalan berturut-turut, dengan sisa kesempatan ──────
+    for (let attempt = 1; attempt <= 4; attempt++) {
+      const r = await login(username, wrong);
+      const left = 5 - attempt;
+      check(
+        `gagal ke-${attempt} -> 401 dengan sisa ${left} kesempatan`,
+        r.status === 401 && r.json?.message?.includes(`Sisa ${left} kesempatan`),
+        `${r.status} ${r.json?.message}`,
+      );
+    }
+
+    // ── Kegagalan kelima mengunci akun ────────────────────────
+    const fifth = await login(username, wrong);
+    check(
+      "gagal ke-5 -> 423 terkunci",
+      fifth.status === 423,
+      `got ${fifth.status}`,
+    );
+    check(
+      "pesannya menyuruh menghubungi admin",
+      typeof fifth.json?.message === "string" &&
+        fifth.json.message.toLowerCase().includes("hubungi admin"),
+      fifth.json?.message,
+    );
+
+    // ── Terkunci berarti terkunci: password benar pun ditolak ──
+    const correctWhileLocked = await login(username, PASSWORD);
+    check(
+      "password benar saat terkunci tetap 423",
+      correctWhileLocked.status === 423,
+      `got ${correctWhileLocked.status}`,
+    );
+
+    // ── Status terkunci terlihat oleh admin ───────────────────
+    const listed = await call("GET", `/parents/${parentId}`, {
+      token: adminToken,
+    });
+    check(
+      "admin melihat akun berstatus terkunci",
+      typeof listed.data?.lockedAt === "string" && listed.data.lockedAt.length > 0,
+      String(listed.data?.lockedAt),
+    );
+
+    // ── Membuka kunci hanya wewenang admin ────────────────────
+    const byParent = await call("POST", `/parents/${parentId}/unlock`, {
+      token: parentToken,
+    });
+    check(
+      "orang tua membuka kunci akun -> 403",
+      byParent.status === 403,
+      `got ${byParent.status}`,
+    );
+
+    const anonymous = await call("POST", `/parents/${parentId}/unlock`);
+    check(
+      "tanpa token membuka kunci -> 401",
+      anonymous.status === 401,
+      `got ${anonymous.status}`,
+    );
+
+    const unlocked = await call("POST", `/parents/${parentId}/unlock`, {
+      token: adminToken,
+    });
+    check(
+      "admin membuka kunci -> 200",
+      unlocked.status === 200,
+      `got ${unlocked.status}`,
+    );
+
+    const afterUnlock = await login(username, PASSWORD);
+    check(
+      "setelah dibuka, password yang sama bisa dipakai masuk",
+      afterUnlock.status === 200,
+      `got ${afterUnlock.status}`,
+    );
+    check(
+      "penghitung kegagalan ikut dikosongkan",
+      (await call("GET", `/parents/${parentId}`, { token: adminToken })).data
+        ?.lockedAt === null,
+      "lockedAt masih terisi",
+    );
+
+    // ── Masuk yang berhasil mengosongkan penghitung ───────────
+    // Tiga gagal, satu berhasil, lalu empat gagal lagi: kalau penghitungnya
+    // tidak direset, kegagalan ke-4 sesudah masuk itu akan mengunci akun.
+    for (let attempt = 1; attempt <= 3; attempt++) await login(username, wrong);
+    await login(username, PASSWORD);
+
+    let lastStatus = 0;
+    for (let attempt = 1; attempt <= 4; attempt++) {
+      lastStatus = (await login(username, wrong)).status;
+    }
+    check(
+      "penghitung direset oleh login yang berhasil",
+      lastStatus === 401,
+      `gagal ke-4 sesudah login berhasil seharusnya 401, dapat ${lastStatus}`,
+    );
+
+    // ── Reset password sekaligus membuka kunci ────────────────
+    await login(username, wrong); // kegagalan ke-5 -> terkunci lagi
+    const lockedAgain = await login(username, PASSWORD);
+    check(
+      "akun terkunci lagi setelah 5 gagal",
+      lockedAgain.status === 423,
+      `got ${lockedAgain.status}`,
+    );
+
+    const reset = await call("POST", `/parents/${parentId}/reset-password`, {
+      token: adminToken,
+      body: { newPassword: "passwordbaru123" },
+    });
+    check(
+      "admin mereset password -> 200",
+      reset.status === 200,
+      `got ${reset.status}`,
+    );
+
+    const afterReset = await login(username, "passwordbaru123");
+    check(
+      "reset password sekaligus membuka kunci",
+      afterReset.status === 200,
+      `got ${afterReset.status}`,
+    );
+
+    // ── Username tak dikenal tidak menumpuk penghitung ────────
+    const unknown = await login(`tidakada${Date.now()}`, wrong);
+    check(
+      "username tak dikenal -> 401 generik",
+      unknown.status === 401,
+      `got ${unknown.status}`,
+    );
+    check(
+      "username tak dikenal tidak membocorkan sisa kesempatan",
+      !unknown.json?.message?.includes("kesempatan"),
+      unknown.json?.message,
+    );
+
+    // ── Bersih-bersih ─────────────────────────────────────────
+    const removed = await call("DELETE", `/parents/${parentId}?hard=true`, {
+      token: adminToken,
+    });
+    check(
+      "akun uji dihapus kembali",
+      removed.status === 200,
+      `got ${removed.status}`,
+    );
+  }
+}
+
 // ── Ringkasan ─────────────────────────────────────────────────
 
 console.log(`\n=== HASIL: ${pass} pass, ${fail} fail ===`);

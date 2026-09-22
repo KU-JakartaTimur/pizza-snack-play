@@ -213,6 +213,12 @@ export const holidays = sqliteTable(
 // `class_name` hanya dipakai role `korlas`: kelas yang dikoordinasinya
 // (mis. `"1A"`). Korlas hanya boleh mengubah jadwal kelas tersebut.
 // Untuk role lain kolom ini NULL.
+//
+// Tiga kolom terakhir melacak percobaan masuk yang gagal. Setelah
+// `MAX_LOGIN_ATTEMPTS` kegagalan berturut-turut, `locked_at` diisi dan akun
+// ditolak sampai admin membukanya. Dihitung **berturut-turut dalam jendela
+// waktu**, bukan seumur akun: salah ketik tiga kali bulan lalu tidak boleh
+// menambah beban dua kali salah ketik hari ini.
 // ─────────────────────────────────────────────────────────────
 export const users = sqliteTable(
   "users",
@@ -228,6 +234,12 @@ export const users = sqliteTable(
     className: text("class_name"),
     isActive: integer("is_active").notNull().default(1),
     lastLoginAt: text("last_login_at"),
+    /** Kegagalan masuk berturut-turut dalam jendela penghitungan. */
+    failedLoginAttempts: integer("failed_login_attempts").notNull().default(0),
+    /** Waktu kegagalan terakhir — dipakai menggeser jendela penghitungan. */
+    lastFailedLoginAt: text("last_failed_login_at"),
+    /** Terisi saat akun terkunci; `null` berarti tidak terkunci. */
+    lockedAt: text("locked_at"),
     createdAt: text("created_at").notNull().default(now),
     updatedAt: text("updated_at").notNull().default(now),
   },

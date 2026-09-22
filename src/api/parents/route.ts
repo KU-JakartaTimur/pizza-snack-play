@@ -16,4 +16,10 @@ export const parentsRoute = new Hono<AuthEnv>()
   .post("/", requireAuth, admin, parentController.create)
   .put("/:id", requireAuth, admin, parentController.update)
   .delete("/:id", requireAuth, admin, parentController.remove)
-  .post("/:id/reset-password", requireAuth, admin, parentController.resetPassword);
+  .post("/:id/reset-password", requireAuth, admin, parentController.resetPassword)
+  /**
+   * Buka kunci akun akibat percobaan masuk yang gagal. Dipisah dari
+   * `reset-password` supaya admin bisa membuka kunci tanpa mengganti password
+   * pemakainya — dua tindakan yang akibatnya berbeda.
+   */
+  .post("/:id/unlock", requireAuth, admin, parentController.unlock);

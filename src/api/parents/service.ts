@@ -9,6 +9,7 @@ import type {
   StudentDto,
   StudentInput,
 } from "../../types/account";
+import { authRepository } from "../auth/repository";
 import { hashPassword } from "../utils/password";
 import { parentRepository, type ParentRow } from "./repository";
 
@@ -53,6 +54,7 @@ function toParentDto(row: ParentRow): ParentDto {
     email: user.email,
     isActive: parent.isActive === 1 && user.isActive === 1,
     lastLoginAt: user.lastLoginAt,
+    lockedAt: user.lockedAt,
     createdAt: parent.createdAt,
   };
 }
@@ -294,6 +296,21 @@ class ParentService {
     return "deactivated";
   }
 
+  /**
+   * Buka kunci akun akibat percobaan masuk yang gagal.
+   *
+   * Password lama tetap berlaku — yang dibuka hanya pengunciannya. Akun yang
+   * memang dinonaktifkan admin **tidak** ikut diaktifkan di sini; itu tindakan
+   * lain yang punya tombolnya sendiri.
+   */
+  async unlock(db: Db, id: number): Promise<true | ParentError> {
+    const row = await parentRepository.findById(db, id);
+    if (!row) return "not_found";
+
+    await authRepository.clearLoginFailures(db, row.user.id);
+    return true;
+  }
+
   async resetPassword(
     db: Db,
     id: number,
@@ -305,6 +322,11 @@ class ParentService {
     await parentRepository.updateUser(db, row.user.id, {
       passwordHash: await hashPassword(newPassword),
     });
+
+    // Sekalian buka kuncinya: password baru tidak ada gunanya kalau akunnya
+    // masih terkunci karena percobaan dengan password lama.
+    await authRepository.clearLoginFailures(db, row.user.id);
+
     return true;
   }
 }

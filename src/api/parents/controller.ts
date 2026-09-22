@@ -278,6 +278,20 @@ class ParentController {
 
     return responseOK(c, "Password berhasil direset");
   };
+
+  /**
+   * Buka kunci akun yang terkunci karena percobaan masuk gagal.
+   * `POST /parents/:id/unlock` — hanya admin.
+   */
+  unlock = async (c: ParentContext) => {
+    const id = parseId(c.req.param("id"));
+    if (id === null) return responseBadRequest(c, "ID tidak valid");
+
+    const result = await parentService.unlock(getDb(c.env), id);
+    if (result !== true) return mapError(c, result);
+
+    return responseOK(c, "Kunci akun berhasil dibuka");
+  };
 }
 
 export const parentController = new ParentController();

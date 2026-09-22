@@ -12,7 +12,31 @@ export interface LoginResult {
   user: AuthUser;
 }
 
-export type LoginFailure = "invalid_credentials" | "inactive";
+export type LoginFailureReason = "invalid_credentials" | "inactive" | "locked";
+
+/**
+ * Hasil login.
+ *
+ * Kegagalan membawa `attemptsLeft` supaya pengguna tahu kesempatannya tinggal
+ * berapa. Tanpa itu penguncian datang tanpa peringatan sama sekali — dan pada
+ * aplikasi ini yang mengunci diri sendiri biasanya orang tua yang salah ketik,
+ * bukan penyerang.
+ */
+export type LoginOutcome =
+  | { ok: true; data: LoginResult }
+  | { ok: false; reason: LoginFailureReason; attemptsLeft?: number };
+
+/** Batas kegagalan masuk berturut-turut sebelum akun dikunci. */
+export const MAX_LOGIN_ATTEMPTS = 5;
+
+/**
+ * Jendela penghitungan kegagalan, dalam detik.
+ *
+ * Kegagalan yang lebih lama dari ini tidak lagi menumpuk. Tanpa jendela, tiga
+ * salah ketik bulan lalu ditambah dua hari ini akan mengunci akun orang tua
+ * yang sama sekali tidak sedang mencoba menembus apa pun.
+ */
+export const LOGIN_ATTEMPT_WINDOW_SECONDS = 15 * 60;
 
 export interface LoginInput {
   username: string;
@@ -107,20 +131,49 @@ async function issueToken(
 class AuthService {
   /**
    * Verifikasi kredensial dan terbitkan JWT.
-   * Mengembalikan string kode kegagalan bila username/password salah
-   * atau akun nonaktif.
+   *
+   * Setiap password yang salah menambah penghitung kegagalan; setelah
+   * `MAX_LOGIN_ATTEMPTS` kali berturut-turut akunnya dikunci dan hanya admin
+   * yang bisa membukanya. Login yang berhasil mengosongkan penghitung itu,
+   * sehingga akun yang dipakai normal tidak pernah mendekati batas.
    */
-  async login(db: Db, input: LoginInput): Promise<LoginResult | LoginFailure> {
+  async login(db: Db, input: LoginInput): Promise<LoginOutcome> {
     const user = await authRepository.findByUsername(db, input.username);
 
-    if (!user) return "invalid_credentials";
-    if (user.isActive !== 1) return "inactive";
+    if (!user) return { ok: false, reason: "invalid_credentials" };
+    if (user.isActive !== 1) return { ok: false, reason: "inactive" };
+
+    // Diperiksa sebelum password: akun terkunci tidak perlu diverifikasi lagi,
+    // dan pengguna harus tahu bahwa mencoba ulang tidak akan menolong —
+    // yang perlu dilakukan adalah menghubungi admin.
+    if (user.lockedAt) return { ok: false, reason: "locked" };
 
     const passwordMatches = await verifyPassword(
       input.password,
       user.passwordHash,
     );
-    if (!passwordMatches) return "invalid_credentials";
+
+    if (!passwordMatches) {
+      const attempts = await authRepository.registerFailedLogin(
+        db,
+        user.id,
+        LOGIN_ATTEMPT_WINDOW_SECONDS,
+      );
+
+      if (attempts >= MAX_LOGIN_ATTEMPTS) {
+        await authRepository.lock(db, user.id);
+        return { ok: false, reason: "locked" };
+      }
+
+      return {
+        ok: false,
+        reason: "invalid_credentials",
+        attemptsLeft: MAX_LOGIN_ATTEMPTS - attempts,
+      };
+    }
+
+    // Berhasil masuk: bersihkan jejak kegagalan agar tidak menumpuk.
+    await authRepository.clearLoginFailures(db, user.id);
 
     const { token, expiresAt } = await issueToken(
       user,
@@ -133,9 +186,12 @@ class AuthService {
     const profile = await this.parentProfileFor(db, user.id, user.role);
 
     return {
-      token,
-      expiresAt,
-      user: toPublicUser(user, profile),
+      ok: true,
+      data: {
+        token,
+        expiresAt,
+        user: toPublicUser(user, profile),
+      },
     };
   }
 

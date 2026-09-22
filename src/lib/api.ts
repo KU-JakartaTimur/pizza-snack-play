@@ -393,6 +393,13 @@ export const api = {
       unwrapFull<null>(
         http.post(`parents/${id}/reset-password`, { json: { newPassword } }),
       ),
+
+    /**
+     * Buka kunci akun akibat percobaan masuk yang gagal.
+     * Password pemakainya tidak diubah — hanya pengunciannya yang dilepas.
+     */
+    unlock: (id: number) =>
+      unwrapFull<null>(http.post(`parents/${id}/unlock`)),
   },
 
   stats: {

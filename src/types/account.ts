@@ -34,6 +34,14 @@ export interface ParentDto {
   email: string | null;
   isActive: boolean;
   lastLoginAt: string | null;
+  /**
+   * Waktu akun terkunci karena terlalu banyak percobaan masuk yang gagal
+   * (`YYYY-MM-DD HH:MM:SS` UTC). `null` berarti tidak terkunci.
+   *
+   * Akun terkunci tidak bisa masuk sama sekali sampai admin membukanya —
+   * jadi kolom ini yang membuat tombol "Buka kunci" tahu kapan harus muncul.
+   */
+  lockedAt: string | null;
   createdAt: string;
 }
 

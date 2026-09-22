@@ -8,6 +8,10 @@ export default tseslint.config(
 	{
 		ignores: [
 			"dist",
+			// Bundel sementara wrangler (`.wrangler/tmp/deploy-*/`). Bukan
+			// sumber proyek, tapi tetap dipindai dan memunculkan peringatan
+			// yang tidak bisa ditindaklanjuti dari kode kita.
+			".wrangler/**",
 			// Profil browser sementara dari skrip verifikasi tampilan
 			// (`outputs/check-*.mjs`). Sistem menolak membacanya (EPERM), dan
 			// percobaan membaca membuat ESLint gagal total.

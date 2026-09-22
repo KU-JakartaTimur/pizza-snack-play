@@ -38,6 +38,28 @@ export const MAX_LOGIN_ATTEMPTS = 5;
  */
 export const LOGIN_ATTEMPT_WINDOW_SECONDS = 15 * 60;
 
+/**
+ * Bentuk `locked_at` sebagaimana ditulis `datetime('now')` — teks UTC
+ * `YYYY-MM-DD HH:MM:SS`.
+ */
+const LOCKED_AT_PATTERN = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
+
+/**
+ * Apakah `locked_at` benar-benar berisi waktu penguncian.
+ *
+ * Isinya diperiksa bentuknya, bukan sekadar "tidak kosong", karena SQLite
+ * menyimpan jebakan warisan: nama kolom berkutip ganda yang **tidak ada**
+ * tidak menghasilkan galat, melainkan diperlakukan sebagai string literal.
+ * Pada database yang migrasinya belum diterapkan, `locked_at` karena itu
+ * kembali sebagai teks `"locked_at"` — nilai yang selalu truthy. Akibatnya
+ * seluruh akun tampak terkunci dan pengguna disuruh menghubungi admin,
+ * padahal yang bermasalah adalah skema database (pernah terjadi di produksi
+ * saat migrasi 0006 belum diterapkan).
+ */
+function isLocked(lockedAt: string | null | undefined): boolean {
+  return typeof lockedAt === "string" && LOCKED_AT_PATTERN.test(lockedAt);
+}
+
 export interface LoginInput {
   username: string;
   password: string;
@@ -146,7 +168,7 @@ class AuthService {
     // Diperiksa sebelum password: akun terkunci tidak perlu diverifikasi lagi,
     // dan pengguna harus tahu bahwa mencoba ulang tidak akan menolong —
     // yang perlu dilakukan adalah menghubungi admin.
-    if (user.lockedAt) return { ok: false, reason: "locked" };
+    if (isLocked(user.lockedAt)) return { ok: false, reason: "locked" };
 
     const passwordMatches = await verifyPassword(
       input.password,

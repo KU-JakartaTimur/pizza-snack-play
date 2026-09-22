@@ -389,6 +389,12 @@ ditolak selama akun masih terkunci. Login yang berhasil mengosongkan
 penghitungnya, dan admin membuka kunci lewat tombol **buka kunci** di halaman
 Akun Orang Tua (atau `POST /parents/:id/unlock`).
 
+> **Kalau pesan `423` muncul padahal baru sekali salah password**, penyebabnya
+> bukan penguncian melainkan skema database yang tertinggal — kolom
+> `locked_at`/`failed_login_attempts` belum ada, dan SQLite mengembalikan nama
+> kolomnya sebagai teks (lihat Catatan Teknis). Perbaikannya:
+> `bun run db:migrate`, lalu deploy ulang.
+
 > **Bila akun admin sendiri terkunci**, tidak ada admin lain yang bisa
 > membukanya dari dalam aplikasi. Bukalah langsung di database:
 >
@@ -537,12 +543,23 @@ JWT_SECRET=<random string untuk signing JWT>
 
 ```bash
 # 2. Terapkan migrasi + seed ke D1 remote
-bunx drizzle-kit migrate
+bun run db:migrate
 bunx wrangler d1 execute pizza-snack-play --remote --file=./drizzle/seed.sql
 
 # 3. Simpan JWT_SECRET sebagai Worker Secret
 bunx wrangler secret put JWT_SECRET
 ```
+
+> **Migrasi selalu lewat `bun run db:migrate` (wrangler), bukan `drizzle-kit push`.**
+> Keduanya memakai mekanisme yang sama untuk lokal dan remote — pencatatannya di
+> tabel `d1_migrations` — sehingga `bun run db:migrate:local` dan
+> `bun run db:migrate` tidak bisa lagi berbeda status. `bun run db:push`
+> menembak **langsung ke D1 remote** tanpa mencatat apa pun, jadi jangan dipakai
+> untuk perubahan skema produksi (lihat Catatan Teknis).
+>
+> Urutannya penting: **migrasi dulu, kode kemudian**. `bun run deploy` sudah
+> menjalankan migrasi sebelum mengunggah Worker, jadi jalur ini tidak bisa
+> terlewat.
 
 **Regenerate seed** (bila file jadwal diubah):
 
@@ -574,7 +591,7 @@ Test API membuat dan menghapus datanya sendiri, jadi aman dijalankan berulang.
 ```bash
 bun run build      # TypeScript check + Vite build
 bun run preview    # Preview hasil build secara lokal
-bun run deploy     # Build + deploy ke Cloudflare Workers
+bun run deploy     # Migrasi D1 remote + build + deploy ke Cloudflare Workers
 ```
 
 ### Validasi Penuh
@@ -593,7 +610,7 @@ bun run lint       # ESLint
 | `dev`              | `vite`                                                      | Dev server dengan HMR                          |
 | `build`            | `tsc -b && vite build`                                      | Build produksi                                 |
 | `preview`          | `vite preview`                                              | Preview hasil build                            |
-| `deploy`           | `bun run build && wrangler deploy --env production`         | Deploy ke Cloudflare                           |
+| `deploy`           | `bun run build && bun run db:migrate && wrangler deploy …`  | Migrasi D1 remote, build, lalu deploy          |
 | `check`            | `tsc && vite build && wrangler deploy --dry-run`            | Validasi penuh                                 |
 | `lint`             | `eslint .`                                                  | Cek kualitas kode                              |
 | `cf-typegen`       | `wrangler types`                                            | Generate tipe dari binding                     |
@@ -602,7 +619,7 @@ bun run lint       # ESLint
 | `db:migrate:local` | `wrangler d1 migrations apply pizza-snack-play --local`     | Terapkan migrasi ke D1 lokal                   |
 | `db:seed`          | `bun run scripts/seed.ts`                                   | Regenerate `drizzle/seed.sql` dari file jadwal |
 | `db:seed:local`    | `wrangler d1 execute ... --local --file=./drizzle/seed.sql` | Seed D1 lokal                                  |
-| `db:push`          | `drizzle-kit push`                                          | Push schema langsung (dev)                     |
+| `db:push`          | `drizzle-kit push`                                          | Push schema **langsung ke D1 remote**, tanpa catatan migrasi |
 | `db:studio`        | `drizzle-kit studio`                                        | GUI inspeksi database                          |
 | `dev:prod`         | `tsc -b && vite build && wrangler dev --remote`             | Dev server memakai D1 **remote**               |
 | `test`             | `test:auth && test:api && test:status && test:profile`      | Semua test end-to-end                          |
@@ -686,6 +703,9 @@ jadwal maupun memakai Pilih Jadwal sampai `students`-nya diisi.
 - **Ekspor Excel tanpa dependency:** `.xlsx` hanyalah sebuah ZIP berisi XML, jadi `src/api/utils/xlsx.ts` menulisnya sendiri — ZIP mode **store** (tanpa DEFLATE, karena `CompressionStream` tidak selalu ada di runtime edge), tabel CRC-32, dan SpreadsheetML dengan string inline. Alasannya: Worker tidak perlu paket tambahan, dan berkasnya tetap terbuka di Excel, LibreOffice, maupun Google Sheets. Isi lembar dirakit di `src/api/schedules/export.ts` dari **DTO yang sama** dengan yang dipak UI, jadi hasil unduhan tidak pernah berbeda dari yang tampil di layar — termasuk hari dari bulan sebelah yang ikut tampil pada blok pekan pertama/terakhir.
 - **Penghitung gagal masuk dihitung di SQL, bukan dibaca dulu:** `registerFailedLogin` memakai `CASE WHEN last_failed_login_at < datetime('now','-900 seconds') THEN 1 ELSE failed_login_attempts + 1 END`. Kalau penghitungnya dibaca lalu ditulis dari aplikasi, dua percobaan yang berbarengan bisa sama-sama membaca nilai lama dan lolos. Kuncinya **tidak kedaluwarsa sendiri** — sengaja, karena yang bisa memastikan pemiliknya sah hanya admin sekolah.
 - **Mode tiru menyimpan sesi admin:** sebelum token orang tua dipakai, token admin dipindahkan ke `psp_impersonator` di `localStorage`, sehingga `stopImpersonating()` bisa mengembalikan sesi aslinya. Bilah kuning di atas layar menandakan sesi tiru sedang aktif — tanpa penanda itu mudah lupa sedang masuk sebagai orang lain.
+- **Kolom yang belum dimigrasi tidak melempar galat di SQLite:** nama kolom berkutip ganda yang **tidak ada** diperlakukan sebagai **string literal**, bukan error. Jadi `SELECT "locked_at"` pada database yang migrasinya belum diterapkan mengembalikan teks `"locked_at"` — nilai yang selalu truthy. Inilah yang pernah membuat **seluruh** akun dijawab `423 "Akun terkunci"` padahal baru sekali salah password: kode sudah memakai kolom yang belum ada di produksi. Karena itu `isLocked()` di `src/api/auth/service.ts` memeriksa **bentuk** nilainya (`YYYY-MM-DD HH:MM:SS`), bukan sekadar "ada isinya"; dengan begitu skema yang tertinggal gagal dengan `500` yang jujur, bukan pesan menyesatkan.
+- **`wrangler deploy --outdir` menyisakan pengalihan konfigurasi:** sekali dijalankan, wrangler menulis `.wrangler/deploy/config.json` yang mengarahkan `wrangler dev`/`wrangler deploy` **berikutnya** ke `dist/<nama-worker>/wrangler.json` — berkas hasil build itu memakai `main: index.js` + `no_bundle: true`. Akibatnya setiap deploy mengunggah bundel **lama** yang kebetulan ada di `dist/`, dan perubahan kode di `src/` tidak ikut terkirim (hanya aset klien yang segar). Jangan pakai `--outdir`; bila berkas pengalihan itu terlanjur ada, hapus. `bunx wrangler deploy --dry-run` harus mencetak `Total Upload` **tanpa** baris "Using redirected Wrangler configuration".
+- **Satu mekanisme migrasi untuk lokal dan remote:** pencatatannya di tabel `d1_migrations` lewat `wrangler d1 migrations apply` (`db:migrate:local` / `db:migrate`), sesuai `migrations_dir` di `wrangler.json`. Sebelumnya remote memakai `drizzle-kit migrate` (`__drizzle_migrations`) sedangkan lokal memakai wrangler, sehingga migrasi 0006 hanya tercatat di sisi lokal — akar bug "akun terkunci" di atas. `drizzle-kit push` menembak langsung ke D1 remote tanpa mencatat apa pun, jadi perubahan skema produksi tidak boleh lewat situ. `bun run deploy` kini menjalankan `db:migrate` sebelum mengunggah Worker.
 
 ---
 

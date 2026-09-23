@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { CalendarOff, Trash2, Unlock } from "lucide-react";
 import { Badge, Button, ConfirmDialog, Input, Select } from "@/components/ui";
 import { formatCompactDate } from "@/lib/date";
+import { listItem } from "@/lib/motion";
 import type { MenuDto } from "@/types/catalog";
 import type { ScheduleDayDto } from "@/types/schedule";
 import { NO_MENU, STATUS_META, isDayLocked } from "./shared";
@@ -64,7 +66,15 @@ export function DayRow({
   };
 
   return (
-    <li className="flex flex-wrap items-center gap-3 px-5 py-3">
+    /*
+      Elemennya sendiri yang beranimasi (`motion.li`), bukan dibungkus lagi —
+      membungkusnya menghasilkan `<li>` bersarang yang tidak valid dan membuat
+      React melaporkan hydration error.
+    */
+    <motion.li
+      variants={listItem}
+      className="flex flex-wrap items-center gap-3 px-5 py-3"
+    >
       <div className="w-32 shrink-0">
         <p
           className={`text-sm font-medium ${
@@ -209,6 +219,6 @@ export function DayRow({
         }}
         onClose={() => setPending(null)}
       />
-    </li>
+    </motion.li>
   );
 }

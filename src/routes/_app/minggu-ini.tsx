@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/AppShell";
 import { ScheduleDayCard } from "@/components/ScheduleDayCard";
+import { ListReveal, RevealItem } from "@/components/motion/ListReveal";
 import { ExportButton } from "@/components/jadwal/ExportButton";
 import { Button, Card, ErrorState, Spinner } from "@/components/ui";
 import { useActiveClass } from "@/lib/active-class";
@@ -14,6 +15,8 @@ import { addDays, formatWeekLabel, todayInWib } from "@/lib/date";
 export const Route = createFileRoute("/_app/minggu-ini")({
   component: WeekPage,
 });
+
+const WEEK_GRID = "grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5";
 
 function WeekPage() {
   // `anchor` adalah tanggal mana pun dalam minggu yang sedang dilihat.
@@ -104,11 +107,13 @@ function WeekPage() {
       )}
 
       {weekQuery.data && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        <ListReveal className={WEEK_GRID}>
           {weekQuery.data.days.map((day) => (
-            <ScheduleDayCard key={day.date} day={day} compact />
+            <RevealItem key={day.date}>
+              <ScheduleDayCard day={day} compact />
+            </RevealItem>
           ))}
-        </div>
+        </ListReveal>
       )}
     </>
   );

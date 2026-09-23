@@ -1,13 +1,6 @@
-import {
-  CalendarOff,
-  ChevronLeft,
-  ChevronRight,
-  Copy,
-  Lock,
-  Send,
-} from "lucide-react";
+import { CalendarOff, Copy, Lock, Send } from "lucide-react";
+import { MonthNavigator } from "@/components/MonthNavigator";
 import { Button, Card } from "@/components/ui";
-import { indonesianMonthName } from "@/lib/date";
 
 interface MonthToolbarProps {
   year: number;
@@ -73,17 +66,7 @@ export function MonthToolbar({
     <Card className="mb-6">
       <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2">
-            <Button variant="secondary" size="sm" onClick={() => onShift(-1)}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="min-w-40 text-center font-semibold text-slate-900">
-              {indonesianMonthName(month)} {year}
-            </span>
-            <Button variant="secondary" size="sm" onClick={() => onShift(1)}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
+          <MonthNavigator year={year} month={month} onShift={onShift} />
           <p className="text-xs text-slate-500">
             {menusLoading ? "Memuat menu…" : `${menuCount} menu aktif tersedia`}
           </p>

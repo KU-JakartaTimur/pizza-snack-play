@@ -3,6 +3,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { RoleGate } from "@/components/AdminOnly";
 import { PageHeader } from "@/components/AppShell";
+import { FadeIn } from "@/components/motion/FadeIn";
+import { ListReveal } from "@/components/motion/ListReveal";
 import {
   CopyWeekModal,
   type CopyFormValue,
@@ -16,10 +18,11 @@ import {
 import { MonthToolbar } from "@/components/jadwal/MonthToolbar";
 import { SchoolStatusSummary } from "@/components/jadwal/SchoolStatusSummary";
 import { Card, CardHeader, Spinner } from "@/components/ui";
-import { ApiError, api } from "@/lib/api";
+import { errorMessage, api } from "@/lib/api";
 import { useActiveClass } from "@/lib/active-class";
 import { useAuth } from "@/lib/auth-context";
-import { monthOf, monthRange, todayInWib, yearOf } from "@/lib/date";
+import { useMonthNavigator } from "@/hooks/useMonthNavigator";
+import { monthRange, todayInWib } from "@/lib/date";
 import type { ScheduleDayDto } from "@/types/schedule";
 
 export const Route = createFileRoute("/_app/jadwal")({
@@ -58,12 +61,11 @@ function ScheduleAdminContent() {
   const today = todayInWib();
   const { isAdmin, korlasClass } = useAuth();
   const activeClass = useActiveClass();
+  const { year, month, shift } = useMonthNavigator(today);
 
   // Korlas selalu memakai kelasnya sendiri, apa pun pilihan di header.
   const className = isAdmin ? activeClass : (korlasClass ?? activeClass);
 
-  const [year, setYear] = useState(() => yearOf(today));
-  const [month, setMonth] = useState(() => monthOf(today));
   const [banner, setBanner] = useState<Banner | null>(null);
   const [holidayModalOpen, setHolidayModalOpen] = useState(false);
   const [copyModalOpen, setCopyModalOpen] = useState(false);
@@ -117,10 +119,7 @@ function ScheduleAdminContent() {
       await invalidate();
     },
     onError: (error: unknown) =>
-      setBanner({
-        kind: "error",
-        text: error instanceof ApiError ? error.message : fallback,
-      }),
+      setBanner({ kind: "error", text: errorMessage(error, fallback) }),
   });
 
   const saveMutation = useMutation({
@@ -162,7 +161,7 @@ function ScheduleAdminContent() {
     onError: (error) =>
       setBanner({
         kind: "error",
-        text: error instanceof ApiError ? error.message : "Gagal menambah hari libur",
+        text: errorMessage(error, "Gagal menambah hari libur"),
       }),
   });
 
@@ -191,7 +190,7 @@ function ScheduleAdminContent() {
     onError: (error) =>
       setBanner({
         kind: "error",
-        text: error instanceof ApiError ? error.message : "Gagal menyalin jadwal",
+        text: errorMessage(error, "Gagal menyalin jadwal"),
       }),
   });
 
@@ -221,7 +220,7 @@ function ScheduleAdminContent() {
     onError: (error) =>
       setBanner({
         kind: "error",
-        text: error instanceof ApiError ? error.message : "Gagal mengunci jadwal",
+        text: errorMessage(error, "Gagal mengunci jadwal"),
       }),
   });
 
@@ -246,7 +245,7 @@ function ScheduleAdminContent() {
     onError: (error) =>
       setBanner({
         kind: "error",
-        text: error instanceof ApiError ? error.message : "Gagal mempublikasi jadwal",
+        text: errorMessage(error, "Gagal mempublikasi jadwal"),
       }),
   });
 
@@ -254,19 +253,6 @@ function ScheduleAdminContent() {
     mutationFn: (id: number) => api.schedules.unlock(id),
     ...bannerHandlers("Gagal membuka kunci"),
   });
-
-  const shift = (delta: number) => {
-    const next = month + delta;
-    if (next < 1) {
-      setMonth(12);
-      setYear((value) => value - 1);
-    } else if (next > 12) {
-      setMonth(1);
-      setYear((value) => value + 1);
-    } else {
-      setMonth(next);
-    }
-  };
 
   const busy =
     saveMutation.isPending ||
@@ -303,7 +289,8 @@ function ScheduleAdminContent() {
       )}
 
       {banner && (
-        <div
+        <FadeIn
+          key={banner.text}
           className={`mb-4 rounded-lg border px-4 py-3 text-sm ${
             banner.kind === "ok"
               ? "border-brand-200 bg-brand-50 text-brand-700"
@@ -311,7 +298,7 @@ function ScheduleAdminContent() {
           }`}
         >
           {banner.text}
-        </div>
+        </FadeIn>
       )}
 
       <MonthToolbar
@@ -356,7 +343,12 @@ function ScheduleAdminContent() {
         {weeks.map((week) => (
           <Card key={week.startDate}>
             <CardHeader title={week.label} />
-            <ul className="divide-y divide-slate-100">
+            {/*
+              `DayRow` menggambar `<li>`-nya sendiri sekaligus memakai varian
+              animasi dari `ListReveal` — jadi jangan dibungkus `RevealItem`,
+              itu akan menghasilkan `<li>` bersarang.
+            */}
+            <ListReveal as="ul" className="divide-y divide-slate-100">
               {week.days.map((day) => (
                 <DayRow
                   key={day.date}
@@ -372,7 +364,7 @@ function ScheduleAdminContent() {
                   onDelete={(id) => deleteMutation.mutate(id)}
                 />
               ))}
-            </ul>
+            </ListReveal>
           </Card>
         ))}
       </div>

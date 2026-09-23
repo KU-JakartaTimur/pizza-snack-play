@@ -34,129 +34,22 @@ export function ScheduleDayCard({
   /** Sorot kartu — dipakai halaman pemilihan untuk menandai pilihan sendiri. */
   highlight?: boolean;
 }) {
-  const isToday = day.isToday;
-
   return (
     <div
       className={cn(
         "card flex flex-col overflow-hidden transition-shadow",
         // "Hari ini" disorot persik agar langsung tertangkap mata.
-        isToday && "ring-2 ring-highlight-400 ring-offset-1",
-        highlight && !isToday && "ring-2 ring-accent-400 ring-offset-1",
-        !isToday && "hover:shadow-md",
+        day.isToday && "ring-2 ring-highlight-400 ring-offset-1",
+        highlight && !day.isToday && "ring-2 ring-accent-400 ring-offset-1",
+        !day.isToday && "hover:shadow-md",
       )}
     >
-      <div
-        className={cn(
-          "flex items-center justify-between gap-3 border-b px-4 py-3",
-          isToday
-            ? "border-highlight-200 bg-highlight-50"
-            : "border-slate-200 bg-slate-50",
-        )}
-      >
-        <div className="min-w-0">
-          <p
-            className={cn(
-              "font-semibold leading-tight",
-              isToday ? "text-highlight-900" : "text-slate-900",
-            )}
-          >
-            {day.dayName}
-          </p>
-          <p className="truncate text-xs text-slate-500">
-            {formatIndonesianDate(day.date)}
-          </p>
-        </div>
-        <Badge tone={isToday ? "highlight" : "neutral"}>
-          {isToday ? "Hari ini" : relativeDayLabel(day.date)}
-        </Badge>
-      </div>
+      <DayCardHeader day={day} />
 
       <div className="flex-1 px-4 py-3.5">
-        {day.isHoliday ? (
-          <div className="flex items-center gap-2.5 text-highlight-700">
-            <CalendarOff className="h-4 w-4 shrink-0" />
-            <div>
-              <p className="text-sm font-medium">
-                {day.holidayName ?? "Libur"}
-              </p>
-              <p className="text-xs text-highlight-700">Tidak ada jadwal snack</p>
-            </div>
-          </div>
-        ) : day.menu ? (
-          <div className="space-y-3">
-            <div className="flex items-start gap-2.5">
-              <UtensilsCrossed className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-slate-900">
-                  {day.menu.name}
-                </p>
-                {day.menu.description && !compact && (
-                  <p className="mt-0.5 text-xs text-slate-500">
-                    {day.menu.description}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {day.menu.items.length > 0 && (
-              <div className="space-y-1.5 pl-6">
-                {groupItems(day.menu.items).map((group) => (
-                  <div key={group.type} className="flex flex-wrap gap-1.5">
-                    <span className="w-full text-[11px] font-medium uppercase tracking-wide text-slate-400">
-                      {ITEM_TYPE_LABELS[group.type]}
-                    </span>
-                    {group.names.map((name) => (
-                      <span
-                        key={name}
-                        className="rounded-md border border-accent-200 bg-accent-50 px-2 py-0.5 text-xs text-accent-800"
-                      >
-                        {name}
-                      </span>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : (
-          <p className="text-sm text-slate-400">
-            Belum ada menu untuk tanggal ini
-          </p>
-        )}
-
-        {!day.isHoliday && (day.petugasName || day.petugasParentName) && (
-          <div className="mt-3 flex items-start gap-2 text-sm text-slate-700">
-            {day.claim ? (
-              <HandHeart className="mt-0.5 h-4 w-4 shrink-0 text-accent-600" />
-            ) : (
-              <User className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
-            )}
-            <div className="min-w-0">
-              {day.petugasName && (
-                <p className="font-medium text-slate-900">{day.petugasName}</p>
-              )}
-              {day.petugasParentName && (
-                <p className="text-xs text-slate-500">{day.petugasParentName}</p>
-              )}
-              {/* Petugas hasil klaim sendiri dibedakan dari yang ditunjuk korlas. */}
-              {day.claim && (
-                <p className="mt-0.5 text-xs text-accent-700">
-                  Dipilih sendiri
-                  {day.claim.note && ` · ${day.claim.note}`}
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {day.notes && (
-          <div className="mt-3 flex items-start gap-2 rounded-lg border border-highlight-200 bg-highlight-50 px-2.5 py-2 text-xs text-highlight-800">
-            <StickyNote className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            <span>{day.notes}</span>
-          </div>
-        )}
-
+        <DayBody day={day} compact={compact} />
+        <PetugasLine day={day} />
+        <NotesLine notes={day.notes} />
       </div>
 
       {footer && (
@@ -164,6 +57,144 @@ export function ScheduleDayCard({
           {footer}
         </div>
       )}
+    </div>
+  );
+}
+
+/** Judul kartu: nama hari + tanggal, dengan badge "Hari ini" atau label relatif. */
+function DayCardHeader({ day }: { day: ScheduleDayDto }) {
+  return (
+    <div
+      className={cn(
+        "flex items-center justify-between gap-3 border-b px-4 py-3",
+        day.isToday
+          ? "border-highlight-200 bg-highlight-50"
+          : "border-slate-200 bg-slate-50",
+      )}
+    >
+      <div className="min-w-0">
+        <p
+          className={cn(
+            "font-semibold leading-tight",
+            day.isToday ? "text-highlight-900" : "text-slate-900",
+          )}
+        >
+          {day.dayName}
+        </p>
+        <p className="truncate text-xs text-slate-500">
+          {formatIndonesianDate(day.date)}
+        </p>
+      </div>
+      <Badge tone={day.isToday ? "highlight" : "neutral"}>
+        {day.isToday ? "Hari ini" : relativeDayLabel(day.date)}
+      </Badge>
+    </div>
+  );
+}
+
+/** Isi kartu: hari libur, daftar menu, atau keterangan belum ada menu. */
+function DayBody({ day, compact }: { day: ScheduleDayDto; compact: boolean }) {
+  if (day.isHoliday) {
+    return (
+      <div className="flex items-center gap-2.5 text-highlight-700">
+        <CalendarOff className="h-4 w-4 shrink-0" />
+        <div>
+          <p className="text-sm font-medium">{day.holidayName ?? "Libur"}</p>
+          <p className="text-xs text-highlight-700">Tidak ada jadwal snack</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!day.menu) {
+    return (
+      <p className="text-sm text-slate-400">Belum ada menu untuk tanggal ini</p>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-start gap-2.5">
+        <UtensilsCrossed className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-slate-900">
+            {day.menu.name}
+          </p>
+          {/* Deskripsi disembunyikan pada kartu ringkas agar tingginya seragam. */}
+          {day.menu.description && !compact && (
+            <p className="mt-0.5 text-xs text-slate-500">
+              {day.menu.description}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {day.menu.items.length > 0 && (
+        <div className="space-y-1.5 pl-6">
+          {groupItems(day.menu.items).map((group) => (
+            <div key={group.type} className="flex flex-wrap gap-1.5">
+              <span className="w-full text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                {ITEM_TYPE_LABELS[group.type]}
+              </span>
+              {group.names.map((name) => (
+                <span
+                  key={name}
+                  className="rounded-md border border-accent-200 bg-accent-50 px-2 py-0.5 text-xs text-accent-800"
+                >
+                  {name}
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Baris petugas — hanya bila memang ada petugasnya.
+ *
+ * Klaim sendiri (tanda hati) dibedakan dari penunjukan korlas (ikon orang),
+ * karena keduanya punya makna berbeda bagi orang tua.
+ */
+function PetugasLine({ day }: { day: ScheduleDayDto }) {
+  if (day.isHoliday) return null;
+  if (!day.petugasName && !day.petugasParentName) return null;
+
+  return (
+    <div className="mt-3 flex items-start gap-2 text-sm text-slate-700">
+      {day.claim ? (
+        <HandHeart className="mt-0.5 h-4 w-4 shrink-0 text-accent-600" />
+      ) : (
+        <User className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+      )}
+      <div className="min-w-0">
+        {day.petugasName && (
+          <p className="font-medium text-slate-900">{day.petugasName}</p>
+        )}
+        {day.petugasParentName && (
+          <p className="text-xs text-slate-500">{day.petugasParentName}</p>
+        )}
+        {day.claim && (
+          <p className="mt-0.5 text-xs text-accent-700">
+            Dipilih sendiri
+            {day.claim.note && ` · ${day.claim.note}`}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Catatan bebas dari korlas untuk tanggal ini. */
+function NotesLine({ notes }: { notes: string | null }) {
+  if (!notes) return null;
+
+  return (
+    <div className="mt-3 flex items-start gap-2 rounded-lg border border-highlight-200 bg-highlight-50 px-2.5 py-2 text-xs text-highlight-800">
+      <StickyNote className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+      <span>{notes}</span>
     </div>
   );
 }

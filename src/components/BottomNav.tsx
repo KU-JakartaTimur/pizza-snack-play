@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
+import { AnimatePresence, motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { SPRING, backdrop, slideUp } from "@/lib/motion";
+import { ListReveal, RevealItem } from "./motion/ListReveal";
 import { useAuth } from "@/lib/auth-context";
 import { usePWA } from "@/hooks/usePWA";
 import {
@@ -82,49 +85,57 @@ export function BottomNav() {
       </nav>
 
       {/* Panel tujuan navigasi yang tidak muat sebagai tab. */}
-      {sheetOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-end bg-brand-950/45"
-          onClick={() => setSheetOpen(false)}
-        >
-          <div
-            className="w-full rounded-t-3xl bg-white pb-8 shadow-2xl"
-            onClick={(event) => event.stopPropagation()}
+      <AnimatePresence>
+        {sheetOpen && (
+          <motion.div
+            key="sheet-backdrop"
+            variants={backdrop}
+            initial="hidden"
+            animate="visible"
+            exit="hidden"
+            className="fixed inset-0 z-50 flex items-end bg-brand-950/45"
+            onClick={() => setSheetOpen(false)}
           >
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-              <h2 className="font-semibold text-slate-900">Semua Menu</h2>
-              <button
-                type="button"
-                onClick={() => setSheetOpen(false)}
-                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-brand-700"
-                aria-label="Tutup"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
+            <motion.div
+              variants={slideUp}
+              className="w-full rounded-t-3xl bg-white pb-8 shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+                <h2 className="font-semibold text-slate-900">Semua Menu</h2>
+                <button
+                  type="button"
+                  onClick={() => setSheetOpen(false)}
+                  className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-brand-700"
+                  aria-label="Tutup"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
 
-            <ul className="grid grid-cols-2 gap-1 px-3 py-3">
-              {(sheetItems.length > 0 ? sheetItems : items).map((item) => (
-                <li key={item.to}>
-                  <Link
-                    to={item.to}
-                    onClick={() => setSheetOpen(false)}
-                    className={cn(
-                      "flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-colors",
-                      pathname === item.to
-                        ? "bg-brand-50 text-brand-700"
-                        : "text-slate-600 hover:bg-slate-50",
-                    )}
-                  >
-                    <item.icon className="h-5 w-5 shrink-0" />
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
+              <ListReveal as="ul" className="grid grid-cols-2 gap-1 px-3 py-3">
+                {(sheetItems.length > 0 ? sheetItems : items).map((item) => (
+                  <RevealItem as="li" key={item.to}>
+                    <Link
+                      to={item.to}
+                      onClick={() => setSheetOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-colors",
+                        pathname === item.to
+                          ? "bg-brand-50 text-brand-700"
+                          : "text-slate-600 hover:bg-slate-50",
+                      )}
+                    >
+                      <item.icon className="h-5 w-5 shrink-0" />
+                      {item.label}
+                    </Link>
+                  </RevealItem>
+                ))}
+              </ListReveal>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }
@@ -136,10 +147,21 @@ function BottomTab({ item, active }: { item: NavItem; active: boolean }) {
       to={item.to}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "flex flex-1 flex-col items-center gap-0.5 rounded-2xl px-1 py-1.5 transition-colors",
+        "relative flex flex-1 flex-col items-center gap-0.5 rounded-2xl px-1 py-1.5 transition-colors",
         active ? "text-brand-600" : "text-slate-400 hover:text-slate-600",
       )}
     >
+      {/*
+        Latar tab aktif meluncur antar tab (satu elemen dengan `layoutId`),
+        memberi kesan bilahnya benar-benar berpindah tempat.
+      */}
+      {active && (
+        <motion.span
+          layoutId="bottom-tab-pill"
+          className="absolute inset-0 -z-10 rounded-2xl bg-brand-50"
+          transition={SPRING}
+        />
+      )}
       <item.icon className="h-5 w-5" strokeWidth={active ? 2.4 : 2} />
       <span className={cn("text-[0.68rem]", active && "font-semibold")}>
         {item.label}

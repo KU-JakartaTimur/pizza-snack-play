@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
+import { motion } from "framer-motion";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/cn";
+import { SPRING } from "@/lib/motion";
 import { useHasNoClass } from "@/hooks/useClasses";
 import { AccountMenu } from "./AccountMenu";
 import { BottomNav } from "./BottomNav";
@@ -121,15 +123,26 @@ function HeaderNav({
           <Link
             key={to}
             to={to}
+            aria-current={active ? "page" : undefined}
             className={cn(
-              "flex shrink-0 items-center gap-2 border-b-2 px-3 py-2.5 text-sm font-medium transition-colors",
-              active
-                ? "border-brand-600 text-brand-700"
-                : "border-transparent text-slate-500 hover:border-accent-400 hover:text-brand-700",
+              "relative flex shrink-0 items-center gap-2 px-3 py-2.5 text-sm font-medium transition-colors",
+              active ? "text-brand-700" : "text-slate-500 hover:text-brand-700",
             )}
           >
             <Icon className="h-4 w-4" />
             {label}
+            {/*
+              Garis bawah penanda menu aktif digambar sebagai elemen, bukan
+              border, supaya perpindahannya bisa dianimasikan antar menu
+              (atribut `layoutId` membuat React hanya memindahkan satu elemen).
+            */}
+            {active && (
+              <motion.span
+                layoutId="nav-underline"
+                className="absolute inset-x-0 -bottom-px h-0.5 bg-brand-600"
+                transition={SPRING}
+              />
+            )}
           </Link>
         );
       })}

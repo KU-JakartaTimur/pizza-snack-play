@@ -1,4 +1,4 @@
-import { CalendarOff, Copy, Lock, Send } from "lucide-react";
+import { CalendarOff, ClipboardPaste, Copy, Lock, Send } from "lucide-react";
 import { MonthNavigator } from "@/components/MonthNavigator";
 import { Button, Card, Checkbox } from "@/components/ui";
 
@@ -27,6 +27,8 @@ interface MonthToolbarProps {
   onPublish: () => void;
   onOpenCopy: () => void;
   onOpenHoliday: () => void;
+  /** Buka dialog impor jadwal dari teks tempelan (admin & korlas). */
+  onOpenImport: () => void;
   /** Centang / kosongkan centang seluruh baris bulan ini. */
   onToggleSelectAll: () => void;
 }
@@ -55,6 +57,7 @@ export function MonthToolbar({
   onPublish,
   onOpenCopy,
   onOpenHoliday,
+  onOpenImport,
   onToggleSelectAll,
 }: MonthToolbarProps) {
   const scopeLabel = isAdmin ? "semua kelas" : `kelas ${className ?? ""}`.trim();
@@ -124,6 +127,18 @@ export function MonthToolbar({
           >
             <Copy className="h-4 w-4" />
             Salin Sepekan
+          </Button>
+
+          {/* Tempel jadwal dari sekolah — admin menyentuh semua kelas,
+              korlas hanya kelasnya sendiri (ditegakkan di server). */}
+          <Button
+            variant="secondary"
+            disabled={!className}
+            onClick={onOpenImport}
+            title="Tempel jadwal dari teks sekolah — baris yang sudah ada dilewati"
+          >
+            <ClipboardPaste className="h-4 w-4" />
+            Impor Jadwal
           </Button>
 
           {/* Hari libur bersifat global (semua kelas) → hanya admin. */}

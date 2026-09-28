@@ -16,10 +16,12 @@ import {
   HolidayModal,
   type HolidayFormValue,
 } from "@/components/jadwal/HolidayModal";
+import { ImportDialog } from "@/components/jadwal/ImportDialog";
 import { MonthToolbar } from "@/components/jadwal/MonthToolbar";
 import { SchoolStatusSummary } from "@/components/jadwal/SchoolStatusSummary";
 import {
   copyMessage,
+  importMessage,
   lockMessage,
   publishMessage,
 } from "@/components/jadwal/messages";
@@ -36,7 +38,12 @@ import { useAuth } from "@/lib/auth-context";
 import { useMonthNavigator } from "@/hooks/useMonthNavigator";
 import { useClassRoster } from "@/hooks/useClassRoster";
 import { monthRange, todayInWib } from "@/lib/date";
-import type { BulkRowAction, ScheduleDayDto, WeekScheduleDto } from "@/types/schedule";
+import type {
+  BulkRowAction,
+  ImportScheduleResultDto,
+  ScheduleDayDto,
+  WeekScheduleDto,
+} from "@/types/schedule";
 
 export const Route = createFileRoute("/_app/jadwal")({
   component: ScheduleAdminPage,
@@ -67,6 +74,10 @@ const NO_WEEKS: WeekScheduleDto[] = [];
  * 2. **Per kelas** — centang kelas di kartu status, lalu kunci/publikasi
  *    hanya kelas-kelas itu (mengirim `classNames`).
  *
+ * Selain itu ada **Impor Jadwal**: tempel teks jadwal dari sekolah, lihat
+ * pratinjaunya, lalu simpan sebagai draft. Admin menyasar semua kelas,
+ * korlas hanya kelasnya sendiri (ditegakkan di server).
+ *
  * Halaman ini hanya menyusun tata letak + query/mutasi. Rendering dipecah ke
  * `src/components/jadwal/*`; kalimat banner ke `messages.ts`; dan logika
  * pemilihan ke `selection.ts`.
@@ -92,6 +103,10 @@ function ScheduleAdminContent() {
   const [banner, setBanner] = useState<Banner | null>(null);
   const [holidayModalOpen, setHolidayModalOpen] = useState(false);
   const [copyModalOpen, setCopyModalOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  /** Hasil pratinjau impor; `null` selama belum ada pratinjau. */
+  const [importPreview, setImportPreview] =
+    useState<ImportScheduleResultDto | null>(null);
 
   /**
    * Pilihan checkbox disimpan mentah; penyaringan dilakukan saat membaca
@@ -247,6 +262,57 @@ function ScheduleAdminContent() {
   });
 
   /**
+   * Langkah 1 impor — membaca teks **tanpa menulis apa pun** (`dryRun`).
+   *
+   * Hasilnya ditampilkan di dialog supaya salah baca ketahuan sebelum
+   * menyentuh jadwal yang dilihat orang tua.
+   */
+  const importPreviewMutation = useMutation({
+    mutationFn: (text: string) =>
+      api.schedules.importText({ text, dryRun: true }),
+    onSuccess: (result) => setImportPreview(result.data),
+    onError: (error) =>
+      setBanner({
+        kind: "error",
+        text: errorMessage(error, "Gagal membaca teks jadwal"),
+      }),
+  });
+
+  /**
+   * Langkah 2 impor — baru menyentuh tabel.
+   *
+   * Server melewati (tanggal, kelas) yang sudah punya jadwal, jadi menekan
+   * Impor dua kali dengan teks yang sama tidak menggandakan apa pun.
+   */
+  const importApplyMutation = useMutation({
+    mutationFn: (text: string) => api.schedules.importText({ text }),
+    onSuccess: async (result) => {
+      setBanner({ kind: "ok", text: importMessage(result.data) });
+      setImportOpen(false);
+      setImportPreview(null);
+      await invalidate();
+    },
+    onError: (error) =>
+      setBanner({
+        kind: "error",
+        text: errorMessage(error, "Gagal mengimpor jadwal"),
+      }),
+  });
+
+  /**
+   * Pratinjau teks kosong dibuang di klien — server menolaknya dengan 400,
+   * dan dialog memakai pemanggilan ini justru untuk membersihkan pratinjau
+   * basi saat teksnya diubah.
+   */
+  const handleImportPreview = (text: string) => {
+    if (!text.trim()) {
+      setImportPreview(null);
+      return;
+    }
+    importPreviewMutation.mutate(text);
+  };
+
+  /**
    * Kunci sebulan penuh. Tanpa `classNames` → semua kelas (admin) atau kelas
    * korlas; dengan `classNames` → hanya kelas yang dicentang di kartu status.
    */
@@ -329,7 +395,8 @@ function ScheduleAdminContent() {
     lockMutation.isPending ||
     publishMutation.isPending ||
     unlockMutation.isPending ||
-    bulkMutation.isPending;
+    bulkMutation.isPending ||
+    importApplyMutation.isPending;
 
   // ── Turunan tampilan ────────────────────────────────────────
 
@@ -469,6 +536,7 @@ function ScheduleAdminContent() {
         onPublish={() => publishMutation.mutate({})}
         onOpenCopy={() => setCopyModalOpen(true)}
         onOpenHoliday={() => setHolidayModalOpen(true)}
+        onOpenImport={() => setImportOpen(true)}
         onToggleSelectAll={toggleSelectAllDays}
       />
 
@@ -600,6 +668,18 @@ function ScheduleAdminContent() {
         today={today}
         onClose={() => setCopyModalOpen(false)}
         onSubmit={(value) => copyMutation.mutate(value)}
+      />
+
+      <ImportDialog
+        open={importOpen}
+        isAdmin={isAdmin}
+        className={className}
+        previewing={importPreviewMutation.isPending}
+        applying={importApplyMutation.isPending}
+        preview={importPreview}
+        onClose={() => setImportOpen(false)}
+        onPreview={handleImportPreview}
+        onApply={(text) => importApplyMutation.mutate(text)}
       />
     </>
   );

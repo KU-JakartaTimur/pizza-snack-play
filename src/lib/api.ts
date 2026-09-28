@@ -21,6 +21,8 @@ import type {
   CopyWeekInput,
   CopyWeekResultDto,
   HolidayDto,
+  ImportScheduleInput,
+  ImportScheduleResultDto,
   LockScheduleInput,
   LockScheduleResultDto,
   MenuHistoryDto,
@@ -307,6 +309,17 @@ export const api = {
     bulkUnlock: (body: BulkRowScheduleInput) =>
       unwrapFull<BulkRowScheduleResultDto>(
         http.post("schedules/bulk/unlock", { json: body }),
+      ),
+
+    /**
+     * Impor jadwal dari teks tempelan sekolah (admin & korlas).
+     *
+     * `dryRun` mengembalikan pratinjau tanpa menulis apa pun — dipakai untuk
+     * menampilkan apa yang akan terjadi sebelum pemakai menekan "Terapkan".
+     */
+    importText: (body: ImportScheduleInput) =>
+      unwrapFull<ImportScheduleResultDto>(
+        http.post("schedules/import", { json: body }),
       ),
 
     weeks: (year: number, month: number) =>

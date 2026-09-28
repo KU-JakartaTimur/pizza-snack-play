@@ -38,6 +38,7 @@ Jadwal piket snack sekolah sebelumnya disusun dalam dokumen teks manual — suli
 | **Salin Jadwal Sepekan**     | Duplikasi jadwal Senin–Jumat ke minggu lain, opsional timpa                                                                            | Admin, Korlas  | ✅         |
 | **Kunci & Publikasi Jadwal** | `draft` → `locked` → `published`. Admin & korlas mengunci (korlas terbatas kelasnya); **hanya admin** yang boleh membuka kunci. Setelah `locked`/`published` jadwal tidak dapat diubah lagi | Admin, Korlas  | ✅         |
 | **Aksi Massal (Checkbox)**   | Centang hari di tabel jadwal — atau kelas di kartu status — lalu kunci/publikasi/buka kunci sekaligus, tanpa satu baris satu klik | Admin, Korlas  | ✅         |
+| **Impor Jadwal dari Teks**   | Tempel jadwal apa adanya dari sekolah (blok rentang tanggal + baris `Hari : menu`) → dipratinjau lebih dulu, lalu masuk sebagai `draft`. Tanggal yang sudah punya jadwal **dilewati**, jadi teks yang sama boleh ditempel berulang | Admin, Korlas  | ✅         |
 | **Pilih Jadwal**             | Orang tua berebut tanggal snack yang dibiarkan kosong korlas — siapa cepat dia dapat                                                   | Parent, Korlas | ✅         |
 | **PWA**                      | Pasang ke layar utama + service worker (cache offline)                                                                                 | Semua          | ✅         |
 | **Kelola Hari Libur**        | Tambah/hapus hari libur bernama (berlaku semua kelas)                                                                                  | Admin          | ✅         |
@@ -317,6 +318,7 @@ Meminta kelas di luar cakupan dijawab **403**.
 | `GET`    | `/schedules/:id`                        | Auth          | Detail satu entri jadwal                                                                          |
 | `POST`   | `/schedules`                            | Admin, Korlas | Buat entri jadwal — `className` **wajib** untuk admin, otomatis untuk korlas                      |
 | `POST`   | `/schedules/copy`                       | Admin, Korlas | Salin jadwal Senin–Jumat Sepekan, untuk satu kelas                                                |
+| `POST`   | `/schedules/import`                     | Admin, Korlas | Impor jadwal dari **teks tempelan** — `{ text, classNames?, dryRun? }`. `dryRun` mengembalikan pratinjau tanpa menulis apa pun; baris `(tanggal, kelas)` yang sudah ada **dilewati**, hasilnya `draft` |
 | `POST`   | `/schedules/lock`                       | Admin, Korlas | Kunci semua baris `draft` pada rentang tanggal — `classNames?` untuk memilih beberapa kelas; korlas terbatas kelasnya |
 | `POST`   | `/schedules/publish`                    | Admin, Korlas | Publikasi sebulan — gagal **409** bila masih ada `draft`. `classNames?` mempersempit ke kelas terpilih; korlas hanya kelasnya |
 | `POST`   | `/schedules/bulk/lock`                  | Admin, Korlas | Kunci **baris terpilih** (`{ ids }`) — hanya `draft` yang berubah, sisanya dilaporkan `skipped`                  |
@@ -329,6 +331,30 @@ Meminta kelas di luar cakupan dijawab **403**.
 | `GET`    | `/holidays?from=&to=`                   | Auth          | Daftar hari libur (global — berlaku semua kelas)                                                  |
 | `POST`   | `/holidays`                             | Admin         | Tambah hari libur                                                                                 |
 | `DELETE` | `/holidays/:id`                         | Admin         | Hapus hari libur                                                                                  |
+
+#### Impor jadwal dari teks
+
+Sekolah mengirim jadwal sebagai teks biasa. Tombol **Impor Jadwal** di halaman `/jadwal`
+membacanya langsung dari dalam aplikasi — tidak perlu lagi skrip Python + `wrangler d1 execute`
+seperti patch Oktober 2026.
+
+```text
+1 - 2 Oktober 2026
+Kamis   : Puding Roti + jeruk
+Jumat   : Libur
+```
+
+- Blok dibuka **rentang tanggal**, lalu tiap baris `Hari : menu` dicocokkan dengan tanggal
+  aslinya — tanggal tidak perlu ditulis satu per satu.
+- Nama hari dipercaya **kalender**, bukan labelnya. Kalau blok sepekan penuh dilabeli keliru
+  (pernah terjadi: `14 - 18 Oktober 2026` ditulis Senin–Jumat padahal 14 Oktober 2026 hari
+  Rabu), rentangnya digeser ke Senin–Jumat minggu itu dan pemakai diberi peringatan.
+- `+` memisahkan makanan utama dan buah; teks di dalam `(...)` menjadi catatan.
+- Baris `Libur` menghasilkan jadwal bertanda libur tanpa menu.
+- **Idempoten:** pasangan `(tanggal, kelas)` yang sudah punya jadwal dilewati, bukan ditimpa —
+  jadwal yang sudah dikunci/dipublikasi tidak pernah berubah karena tempelan.
+- Baris baru selalu `draft`; admin menyasar **semua kelas**, korlas **kelasnya sendiri**
+  (ditegakkan di server, bukan di UI).
 
 ### Pilih Jadwal (Klaim)
 
@@ -747,7 +773,7 @@ jadwal maupun memakai Pilih Jadwal sampai `students`-nya diisi.
 
 ## Dokumentasi
 
-- [PRD — Product Requirements Document v1.10](docs/PRD_Pizza_Snack_Play.md)
+- [PRD — Product Requirements Document v1.12](docs/PRD_Pizza_Snack_Play.md)
 - [Struktur Tabel — DDL + Drizzle + Seed + Queries](docs/Struktur_Tabel_Pizza_Snack_Play.md)
 - [UAT Result](docs/UAT_Result.md)
 - [Panduan Orang Tua — dek sosialisasi 15 halaman](Panduan%20Orang%20Tua%20Pizza%20Snack%20Play/STORY.md) (`.pptx` + sumber `slides/*.slide`)
@@ -760,7 +786,7 @@ Uji end-to-end memakai dev server yang hidup dan D1 lokal ter-seed
 ```bash
 bun run test              # keempat suite di bawah, berurutan
 bun run test:auth         # 33 skenario  — login, JWT, role, ubah password
-bun run test:api          # 309 skenario — jadwal, klaim, katalog, akun, ekspor Excel, batas masuk
+bun run test:api          # 366 skenario — jadwal, klaim, katalog, akun, ekspor Excel, impor teks, batas masuk
 bun run test:status       # 22 skenario  — status jadwal bulanan
 bun run test:profile      # 33 skenario  — layanan mandiri anak (idempoten)
 ```

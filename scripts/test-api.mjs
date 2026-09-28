@@ -2714,6 +2714,379 @@ section("23. Aksi massal per baris & per kelas (bulk)");
   );
 }
 
+section("24. Impor jadwal dari teks tempelan (admin & korlas)");
+{
+  // Bulan jauh yang tidak dipakai section lain. 3 Maret 2036 jatuh hari
+  // Senin dan 7 Maret 2036 hari Jumat — jadi blok "3 - 7 Maret 2036" memang
+  // Senin–Jumat, dan parser tidak perlu menggeser apa pun.
+  const RANGE_FROM = "2036-03-03";
+  const RANGE_TO = "2036-03-12";
+  const HARI_BERISI = 7; // hari yang punya menu
+  const HARI_TOTAL = 8; // + satu hari "Libur"
+
+  // Penanda unik per jalan uji: nama menu mustahil bertabrakan dengan sisa
+  // uji sebelumnya, sehingga "5 menu baru" selalu bermakna. Sekaligus jadi
+  // awalan yang dipakai untuk membersihkan katalog di akhir.
+  const TAG = `Uji Impor ${Date.now().toString(36)}`;
+
+  const TEKS = [
+    "3 - 7 Maret 2036",
+    `Senin   : ${TAG} Nasi Goreng + jeruk`,
+    `Selasa  : ${TAG} Bubur Ayam + pisang`,
+    "Rabu    : Libur",
+    `Kamis   : ${TAG} Nasi Goreng + jeruk`,
+    `Jumat   : ${TAG} Mie Ayam + melon`,
+    "",
+    "10 - 12 Maret 2036",
+    `Senin   : ${TAG} Sate Ayam + nanas`,
+    `Selasa  : ${TAG} Sate Ayam + nanas`,
+    `Rabu    : ${TAG} Bakso + jeruk`,
+  ].join("\n");
+
+  const korlasLogin = await call("POST", "/auth/login", { body: KORLAS });
+  const korlasToken = korlasLogin.data?.token;
+  const korlasClass = korlasLogin.data?.user?.className;
+
+  const allClasses =
+    (await call("GET", "/classes", { token: adminToken })).data?.classes ?? [];
+
+  // Dua kelas uji yang **bukan** kelas korlas — supaya impor korlas nanti
+  // benar-benar membuat baris baru, bukan kebetulan sudah terisi.
+  const kelasUji = allClasses.filter((name) => name !== korlasClass).slice(0, 2);
+
+  check(
+    "kelas uji tersedia (2 kelas + kelas korlas)",
+    kelasUji.length === 2 && Boolean(korlasClass),
+    JSON.stringify({ allClasses, korlasClass }),
+  );
+
+  const sameSet = (a, b) =>
+    JSON.stringify([...(a ?? [])].sort()) ===
+    JSON.stringify([...(b ?? [])].sort());
+
+  /** Seluruh hari pada rentang uji untuk satu kelas (termasuk akhir pekan). */
+  const barisKelas = async (className) =>
+    (
+      await call(
+        "GET",
+        `/schedules/range?from=${RANGE_FROM}&to=${RANGE_TO}&class=${encodeURIComponent(className)}`,
+        { token: adminToken },
+      )
+    ).data ?? [];
+
+  /** Hanya hari yang benar-benar punya baris jadwal. */
+  const terisi = (days) => days.filter((day) => day.scheduleId !== null);
+
+  const impor = (body, token = adminToken) =>
+    call("POST", "/schedules/import", { token, body });
+
+  // ── Penjagaan akses ─────────────────────────────────────────
+  // Sengaja memanggil `call` langsung, bukan `impor`: parameter default pada
+  // `impor` menelan `undefined`, sehingga versi "tanpa token" akan diam-diam
+  // memakai token admin dan lulus palsu.
+  const anon = await call("POST", "/schedules/import", {
+    body: { text: TEKS, dryRun: true },
+  });
+  check("impor tanpa token -> 401", anon.status === 401, `got ${anon.status}`);
+
+  const byParent = await impor({ text: TEKS, dryRun: true }, parentToken);
+  check(
+    "impor oleh orang tua -> 403",
+    byParent.status === 403,
+    `got ${byParent.status}`,
+  );
+
+  const korlasForeign = await impor(
+    { text: TEKS, dryRun: true, classNames: [kelasUji[0]] },
+    korlasToken,
+  );
+  check(
+    "korlas menyebut kelas lain -> 403",
+    korlasForeign.status === 403,
+    `got ${korlasForeign.status}`,
+  );
+
+  // ── Validasi teks ───────────────────────────────────────────
+  const blank = await impor({ text: "   ", dryRun: true });
+  check("teks kosong -> 400", blank.status === 400, `got ${blank.status}`);
+
+  const garbage = await impor({
+    text: "halo dunia — tidak ada blok tanggal di sini",
+    dryRun: true,
+  });
+  check(
+    "teks tanpa blok tanggal -> 400",
+    garbage.status === 400,
+    `got ${garbage.status}`,
+  );
+
+  // ── Pratinjau admin: tanpa `classNames` = seluruh sekolah ───
+  const preview = await impor({ text: TEKS, dryRun: true });
+  check("pratinjau admin -> 200", preview.status === 200, `got ${preview.status}`);
+  check(
+    "pratinjau ditandai dryRun",
+    preview.data?.dryRun === true,
+    JSON.stringify(preview.data?.dryRun),
+  );
+  check(
+    "8 hari terbaca dari 2 blok",
+    preview.data?.parsedDays === HARI_TOTAL && preview.data?.blocks === 2,
+    JSON.stringify({
+      days: preview.data?.parsedDays,
+      blocks: preview.data?.blocks,
+    }),
+  );
+  check(
+    "admin tanpa `classNames` -> seluruh kelas",
+    sameSet(preview.data?.classes, allClasses),
+    JSON.stringify(preview.data?.classes),
+  );
+  check(
+    "pratinjau: 5 menu baru, 2 dipakai ulang dalam satu tempelan",
+    preview.data?.createdMenus === 5 && preview.data?.reusedMenus === 2,
+    JSON.stringify({
+      created: preview.data?.createdMenus,
+      reused: preview.data?.reusedMenus,
+    }),
+  );
+  check(
+    `pratinjau: ${HARI_TOTAL} hari x ${allClasses.length} kelas baris baru`,
+    preview.data?.createdRows === HARI_TOTAL * allClasses.length,
+    `got ${preview.data?.createdRows}`,
+  );
+  check(
+    "pratinjau: tidak ada masalah baca",
+    preview.data?.issues?.length === 0,
+    JSON.stringify(preview.data?.issues),
+  );
+  check(
+    "pratinjau: Rabu 5 Maret dikenali libur tanpa menu",
+    preview.data?.days?.some(
+      (day) => day.date === "2036-03-05" && day.isHoliday && day.menuName === null,
+    ) === true,
+    JSON.stringify(preview.data?.days?.find((day) => day.date === "2036-03-05")),
+  );
+
+  const sesudahPratinjau = await barisKelas(kelasUji[0]);
+  check(
+    "pratinjau benar-benar tidak menulis baris",
+    sesudahPratinjau.every((day) => day.scheduleId === null),
+    JSON.stringify(sesudahPratinjau.map((day) => day.scheduleId)),
+  );
+
+  // ── Terapkan untuk dua kelas ────────────────────────────────
+  const applied = await impor({ text: TEKS, classNames: kelasUji });
+  check("terapkan -> 200", applied.status === 200, `got ${applied.status}`);
+  check(
+    "terapkan: 8 hari x 2 kelas = 16 baris",
+    applied.data?.createdRows === HARI_TOTAL * kelasUji.length &&
+      applied.data?.skippedRows === 0,
+    JSON.stringify({
+      created: applied.data?.createdRows,
+      skipped: applied.data?.skippedRows,
+    }),
+  );
+
+  const barisA = await barisKelas(kelasUji[0]);
+  const senin = barisA.find((day) => day.date === "2036-03-03");
+  const rabu = barisA.find((day) => day.date === "2036-03-05");
+
+  check(
+    "baris hasil impor berstatus draft",
+    terisi(barisA).length === HARI_TOTAL &&
+      terisi(barisA).every((day) => day.status === "draft"),
+    JSON.stringify(terisi(barisA).map((day) => day.status)),
+  );
+  check(
+    "nomor hari dihitung dari kalender, bukan label teksnya",
+    senin?.dayOfWeek === 1 && senin?.dayName === "Senin",
+    JSON.stringify({ dow: senin?.dayOfWeek, name: senin?.dayName }),
+  );
+  check(
+    "hari Libur: isHoliday menyala & tanpa menu",
+    rabu?.isHoliday === true && rabu?.menu === null,
+    JSON.stringify({ holiday: rabu?.isHoliday, menu: rabu?.menu?.name ?? null }),
+  );
+  check(
+    "menu terpasang ke barisnya",
+    senin?.menu?.name === `${TAG} Nasi Goreng + jeruk`,
+    senin?.menu?.name,
+  );
+
+  const katalog = (
+    (await call("GET", "/menus", { token: adminToken })).data ?? []
+  ).filter((menu) => menu.name.startsWith(TAG));
+  check(
+    "5 menu dibuat, masing-masing sekali (tidak ada kembar)",
+    katalog.length === 5 && new Set(katalog.map((menu) => menu.name)).size === 5,
+    JSON.stringify(katalog.map((menu) => menu.name)),
+  );
+
+  // ── Idempoten: tempelan yang sama tidak menggandakan apa pun ─
+  const ulang = await impor({ text: TEKS, classNames: kelasUji });
+  check(
+    "tempel ulang -> 0 baris baru, 16 dilewati",
+    ulang.status === 200 &&
+      ulang.data?.createdRows === 0 &&
+      ulang.data?.skippedRows === HARI_TOTAL * kelasUji.length,
+    JSON.stringify({
+      created: ulang.data?.createdRows,
+      skipped: ulang.data?.skippedRows,
+    }),
+  );
+  check(
+    "tempel ulang -> tidak ada menu baru dibuat",
+    ulang.data?.createdMenus === 0,
+    JSON.stringify(ulang.data?.createdMenus),
+  );
+  check(
+    "tempel ulang -> 7 menu lama dipakai ulang",
+    ulang.data?.reusedMenus === HARI_BERISI,
+    JSON.stringify(ulang.data?.reusedMenus),
+  );
+
+  const katalogUlang = (
+    (await call("GET", "/menus", { token: adminToken })).data ?? []
+  ).filter((menu) => menu.name.startsWith(TAG));
+  check(
+    "katalog tetap 5 menu sesudah tempelan kedua",
+    katalogUlang.length === 5,
+    `got ${katalogUlang.length}`,
+  );
+
+  // ── Jadwal terkunci tidak boleh berubah karena tempelan ─────
+  const lockA = await call("POST", "/schedules/lock", {
+    token: adminToken,
+    body: { fromDate: RANGE_FROM, toDate: RANGE_TO, className: kelasUji[0] },
+  });
+  check(
+    "kunci rentang kelas uji -> 200",
+    lockA.status === 200,
+    `got ${lockA.status}`,
+  );
+
+  const ketiga = await impor({ text: TEKS, classNames: kelasUji });
+  check(
+    "tempelan di atas jadwal terkunci -> tetap 0 baris baru",
+    ketiga.data?.createdRows === 0,
+    JSON.stringify(ketiga.data?.createdRows),
+  );
+
+  const barisTerkunci = await barisKelas(kelasUji[0]);
+  check(
+    "jadwal terkunci tidak ditimpa & statusnya tidak berubah",
+    terisi(barisTerkunci).every((day) => day.status === "locked"),
+    JSON.stringify(terisi(barisTerkunci).map((day) => day.status)),
+  );
+
+  // ── Korlas: hanya kelasnya sendiri ──────────────────────────
+  const korlasPreview = await impor({ text: TEKS, dryRun: true }, korlasToken);
+  check(
+    "pratinjau korlas tanpa `classNames` -> hanya kelasnya",
+    sameSet(korlasPreview.data?.classes, [korlasClass]),
+    JSON.stringify(korlasPreview.data?.classes),
+  );
+
+  const korlasApply = await impor({ text: TEKS }, korlasToken);
+  check(
+    "impor korlas -> 8 baris untuk kelasnya sendiri",
+    korlasApply.status === 200 &&
+      korlasApply.data?.createdRows === HARI_TOTAL &&
+      sameSet(korlasApply.data?.classes, [korlasClass]),
+    JSON.stringify({
+      status: korlasApply.status,
+      created: korlasApply.data?.createdRows,
+      classes: korlasApply.data?.classes,
+    }),
+  );
+
+  const barisKorlas = await barisKelas(korlasClass);
+  check(
+    "baris kelas korlas dibuat",
+    terisi(barisKorlas).length === HARI_TOTAL,
+    JSON.stringify(terisi(barisKorlas).map((day) => day.date)),
+  );
+
+  // ── Rentang salah tulis digeser, bukan ditolak ──────────────
+  // 15 Oktober 2036 jatuh hari Rabu, tetapi bloknya dilabeli Senin–Jumat —
+  // persis pola keliru yang pernah datang dari sekolah.
+  const geser = await impor({
+    text: [
+      "15 - 19 Oktober 2036",
+      `Senin   : ${TAG} Geser`,
+      `Selasa  : ${TAG} Geser`,
+      `Rabu    : ${TAG} Geser`,
+      `Kamis   : ${TAG} Geser`,
+      `Jumat   : ${TAG} Geser`,
+    ].join("\n"),
+    dryRun: true,
+  });
+  check(
+    "rentang yang salah tulis digeser ke Senin–Jumat",
+    geser.data?.days?.map((day) => day.date).join(",") ===
+      "2036-10-13,2036-10-14,2036-10-15,2036-10-16,2036-10-17",
+    JSON.stringify(geser.data?.days?.map((day) => day.date)),
+  );
+  check(
+    "pergeseran itu diberitahukan sebagai peringatan",
+    (geser.data?.warnings ?? []).some((text) => text.includes("digeser")),
+    JSON.stringify(geser.data?.warnings),
+  );
+
+  // ── Bersih-bersih ───────────────────────────────────────────
+  // Baris `locked` menolak DELETE (409 not_editable) — buka kunci dulu.
+  //
+  // Sengaja **tidak** menghapus `import_logs` (tabel jejak audit, tanpa
+  // endpoint baca maupun tampilan) dan tidak menghapus baris `weeks` kosong
+  // yang dibuat `ensureWeek` — keduanya tidak terlihat pemakai dan tidak
+  // memengaruhi assertion mana pun.
+  const semuaIds = [];
+  for (const className of [...kelasUji, korlasClass]) {
+    for (const day of terisi(await barisKelas(className))) {
+      semuaIds.push(day.scheduleId);
+    }
+  }
+  check(
+    "baris uji terkumpul untuk dibersihkan",
+    semuaIds.length === HARI_TOTAL * (kelasUji.length + 1),
+    `got ${semuaIds.length}`,
+  );
+
+  await call("POST", "/schedules/bulk/unlock", {
+    token: adminToken,
+    body: { ids: semuaIds },
+  });
+
+  const hapus = [];
+  for (const id of semuaIds) {
+    hapus.push(await call("DELETE", `/schedules/${id}`, { token: adminToken }));
+  }
+  check(
+    "baris uji dihapus kembali",
+    hapus.every((result) => result.status === 200),
+    JSON.stringify(hapus.filter((r) => r.status !== 200).map((r) => r.status)),
+  );
+
+  const hapusMenu = [];
+  for (const menu of katalogUlang) {
+    hapusMenu.push(await call("DELETE", `/menus/${menu.id}`, { token: adminToken }));
+  }
+  check(
+    "menu uji dihapus kembali",
+    hapusMenu.every((result) => result.status === 200),
+    JSON.stringify(hapusMenu.map((r) => r.status)),
+  );
+
+  const katalogBersih = (
+    (await call("GET", "/menus", { token: adminToken })).data ?? []
+  ).filter((menu) => menu.name.startsWith(TAG));
+  check(
+    "katalog kembali bersih",
+    katalogBersih.length === 0,
+    JSON.stringify(katalogBersih.map((menu) => menu.name)),
+  );
+}
+
 // ── Ringkasan ─────────────────────────────────────────────────
 
 console.log(`\n=== HASIL: ${pass} pass, ${fail} fail ===`);

@@ -1,6 +1,6 @@
 import { CalendarOff, Copy, Lock, Send } from "lucide-react";
 import { MonthNavigator } from "@/components/MonthNavigator";
-import { Button, Card } from "@/components/ui";
+import { Button, Card, Checkbox } from "@/components/ui";
 
 interface MonthToolbarProps {
   year: number;
@@ -15,6 +15,10 @@ interface MonthToolbarProps {
   canPublish: boolean;
   /** Kelas yang masih menahan publikasi — untuk tooltip. */
   draftClasses: string[];
+  /** Baris bulan ini yang bisa dicentang (punya entri jadwal). */
+  selectableCount: number;
+  /** Baris yang sedang tercentang. */
+  selectedCount: number;
   busy: boolean;
   lockPending: boolean;
   publishPending: boolean;
@@ -23,11 +27,13 @@ interface MonthToolbarProps {
   onPublish: () => void;
   onOpenCopy: () => void;
   onOpenHoliday: () => void;
+  /** Centang / kosongkan centang seluruh baris bulan ini. */
+  onToggleSelectAll: () => void;
 }
 
 /**
  * Bilah atas: navigasi bulan + tombol aksi massal (kunci, publikasi,
- * salin Sepekan, hari libur).
+ * salin Sepekan, hari libur) + pintasan "Pilih semua" untuk aksi per hari.
  */
 export function MonthToolbar({
   year,
@@ -39,6 +45,8 @@ export function MonthToolbar({
   hasDrafts,
   canPublish,
   draftClasses,
+  selectableCount,
+  selectedCount,
   busy,
   lockPending,
   publishPending,
@@ -47,6 +55,7 @@ export function MonthToolbar({
   onPublish,
   onOpenCopy,
   onOpenHoliday,
+  onToggleSelectAll,
 }: MonthToolbarProps) {
   const scopeLabel = isAdmin ? "semua kelas" : `kelas ${className ?? ""}`.trim();
 
@@ -70,6 +79,19 @@ export function MonthToolbar({
           <p className="text-xs text-slate-500">
             {menusLoading ? "Memuat menu…" : `${menuCount} menu aktif tersedia`}
           </p>
+
+          {/* Pintasan agar aksi per hari bisa dijalankan sekali klik. */}
+          {selectableCount > 0 && (
+            <Checkbox
+              className="border-l border-slate-200 pl-3"
+              label="Pilih semua"
+              checked={selectableCount > 0 && selectedCount === selectableCount}
+              indeterminate={selectedCount > 0 && selectedCount < selectableCount}
+              disabled={busy}
+              onChange={onToggleSelectAll}
+              title="Centang seluruh hari pada bulan ini"
+            />
+          )}
         </div>
 
         <div className="flex flex-wrap gap-2">

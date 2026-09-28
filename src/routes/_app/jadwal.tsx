@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { RoleGate } from "@/components/AdminOnly";
 import { PageHeader } from "@/components/AppShell";
 import { FadeIn } from "@/components/motion/FadeIn";
 import { ListReveal } from "@/components/motion/ListReveal";
+import { BulkActionBar } from "@/components/jadwal/BulkActionBar";
 import {
   CopyWeekModal,
   type CopyFormValue,
@@ -17,14 +18,25 @@ import {
 } from "@/components/jadwal/HolidayModal";
 import { MonthToolbar } from "@/components/jadwal/MonthToolbar";
 import { SchoolStatusSummary } from "@/components/jadwal/SchoolStatusSummary";
-import { Card, CardHeader, Spinner } from "@/components/ui";
+import {
+  copyMessage,
+  lockMessage,
+  publishMessage,
+} from "@/components/jadwal/messages";
+import {
+  groupSelection,
+  monthSelectableIds,
+  summarizeSelection,
+  weekSelectableIds,
+} from "@/components/jadwal/selection";
+import { Card, CardHeader, Checkbox, Spinner } from "@/components/ui";
 import { errorMessage, api } from "@/lib/api";
 import { useActiveClass } from "@/lib/active-class";
 import { useAuth } from "@/lib/auth-context";
 import { useMonthNavigator } from "@/hooks/useMonthNavigator";
 import { useClassRoster } from "@/hooks/useClassRoster";
 import { monthRange, todayInWib } from "@/lib/date";
-import type { ScheduleDayDto } from "@/types/schedule";
+import type { BulkRowAction, ScheduleDayDto, WeekScheduleDto } from "@/types/schedule";
 
 export const Route = createFileRoute("/_app/jadwal")({
   component: ScheduleAdminPage,
@@ -36,6 +48,9 @@ interface Banner {
   text: string;
 }
 
+/** Array kosong yang identitasnya stabil — supaya `useMemo` tidak sia-sia. */
+const NO_WEEKS: WeekScheduleDto[] = [];
+
 /**
  * Halaman kelola jadwal — admin dan korlas.
  *
@@ -46,8 +61,15 @@ interface Banner {
  * - **Admin**: hal yang sama, tetapi cakupannya **semua kelas sekaligus**
  *   (mengirim permintaan tanpa `className`), plus buka kunci & hari libur.
  *
+ * Ada dua jalur aksi massal, keduanya lewat checkbox:
+ * 1. **Per hari** — centang baris di tabel, lalu Kunci / Publikasi / Buka
+ *    kunci hanya untuk hari-hari itu (`/schedules/bulk/*`).
+ * 2. **Per kelas** — centang kelas di kartu status, lalu kunci/publikasi
+ *    hanya kelas-kelas itu (mengirim `classNames`).
+ *
  * Halaman ini hanya menyusun tata letak + query/mutasi. Rendering dipecah ke
- * `src/components/jadwal/*`.
+ * `src/components/jadwal/*`; kalimat banner ke `messages.ts`; dan logika
+ * pemilihan ke `selection.ts`.
  */
 function ScheduleAdminPage() {
   return (
@@ -70,6 +92,19 @@ function ScheduleAdminContent() {
   const [banner, setBanner] = useState<Banner | null>(null);
   const [holidayModalOpen, setHolidayModalOpen] = useState(false);
   const [copyModalOpen, setCopyModalOpen] = useState(false);
+
+  /**
+   * Pilihan checkbox disimpan mentah; penyaringan dilakukan saat membaca
+   * (lihat `selectedIds` & `selectedClasses`). Dengan begitu berpindah bulan
+   * atau kelas tidak perlu efek pembersih — id/kelas yang sudah tidak ada di
+   * layar otomatis gugur.
+   */
+  const [rawSelectedIds, setRawSelectedIds] = useState<ReadonlySet<number>>(
+    () => new Set(),
+  );
+  const [rawSelectedClasses, setRawSelectedClasses] = useState<
+    ReadonlySet<string>
+  >(() => new Set());
 
   const { from: monthStart, to: monthEnd } = monthRange(year, month);
 
@@ -129,6 +164,21 @@ function ScheduleAdminContent() {
       setBanner({ kind: "error", text: errorMessage(error, fallback) }),
   });
 
+  /**
+   * Cakupan kelas untuk kunci/publikasi bulanan.
+   *
+   * Tanpa `classNames` → perilaku lama: admin tanpa kelas berarti "semua
+   * kelas", korlas berarti kelasnya sendiri.
+   */
+  const scopeBody = (classNames?: string[]) =>
+    classNames
+      ? { classNames }
+      : isAdmin
+        ? {}
+        : { className: className! };
+
+  // ── Mutasi ──────────────────────────────────────────────────
+
   const saveMutation = useMutation({
     mutationFn: async (vars: { day: ScheduleDayDto; patch: DayPatch }) => {
       // Hari yang belum punya entri → buat baru; selebihnya → perbarui.
@@ -185,11 +235,7 @@ function ScheduleAdminContent() {
         overwrite: value.overwrite,
       }),
     onSuccess: async (result) => {
-      const { created, updated, skipped, sourceLabel, targetLabel } = result.data;
-      setBanner({
-        kind: "ok",
-        text: `Disalin ${sourceLabel} → ${targetLabel}: ${created} dibuat, ${updated} diperbarui, ${skipped} dilewati.`,
-      });
+      setBanner({ kind: "ok", text: copyMessage(result.data) });
       setCopyModalOpen(false);
       await invalidate();
     },
@@ -201,26 +247,19 @@ function ScheduleAdminContent() {
   });
 
   /**
-   * Admin mengirim tanpa `className` → server memperlakukan sebagai
-   * "semua kelas" (kelas 1–6 sekaligus). Korlas selalu menyertakan kelasnya.
+   * Kunci sebulan penuh. Tanpa `classNames` → semua kelas (admin) atau kelas
+   * korlas; dengan `classNames` → hanya kelas yang dicentang di kartu status.
    */
   const lockMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (vars: { classNames?: string[] }) =>
       api.schedules.lock({
         fromDate: monthStart,
         toDate: monthEnd,
-        ...(isAdmin ? {} : { className: className! }),
+        ...scopeBody(vars.classNames),
       }),
     onSuccess: async (result) => {
-      const { locked, alreadyLocked, skipped, classes } = result.data;
-      // Sebutkan kelasnya satu per satu supaya cakupan sekolah-wide terlihat.
-      const scope = isAdmin
-        ? `semua kelas (${classes.length} kelas: ${classes.join(", ")})`
-        : `kelas ${classes[0] ?? className}`;
-      setBanner({
-        kind: "ok",
-        text: `Terkunci ${locked} jadwal untuk ${scope}${alreadyLocked ? `, ${alreadyLocked} sudah terkunci` : ""}${skipped ? `, ${skipped} dilewati (sudah dipublikasi)` : ""}.`,
-      });
+      setBanner({ kind: "ok", text: lockMessage(result.data) });
+      setRawSelectedClasses(new Set());
       await invalidate();
     },
     onError: (error) =>
@@ -230,22 +269,17 @@ function ScheduleAdminContent() {
       }),
   });
 
+  /** Publikasi sebulan penuh — cakupannya sama dengan `lockMutation`. */
   const publishMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (vars: { classNames?: string[] }) =>
       api.schedules.publish({
         year,
         month,
-        ...(isAdmin ? {} : { className: className! }),
+        ...scopeBody(vars.classNames),
       }),
     onSuccess: async (result) => {
-      const { published, classes, alreadyPublished } = result.data;
-      const scope = isAdmin
-        ? `semua kelas (${classes.length} kelas: ${classes.join(", ")})`
-        : `kelas ${classes[0] ?? className}`;
-      setBanner({
-        kind: "ok",
-        text: `${published} jadwal dipublikasi untuk ${scope}${alreadyPublished ? `, ${alreadyPublished} sudah dipublikasi` : ""} — sekarang terlihat oleh orang tua kelas tersebut.`,
-      });
+      setBanner({ kind: "ok", text: publishMessage(result.data) });
+      setRawSelectedClasses(new Set());
       await invalidate();
     },
     onError: (error) =>
@@ -260,18 +294,125 @@ function ScheduleAdminContent() {
     ...bannerHandlers("Gagal membuka kunci"),
   });
 
+  /**
+   * Aksi massal atas baris terpilih. Ketiga aksi berbagi satu mutasi karena
+   * bentuk permintaan & jawabannya identik — yang berbeda hanya endpoint.
+   */
+  const bulkMutation = useMutation({
+    mutationFn: (vars: { action: BulkRowAction; ids: number[] }) => {
+      const body = { ids: vars.ids };
+      switch (vars.action) {
+        case "lock":
+          return api.schedules.bulkLock(body);
+        case "publish":
+          return api.schedules.bulkPublish(body);
+        case "unlock":
+          return api.schedules.bulkUnlock(body);
+      }
+    },
+    onSuccess: async (result) => {
+      setBanner({ kind: "ok", text: result.message });
+      // Barisnya sudah berpindah status — pilihan lama tidak lagi bermakna.
+      setRawSelectedIds(new Set());
+      await invalidate();
+    },
+    onError: (error) =>
+      setBanner({
+        kind: "error",
+        text: errorMessage(error, "Gagal menjalankan aksi massal"),
+      }),
+  });
+
   const busy =
     saveMutation.isPending ||
     deleteMutation.isPending ||
     lockMutation.isPending ||
     publishMutation.isPending ||
-    unlockMutation.isPending;
+    unlockMutation.isPending ||
+    bulkMutation.isPending;
+
+  // ── Turunan tampilan ────────────────────────────────────────
 
   const menus = menusQuery.data ?? [];
   const roster = rosterQuery;
-  const weeks = monthQuery.data?.weeks ?? [];
+  const weeks = monthQuery.data?.weeks ?? NO_WEEKS;
   const status = statusQuery.data;
   const hasDrafts = (status?.totals.draftCount ?? 0) > 0;
+
+  /** Id yang masih ada di bulan yang tampil — sisa bulan lalu diabaikan. */
+  const selectableIds = useMemo(() => monthSelectableIds(weeks), [weeks]);
+  const selectedIds = useMemo(() => {
+    const available = new Set(selectableIds);
+    return new Set([...rawSelectedIds].filter((id) => available.has(id)));
+  }, [rawSelectedIds, selectableIds]);
+
+  /** Kelas yang masih ada di ringkasan status. */
+  const selectedClasses = useMemo(() => {
+    const available = new Set(
+      (status?.perClass ?? []).map((item) => item.className),
+    );
+    return new Set([...rawSelectedClasses].filter((name) => available.has(name)));
+  }, [rawSelectedClasses, status]);
+
+  const selection = summarizeSelection(weeks, selectedIds);
+
+  /** Aksi kelas yang sedang berjalan — dibedakan dari aksi bulanan lewat `classNames`. */
+  const classActionPending: "lock" | "publish" | null =
+    lockMutation.isPending && Boolean(lockMutation.variables?.classNames)
+      ? "lock"
+      : publishMutation.isPending &&
+          Boolean(publishMutation.variables?.classNames)
+        ? "publish"
+        : null;
+
+  const toggleSelectedId = (id: number) =>
+    setRawSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  /** Centang semua baris bulan ini, atau kosongkan bila sudah penuh. */
+  const toggleSelectAllDays = () =>
+    setRawSelectedIds((prev) => {
+      const allSelected =
+        selectableIds.length > 0 && selectableIds.every((id) => prev.has(id));
+      return allSelected ? new Set() : new Set(selectableIds);
+    });
+
+  /** Centang seluruh hari pada satu minggu, atau kosongkan minggu itu. */
+  const toggleWeek = (week: WeekScheduleDto) => {
+    const ids = weekSelectableIds(week);
+    setRawSelectedIds((prev) => {
+      const allSelected = ids.length > 0 && ids.every((id) => prev.has(id));
+      const next = new Set(prev);
+      for (const id of ids) {
+        if (allSelected) next.delete(id);
+        else next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectedClass = (name: string) =>
+    setRawSelectedClasses((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+
+  const toggleAllClasses = () => {
+    const names = (status?.perClass ?? []).map((item) => item.className);
+    setRawSelectedClasses((prev) =>
+      names.length > 0 && names.every((name) => prev.has(name))
+        ? new Set()
+        : new Set(names),
+    );
+  };
+
+  const selectedClassNames = [...selectedClasses];
 
   return (
     <>
@@ -279,7 +420,7 @@ function ScheduleAdminContent() {
         title="Kelola Jadwal"
         description={
           isAdmin
-            ? "Tetapkan menu per kelas. Kunci & publikasi berlaku untuk semua kelas (1–6) sekaligus."
+            ? "Tetapkan menu per kelas. Centang hari atau kelas untuk mengunci & mempublikasi sekaligus — tidak perlu satu per satu."
             : className
               ? `Tetapkan menu, tandai libur kelas, dan tambahkan catatan untuk kelas ${className}. Anda juga dapat mempublikasikan jadwal kelas Anda.`
               : "Tetapkan menu dan catatan per hari."
@@ -318,14 +459,17 @@ function ScheduleAdminContent() {
         hasDrafts={hasDrafts}
         canPublish={status?.canPublish ?? false}
         draftClasses={status?.draftClasses ?? []}
+        selectableCount={selectableIds.length}
+        selectedCount={selection.count}
         busy={busy}
         lockPending={lockMutation.isPending}
         publishPending={publishMutation.isPending}
         onShift={shift}
-        onLock={() => lockMutation.mutate()}
-        onPublish={() => publishMutation.mutate()}
+        onLock={() => lockMutation.mutate({})}
+        onPublish={() => publishMutation.mutate({})}
         onOpenCopy={() => setCopyModalOpen(true)}
         onOpenHoliday={() => setHolidayModalOpen(true)}
+        onToggleSelectAll={toggleSelectAllDays}
       />
 
       <SchoolStatusSummary
@@ -334,8 +478,19 @@ function ScheduleAdminContent() {
         isAdmin={isAdmin}
         className={className}
         busy={busy}
-        onPublish={() => publishMutation.mutate()}
+        onPublish={() => publishMutation.mutate({})}
         publishing={publishMutation.isPending}
+        selectedClasses={selectedClasses}
+        onToggleClass={toggleSelectedClass}
+        onToggleAllClasses={toggleAllClasses}
+        onClearClasses={() => setRawSelectedClasses(new Set())}
+        onBulkLock={() =>
+          lockMutation.mutate({ classNames: selectedClassNames })
+        }
+        onBulkPublish={() =>
+          publishMutation.mutate({ classNames: selectedClassNames })
+        }
+        classActionPending={classActionPending}
       />
 
       {className && monthQuery.isPending && <Spinner />}
@@ -346,37 +501,82 @@ function ScheduleAdminContent() {
         </Card>
       )}
 
+      {/*
+        Bilah aksi massal berada **di dalam** wadah daftar minggu supaya
+        `sticky bottom-4` benar-benar menempel selama daftar lebih tinggi
+        daripada jendela — kalau diletakkan di luar, ia berhenti menempel
+        begitu wadah pendeknya habis.
+      */}
       <div className="space-y-6">
-        {weeks.map((week) => (
-          <Card key={week.startDate}>
-            <CardHeader title={week.label} />
-            {/*
-              `DayRow` menggambar `<li>`-nya sendiri sekaligus memakai varian
-              animasi dari `ListReveal` — jadi jangan dibungkus `RevealItem`,
-              itu akan menghasilkan `<li>` bersarang.
-            */}
-            <ListReveal as="ul" className="divide-y divide-slate-100">
-              {week.days.map((day) => (
-                <DayRow
-                  key={day.date}
-                  day={day}
-                  menus={menus}
-                  roster={roster.students}
-                  rosterLoading={roster.isLoading}
-                  rosterEmpty={roster.isEmpty}
-                  busy={busy}
-                  canUnlock={isAdmin}
-                  className={className}
-                  onSave={(target, patch) =>
-                    saveMutation.mutate({ day: target, patch })
-                  }
-                  onUnlock={(id) => unlockMutation.mutate(id)}
-                  onDelete={(id) => deleteMutation.mutate(id)}
-                />
-              ))}
-            </ListReveal>
-          </Card>
-        ))}
+        {weeks.map((week) => {
+          const weekSelection = groupSelection(
+            weekSelectableIds(week),
+            selectedIds,
+          );
+
+          return (
+            <Card key={week.startDate}>
+              <CardHeader
+                title={week.label}
+                action={
+                  weekSelection.ids.length > 0 ? (
+                    <Checkbox
+                      label="Pilih minggu ini"
+                      checked={weekSelection.allSelected}
+                      indeterminate={weekSelection.someSelected}
+                      disabled={busy}
+                      onChange={() => toggleWeek(week)}
+                    />
+                  ) : undefined
+                }
+              />
+              {/*
+                `DayRow` menggambar `<li>`-nya sendiri sekaligus memakai varian
+                animasi dari `ListReveal` — jadi jangan dibungkus `RevealItem`,
+                itu akan menghasilkan `<li>` bersarang.
+              */}
+              <ListReveal as="ul" className="divide-y divide-slate-100">
+                {week.days.map((day) => (
+                  <DayRow
+                    key={day.date}
+                    day={day}
+                    menus={menus}
+                    roster={roster.students}
+                    rosterLoading={roster.isLoading}
+                    rosterEmpty={roster.isEmpty}
+                    busy={busy}
+                    canUnlock={isAdmin}
+                    selected={
+                      day.scheduleId !== null && selectedIds.has(day.scheduleId)
+                    }
+                    onToggleSelect={toggleSelectedId}
+                    className={className}
+                    onSave={(target, patch) =>
+                      saveMutation.mutate({ day: target, patch })
+                    }
+                    onUnlock={(id) => unlockMutation.mutate(id)}
+                    onDelete={(id) => deleteMutation.mutate(id)}
+                  />
+                ))}
+              </ListReveal>
+            </Card>
+          );
+        })}
+
+        {selection.count > 0 && (
+          <BulkActionBar
+            summary={selection}
+            busy={busy}
+            canUnlock={isAdmin}
+            pendingAction={
+              bulkMutation.isPending ? (bulkMutation.variables?.action ?? null) : null
+            }
+            onAction={(action) =>
+              bulkMutation.mutate({ action, ids: [...selectedIds] })
+            }
+            onClear={() => setRawSelectedIds(new Set())}
+          />
+        )}
       </div>
 
       {isAdmin && (

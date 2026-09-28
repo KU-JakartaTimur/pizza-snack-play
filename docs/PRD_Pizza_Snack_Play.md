@@ -8,8 +8,8 @@
 | Field               | Value                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Nama Produk**     | Pizza Snack Play                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| **Versi Dokumen**   | 1.10                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| **Tanggal**         | 19 September 2026                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| **Versi Dokumen**   | 1.11                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| **Tanggal**         | 28 September 2026                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | **Stack Teknologi** | BHVR — Bun + Hono + Vite + React (Cloudflare Workers + D1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | **Status**          | Draft for Review                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | **Sumber Data**     | `data/output_jadwal_piket.txt` — Jadwal Piket Snack September 2026 (menu + penugasan siswa per kelas); `data/jadwal_piket_snack.txt` — arsip Agustus & September 2026 (menu saja)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
@@ -23,6 +23,7 @@
 | **Perubahan v1.8**  | **Kunci & publikasi menjadi operasi sekolah-wide (F8):** admin dapat mengunci **dan** mempublikasi jadwal untuk **semua kelas (1–6) sekaligus** dalam satu tindakan — `POST /schedules/lock` & `POST /schedules/publish` menerima `className` yang boleh dikosongkan (admin = semua kelas, korlas = kelasnya sendiri). Respons keduanya membawa `classes` + `lockedCount`; `409 drafts_remaining` kini menyebut **kelas penyebab** draft. UI `/jadwal` menampilkan penghitung status **lintas kelas** untuk admin dengan label "(semua kelas)". **Rebutan tanggal tetap per kelas** (F9): `UNIQUE(schedule_id)` mengikat satu baris (tanggal × kelas), jadi klaim orang tua kelas 1 tidak menghalangi orang tua kelas 2 pada tanggal yang sama — diuji lewat `scripts/test-claim-cross-class.mjs`   |
 | **Perubahan v1.9**  | **Cakupan sekolah-wide kini terlihat + pembersihan (F8):** endpoint baru `GET /schedules/status` mengembalikan ringkasan **per kelas** (`perClass`, `totals`, `draftClasses`, `canPublish`) dalam **satu** query `GROUP BY class_name, status` — menggantikan pola lama UI yang memuat jadwal **setiap** kelas hanya untuk menghitung status (1+N permintaan per bulan). UI `/jadwal` menampilkan kartu **Status per kelas** sehingga cakupan "(semua kelas)" benar-benar tampak, bukan sekadar satu kalimat penghitung; banner kunci/publikasi kini menyebut **daftar kelas** yang tersentuh. Halaman dipecah ke `src/components/jadwal/*` (dari satu file 897 baris → shell + 7 komponen). Tiga method repository mati (`*AllClasses`) dihapus — sudah digantikan method ber-`className: string | null` yang ada. Dokumen dikoreksi: korlas **boleh mengunci kelasnya sendiri** (§3.3 sebelumnya keliru menyatakan `403`; perilaku teruji di `scripts/test-api.mjs`), dan frasa "`locked` — dikunci oleh korlas" pada F8 diperbaiki. Uji baru: `bun run test:status` (22 assertion)   |
 | **Perubahan v1.10**  | **Petugas tanpa foreign key komposit (koreksi implementasi v1.8).** Rancangan FK komposit untuk `petugas_student_id`/`petugas_parent_id` dibatalkan: FK komposit menuntut indeks unik pada pasangan kolom target yang persis sehingga `schedules` harus dibangun ulang, sedangkan `PRAGMA foreign_keys=OFF` **diabaikan senyap di dalam transaksi** — dan `wrangler d1 migrations apply` membungkus migrasi dalam transaksi. Akibatnya migrasi `0007` gagal di produksi (`FOREIGN KEY constraint failed`) padahal berhasil di lokal, dan jalur yang "berhasil" menghasilkan tabel korup (292 pelanggaran `foreign_key_check`). Migrasi `0007` kini hanya `ALTER TABLE ... ADD COLUMN`; konsistensi petugas ditegakkan `resolvePetugas()` di `src/api/schedules/service.ts`. Detail di catatan desain `README.md` |
+| **Perubahan v1.11**  | **Aksi massal lewat checkbox di modul jadwal (F8) + pembersihan halaman `/jadwal`.** Kunci/publikasi/buka kunci tidak lagi harus satu baris satu klik — ada **dua jalur aksi massal**. **(a) Per hari:** kotak centang di setiap baris tabel jadwal, ditambah "Pilih minggu ini" pada header tiap minggu dan "Pilih semua" di toolbar; bilah aksi muncul di bawah layar dan **hanya menghidupkan tombol yang cocok dengan status baris terpilih** (Kunci untuk `draft`, Publikasi untuk `locked`, Buka kunci untuk `locked`/`published`). Endpoint baru `POST /schedules/bulk/{lock,publish,unlock}` berisi `{ ids }`. Berbeda dari aksi berbasis rentang, baris yang statusnya tidak cocok **dilewati** dan dilaporkan (`changed`/`skipped`/`ignored`) alih-alih menggagalkan seluruh permintaan dengan `409` — sebab pemilihannya eksplisit per baris. Buka kunci massal tetap **khusus admin**; korlas hanya baris kelasnya (sisanya `ignored`). **(b) Per kelas:** kotak centang di kartu *Status per kelas*; `POST /schedules/lock` & `POST /schedules/publish` menerima `classNames` (daftar kelas) sehingga satu/beberapa kelas dapat terbit tanpa menunggu kelas lain yang jadwalnya belum siap. `className` lama tetap didukung dan `classNames` menang bila keduanya dikirim. `LockScheduleResultDto`/`PublishScheduleResultDto` kini membawa `classNames` (sebelumnya `className`). **Refactor:** kalimat banner pindah ke `src/components/jadwal/messages.ts`, logika pemilihan ke `selection.ts`, bilah aksi ke `BulkActionBar.tsx`, dan primitif `Checkbox` (dengan keadaan *indeterminate*) ditambahkan ke `src/components/ui.tsx`. Uji baru: section 23 `scripts/test-api.mjs` (19 assertion) — total suite 328 assertion hijau |
 
 ---
 
@@ -85,9 +86,12 @@ Saat ini jadwal piket snack disusun dalam format teks manual (lihat lampiran), d
   - ✅ Tambah/ubah/hapus jadwal (termasuk Salin Sepekan) — **terbatas kelasnya sendiri**.
   - ✅ Mengunci jadwal kelasnya (`POST /schedules/lock`) — **terbatas kelasnya sendiri**. Mengunci kelas lain → `403`.
   - ✅ Mempublikasi jadwal (`POST /schedules/publish`) — **terbatas kelasnya sendiri**.
+  - ✅ Aksi massal lewat checkbox (`POST /schedules/bulk/lock` & `/schedules/bulk/publish`) —
+    **hanya baris kelasnya**; baris kelas lain yang ikut terkirim dihitung `ignored` dan tidak
+    berubah. Bilah aksi per hari tidak menyediakan tombol buka kunci untuk korlas.
   - ✅ Menandai satu hari sebagai "libur kelas" lewat catatan jadwal kelasnya.
   - ✅ Mengambil tanggal piket yang kosong (`/claims`) karena ia tetap orang tua murid.
-  - ❌ Membuka kunci jadwal (`POST /schedules/:id/unlock`) → `403`. Buka kunci adalah wewenang admin; korlas mengunci & mempublikasi jadwal kelasnya sendiri.
+  - ❌ Membuka kunci jadwal (`POST /schedules/:id/unlock` maupun `POST /schedules/bulk/unlock`) → `403`. Buka kunci adalah wewenang admin; korlas mengunci & mempublikasi jadwal kelasnya sendiri.
   - ❌ Mengubah katalog menu & kategori → `403` (katalog sekolah-wide, terpusat di admin).
   - ❌ Melihat atau mengubah jadwal kelas lain → `403`.
   - ❌ Menandai hari libur sekolah (`/holidays`) → `403` (tetap wewenang admin).
@@ -264,6 +268,23 @@ Saat ini jadwal piket snack disusun dalam format teks manual (lihat lampiran), d
 - **Buka kunci (unlock)** — **hanya admin** yang dapat membuka kunci satu baris individual,
 
   mengembalikannya ke `draft`. Ini berguna bila ada perubahan mendadak setelah jadwal dikunci.
+- **Aksi massal lewat checkbox** (sejak v1.11) — tersedia dua jalur, supaya tidak ada lagi
+  pekerjaan "satu baris satu klik":
+  - **Per hari** — setiap baris tabel jadwal punya kotak centang (ditambah "Pilih minggu ini"
+    di header minggu dan "Pilih semua" di toolbar). Bilah aksi menempel di bawah layar dan
+    **hanya menghidupkan tombol yang masuk akal** untuk pilihan saat ini: **Kunci** bila ada
+    baris `draft`, **Publikasi** bila ada baris `locked`, **Buka kunci** (admin) bila ada baris
+    `locked`/`published`. Dijalankan lewat `POST /schedules/bulk/{lock,publish,unlock}` berisi
+    `{ ids }`.
+  - **Per kelas** — kartu *Status per kelas* punya kotak centang per kelas, dengan tombol
+    "Kunci kelas terpilih" / "Publikasi kelas terpilih". Dikirim sebagai `classNames` pada
+    `POST /schedules/lock` & `POST /schedules/publish`.
+  - **Perbedaan aturan yang disengaja:** aksi per baris **tidak** memakai `409`. Karena barisnya
+    dipilih satu per satu, baris yang statusnya tidak cocok hanya **dilewati** dan dilaporkan
+    (`changed` / `skipped` / `ignored`) — memblokir seluruh permintaan hanya karena satu baris
+    akan membuat pilihan yang sah ikut gagal. Aturan "draft menahan publikasi" tetap berlaku
+    pada aksi **berbasis rentang/kelas** (satu tombol untuk sebulan), karena di sana
+    pemakainya tidak menyebut baris satu per satu.
 - **Orang tua hanya melihat `published`** — pembacaan jadwal oleh role `parent` difilter
     
   otomatis di repository (`WHERE status IN ('published')`); baris `draft`/`locked` tidak
@@ -280,7 +301,9 @@ Saat ini jadwal piket snack disusun dalam format teks manual (lihat lampiran), d
 > admin membuka kunci (unlock) baris tertentu → korlas mengedit → kunci ulang → publikasi ulang.
 > **Skala sekolah:** kunci & publikasi dirancang sebagai operasi **satu tombol untuk seluruh
 > sekolah**. Menu snack memang sama untuk semua kelas, dan jadwal ditetapkan serentak di
-> lapangan — jadi admin tidak perlu mengulang kunci/publikasi enam kali. Yang tetap
+> lapangan — jadi admin tidak perlu mengulang kunci/publikasi enam kali. Sejak v1.11 admin
+> juga bisa **mempersempit** operasinya bila memang perlu: centang kelas tertentu di kartu
+> status (`classNames`), atau centang hari tertentu di tabel (`/schedules/bulk/*`). Yang tetap
 > **per kelas** adalah kepemilikan tanggal: setiap kelas punya baris `schedules` sendiri
 > (`UNIQUE(schedule_date, class_name)`), sehingga rebutan tanggal oleh orang tua berjalan
 > per kelas (lihat F9).
@@ -669,8 +692,11 @@ pemanggil (lihat §7.3). Kelas di luar cakupan → `403`.
 | POST   | `/api/schedules/copy`                           | Salin jadwal Senin–Jumat ke minggu lain (`overwrite` opsional)                                                                                                        | Admin, **Korlas**     |
 | PUT    | `/api/schedules/:id`                            | Ubah menu / libur / catatan (kelas dari baris)                                                                                                                        | Admin, **Korlas**     |
 | DELETE | `/api/schedules/:id`                            | Hapus jadwal (kelas dari baris; ditolak bila `locked`/`published`)                                                                                                    | Admin, **Korlas**     |
-| POST   | `/api/schedules/lock`                           | Kunci semua jadwal `draft` pada rentang tanggal (`fromDate`, `toDate`, `className?`); admin tanpa `className` = **semua kelas**                                       | Admin, **Korlas**     |
-| POST   | `/api/schedules/publish`                        | Publikasi semua jadwal `locked` untuk satu bulan (`year`, `month`, `className?`); admin tanpa `className` = **seluruh sekolah**; gagal (`409`) bila masih ada `draft` | Admin, **Korlas**     |
+| POST   | `/api/schedules/lock`                           | Kunci semua jadwal `draft` pada rentang tanggal (`fromDate`, `toDate`, `className?` / `classNames?`); admin tanpa kelas = **semua kelas**, `classNames` = hanya kelas terpilih | Admin, **Korlas**     |
+| POST   | `/api/schedules/publish`                        | Publikasi semua jadwal `locked` untuk satu bulan (`year`, `month`, `className?` / `classNames?`); admin tanpa kelas = **seluruh sekolah**; gagal (`409`) bila masih ada `draft` | Admin, **Korlas**     |
+| POST   | `/api/schedules/bulk/lock`                      | Kunci **baris terpilih** (`ids: number[]`) — hanya baris `draft` yang berubah, sisanya `skipped`; korlas hanya baris kelasnya (`ignored`)                                     | Admin, **Korlas**     |
+| POST   | `/api/schedules/bulk/publish`                   | Publikasi **baris terpilih** (`ids`) — hanya baris `locked`; **tidak** memakai `409`, sisanya dilaporkan `skipped`                                                       | Admin, **Korlas**     |
+| POST   | `/api/schedules/bulk/unlock`                    | Buka kunci **baris terpilih** (`ids`) — `locked`/`published` kembali ke `draft`                                                                                          | Admin                 |
 | POST   | `/api/schedules/:id/unlock`                     | Buka kunci satu baris — kembalikan ke `draft` (hapus `locked_by`/`published_by` dll)                                                                                  | Admin                 |
 | GET    | `/api/weeks?year=&month=`                       | Daftar minggu pada bulan tersebut                                                                                                                                     | Admin, Korlas, Parent |
 | GET    | `/api/holidays?from=&to=`                       | Daftar hari libur (sekolah-wide)                                                                                                                                      | Admin, Korlas, Parent |
@@ -699,6 +725,23 @@ pemanggil (lihat §7.3). Kelas di luar cakupan → `403`.
 >   mis. `Masih ada jadwal draft di kelas 2 — kunci semua dahulu sebelum publikasi`.
 > - `POST /schedules/:id/unlock` hanya untuk **admin**. Mengembalikan satu baris ke `draft`
 >   (menghapus `locked_by`, `locked_at`, `published_by`, `published_at`).
+>
+> **Aksi massal per baris (`POST /schedules/bulk/{lock,publish,unlock}`)** — dipakai checkbox
+> di tabel jadwal. Body-nya `{ ids: number[] }`; kelas **tidak** dikirim klien melainkan
+> diturunkan dari tiap baris, sehingga korlas tidak bisa menyentuh kelas lain lewat `ids`.
+> Aturan statusnya sama dengan aksi berbasis rentang (`lock` hanya dari `draft`, `publish`
+> hanya dari `locked`, `unlock` dari `locked`/`published`), tetapi baris yang statusnya tidak
+> cocok **tidak** menggagalkan permintaan — hanya dihitung `skipped`. Id yang tidak ditemukan
+> atau di luar cakupan kelas dihitung `ignored`. Responsnya
+> `{ action, changed, skipped, ignored, classes }`. Buka kunci massal khusus **admin**
+> (`403` untuk korlas).
+>
+> **Memilih beberapa kelas (`classNames`)** — `POST /schedules/lock` & `/publish` menerima
+> `classNames: string[]` sebagai alternatif `className`; bila keduanya dikirim, `classNames`
+> yang dipakai. Admin tanpa keduanya tetap berarti "semua kelas"; korlas yang menyebut kelas
+> lain di dalam `classNames` dijawab `403 forbidden_class`. Pada `publish`, aturan "draft
+> menahan publikasi" berlaku untuk **kelas yang dipilih saja** — kelas yang tidak dipilih
+> tidak ikut menghalangi, sehingga satu kelas bisa terbit lebih dulu.
 > - `PUT`/`DELETE /schedules/:id` dan `POST /schedules/copy` (overwrite) **menolak** baris
 >     
 >   dengan status `locked`/`published` → `409 not_editable`.
@@ -881,6 +924,41 @@ ke baris `schedules` lewat `schedule_id`; korlas hanya boleh mengelola penugasan
 > **Penting untuk F9:** tanggal yang ingin direbutkan orang tua harus dibiarkan **kosong petugasnya
 >   
 > sebelum langkah 5**. Setelah `published`, barisnya tidak bisa diedit lagi.
+
+### 8.8b Admin & Korlas: Aksi Massal lewat Checkbox — ✅ Terimplementasi
+
+Melengkapi 8.8 untuk pekerjaan yang memang hanya menyentuh **sebagian** jadwal. Ada dua jalur,
+keduanya menghapus keharusan mengulang satu baris satu klik.
+
+**A. Per hari (tabel jadwal)**
+
+1. Centang hari yang diinginkan — tiap baris punya kotaknya sendiri, header tiap minggu punya
+     
+   **"Pilih minggu ini"**, dan toolbar punya **"Pilih semua"** untuk sebulan penuh
+2. Bilah aksi muncul menempel di bawah layar, menyebut jumlah hari terpilih beserta rinciannya
+     
+   (mis. "6 hari dipilih · 3 draft · 3 terkunci")
+3. Tombol yang tampil hanya yang masuk akal untuk status pilihan itu:
+   - **Kunci** — aktif bila ada baris `draft`
+   - **Publikasi** — aktif bila ada baris `locked`
+   - **Buka kunci** — hanya untuk admin, aktif bila ada baris `locked`/`published`
+4. Jalankan → banner menyebut hasilnya (mis. "3 jadwal dikunci, 1 dilewati (status tidak cocok).")
+     
+   dan pilihan otomatis dikosongkan karena barisnya sudah berpindah status
+
+**B. Per kelas (kartu Status per kelas)**
+
+1. Centang kelas pada kartu *Status per kelas* (tersedia juga **"Pilih semua kelas"**)
+2. Klik **Kunci kelas terpilih** atau **Publikasi kelas terpilih**
+3. Hanya kelas yang dicentang yang tersentuh. Tombol Publikasi mati selama salah satu kelas
+     
+   terpilih masih menyisakan `draft`, dengan alasan yang tampil sebagai tooltip
+
+> **Hubungannya dengan 8.8:** tombol "Kunci bulan" / "Publikasi (semua kelas)" tetap ada dan
+> tetap berguna untuk penerbitan serentak. Checkbox bukan penggantinya, melainkan jalan pintas
+> ketika hanya sebagian jadwal yang sudah siap — mis. kelas 3 sudah selesai sementara kelas 5
+> masih menyusun menu.
+
 
 
 ### 8.9 Orang Tua: Ambil Tanggal Snack — ✅ Terimplementasi
@@ -1183,6 +1261,17 @@ bunx wrangler secret put JWT_SECRET
 - [x] UI `/jadwal`: penghitung status lintas kelas + label "semua kelas" + pesan peringatan menyebut kelas yang masih draft
 - [x] Test: korlas tetap per kelas (`403` untuk kelas lain), admin mengunci/mempublikasi semua kelas, 409 menyebut kelas penyebab
 
+#### Phase 4b-3: Aksi Massal lewat Checkbox (v1.11) — ✅ SELESAI
+
+- [x] Repository: `findSchedulesByIds`, `lockDraftSchedulesByIds`, `publishLockedSchedulesByIds`, `unlockSchedulesByIds` — semuanya lewat satu helper `setStatusByIds` yang menaruh syarat status di `WHERE` (bukan hanya di aplikasi)
+- [x] Service: `bulkRows()` — menyaring cakupan kelas + status per baris, melaporkan `changed`/`skipped`/`ignored`; `lockSchedules`/`publishMonth` menerima `classNames: string[] | null`
+- [x] Controller: `resolveBulkClasses` + `requestedClasses` (menggantikan `resolveBulkClass`), pabrik handler `bulkByRows`, pesan `bulkMessage`
+- [x] Endpoint: `POST /schedules/bulk/lock`, `POST /schedules/bulk/publish`, `POST /schedules/bulk/unlock` (buka kunci khusus admin)
+- [x] DTO: `BulkRowAction`, `BulkRowScheduleInput`, `BulkRowScheduleResultDto`; `classNames` pada input & hasil `lock`/`publish` (`className` di hasil → `classNames`)
+- [x] UI: primitif `Checkbox` (dengan keadaan *indeterminate*), kotak per baris + "Pilih minggu ini" + "Pilih semua", `BulkActionBar` lengket di bawah layar, checkbox per kelas di `SchoolStatusSummary`
+- [x] Refactor `/jadwal`: `messages.ts` (kalimat banner), `selection.ts` (logika pemilihan murni), `BulkActionBar.tsx`; halaman tinggal menyusun query/mutasi
+- [x] Test: section 23 `scripts/test-api.mjs` (19 assertion) — penjagaan akses, validasi `ids`, kunci/publikasi/buka kunci massal, cakupan kelas korlas, `classNames`
+
 ### Phase 4c: Pilih Jadwal (Rebutan Tanggal) — ✅ SELESAI
 
 - [x] Tabel `schedule_claims` + migrasi `0005_schedule_claims.sql` dengan `UNIQUE(schedule_id)`
@@ -1199,10 +1288,10 @@ bunx wrangler secret put JWT_SECRET
 - [x] Banner pasang + petunjuk manual iOS + banner "Versi baru tersedia"
 - [x] Penangkap `beforeinstallprompt` di `<head>` agar event tidak hilang sebelum React mount
 
-### Phase 5: Ekspor & Cetak
+### Phase 5: Ekspor & Cetak — 🔶 SEBAGIAN
 
 - [ ] Ekspor PDF jadwal Sepekan/bulanan (termasuk daftar siswa piket)
-- [ ] Ekspor Excel
+- [x] Ekspor Excel — `GET /schedules/export?scope=week|month` (admin & korlas), diuji di section 21 `scripts/test-api.mjs`
 - [ ] Cetak langsung dari browser
 
 ### Phase 6: Notifikasi (Opsional)

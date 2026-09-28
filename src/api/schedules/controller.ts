@@ -1,6 +1,14 @@
 import type { Context } from "hono";
 import { getDb } from "../../database/db";
-import type { CopyWeekInput, LockScheduleInput, PublishScheduleInput, ScheduleInput } from "../../types/schedule";
+import type {
+  BulkRowAction,
+  BulkRowScheduleInput,
+  BulkRowScheduleResultDto,
+  CopyWeekInput,
+  LockScheduleInput,
+  PublishScheduleInput,
+  ScheduleInput,
+} from "../../types/schedule";
 import type { JwtPayload } from "../../types/auth";
 import type { AuthEnv } from "../middleware/auth";
 import {
@@ -112,23 +120,72 @@ function xlsxResponse(
  *
  * Berbeda dari `resolveWriteClass` yang dipakai menulis jadwal per baris:
  * untuk kunci & publikasi, admin yang **tidak** menyebut kelas berarti
- * "semua kelas" (`className: null`) — satu tindakan untuk kelas 1–6, sesuai
- * kebiasaan di lapangan di mana jadwal ditetapkan serentak. Korlas tetap
+ * "semua kelas" (`null`) — satu tindakan untuk kelas 1–6, sesuai kebiasaan di
+ * lapangan di mana jadwal ditetapkan serentak. Admin juga boleh menyebut
+ * **beberapa** kelas sekaligus (aksi massal dari kartu status). Korlas tetap
  * terkunci ke kelasnya sendiri; menyebut kelas lain ditolak.
  */
-function resolveBulkClass(
+function resolveBulkClasses(
   user: JwtPayload,
-  requested: string | null,
-): { ok: true; className: string | null } | { ok: false; error: ClassScopeError } {
+  requested: string[] | null,
+): { ok: true; classNames: string[] | null } | { ok: false; error: ClassScopeError } {
   if (user.role === "admin") {
-    return { ok: true, className: requested };
+    return { ok: true, classNames: requested };
   }
 
   const own = user.className?.trim() || null;
   if (!own) return { ok: false, error: "forbidden_class" };
-  if (requested && requested !== own) return { ok: false, error: "forbidden_class" };
+  if (requested && requested.some((name) => name !== own)) {
+    return { ok: false, error: "forbidden_class" };
+  }
 
-  return { ok: true, className: own };
+  return { ok: true, classNames: [own] };
+}
+
+/**
+ * Baca daftar kelas yang diminta dari body.
+ *
+ * `classNames` (aksi massal) menang atas `className` (satu kelas); keduanya
+ * kosong berarti `null` — "semua kelas" bagi admin. Duplikat dibuang supaya
+ * satu kelas tidak diproses dua kali.
+ */
+function requestedClasses(body: {
+  className?: unknown;
+  classNames?: unknown;
+}): string[] | null {
+  const list = Array.isArray(body.classNames)
+    ? body.classNames
+        .filter((name): name is string => typeof name === "string")
+        .map((name) => name.trim())
+        .filter(Boolean)
+    : [];
+
+  if (list.length > 0) return [...new Set(list)];
+
+  return typeof body.className === "string" && body.className.trim()
+    ? [body.className.trim()]
+    : null;
+}
+
+/** Kata kerja untuk pesan hasil aksi massal per baris. */
+const BULK_ACTION_LABEL: Record<BulkRowAction, string> = {
+  lock: "dikunci",
+  publish: "dipublikasi",
+  unlock: "dibuka kuncinya",
+};
+
+/**
+ * Pesan ringkas hasil aksi massal: yang berubah selalu disebut, sisanya hanya
+ * bila ada — supaya banner "5 jadwal dikunci." tidak penuh angka nol.
+ */
+function bulkMessage(
+  action: BulkRowAction,
+  data: BulkRowScheduleResultDto,
+): string {
+  const parts = [`${data.changed} jadwal ${BULK_ACTION_LABEL[action]}`];
+  if (data.skipped > 0) parts.push(`${data.skipped} dilewati (status tidak cocok)`);
+  if (data.ignored > 0) parts.push(`${data.ignored} diabaikan`);
+  return `${parts.join(", ")}.`;
 }
 
 class ScheduleController {
@@ -499,10 +556,10 @@ class ScheduleController {
 
   /**
    * Kunci jadwal draft pada rentang tanggal.
-   * `POST /schedules/lock` dengan `{ fromDate, toDate, className? }`
+   * `POST /schedules/lock` dengan `{ fromDate, toDate, className? | classNames? }`
    *
-   * Admin tanpa `className` mengunci **semua kelas sekaligus** (kelas 1–6);
-   * korlas selalu kelasnya sendiri.
+   * Admin tanpa kelas mengunci **semua kelas sekaligus** (kelas 1–6); dengan
+   * `classNames` hanya kelas-kelas itu; korlas selalu kelasnya sendiri.
    */
   lock = async (c: ScheduleContext) => {
     let body: Partial<LockScheduleInput>;
@@ -512,12 +569,7 @@ class ScheduleController {
       return responseBadRequest(c, "Body harus berupa JSON");
     }
 
-    const scope = resolveBulkClass(
-      c.get("user"),
-      typeof body.className === "string" && body.className.trim()
-        ? body.className
-        : null,
-    );
+    const scope = resolveBulkClasses(c.get("user"), requestedClasses(body));
     if (!scope.ok) return mapScopeError(c, scope.error);
 
     if (!isIsoDate(body.fromDate)) {
@@ -529,15 +581,15 @@ class ScheduleController {
 
     const data = await scheduleService.lockSchedules(
       getDb(c.env),
-      scope.className,
+      scope.classNames,
       { fromDate: body.fromDate, toDate: body.toDate },
       c.get("user").sub,
     );
 
     return responseOK(
       c,
-      scope.className
-        ? `Jadwal kelas ${scope.className} berhasil dikunci`
+      scope.classNames
+        ? `Jadwal ${classLabel(scope.classNames)} berhasil dikunci`
         : `Jadwal ${data.classes.length} kelas berhasil dikunci`,
       data,
     );
@@ -545,10 +597,11 @@ class ScheduleController {
 
   /**
    * Publikasi jadwal yang sudah dikunci untuk satu bulan.
-   * `POST /schedules/publish` dengan `{ year, month, className? }`
+   * `POST /schedules/publish` dengan `{ year, month, className? | classNames? }`
    *
-   * Admin tanpa `className` mempublikasi **seluruh sekolah** sekaligus —
-   * orang tua kelas 1–6 melihat jadwalnya bersamaan.
+   * Admin tanpa kelas mempublikasi **seluruh sekolah** sekaligus; dengan
+   * `classNames` hanya kelas-kelas itu — sehingga satu kelas bisa terbit
+   * tanpa menunggu kelas lain yang masih menyisakan draft.
    */
   publish = async (c: ScheduleContext) => {
     let body: Partial<PublishScheduleInput>;
@@ -558,12 +611,7 @@ class ScheduleController {
       return responseBadRequest(c, "Body harus berupa JSON");
     }
 
-    const scope = resolveBulkClass(
-      c.get("user"),
-      typeof body.className === "string" && body.className.trim()
-        ? body.className
-        : null,
-    );
+    const scope = resolveBulkClasses(c.get("user"), requestedClasses(body));
     if (!scope.ok) return mapScopeError(c, scope.error);
 
     const { year, month } = body;
@@ -573,7 +621,7 @@ class ScheduleController {
 
     const result = await scheduleService.publishMonth(
       getDb(c.env),
-      scope.className,
+      scope.classNames,
       { year: year!, month: month! },
       c.get("user").sub,
     );
@@ -593,8 +641,8 @@ class ScheduleController {
 
     return responseOK(
       c,
-      scope.className
-        ? `Jadwal kelas ${scope.className} berhasil dipublikasi`
+      scope.classNames
+        ? `Jadwal ${classLabel(scope.classNames)} berhasil dipublikasi`
         : `Jadwal ${result.classes.length} kelas berhasil dipublikasi`,
       result,
     );
@@ -613,6 +661,59 @@ class ScheduleController {
 
     return responseOK(c, "Kunci jadwal berhasil dibuka", result);
   };
+
+  // ── Aksi massal atas baris terpilih ─────────────────────────
+
+  /**
+   * Pabrik handler untuk aksi massal per baris.
+   *
+   * Ketiga aksi (`lock`, `publish`, `unlock`) berbagi seluruh alur — baca
+   * body, sahkan `ids`, tentukan cakupan kelas, panggil service — dan hanya
+   * berbeda pada kata kerjanya. Menuliskannya satu kali di sini membuat
+   * aturan cakupan tidak mungkin berbeda antar-aksi; rute yang membedakan
+   * wewenangnya (`unlock` khusus admin) lewat middleware.
+   */
+  private bulkByRows =
+    (action: BulkRowAction) =>
+    async (c: ScheduleContext) => {
+      let body: Partial<BulkRowScheduleInput>;
+      try {
+        body = await c.req.json<Partial<BulkRowScheduleInput>>();
+      } catch {
+        return responseBadRequest(c, "Body harus berupa JSON");
+      }
+
+      if (!Array.isArray(body.ids) || body.ids.length === 0) {
+        return responseBadRequest(c, "`ids` wajib berisi daftar id jadwal");
+      }
+
+      const user = c.get("user");
+      // Admin tanpa batas kelas; korlas hanya baris kelasnya sendiri.
+      const scopeClass =
+        user.role === "admin" ? null : user.className?.trim() || null;
+      if (user.role === "korlas" && !scopeClass) {
+        return responseForbidden(c, FORBIDDEN_CLASS);
+      }
+
+      const data = await scheduleService.bulkRows(
+        getDb(c.env),
+        body.ids,
+        action,
+        scopeClass,
+        user.sub,
+      );
+
+      return responseOK(c, bulkMessage(action, data), data);
+    };
+
+  /** Kunci baris terpilih — `POST /schedules/bulk/lock` (admin & korlas). */
+  bulkLock = this.bulkByRows("lock");
+
+  /** Publikasi baris terpilih — `POST /schedules/bulk/publish` (admin & korlas). */
+  bulkPublish = this.bulkByRows("publish");
+
+  /** Buka kunci baris terpilih — `POST /schedules/bulk/unlock` (admin saja). */
+  bulkUnlock = this.bulkByRows("unlock");
 
   // ── Hari libur (tetap global, khusus admin) ─────────────────
 

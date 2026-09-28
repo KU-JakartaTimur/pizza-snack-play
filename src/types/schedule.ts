@@ -190,6 +190,12 @@ export interface LockScheduleInput {
    *   dan kelas lain ditolak `403 forbidden_class`.
    */
   className?: string;
+  /**
+   * Beberapa kelas sekaligus — dipakai bilah aksi massal di kartu status.
+   * Bila diisi, `className` diabaikan. `null`/kosong tetap berarti
+   * "semua kelas" (admin).
+   */
+  classNames?: string[];
 }
 
 export interface LockClassResult {
@@ -204,8 +210,11 @@ export interface LockClassResult {
 }
 
 export interface LockScheduleResultDto {
-  /** Kelas yang dikunci; `null` berarti operasi berlaku untuk semua kelas. */
-  className: string | null;
+  /**
+   * Kelas yang diminta; `null` berarti operasi berlaku untuk semua kelas.
+   * Berisi satu elemen bila hanya satu kelas yang diminta (mis. korlas).
+   */
+  classNames: string[] | null;
   /** Kelas-kelas yang benar-benar tersentuh operasi, urut abjad-numerik. */
   classes: string[];
   fromDate: string;
@@ -229,6 +238,11 @@ export interface PublishScheduleInput {
    * - **Korlas:** otomatis kelas yang dikoordinasinya.
    */
   className?: string;
+  /**
+   * Beberapa kelas sekaligus — dipakai bilah aksi massal di kartu status.
+   * Bila diisi, `className` diabaikan.
+   */
+  classNames?: string[];
 }
 
 /** Satu kelas yang masih menyisakan baris `draft` saat publikasi gagal. */
@@ -252,8 +266,11 @@ export interface PublishClassResult {
 }
 
 export interface PublishScheduleResultDto {
-  /** Kelas yang dipublikasi; `null` berarti publikasi seluruh sekolah. */
-  className: string | null;
+  /**
+   * Kelas yang diminta; `null` berarti publikasi seluruh sekolah.
+   * Berisi satu elemen bila hanya satu kelas yang diminta (mis. korlas).
+   */
+  classNames: string[] | null;
   /** Kelas-kelas yang statusnya berubah menjadi `published`. */
   classes: string[];
   year: number;
@@ -273,6 +290,39 @@ export interface PublishScheduleResultDto {
   alreadyPublished: number;
   /** Rincian per kelas — hanya diisi saat publikasi semua kelas. */
   perClass?: PublishClassResult[];
+}
+
+// ─────────────────────────────────────────────────────────────
+// Aksi massal atas baris terpilih (checkbox di tabel jadwal)
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Aksi yang bisa dijalankan atas sekumpulan baris jadwal terpilih.
+ *
+ * Berbeda dari `/schedules/lock` & `/schedules/publish` yang bekerja pada
+ * **rentang tanggal** atau **kelas**, aksi ini bekerja pada **daftar id**
+ * hasil centang di tabel — jadi admin/korlas tidak perlu mengulang satu
+ * baris satu klik.
+ */
+export type BulkRowAction = "lock" | "publish" | "unlock";
+
+/** Body untuk ketiga endpoint `POST /schedules/bulk/{action}`. */
+export interface BulkRowScheduleInput {
+  /** `schedules.id` yang dicentang. Id duplikat/tidak valid diabaikan. */
+  ids: number[];
+}
+
+/** Hasil aksi massal — cukup untuk menyusun pesan banner. */
+export interface BulkRowScheduleResultDto {
+  action: BulkRowAction;
+  /** Baris yang statusnya benar-benar berubah. */
+  changed: number;
+  /** Baris yang dilewati karena statusnya tidak cocok dengan aksinya. */
+  skipped: number;
+  /** Id yang diabaikan: tidak ditemukan, atau di luar cakupan kelas user. */
+  ignored: number;
+  /** Kelas yang benar-benar tersentuh, urut alami. */
+  classes: string[];
 }
 
 // ─────────────────────────────────────────────────────────────

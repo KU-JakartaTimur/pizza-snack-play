@@ -2488,6 +2488,232 @@ section("22. Batas percobaan masuk — kunci setelah 5 kali gagal");
   }
 }
 
+// ── 23. Aksi massal per baris (bulk) ──────────────────────────
+
+section("23. Aksi massal per baris & per kelas (bulk)");
+{
+  // Bulan yang tidak dipakai uji lain, supaya baris uji tidak bertabrakan
+  // dengan data seed maupun sisa section sebelumnya.
+  const YEAR = 2035;
+  const MONTH = 11;
+  const HARI = [`${YEAR}-11-05`, `${YEAR}-11-06`];
+
+  const korlasLogin = await call("POST", "/auth/login", { body: KORLAS });
+  const korlasToken = korlasLogin.data?.token;
+  const korlasClass = korlasLogin.data?.user?.className;
+
+  const classes =
+    (await call("GET", "/classes", { token: adminToken })).data?.classes ?? [];
+  const kelasUji = classes.find((name) => name !== korlasClass);
+  const kelasLain = classes.find(
+    (name) => name !== korlasClass && name !== kelasUji,
+  );
+
+  check(
+    "ada dua kelas untuk diuji",
+    Boolean(kelasUji && kelasLain),
+    JSON.stringify(classes),
+  );
+
+  // Dua baris di kelas uji + satu baris di kelas lain (untuk uji cakupan).
+  const buat = (className, scheduleDate) =>
+    call("POST", "/schedules", {
+      token: adminToken,
+      body: { scheduleDate, className },
+    });
+
+  const row1 = await buat(kelasUji, HARI[0]);
+  const row2 = await buat(kelasUji, HARI[1]);
+  const row3 = await buat(kelasLain, HARI[0]);
+
+  const id1 = row1.data?.scheduleId;
+  const id2 = row2.data?.scheduleId;
+  const id3 = row3.data?.scheduleId;
+
+  check(
+    "tiga baris jadwal uji dibuat",
+    [id1, id2, id3].every((id) => typeof id === "number"),
+    JSON.stringify([row1.status, row2.status, row3.status]),
+  );
+
+  // ── Penjagaan akses & validasi ──────────────────────────────
+  const anonymous = await call("POST", "/schedules/bulk/lock", {
+    body: { ids: [id1] },
+  });
+  check("bulk tanpa token -> 401", anonymous.status === 401, `got ${anonymous.status}`);
+
+  const byParent = await call("POST", "/schedules/bulk/lock", {
+    token: parentToken,
+    body: { ids: [id1] },
+  });
+  check(
+    "bulk oleh orang tua -> 403",
+    byParent.status === 403,
+    `got ${byParent.status}`,
+  );
+
+  const korlasUnlock = await call("POST", "/schedules/bulk/unlock", {
+    token: korlasToken,
+    body: { ids: [id1] },
+  });
+  check(
+    "buka kunci massal oleh korlas -> 403 (admin saja)",
+    korlasUnlock.status === 403,
+    `got ${korlasUnlock.status}`,
+  );
+
+  const emptyIds = await call("POST", "/schedules/bulk/lock", {
+    token: adminToken,
+    body: { ids: [] },
+  });
+  check("`ids` kosong -> 400", emptyIds.status === 400, `got ${emptyIds.status}`);
+
+  // ── Kunci massal ────────────────────────────────────────────
+  const locked = await call("POST", "/schedules/bulk/lock", {
+    token: adminToken,
+    body: { ids: [id1, id2] },
+  });
+  check(
+    "kunci massal dua baris -> 2 berubah",
+    locked.status === 200 && locked.data?.changed === 2,
+    JSON.stringify(locked.data),
+  );
+  check(
+    "kelas yang tersentuh dilaporkan",
+    JSON.stringify(locked.data?.classes) === JSON.stringify([kelasUji]),
+    JSON.stringify(locked.data?.classes),
+  );
+
+  const lockedAgain = await call("POST", "/schedules/bulk/lock", {
+    token: adminToken,
+    body: { ids: [id1, id2] },
+  });
+  check(
+    "kunci ulang baris yang sama -> 0 berubah, 2 dilewati",
+    lockedAgain.data?.changed === 0 && lockedAgain.data?.skipped === 2,
+    JSON.stringify(lockedAgain.data),
+  );
+
+  // ── Publikasi massal hanya menyentuh baris yang dicentang ───
+  const published = await call("POST", "/schedules/bulk/publish", {
+    token: adminToken,
+    body: { ids: [id1] },
+  });
+  check(
+    "publikasi massal satu baris -> 1 berubah",
+    published.status === 200 && published.data?.changed === 1,
+    JSON.stringify(published.data),
+  );
+
+  const publishDraft = await call("POST", "/schedules/bulk/publish", {
+    token: adminToken,
+    body: { ids: [id3] },
+  });
+  check(
+    "publikasi baris draft -> dilewati, bukan 409",
+    publishDraft.status === 200 &&
+      publishDraft.data?.changed === 0 &&
+      publishDraft.data?.skipped === 1,
+    JSON.stringify(publishDraft.data),
+  );
+
+  // ── Cakupan kelas: korlas tidak boleh menyentuh baris kelas lain ──
+  const korlasForeign = await call("POST", "/schedules/bulk/lock", {
+    token: korlasToken,
+    body: { ids: [id3] },
+  });
+  check(
+    "korlas menyentuh baris kelas lain -> diabaikan",
+    korlasForeign.status === 200 &&
+      korlasForeign.data?.changed === 0 &&
+      korlasForeign.data?.ignored === 1,
+    JSON.stringify(korlasForeign.data),
+  );
+
+  // ── Buka kunci massal ───────────────────────────────────────
+  const unlocked = await call("POST", "/schedules/bulk/unlock", {
+    token: adminToken,
+    body: { ids: [id1, id2] },
+  });
+  check(
+    "buka kunci massal (terkunci + dipublikasi) -> 2 berubah",
+    unlocked.status === 200 && unlocked.data?.changed === 2,
+    JSON.stringify(unlocked.data),
+  );
+
+  const unlockedAgain = await call("POST", "/schedules/bulk/unlock", {
+    token: adminToken,
+    body: { ids: [id1, id2] },
+  });
+  check(
+    "buka kunci baris draft -> dilewati",
+    unlockedAgain.data?.changed === 0 && unlockedAgain.data?.skipped === 2,
+    JSON.stringify(unlockedAgain.data),
+  );
+
+  // ── Aksi per kelas lewat `classNames` ───────────────────────
+  const classLock = await call("POST", "/schedules/lock", {
+    token: adminToken,
+    body: {
+      fromDate: `${YEAR}-11-01`,
+      toDate: `${YEAR}-11-30`,
+      classNames: [kelasUji],
+    },
+  });
+  check(
+    "kunci per kelas lewat `classNames` -> hanya kelas itu",
+    classLock.status === 200 &&
+      JSON.stringify(classLock.data?.classes) === JSON.stringify([kelasUji]),
+    JSON.stringify(classLock.data?.classes),
+  );
+  check(
+    "cakupan `classNames` tercatat di respons",
+    JSON.stringify(classLock.data?.classNames) === JSON.stringify([kelasUji]),
+    JSON.stringify(classLock.data?.classNames),
+  );
+
+  const korlasForeignClass = await call("POST", "/schedules/lock", {
+    token: korlasToken,
+    body: {
+      fromDate: `${YEAR}-11-01`,
+      toDate: `${YEAR}-11-30`,
+      classNames: [kelasUji],
+    },
+  });
+  check(
+    "korlas menyebut kelas lain lewat `classNames` -> 403",
+    korlasForeignClass.status === 403,
+    `got ${korlasForeignClass.status}`,
+  );
+
+  const classPublish = await call("POST", "/schedules/publish", {
+    token: adminToken,
+    body: { year: YEAR, month: MONTH, classNames: [kelasUji] },
+  });
+  check(
+    "publikasi per kelas lewat `classNames` -> 200",
+    classPublish.status === 200,
+    JSON.stringify(classPublish.data ?? classPublish.json),
+  );
+
+  // ── Bersih-bersih: buka kunci dulu, baru hapus ──────────────
+  // Baris `locked`/`published` menolak DELETE (409 not_editable).
+  await call("POST", "/schedules/bulk/unlock", {
+    token: adminToken,
+    body: { ids: [id1, id2, id3] },
+  });
+
+  const deletions = [];
+  for (const id of [id1, id2, id3]) {
+    deletions.push(await call("DELETE", `/schedules/${id}`, { token: adminToken }));
+  }
+  check(
+    "baris uji dihapus kembali",
+    deletions.every((result) => result.status === 200),
+    JSON.stringify(deletions.map((result) => result.status)),
+  );
+}
+
 // ── Ringkasan ─────────────────────────────────────────────────
 
 console.log(`\n=== HASIL: ${pass} pass, ${fail} fail ===`);

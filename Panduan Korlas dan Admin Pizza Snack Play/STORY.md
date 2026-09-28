@@ -1,93 +1,97 @@
 # STORY.md — Panduan Korlas & Admin · Pizza Snack Play
 
-## ① Intent alignment
+## 1. Intent alignment
 
-- **目标受众 / 场合**： **koordinator kelas (korlas)** dan **admin sekolah** — mereka orang tua
+- **Audience / occasion:** **koordinator kelas (korlas)** dan **admin sekolah** — mereka orang tua
   juga, bukan staf IT. Dipakai pada **pembekalan korlas menjelang tahun ajaran** dan sebagai
   pegangan saat lupa. Ditayangkan di layar/proyektor, lalu dibagikan lewat grup WhatsApp.
-- **核心目标**： setelah melihat, korlas **berani** mengurus jadwal kelasnya sendiri dari awal
+- **Core goal:** setelah melihat, korlas **berani** mengurus jadwal kelasnya sendiri dari awal
   sampai terbit tanpa menelepon developer; **ingat** tiga hal — (1) susun dulu, baru dikunci,
   baru dipublikasikan, (2) tanggal yang petugasnya dibiarkan kosong akan direbut orang tua,
   (3) jadwal yang sudah terbit tidak bisa diedit sendiri — minta admin membuka kunci; dan
   **melakukan** — mencoba menempel jadwal dari teks sekolah pada kesempatan pertama.
-- **PPT 长度**： 15 页 → Hero 配额 3–4 页（实际 4 页：01 / 09 / 12 / 15）。
-- **视觉调性**： hangat · jelas · tidak menakutkan · warna brand sekolah. Sama dengan dek
+- **Deck length:** 15 halaman → kuota hero 3–4 halaman (realisasi 4: 01 / 09 / 12 / 15).
+- **Visual tone:** hangat · jelas · tidak menakutkan · warna brand sekolah. Sama dengan dek
   orang tua (satu keluarga desain), tetapi nadanya lebih "pegangan kerja" daripada "ajakan".
-- **内容边界**：
-  - **必讲**： apa tugas korlas; beda wewenang admin vs korlas; tiga cara mengisi jadwal
+- **Content boundaries:**
+  - **Must cover:** apa tugas korlas; beda wewenang admin vs korlas; tiga cara mengisi jadwal
     (pilih menu per hari · Salin Sepekan · tempel teks dari sekolah); menentukan petugas atau
     membiarkannya kosong; urutan kunci → publikasi; aksi massal; empat hal yang perlu diingat.
-  - **不讲**： arsitektur teknis, endpoint, nama tabel, migrasi, `dryRun`, JSON, kode HTTP.
+  - **Do not cover:** arsitektur teknis, endpoint, nama tabel, migrasi, `dryRun`, JSON, kode HTTP.
     Istilah internal diterjemahkan ke bahasa kerja sehari-hari (`draft` → "masih bisa diubah",
     `locked` → "sudah dikunci", `published` → "sudah terbit ke orang tua").
-  - **禁碰**： jangan menyebut harga/biaya; jangan menjanjikan fitur yang belum ada
+  - **Off limits:** jangan menyebut harga/biaya; jangan menjanjikan fitur yang belum ada
     (notifikasi, cetak PDF); jangan menyebutkan nama sekolah atau nama siswa yang tidak diketahui.
 
-## ② Skeleton
+## 2. Skeleton
 
-**总页数 15 · 4 章**
+**Total 15 halaman · 4 bagian**
 
-| 章 | 标题 | 内容页 | 扉页页码 |
-| :-- | :--- | :----- | :------- |
-| 01 | Peran Anda | 04 | **第 3 页** |
-| 02 | Akun & wewenang | 06 | **第 5 页** |
-| 03 | Menyusun jadwal | 08, 09, 10 | **第 7 页** |
-| 04 | Kunci & publikasi | 12, 13, 14 | **第 11 页** |
+| Bagian | Judul | Halaman isi | Halaman pembuka |
+| :----- | :---- | :---------- | :-------------- |
+| 01 | Peran Anda | 04 | **hlm 3** |
+| 02 | Akun & wewenang | 06 | **hlm 5** |
+| 03 | Menyusun jadwal | 08, 09, 10 | **hlm 7** |
+| 04 | Kunci & publikasi | 12, 13, 14 | **hlm 11** |
 
-**目录 ↔ 扉页契约**：目录（第 2 页）声明 4 章 → 全篇恰好 4 个 `type: section` 扉页，编号 01..04
-连续，标题与页码区间逐字一致。
+**Kontrak daftar isi ↔ halaman pembuka:** daftar isi (hlm 2) menyatakan 4 bagian → seluruh dek
+tepat 4 halaman pembuka `type: section`, bernomor 01..04 berurutan, judul dan rentang halaman
+sama persis.
 
-**Hero 定位**：01（封面）/ 09（tempel teks）/ 12（terkunci lalu terbit）/ 15（结束页）= 4/15 ≈ 27%。
-任意两个 Hero 之间至少间隔 1 个 Supporting 页。
+**Penempatan hero:** 01 (sampul) / 09 (tempel teks) / 12 (terkunci lalu terbit) / 15 (penutup)
+= 4/15 ≈ 27%. Di antara dua hero selalu ada ≥ 1 halaman Supporting.
 
-**Rhythm 曲线**：
+**Kurva rhythm:**
 `peak · valley · transition · valley · transition · valley · transition · valley · peak · valley · transition · peak · valley · valley · peak`
-无连续 ≥3 valley（13·14 两个 valley 后被 15 peak 收尾）。
+Tidak ada ≥3 valley berurutan (13·14 dua valley, ditutup 15 peak).
 
-**版式预算**：非对称 6/15 = 40%（≥40% ✓）；`N卡片横排` 仅 1 次（第 14 页）；
-`左大图+右侧文字` + `非对称双栏` 合计 3/15 = 20%（≤40% ✓）；无相邻同版式。
+**Anggaran layout:** asimetris 6/15 = 40% (≥40% ✓); `N kartu sebaris` hanya 1 kali (hlm 14);
+`gambar besar kiri + teks kanan` + `dua kolom asimetris` total 3/15 = 20% (≤40% ✓); tidak ada dua
+halaman berturut-turut berlayout sama.
 
-## ③ Page outline
+## 3. Page outline
 
 | # | title | type | role | rhythm | layout | visual | visual_role | density | anti_pattern | description |
 | :- | :---- | :--- | :--- | :----- | :----- | :----- | :---------- | :------ | :----------- | :---------- |
-| 01 | Panduan Korlas & Admin | cover | hero | peak | 全屏视觉+骑线文字 | app_logo.png + SVG 日历+对勾（占右 45%） | anchor | 字数约 35 / 图 2 / 留白约 38% | 禁止文字居中堆叠成海报；禁止 logo 缩到 200×70 塞角落 | 封面：siapa yang memakai panduan ini + 一句话承诺 |
-| 02 | Isi panduan ini | catalog | supporting | valley | 左标题+右内容 | L3: 紫色序号徽标 | evidence | 字数约 130 / 图 0 / 留白约 25% | 禁止四卡片预览；禁止只列标题无说明句 | 目录：4 章 + 每章一句说明 + 页码区间 |
-| 03 | 01 · Peran Anda | section | transition | transition | 全屏视觉+大标题 | SVG 抽象几何（半透明紫圆 + 剪贴板） | atmosphere | 字数约 30 / 图 1 / 留白约 45% | 禁止铺正文段落 | 章扉页 01 |
-| 04 | Tiga tugas Anda | content | supporting | valley | 左大图+右侧文字 | SVG 三段流程（susun · tentukan petugas · umumkan，占左 55%） | anchor | 字数约 200 / 图 1 / 留白约 22% | 禁止 50:50 等分；禁止把插画缩成小图标 | Tiga tugas korlas, diurutkan sesuai urutan kerjanya |
-| 05 | 02 · Akun & wewenang | section | transition | transition | 全屏视觉+大标题 | SVG 抽象几何（钥匙 + 徽章） | atmosphere | 字数约 30 / 图 1 / 留白约 45% | 禁止铺正文 | 章扉页 02 |
-| 06 | Admin & Korlas: bedanya | content | supporting | valley | 非对称双栏 60:40 | SVG 两栏权限对照（占右 40%） | evidence | 字数约 210 / 图 1 / 留白约 22% | 禁止等宽两卡；禁止只写角色名无用例 | Yang boleh & tidak boleh korlas — 这是 paling sering ditanyakan |
-| 07 | 03 · Menyusun jadwal | section | transition | transition | 全屏视觉+大标题 | SVG 抽象几何（日历格 + 铅笔） | atmosphere | 字数约 30 / 图 1 / 留白约 45% | 禁止铺正文 | 章扉页 03 |
-| 08 | Isi menu per hari | content | supporting | valley | 上大图+下方卡片 | SVG 表格 jadwal（占上 58%）+ 下方 60:40 两卡 | evidence | 字数约 200 / 图 1 / 留白约 20% | 禁止下方卡片等宽；禁止截图当背景 | Pilih menu per tanggal + Salin Sepekan |
-| 09 | Tempel teks dari sekolah | content | hero | peak | 全幅图+骑线文字 | SVG 对话框 teks → pratinjau → jadwal（占右 55%） | anchor | 字数约 110 / 图 1 / 留白约 40% | 禁止等宽卡片横排 | **Fitur terbaru**: 不用 ketik ulang — tempel apa adanya |
-| 10 | Petugas piket | content | supporting | valley | 左标题+右内容 | L2: SVG dropdown +  nama orang tua（占右上 300×220） | evidence | 字数约 190 / 图 1 / 留白约 24% | 禁止等宽四卡；禁止只写功能名无用例 | Pilih dari daftar siswa, atau biarkan kosong supaya direbut orang tua |
-| 11 | 04 · Kunci & publikasi | section | transition | transition | 全屏视觉+大标题 | SVG 抽象几何（锁 + 喇叭） | atmosphere | 字数约 30 / 图 1 / 留白约 45% | 禁止铺正文 | 章扉页 04 |
-| 12 | Terkunci, lalu terbit | content | hero | peak | 巨型文字+洞察 | 巨型短语「Kunci dulu, baru terbit」≥60px + SVG 三段状态条 | anchor | 字数约 140 / 图 1 / 留白约 40% | 禁止把核心短语塞进角落小字 | 全篇第二个情绪高点：urutan yang tidak bisa dibalik |
-| 13 | Aksi massal | content | supporting | valley | 左大图+右侧文字 | SVG 表格 + kotak centang（占左 55%） | anchor | 字数约 190 / 图 1 / 留白约 22% | 禁止 50:50 等分 | Centang hari atau kelas, lalu satu klik |
-| 14 | Empat hal yang perlu diingat | content | supporting | valley | N卡片横排（全篇仅此 1 次） | L3: 每卡一个 FAIcon（32px，统一） | evidence | 字数约 230（每卡 ≥ 55）/ 图 0 / 留白约 22% | 禁止卡片只放标题；禁止图标尺寸不统一 | 收口：empat jebakan yang paling sering terjadi |
-| 15 | Terima kasih | ending | hero | peak | 全屏视觉+大标题 | app_logo.png（居中 200×200）+ SVG 光晕 | anchor | 字数约 45 / 图 1 / 留白约 45% | 禁止塞联系方式占位符 | 收束：ajakan coba impor teks minggu ini |
+| 01 | Panduan Korlas & Admin | cover | hero | peak | Visual penuh + teks menumpuk garis | app_logo.png + SVG kalender + centang (kanan 45%) | anchor | ~35 kata / 2 gambar / ~38% ruang kosong | Jangan menumpuk teks di tengah seperti poster; jangan mengecilkan logo ke 200×70 di pojok | Sampul: siapa yang memakai panduan ini + satu kalimat janji |
+| 02 | Isi panduan ini | catalog | supporting | valley | Judul kiri + isi kanan | L3: lencana nomor ungu | evidence | ~130 kata / 0 gambar / ~25% ruang kosong | Jangan pratinjau empat kartu; jangan hanya daftar judul tanpa kalimat penjelas | Daftar isi: 4 bagian + satu kalimat penjelas + rentang halaman |
+| 03 | 01 · Peran Anda | section | transition | transition | Visual penuh + judul besar | L1: geometri SVG abstrak (lingkaran ungu semi-transparan + papan klip) | atmosphere | ~30 kata / 1 gambar / ~45% ruang kosong | Jangan isi dengan paragraf badan | Halaman pembuka 01 |
+| 04 | Tiga tugas Anda | content | supporting | valley | Gambar besar kiri + teks kanan | L1: SVG alur tiga langkah (susun · tentukan petugas · umumkan, kiri 55%) | anchor | ~200 kata / 1 gambar / ~22% ruang kosong | Jangan bagi rata 50:50; jangan mengecilkan ilustrasi jadi ikon kecil | Tiga tugas korlas, diurutkan sesuai urutan kerjanya |
+| 05 | 02 · Akun & wewenang | section | transition | transition | Visual penuh + judul besar | L1: geometri SVG abstrak (kunci + lencana) | atmosphere | ~30 kata / 1 gambar / ~45% ruang kosong | Jangan isi dengan paragraf | Halaman pembuka 02 |
+| 06 | Admin & Korlas: bedanya | content | supporting | valley | Dua kolom asimetris 60:40 | L2: SVG dua kolom wewenang (kanan 40%) | evidence | ~210 kata / 1 gambar / ~22% ruang kosong | Jangan dua kartu sama lebar; jangan hanya menulis nama role tanpa contoh | Yang boleh & tidak boleh korlas — ini yang paling sering ditanyakan |
+| 07 | 03 · Menyusun jadwal | section | transition | transition | Visual penuh + judul besar | L1: geometri SVG abstrak (sel kalender + pensil) | atmosphere | ~30 kata / 1 gambar / ~45% ruang kosong | Jangan isi dengan paragraf | Halaman pembuka 03 |
+| 08 | Isi menu per hari | content | supporting | valley | Gambar besar atas + kartu bawah | L1: SVG tabel jadwal (atas 58%) + dua kartu 60:40 di bawah | evidence | ~200 kata / 1 gambar / ~20% ruang kosong | Jangan kartu bawah sama lebar; jangan memakai tangkapan layar sebagai latar | Pilih menu per tanggal + Salin Sepekan |
+| 09 | Tempel teks dari sekolah | content | hero | peak | Gambar penuh + teks menumpuk garis | L1: SVG dialog teks → pratinjau → jadwal (kanan 55%) | anchor | ~110 kata / 1 gambar / ~40% ruang kosong | Jangan kartu sebaris sama lebar | **Fitur terbaru:** tidak perlu ketik ulang — tempel apa adanya |
+| 10 | Petugas piket | content | supporting | valley | Judul kiri + isi kanan | L2: SVG dropdown + nama orang tua (kanan atas 300×220) | evidence | ~190 kata / 1 gambar / ~24% ruang kosong | Jangan empat kartu sama lebar; jangan hanya menulis nama fitur tanpa contoh pemakaian | Pilih dari daftar siswa, atau biarkan kosong supaya direbut orang tua |
+| 11 | 04 · Kunci & publikasi | section | transition | transition | Visual penuh + judul besar | L1: geometri SVG abstrak (gembok + pengeras suara) | atmosphere | ~30 kata / 1 gambar / ~45% ruang kosong | Jangan isi dengan paragraf | Halaman pembuka 04 |
+| 12 | Terkunci, lalu terbit | content | hero | peak | Teks raksasa + insight | L1: frasa raksasa "Kunci dulu, baru terbit" ≥60px + SVG tiga status | anchor | ~140 kata / 1 gambar / ~40% ruang kosong | Jangan menaruh frasa inti di pojok dengan huruf kecil | Puncak emosi kedua seluruh dek: urutan yang tidak bisa dibalik |
+| 13 | Aksi massal | content | supporting | valley | Gambar besar kiri + teks kanan | L1: SVG tabel + kotak centang (kiri 55%) | anchor | ~190 kata / 1 gambar / ~22% ruang kosong | Jangan bagi rata 50:50 | Centang hari atau kelas, lalu satu klik |
+| 14 | Empat hal yang perlu diingat | content | supporting | valley | N kartu sebaris (satu-satunya di dek ini) | L3: satu ikon per kartu (32px, seragam) | evidence | ~230 kata (≥ 55 per kartu) / 0 gambar / ~22% ruang kosong | Jangan kartu yang hanya berisi judul; jangan ukuran ikon tidak seragam | Penutup: empat jebakan yang paling sering terjadi |
+| 15 | Terima kasih | ending | hero | peak | Visual penuh + judul besar | L1: app_logo.png (tengah 200×200) + SVG pendar cahaya | anchor | ~45 kata / 1 gambar / ~45% ruang kosong | Jangan menaruh placeholder kontak | Penutup: ajakan mencoba impor teks minggu ini |
 
-### 数据落点
+### Di mana angka mendarat
 
-本 deck 无业务 KPI 数据，不编造百分比。两处「数字感」锚点均来自产品事实：
+Dek ini tidak memuat data KPI bisnis, jadi tidak ada persentase yang dikarang. Dua titik "terasa
+angka" berasal dari fakta produk:
 
-- 第 09 页：不摆数字，改用「satu kali tempel」对比「ketik ulang 20 hari」—— 判断： nilai
-  fitur ini ada pada penghapusan pekerjaan ulang, bukan pada kecepatan.
-- 第 12 页：巨型短语而非数字 —— 判断： urutan tiga status tidak bisa dibalik, dan itu yang
-  paling sering membuat korlas bingung.
+- Hlm 09: tidak memajang angka, melainkan perbandingan "satu kali tempel" melawan "ketik ulang
+  20 hari". **Penilaian:** nilai fitur ini ada pada penghapusan pekerjaan ulang, bukan pada
+  kecepatan.
+- Hlm 12: frasa raksasa alih-alih angka. **Penilaian:** urutan tiga status tidak bisa dibalik, dan
+  justru itu yang paling sering membuat korlas bingung.
 
-### Checklist 自检
+### Self-check
 
-- ✅ Hero = 4/15 ≈ 27%（20–30% 区间内）
-- ✅ 无连续 ≥3 valley
-- ✅ `N卡片横排` 仅 1 次
-- ✅ 非对称版式 6/15 = 40% ≥ 40%
-- ✅ 无相邻两页版式相同
-- ✅ `左大图+右侧文字` + `非对称双栏` 合计 3/15 = 20% ≤ 40%
-- ✅ 每页均有 role / rhythm / visual_role / anti_pattern
-- ✅ 4 章 ↔ 4 扉页，编号 01..04 连续
+- ✅ Hero = 4/15 ≈ 27% (dalam rentang 20–30%)
+- ✅ Tidak ada ≥3 valley berurutan
+- ✅ `N kartu sebaris` hanya 1 kali
+- ✅ Layout asimetris 6/15 = 40% ≥ 40%
+- ✅ Tidak ada dua halaman berturut-turut berlayout sama
+- ✅ `gambar besar kiri + teks kanan` + `dua kolom asimetris` total 3/15 = 20% ≤ 40%
+- ✅ Setiap halaman punya role / rhythm / visual_role / anti_pattern
+- ✅ 4 bagian ↔ 4 halaman pembuka, nomor 01..04 berurutan
 
-## ④ Sumber fakta
+## 4. Sumber fakta
 
 Semua klaim di dek ini diambil dari kondisi aplikasi **v1.12** (28 September 2026):
 

@@ -134,7 +134,8 @@ pizza-snack-play/
 │   │   ├── catalog/              # Menu + kategori (katalog bersama)
 │   │   ├── claims/               # Pilih jadwal — klaim tanggal oleh orang tua
 │   │   ├── classes/              # Daftar kelas yang boleh diakses user
-│   │   ├── schedules/            # Jadwal per kelas, minggu, hari libur, kunci & publikasi, ekspor Excel
+│   │   ├── schedules/            # Jadwal per kelas, minggu, hari libur, kunci & publikasi,
+│   │   │                         # ekspor Excel, impor teks, aksi massal
 │   │   ├── parents/              # CRUD akun orang tua (termasuk angkat korlas & buka kunci)
 │   │   ├── profile/              # Layanan mandiri: orang tua kelola anaknya sendiri
 │   │   ├── stats/                # Ringkasan dashboard
@@ -151,7 +152,8 @@ pizza-snack-play/
 │   │   ├── ClassSwitcher.tsx     # Pemilih kelas di header
 │   │   ├── PWAInstallPrompt.tsx  # Banner pasang PWA + notifikasi update SW
 │   │   ├── ScheduleDayCard.tsx   # Kartu satu hari jadwal
-│   │   ├── jadwal/               # Bagian jadwal: ExportButton, CopyWeekModal, MonthToolbar, …
+│   │   ├── jadwal/               # Bagian jadwal: ExportButton, CopyWeekModal, ImportDialog,
+│   │   │                         # BulkActionBar, MonthToolbar, selection.ts, messages.ts
 │   │   └── ui.tsx                # Button, Card, Input, Modal, Badge, dll.
 │   ├── hooks/
 │   │   └── usePWA.ts             # State installability + update service worker
@@ -202,7 +204,7 @@ pizza-snack-play/
 │   ├── seed.ts                   # Parser jadwal -> drizzle/seed.sql
 │   ├── generate-pwa-icons.py     # Bangkitkan ikon PWA + favicon dari logo.png
 │   ├── test-auth.mjs             # 33 uji end-to-end auth
-│   ├── test-api.mjs              # 309 uji end-to-end API
+│   ├── test-api.mjs              # 366 uji end-to-end API
 │   ├── test-status.mjs           # 22 uji status jadwal bulanan
 │   ├── test-profile-students.mjs # 33 uji layanan mandiri anak (idempoten)
 │   ├── test-claim-cross-class.mjs# Uji klaim tanggal lintas kelas
@@ -663,7 +665,7 @@ bun run lint       # ESLint
 | `dev:prod`         | `tsc -b && vite build && wrangler dev --remote`             | Dev server memakai D1 **remote**               |
 | `test`             | `test:auth && test:api && test:status && test:profile`      | Semua test end-to-end                          |
 | `test:auth`        | `bun run scripts/test-auth.mjs`                             | Test auth (33 skenario)                        |
-| `test:api`         | `bun run scripts/test-api.mjs`                              | Test API (309 skenario)                        |
+| `test:api`         | `bun run scripts/test-api.mjs`                              | Test API (366 skenario)                        |
 | `test:status`      | `bun run scripts/test-status.mjs`                           | Test status jadwal bulanan (22 skenario)       |
 | `test:profile`     | `bun run scripts/test-profile-students.mjs`                 | Test layanan mandiri anak (33 skenario)        |
 
@@ -707,8 +709,9 @@ jadwal maupun memakai Pilih Jadwal sampai `students`-nya diisi.
 | **6. Ekspor Excel**              | Unduh jadwal Sepekan/bulanan sebagai `.xlsx` (admin & korlas) — ditulis sendiri, tanpa dependency                   | ✅ Selesai    |
 | **7. Keamanan Akun**             | Batas percobaan masuk (5× gagal → terkunci) + tombol buka kunci di halaman Akun Orang Tua                            | ✅ Selesai    |
 | **8. Aksi Massal Jadwal**        | Checkbox per hari & per kelas untuk kunci/publikasi/buka kunci sekaligus (`POST /schedules/bulk/*`, `classNames`)     | ✅ Selesai    |
-| **9. Ekspor & Cetak lanjutan**   | Halaman cetak ramah printer + ekspor CSV Sepekan/bulanan                                                            | ⏳ Berikutnya |
-| **10. Notifikasi**               | Push notification (PWA), WhatsApp broadcast (opsional)                                                               | ⏳ Rencana    |
+| **9. Impor Jadwal dari Teks**    | Tempel jadwal dari sekolah ke `POST /schedules/import` (pratinjau dulu, idempoten)                                   | ✅ Selesai    |
+| **10. Ekspor & Cetak lanjutan**  | Halaman cetak ramah printer + ekspor CSV Sepekan/bulanan                                                            | ⏳ Berikutnya |
+| **11. Notifikasi**               | Push notification (PWA), WhatsApp broadcast (opsional)                                                               | ⏳ Rencana    |
 
 ---
 
@@ -736,11 +739,11 @@ jadwal maupun memakai Pilih Jadwal sampai `students`-nya diisi.
   Kolomnya **nullable tanpa backfill** — jadwal lama hasil impor tetap
   menampilkan namanya, hanya id-nya kosong sampai korlas memilih ulang, dan `PUT` tanpa menyebut
   `petugasStudentId` tidak mengubah apa pun. `petugasStudentId: null` berarti "kosongkan".
-- **Siklus hidup jadwal:** `draft` (bisa diedit) → `locked` (dibekukan **admin**) → `published` (tampil ke orang tua). Orang tua hanya melihat baris `published`; admin/korlas melihat semua. Kunci & buka kunci adalah wewenang admin, sehingga korlas tidak bisa membekukan maupun mencairkan jadwal. Baris `locked`/`published` menolak `PUT`/`DELETE` dengan 409, dan publikasi sebulan gagal selama masih ada `draft`. Konsekuensi praktisnya: korlas harus meninggalkan petugas kosong **sebelum** publikasi bila ingin tanggal itu direbutkan — setelah terbit, barisnya tidak bisa diedit lagi (admin pun harus membuka kuncinya dulu lewat `unlock`).
+- **Siklus hidup jadwal:** `draft` (bisa diedit) → `locked` (dibekukan) → `published` (tampil ke orang tua). Orang tua hanya melihat baris `published`; admin/korlas melihat semua. **Mengunci** boleh dilakukan admin maupun korlas — `POST /schedules/lock` memakai middleware `scheduleWriters`, dan korlas terikat ke kelasnya sendiri. Yang **khusus admin** adalah **membuka kunci** (`POST /schedules/:id/unlock` dan `/schedules/bulk/unlock`). Baris `locked`/`published` menolak `PUT`/`DELETE` dengan 409, dan publikasi sebulan gagal selama masih ada `draft`. Konsekuensi praktisnya: korlas harus meninggalkan petugas kosong **sebelum** publikasi bila ingin tanggal itu direbutkan — setelah terbit, barisnya tidak bisa diedit lagi (admin pun harus membuka kuncinya dulu lewat `unlock`).
 - **`beforeinstallprompt` ditangkap sedini mungkin:** Event pemasangan PWA hanya menyala **sekali**, segera setelah Chrome memvalidasi manifest + service worker — jauh sebelum `PWAInstallPrompt` sempat dirender, karena komponen itu ada di dalam `AppShell` yang baru muncul setelah sesi diverifikasi ke `/auth/me`. Karena itu event-nya ditangkap skrip klasik inline di `<head>` `index.html` dan disimpan di `window.__pwaInstallPrompt`; `usePWA` membacanya saat mount. Tanpa ini tombol "Pasang" tidak pernah muncul. Skripnya harus klasik dan di `<head>`, sebab bundel aplikasi bertipe module dan otomatis ditunda.
 - **Duplikasi minggu:** `POST /schedules/copy` menyalin Senin–Jumat berdasarkan **offset hari**, bukan tanggal absolut. Hari di minggu tujuan yang sudah terisi dilewati kecuali `overwrite: true`. Hari libur ikut tersalin tanpa menu.
 - **Banyak anak per orang tua:** Relasi `parents 1 ── n students` (kunci `students.parent_id`, `ON DELETE CASCADE`). Saat `PUT /parents/:id`, daftar `students` bersifat **menggantikan**: entri ber-`id` yang masih dikirim akan diperbarui, entri tanpa `id` dibuat baru, dan entri yang tidak disebut lagi dihapus. `id` hanya dipercaya bila anak itu memang milik orang tua tersebut, sehingga id milik orang tua lain tidak bisa dibajak (`syncStudents` di `src/api/parents/service.ts`).
-- **RBAC juga di UI:** Selain `requireRole(...)` di API, setiap halaman yang punya `useMutation` (`menu`, `kategori`, `jadwal`, `orang-tua`) digerbangi lewat `<RoleGate need="...">` — `need="catalog"` (admin saja) untuk menu/kategori, `need="schedule"` (admin + korlas) untuk kelola jadwal, dan `need="admin"` untuk halaman orang tua/dashboard. Orang tua tidak melihat tombol tambah/ubah/hapus sama sekali, bukan sekadar ditolak server; di halaman jadwal, korlas tetap melihat kontrol penyuntingan kelasnya tetapi tombol **Kunci bulan** disembunyikan karena itu wewenang admin.
+- **RBAC juga di UI:** Selain `requireRole(...)` di API, setiap halaman yang punya `useMutation` (`menu`, `kategori`, `jadwal`, `orang-tua`) digerbangi lewat `<RoleGate need="...">` — `need="catalog"` (admin saja) untuk menu/kategori, `need="schedule"` (admin + korlas) untuk kelola jadwal, dan `need="admin"` untuk halaman orang tua/dashboard. Orang tua tidak melihat tombol tambah/ubah/hapus sama sekali, bukan sekadar ditolak server; di halaman jadwal, korlas melihat **Kunci bulan** dan **Publikasi kelas saya** untuk kelasnya sendiri, sedangkan tombol **Hari libur** (berlaku sekolah-wide) hanya dirender untuk admin.
 - **Jadwal per kelas = baris sendiri:** Setiap kelas memiliki **baris jadwalnya sendiri** (bukan satu baris global dengan pengecualian). Karena itu `schedules` memakai indeks unik gabungan `UNIQUE(schedule_date, class_name)` — tanggal yang sama boleh muncul beberapa kali selama kelasnya berbeda. Konsekuensinya `class_name` **wajib** diisi, dan tanggal yang belum diisi untuk suatu kelas memang tampil kosong. Alternatif "satu baris global + penanda `'*'`" sengaja **tidak** dipakai agar tidak ada dua lapis resolusi (global vs override) di setiap pembacaan.
 - **Penentuan kelas saat baca/tulis (`classScope.ts`):** Semua pembacaan jadwal menerima `?class=` opsional. Bila kosong, kelas ditentukan dari peran: admin → kelas pertama yang tersedia, korlas → kelasnya sendiri, orang tua → kelas anak aktif pertamanya. Kelas di luar cakupan menghasilkan **403**. Saat menulis, admin **wajib** menyebut kelas (`class_required` → 400) agar tidak ada penulisan lintas kelas yang tidak disengaja, sedangkan korlas terkunci ke `user.className` dan menyebut kelas lain → 403.
 - **Guard tingkat baris:** Untuk `PUT`/`DELETE /schedules/:id`, kelas ditentukan oleh **baris yang ada di database**, bukan oleh input klien. Handler memuat baris lebih dulu lalu memanggil `canWriteClass(user, row.className)` — sehingga korlas tidak bisa membajak baris kelas lain dengan menghilangkan atau memalsukan `className`.
@@ -777,6 +780,7 @@ jadwal maupun memakai Pilih Jadwal sampai `students`-nya diisi.
 - [Struktur Tabel — DDL + Drizzle + Seed + Queries](docs/Struktur_Tabel_Pizza_Snack_Play.md)
 - [UAT Result](docs/UAT_Result.md)
 - [Panduan Orang Tua — dek sosialisasi 15 halaman](Panduan%20Orang%20Tua%20Pizza%20Snack%20Play/STORY.md) (`.pptx` + sumber `slides/*.slide`)
+- [Panduan Korlas & Admin — dek pembekalan 15 halaman](Panduan%20Korlas%20dan%20Admin%20Pizza%20Snack%20Play/STORY.md) (`.pptx` + sumber `slides/*.slide`)
 
 ## Testing
 

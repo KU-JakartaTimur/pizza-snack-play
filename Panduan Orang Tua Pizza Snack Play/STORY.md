@@ -59,6 +59,17 @@
 - 第 05 页：不摆数字，改用「satu aplikasi」的尺度对比（grup + kertas → satu layar）—— 判断：keribetan bukan karena orang tua tidak tertib, melainkan karena tidak ada satu tempat yang jadi rujukan。
 - 第 11 页：巨型短语而非数字 —— 判断：aturan「satu tanggal untuk satu orang tua per kelas」menjamin tidak ada lagi dua orang merasa sudah dapat。
 
+### ④ Riwayat sinkronisasi
+
+| Tanggal | Versi aplikasi | Yang disesuaikan |
+| :------ | :------------- | :--------------- |
+| 2026-09-27 | v1.10 | Dek dibuat: 15 halaman, 4 bagian, hero 4/15 |
+| 2026-09-28 | v1.12 | **Hlm 10** — teks kartu "Hari ini & minggu ini" kini menyebut **nama anak yang piket** ikut tampil (kolom *Petugas* memang terlihat orang tua). **Hlm 14** — kartu 3 diperjelas: tanggal yang **sudah ditentukan korlas tidak ikut direbutkan** (badge "Ditetapkan korlas"). Ukuran teks isi kartu 18 → 17px agar keempat kartu tetap muat. |
+
+> Hal yang **sengaja tidak diubah**: fitur v1.11 (aksi massal) dan v1.12 (impor jadwal) adalah
+> wewenang admin & korlas, bukan orang tua — tidak ada satu pun alur orang tua yang berubah.
+> Dek ini tetap tentang empat hal: pasang, masuk, lihat jadwal, ambil tanggal.
+
 ### Checklist 自检
 
 - ✅ Hero = 4/15 ≈ 27%（20–30% 区间内）

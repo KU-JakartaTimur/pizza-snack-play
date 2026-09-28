@@ -1,0 +1,176 @@
+<Slide
+    style={{
+        width: '1280px',
+        height: '720px',
+        background: '#FAF7F2',
+        paddingTop: 20,
+        paddingBottom: 20,
+        paddingLeft: 64,
+        paddingRight: 64,
+    }}
+>
+    {/* ── A · blok judul ── */}
+    <Box style={{ height: 110, justifyContent: 'center' }}>
+        <Text
+            style={{
+                fontSize: 34,
+                fontWeight: 'bold',
+                color: '#51277C',
+                fontFamily: 'Trebuchet MS',
+                lineHeight: 1.3,
+            }}
+        >
+            Aksi massal: satu klik untuk banyak hari
+        </Text>
+        <Box style={{ marginTop: 10, width: 72, height: 6, borderRadius: 3, background: '#51277C' }} />
+    </Box>
+
+    {/* ── B · area konten ── */}
+    <Box style={{ height: 530, flexDirection: 'row', gap: 30 }}>
+        {/* kiri 55% · tabel dengan kotak centang */}
+        <Box
+            style={{
+                width: '55%',
+                height: '100%',
+                background: 'rgba(81,39,124,0.06)',
+                borderRadius: 20,
+                justifyContent: 'center',
+                alignItems: 'center',
+            }}
+        >
+            <svg width={560} height={440} viewBox='0 0 560 440'>
+                {/* baris header minggu */}
+                <rect x='10' y='8' width='540' height='44' rx='10' fill='#51277C' />
+                <rect x='26' y='22' width='20' height='20' rx='5' fill='#F3B26C' />
+                <path d='M31 32l4 4 8-9' fill='none' stroke='#51277C' strokeWidth='3' strokeLinecap='round' strokeLinejoin='round' />
+                <text x='62' y='38' fontFamily='Verdana' fontSize='15' fill='#FFFFFF'>Pilih minggu ini</text>
+
+                {/* Senin — dicentang */}
+                <rect x='10' y='62' width='540' height='46' rx='10' fill='#FFFFFF' stroke='#E6DFD2' strokeWidth='2' />
+                <rect x='26' y='75' width='20' height='20' rx='5' fill='#51277C' stroke='#51277C' strokeWidth='2' />
+                <path d='M31 85l4 4 8-9' fill='none' stroke='#FFFFFF' strokeWidth='3' strokeLinecap='round' strokeLinejoin='round' />
+                <text x='62' y='92' fontFamily='Verdana' fontSize='15' fill='#2A2333'>Senin, 5</text>
+                <rect x='436' y='73' width='98' height='24' rx='12' fill='#DED7CB' />
+
+                {/* Selasa — dicentang */}
+                <rect x='10' y='116' width='540' height='46' rx='10' fill='#FFFFFF' stroke='#E6DFD2' strokeWidth='2' />
+                <rect x='26' y='129' width='20' height='20' rx='5' fill='#51277C' stroke='#51277C' strokeWidth='2' />
+                <path d='M31 139l4 4 8-9' fill='none' stroke='#FFFFFF' strokeWidth='3' strokeLinecap='round' strokeLinejoin='round' />
+                <text x='62' y='146' fontFamily='Verdana' fontSize='15' fill='#2A2333'>Selasa, 6</text>
+                <rect x='436' y='127' width='98' height='24' rx='12' fill='#DED7CB' />
+
+                {/* Rabu — dicentang */}
+                <rect x='10' y='170' width='540' height='46' rx='10' fill='#FFFFFF' stroke='#E6DFD2' strokeWidth='2' />
+                <rect x='26' y='183' width='20' height='20' rx='5' fill='#51277C' stroke='#51277C' strokeWidth='2' />
+                <path d='M31 193l4 4 8-9' fill='none' stroke='#FFFFFF' strokeWidth='3' strokeLinecap='round' strokeLinejoin='round' />
+                <text x='62' y='200' fontFamily='Verdana' fontSize='15' fill='#2A2333'>Rabu, 7</text>
+                <rect x='436' y='181' width='98' height='24' rx='12' fill='#DED7CB' />
+
+                {/* Kamis — tidak dicentang */}
+                <rect x='10' y='224' width='540' height='46' rx='10' fill='#FFFFFF' stroke='#E6DFD2' strokeWidth='2' />
+                <rect x='26' y='237' width='20' height='20' rx='5' fill='#FFFFFF' stroke='#DED7CB' strokeWidth='2' />
+                <text x='62' y='254' fontFamily='Verdana' fontSize='15' fill='#2A2333'>Kamis, 8</text>
+                <rect x='436' y='235' width='98' height='24' rx='12' fill='#DED7CB' />
+
+                {/* Jumat — tidak dicentang */}
+                <rect x='10' y='278' width='540' height='46' rx='10' fill='#FFFFFF' stroke='#E6DFD2' strokeWidth='2' />
+                <rect x='26' y='291' width='20' height='20' rx='5' fill='#FFFFFF' stroke='#DED7CB' strokeWidth='2' />
+                <text x='62' y='308' fontFamily='Verdana' fontSize='15' fill='#2A2333'>Jumat, 9</text>
+                <rect x='436' y='289' width='98' height='24' rx='12' fill='#DED7CB' />
+
+                {/* bilah aksi */}
+                <rect x='10' y='344' width='540' height='78' rx='14' fill='#51277C' />
+                <rect x='28' y='364' width='120' height='38' rx='10' fill='#FFFFFF' />
+                <text x='88' y='389' fontFamily='Verdana' fontSize='15' fontWeight='bold' fill='#51277C' textAnchor='middle'>Kunci</text>
+                <rect x='160' y='364' width='120' height='38' rx='10' fill='rgba(255,255,255,0.25)' />
+                <text x='220' y='389' fontFamily='Verdana' fontSize='15' fill='#EFEAE1' textAnchor='middle'>Publikasi</text>
+                <rect x='292' y='364' width='120' height='38' rx='10' fill='rgba(255,255,255,0.25)' />
+                <text x='352' y='389' fontFamily='Verdana' fontSize='15' fill='#EFEAE1' textAnchor='middle'>Buka kunci</text>
+                <text x='470' y='389' fontFamily='Verdana' fontSize='14' fill='#F3B26C'>3 dipilih</text>
+            </svg>
+        </Box>
+
+        {/* kanan 45% · tiga keterangan */}
+        <Box style={{ width: '45%', height: '100%', justifyContent: 'space-between' }}>
+            {[
+                {
+                    t: 'Centang dulu, lalu pilih aksinya',
+                    d: 'Ada "Pilih minggu ini" di setiap blok minggu dan "Pilih semua" di bagian atas tabel.',
+                    g: 'Tidak satu per satu',
+                },
+                {
+                    t: 'Tombol menyesuaikan pilihan Anda',
+                    d: 'Bilah aksi di bawah layar hanya menghidupkan tombol yang cocok dengan status hari yang dicentang.',
+                    g: 'Tidak bisa salah klik',
+                },
+                {
+                    t: 'Buka kunci massal hanya admin',
+                    d: 'Korlas tetap terbatas kelasnya sendiri — hari dari kelas lain tidak ikut tersentuh.',
+                    g: 'Aman lintas kelas',
+                },
+            ].map((it, i) => (
+                <Box
+                    key={i}
+                    style={{
+                        height: 166,
+                        background: '#FFFFFF',
+                        borderRadius: 16,
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                        padding: 22,
+                        borderLeft: '8px solid #AFC440',
+                    }}
+                >
+                    <Text
+                        style={{
+                            fontSize: 24,
+                            fontWeight: 'bold',
+                            color: '#51277C',
+                            fontFamily: 'Trebuchet MS',
+                            lineHeight: 1.3,
+                        }}
+                    >
+                        {it.t}
+                    </Text>
+                    <Text
+                        style={{
+                            marginTop: 10,
+                            fontSize: 17,
+                            color: '#6B6478',
+                            fontFamily: 'Verdana',
+                            lineHeight: 1.5,
+                        }}
+                    >
+                        {it.d}
+                    </Text>
+                    <Box style={{ marginTop: 'auto' }}>
+                        <Text
+                            style={{
+                                fontSize: 16,
+                                color: '#51277C',
+                                fontFamily: 'Verdana',
+                                fontWeight: 'bold',
+                            }}
+                        >
+                            {it.g}
+                        </Text>
+                    </Box>
+                </Box>
+            ))}
+        </Box>
+    </Box>
+
+    {/* ── C · bilah kaki ── */}
+    <Box
+        style={{
+            height: 40,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+        }}
+    >
+        <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>
+            Pizza Snack Play · Panduan Korlas &amp; Admin
+        </Text>
+        <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>13 / 15</Text>
+    </Box>
+</Slide>

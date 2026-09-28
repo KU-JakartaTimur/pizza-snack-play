@@ -15,6 +15,11 @@
 | **Browser Engine**               | Google Chrome Headless via Puppeteer Core (`scripts/run-uat.mjs`)       |
 | **Folder Bukti Tangkapan Layar** | [`outputs/screenshots/`](../outputs/screenshots/)                       |
 
+> **Catatan pembaruan — 28 September 2026.** Bagian 1 sampai 5 adalah rekam UAT **v1.7** yang
+> dijalankan 19 September 2026 dan dibiarkan apa adanya sebagai arsip. Regresi berikutnya
+> dicatat terpisah: **v1.9** di [bagian 6](#6-uji-regresi--cakupan-sekolah-wide--endpoint-status-20-september-2026)
+> dan **v1.11–v1.12** di [bagian 7](#7-uji-regresi--aksi-massal--impor-jadwal-28-september-2026).
+
 ---
 
 ## 1. Ringkasan Eksekutif
@@ -311,6 +316,55 @@ korlas `budi` hanya menerima kelas `1`. Angka `totals` diverifikasi sama dengan 
 2. Assertion `dayOfWeek cocok dengan nama hari` di `test:api` gagal setiap **hari Minggu**:
    `dayOfWeek` menormalkan Minggu ke `7`, sedangkan pengujian hanya menangani `6` dan `0`.
    Pengujian diperbaiki.
+
+---
+
+---
+
+## 7. Uji Regresi — Aksi Massal & Impor Jadwal (28 September 2026)
+
+Perubahan **v1.11** (aksi massal lewat kotak centang) dan **v1.12** (impor jadwal dari teks
+tempelan) menambah endpoint baru tanpa mengubah 21 skenario pada bagian 3. Regresi dijalankan
+terhadap dev server lokal dengan D1 lokal pada kondisi baseline (258 jadwal · 42 menu · 84 item menu):
+
+| Suite                                | Hasil         | Catatan                                                                 |
+| :----------------------------------- | :------------ | :---------------------------------------------------------------------- |
+| `bun run test:auth`                  | **33 / 33**   | Tidak berubah                                                           |
+| `bun run test:api`                   | **366 / 366** | §23 aksi massal (19 assertion) + §24 impor teks (38 assertion) **baru**  |
+| `bun run test:status`                | **22 / 22**   | Tidak berubah                                                           |
+| `bun run test:profile`               | **33 / 33**   | Tidak berubah                                                           |
+| `bun run outputs/check-import-dialog.mjs` | **17 / 17** | **Baru** — dialog impor dua langkah lewat peramban (Puppeteer)          |
+
+**Total: 454 assertion hijau, 0 gagal** (belum termasuk `test-claim-cross-class.mjs`, tidak
+dijalankan pada putaran ini).
+
+**Yang diuji pada aksi massal (v1.11).** Penjagaan akses (buka kunci massal khusus admin;
+korlas hanya baris kelasnya, sisanya `ignored`), validasi `ids`, dan tiga aksi
+kunci/publikasi/buka kunci lewat `POST /schedules/bulk/*`. Baris yang statusnya tidak cocok
+dihitung `skipped` dan permintaan tetap `200` — berbeda sengaja dari aksi berbasis rentang
+yang menolak dengan `409 drafts_remaining`.
+
+**Yang diuji pada impor teks (v1.12).** `dryRun` mengembalikan pratinjau **tanpa menulis apa
+pun**; impor **idempoten** — pasangan `(tanggal, kelas)` yang sudah terisi dilewati, jadi
+menempel teks yang sama dua kali tidak menggandakan jadwal; baris `locked`/`published`
+**tidak pernah tersentuh**; hasil impor selalu `draft`; korlas hanya menyasar kelasnya
+sendiri; dan blok sepekan yang label harinya tidak cocok dengan kalender **digeser** ke
+Senin–Jumat minggu itu beserta peringatan.
+
+**Dua cacat yang ditemukan & diperbaiki saat pengujian:**
+
+1. **Batas 100 parameter D1.** `INSERT` massal 132 baris menghasilkan ~1.000 nilai terikat →
+   `D1_ERROR: too many SQL variables` (HTTP 500). Pengelompokan 50 baris per pernyataan
+   (400 parameter) **tetap gagal**. Yang berhasil: **satu baris per pernyataan** yang dikirim
+   lewat `db.batch()`, 40 pernyataan per giliran.
+2. **Menu yatim.** Menu dibuat lebih dulu karena baris jadwal merujuk id-nya; ketika
+   penyisipan jadwal gagal, 21 menu tertinggal dengan `used = 0`. D1 tidak punya transaksi
+   interaktif, jadi pembersihannya ditulis eksplisit di service
+   (`deleteMenus(createdMenuIds)`) sebelum kesalahan dilempar ulang.
+
+**Pembersihan.** Basis data lokal kembali ke baseline setelah pengujian; sisa yang disengaja
+hanya `import_logs` (jejak audit, belum ada endpoint baca) dan baris `weeks` kosong hasil
+`ensureWeek`.
 
 ---
 

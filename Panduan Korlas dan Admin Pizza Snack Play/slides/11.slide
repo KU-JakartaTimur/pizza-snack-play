@@ -1,0 +1,82 @@
+<Slide
+    style={{
+        width: '1280px',
+        height: '720px',
+        background: 'linear-gradient(135deg, #51277C 0%, #7A45A8 100%)',
+        paddingTop: 60,
+        paddingBottom: 60,
+        paddingLeft: 72,
+        paddingRight: 72,
+        justifyContent: 'center',
+        position: 'relative',
+        overflow: 'hidden',
+    }}
+>
+    <Box
+        style={{
+            position: 'absolute',
+            top: -100,
+            right: -60,
+            width: 420,
+            height: 420,
+            borderRadius: 210,
+            background: '#AFC440',
+            opacity: 0.14,
+        }}
+    />
+    <Box style={{ position: 'absolute', bottom: 46, right: 78, opacity: 0.16 }}>
+        <svg width={230} height={190} viewBox='0 0 230 190'>
+            <rect x='52' y='84' width='126' height='92' rx='12' fill='none' stroke='#FFFFFF' strokeWidth='7' />
+            <path d='M78 84V58a37 37 0 0 1 74 0v26' fill='none' stroke='#FFFFFF' strokeWidth='7' />
+            <circle cx='115' cy='126' r='12' fill='#F3B26C' />
+            <path d='M60 26h36v40H60z' fill='none' stroke='#FFFFFF' strokeWidth='6' />
+            <path d='M96 32l30-14v26z' fill='#FFFFFF' />
+            <path d='M138 54c14 8 22 18 26 30' fill='none' stroke='#FFFFFF' strokeWidth='6' strokeLinecap='round' />
+        </svg>
+    </Box>
+
+    <Box style={{ position: 'relative', zIndex: 1, width: '62%' }}>
+        <Box style={{ flexDirection: 'row', alignItems: 'center', gap: 14, alignSelf: 'flex-start' }}>
+            <Text
+                style={{
+                    fontSize: 76,
+                    fontWeight: 'bold',
+                    color: '#F3B26C',
+                    fontFamily: 'Trebuchet MS',
+                    lineHeight: 1,
+                }}
+            >
+                04
+            </Text>
+            <Box style={{ width: 3, height: 52, background: 'rgba(255,255,255,0.45)' }} />
+            <Text style={{ fontSize: 19, color: 'rgba(255,255,255,0.8)', fontFamily: 'Verdana' }}>
+                Bagian terakhir
+            </Text>
+        </Box>
+
+        <Text
+            style={{
+                marginTop: 26,
+                fontSize: 58,
+                fontWeight: 'bold',
+                color: '#FFFFFF',
+                fontFamily: 'Trebuchet MS',
+                lineHeight: 1.15,
+            }}
+        >
+            Kunci &amp;{'\n'}publikasi
+        </Text>
+
+        <Text
+            style={{
+                marginTop: 24,
+                fontSize: 22,
+                color: 'rgba(255,255,255,0.88)',
+                fontFamily: 'Verdana',
+                lineHeight: 1.5,
+            }}
+        >
+            Dua langkah terakhir — urutannya tidak bisa dibalik.
+        </Text>
+    </Box>
+</Slide>

@@ -376,3 +376,114 @@ export interface CopyWeekResultDto {
   updated: number;
   skipped: number;
 }
+
+// ─────────────────────────────────────────────────────────────
+// Impor jadwal dari teks tempelan (admin & korlas)
+//
+// Sekolah mengirim jadwal sebagai teks biasa — blok rentang tanggal lalu
+// baris "Hari : menu" — mis.
+//
+//     1 - 2 Oktober 2026
+//     Kamis   : Puding Roti  + jeruk
+//     Jumat   : Libur
+//
+// Fitur ini membacanya, mencocokkan nama hari dengan **kalender sungguhan**,
+// lalu menambah baris jadwal yang belum ada. Baris yang sudah ada dilewati.
+// ─────────────────────────────────────────────────────────────
+
+/** Satu hari hasil pembacaan teks, sebelum menyentuh database. */
+export interface ImportParsedDayDto {
+  /** Tanggal ISO hasil pencocokan nama hari dengan kalender. */
+  date: string;
+  dayName: string;
+  /** Teks menu apa adanya dari tempelan. */
+  menuText: string;
+  isHoliday: boolean;
+  /** Menu utama hasil pemecahan "Utama + Buah". */
+  menuMain: string | null;
+  /** Buah pendamping; `null` bila tidak ada tanda `+`. */
+  menuFruit: string | null;
+  notes: string | null;
+}
+
+/** Satu blok rentang tanggal pada teks tempelan. */
+export interface ImportParsedBlockDto {
+  /** Rentang yang **tertulis** di teks. */
+  rawStartDate: string;
+  rawEndDate: string;
+  /** Rentang yang akhirnya dipakai (sama, kecuali blok digeser). */
+  startDate: string;
+  endDate: string;
+  /** `true` bila rentang digeser agar nama hari cocok dengan kalender. */
+  shifted: boolean;
+  days: ImportParsedDayDto[];
+}
+
+/** Baris teks yang tidak bisa diproses. */
+export interface ImportParseIssueDto {
+  /** Nomor baris pada teks tempelan (1-based). */
+  line: number;
+  message: string;
+}
+
+export interface ImportParseResultDto {
+  blocks: ImportParsedBlockDto[];
+  /** Masalah yang membuat sebagian teks tidak terbaca. */
+  issues: ImportParseIssueDto[];
+  /** Penyesuaian yang dilakukan tetapi tidak menggagalkan impor. */
+  warnings: string[];
+  dayCount: number;
+}
+
+export interface ImportScheduleInput {
+  /** Teks tempelan dari sekolah. */
+  text: string;
+  /**
+   * Kelas tujuan. Dikosongkan = semua kelas untuk admin, dan selalu
+   * kelas korlas sendiri untuk korlas.
+   */
+  classNames?: string[] | null;
+  /** `true` = hanya menghitung (pratinjau), tidak menulis apa pun. */
+  dryRun?: boolean;
+}
+
+/** Nasib satu hari pada satu kelas. */
+export type ImportRowOutcome = "create" | "skip";
+
+export interface ImportDayOutcomeDto {
+  date: string;
+  dayName: string;
+  menuText: string;
+  isHoliday: boolean;
+  /** Nama menu yang dipakai (menu baru maupun lama). */
+  menuName: string | null;
+  /** `true` bila menu itu baru dibuat, bukan dipakai ulang. */
+  menuCreated: boolean;
+  outcome: ImportRowOutcome;
+  /** Alasan dilewati — `null` bila baris dibuat. */
+  reason: string | null;
+  classesCreated: string[];
+  classesSkipped: string[];
+}
+
+export interface ImportScheduleResultDto {
+  /** `true` bila ini hanya pratinjau. */
+  dryRun: boolean;
+  /** Jumlah hari yang terbaca dari teks. */
+  parsedDays: number;
+  /** Jumlah blok minggu yang terbaca. */
+  blocks: number;
+  /** Baris jadwal baru. */
+  createdRows: number;
+  /** Baris yang dilewati karena (tanggal, kelas) sudah ada. */
+  skippedRows: number;
+  /** Menu baru yang dibuat. */
+  createdMenus: number;
+  /** Menu lama yang dipakai ulang. */
+  reusedMenus: number;
+  /** Kelas yang jadi sasaran impor, urut alami. */
+  classes: string[];
+  days: ImportDayOutcomeDto[];
+  warnings: string[];
+  issues: ImportParseIssueDto[];
+}

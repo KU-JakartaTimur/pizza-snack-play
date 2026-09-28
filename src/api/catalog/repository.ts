@@ -188,6 +188,20 @@ class CatalogRepository {
     await db.delete(menus).where(eq(menus.id, id));
   }
 
+  /**
+   * Hapus beberapa menu sekaligus.
+   *
+   * Dipakai sebagai pembersihan saat impor gagal: menunya sudah terlanjur
+   * dibuat, tetapi baris jadwal yang memakainya batal disisipkan. Tanpa ini
+   * katalog akan menyimpan menu yatim yang tidak dipakai tanggal mana pun.
+   * Komponennya ikut terhapus lewat `ON DELETE CASCADE` di `menu_items`.
+   */
+  async deleteMenus(db: Db, ids: number[]): Promise<void> {
+    const unique = [...new Set(ids.filter((id) => Number.isInteger(id)))];
+    if (unique.length === 0) return;
+    await db.delete(menus).where(inArray(menus.id, unique));
+  }
+
   // ── Komponen menu & relasi kategori ─────────────────────────
 
   async listMenuItems(db: Db, menuId: number): Promise<MenuItemRow[]> {
@@ -340,6 +354,19 @@ class CatalogRepository {
   async loadMenuDto(db: Db, menuId: number): Promise<MenuDto | null> {
     const map = await this.loadMenusByIds(db, [menuId]);
     return map.get(menuId) ?? null;
+  }
+
+  /**
+   * Seluruh menu beserta komponennya, untuk mengenali menu yang sudah ada
+   * saat impor teks — supaya "Puding Roti + jeruk" tidak dibuat dua kali
+   * hanya karena huruf besar/kecilnya berbeda.
+   */
+  async loadAllMenus(db: Db): Promise<Map<number, MenuDto>> {
+    const rows = await db.select({ id: menus.id }).from(menus);
+    return this.loadMenusByIds(
+      db,
+      rows.map((row) => row.id),
+    );
   }
 }
 

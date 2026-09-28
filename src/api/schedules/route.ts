@@ -72,6 +72,15 @@ export const schedulesRoute = new Hono<AuthEnv>()
     scheduleController.bulkPublish,
   )
   .post("/bulk/unlock", requireAuth, admin, scheduleController.bulkUnlock)
+  /**
+   * Impor jadwal dari teks yang ditempel sekolah (`{ text }`).
+   *
+   * Didaftarkan sebagai rute statis sebelum `/:id/unlock` agar `/import`
+   * tidak tertangkap sebagai `:id = "import"`. Wewenangnya sama dengan
+   * penyusun jadwal lain: admin (semua kelas) + korlas (kelasnya sendiri).
+   * Baris yang sudah ada dilewati, dan baris baru berstatus `draft`.
+   */
+  .post("/import", requireAuth, scheduleWriters, scheduleController.importSchedule)
   .post("/:id/unlock", requireAuth, admin, scheduleController.unlock)
   .put("/:id", requireAuth, scheduleWriters, scheduleController.update)
   .delete("/:id", requireAuth, scheduleWriters, scheduleController.remove);

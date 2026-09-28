@@ -8,6 +8,8 @@ import type {
   BulkRowScheduleResultDto,
   CopyWeekInput,
   CopyWeekResultDto,
+  ImportDayOutcomeDto,
+  ImportScheduleResultDto,
   LockClassResult,
   LockScheduleInput,
   LockScheduleResultDto,
@@ -27,9 +29,11 @@ import type {
   WeekDto,
   WeekScheduleDto,
 } from "../../types/schedule";
+import { guessCategorySlug } from "../catalog/categorize";
 import { catalogRepository } from "../catalog/repository";
 import { classRepository } from "../classes/repository";
 import { claimService } from "../claims/service";
+import { menuKey, parseScheduleText } from "./importParser";
 import {
   addDays,
   dayOfWeek,
@@ -51,7 +55,8 @@ export type ScheduleError =
   | "same_week"
   | "forbidden_class"
   | "not_editable"
-  | "drafts_remaining";
+  | "drafts_remaining"
+  | "import_empty";
 
 /** Data pendukung yang dimuat sekali untuk sebuah rentang tanggal. */
 interface ScheduleContext {
@@ -98,6 +103,29 @@ const BULK_ACTION_FROM: Record<BulkRowAction, ScheduleStatus[]> = {
   publish: ["locked"],
   unlock: ["locked", "published"],
 };
+
+/** Nama menu gabungan — bentuk yang sama dengan yang ditampilkan katalog. */
+function composeMenuName(main: string, fruit: string | null): string {
+  return fruit ? `${main} + ${fruit}` : main;
+}
+
+/**
+ * Kunci pembanding sebuah menu yang sudah ada di katalog.
+ *
+ * `null` bila menunya tidak punya komponen yang bisa dibandingkan — menu
+ * kosong tidak boleh dianggap kembar dengan menu kosong lain.
+ */
+function keyOfMenu(menu: MenuDto): string | null {
+  const main = menu.items.find((item) => item.itemType === "main") ?? menu.items[0];
+  if (!main) return null;
+  const fruit = menu.items.find((item) => item.itemType === "fruit") ?? null;
+  return menuKey(main.name, fruit?.name ?? null);
+}
+
+/** Bentuk satu baris jadwal yang menunggu disisipkan. */
+type PendingScheduleRow = Parameters<
+  typeof scheduleRepository.insertSchedules
+>[1][number];
 
 class ScheduleService {
   /**
@@ -1061,6 +1089,234 @@ class ScheduleService {
       // Tidak ditemukan + di luar cakupan kelas.
       ignored: uniqueIds.length - inScope.length,
       classes: sortClassNames(eligible.map((row) => row.className)),
+    };
+  }
+
+  /**
+   * Impor jadwal dari teks yang ditempel admin/korlas.
+   *
+   * Sekolah mengirim jadwal sebagai teks biasa; sebelum ini satu-satunya cara
+   * memasukkannya adalah menjalankan skrip Python + `wrangler d1 execute`
+   * terhadap produksi. Method ini melakukan hal yang sama dari dalam aplikasi,
+   * dengan dua perbedaan yang disengaja:
+   *
+   *  1. **Baris yang sudah ada dilewati, bukan ditimpa.** Jadwal yang sudah
+   *     dikunci/dipublikasi tidak boleh berubah diam-diam hanya karena
+   *     seseorang menempel ulang teks yang sama. Karena itu tempelan yang
+   *     sama boleh diulang kapan saja — hasilnya idempoten.
+   *  2. **Baris baru berstatus `draft`**, sehingga masih melewati kunci &
+   *     publikasi seperti jadwal yang disusun lewat layar.
+   *
+   * `dryRun` mengembalikan laporan yang sama tanpa menulis apa pun, sehingga
+   * UI bisa menampilkan pratinjau lebih dulu — mitigasi yang memang diminta
+   * PRD §14 untuk risiko salah input.
+   */
+  async importSchedule(
+    db: Db,
+    text: string,
+    classNames: string[],
+    dryRun: boolean,
+  ): Promise<ImportScheduleResultDto | ScheduleError> {
+    const parsed = parseScheduleText(text);
+    if (parsed.dayCount === 0) return "import_empty";
+
+    const classes = sortClassNames(classNames);
+    if (classes.length === 0) return "forbidden_class";
+
+    const days = parsed.blocks
+      .flatMap((block) => block.days)
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    // Satu query untuk seluruh tempelan — bukan satu query per tanggal.
+    const [occupied, allMenus, categories] = await Promise.all([
+      scheduleRepository.findOccupiedDateClassKeys(
+        db,
+        days[0].date,
+        days[days.length - 1].date,
+        classes,
+      ),
+      catalogRepository.loadAllMenus(db),
+      catalogRepository.listCategories(db),
+    ]);
+
+    const categoryIdBySlug = new Map(
+      categories.map((category) => [category.slug, category.id]),
+    );
+
+    // Menu yang sudah ada, dikenali dari pasangan utama+buah — bukan dari nama
+    // yang persis sama, supaya beda huruf besar/kecil tidak melahirkan menu
+    // kembar ("Puding Roti + jeruk" vs "Puding Roti + Jeruk").
+    const knownMenus = new Map<string, { id: number | null; name: string }>();
+    for (const menu of allMenus.values()) {
+      const key = keyOfMenu(menu);
+      if (key && !knownMenus.has(key)) {
+        knownMenus.set(key, { id: menu.id, name: menu.name });
+      }
+    }
+
+    const outcomes: ImportDayOutcomeDto[] = [];
+    const pendingRows: PendingScheduleRow[] = [];
+    const weekIdByStart = new Map<string, number>();
+    /** Menu yang benar-benar dibuat di pemanggilan ini — untuk pembersihan. */
+    const createdMenuIds: number[] = [];
+    let createdMenus = 0;
+    let reusedMenus = 0;
+
+    for (const day of days) {
+      let menuId: number | null = null;
+      let menuName: string | null = null;
+      let menuCreated = false;
+
+      if (!day.isHoliday && day.menuMain) {
+        const key = menuKey(day.menuMain, day.menuFruit);
+        const known = knownMenus.get(key);
+
+        if (known) {
+          menuId = known.id;
+          menuName = known.name;
+          reusedMenus++;
+        } else {
+          menuName = composeMenuName(day.menuMain, day.menuFruit);
+          menuCreated = true;
+          createdMenus++;
+
+          if (!dryRun) {
+            const created = await catalogRepository.insertMenu(db, {
+              name: menuName,
+            });
+            menuId = created.id;
+            createdMenuIds.push(created.id);
+            await catalogRepository.replaceMenuItems(db, created.id, [
+              {
+                name: day.menuMain,
+                itemType: "main" as MenuItemType,
+                categoryId:
+                  categoryIdBySlug.get(
+                    guessCategorySlug(day.menuMain, "main"),
+                  ) ?? null,
+              },
+              ...(day.menuFruit
+                ? [
+                    {
+                      name: day.menuFruit,
+                      itemType: "fruit" as MenuItemType,
+                      categoryId:
+                        categoryIdBySlug.get(
+                          guessCategorySlug(day.menuFruit, "fruit"),
+                        ) ?? null,
+                    },
+                  ]
+                : []),
+            ]);
+          }
+
+          // Dicatat juga saat pratinjau: menu yang sama pada tanggal
+          // berikutnya tidak boleh terhitung "baru" dua kali.
+          knownMenus.set(key, { id: menuId, name: menuName });
+        }
+      }
+
+      const classesCreated: string[] = [];
+      const classesSkipped: string[] = [];
+
+      for (const className of classes) {
+        const key = `${day.date}|${className}`;
+        if (occupied.has(key)) {
+          classesSkipped.push(className);
+          continue;
+        }
+
+        classesCreated.push(className);
+        // Ditandai terisi supaya tanggal yang muncul dua kali dalam satu
+        // tempelan tidak menghasilkan dua baris untuk kelas yang sama.
+        occupied.add(key);
+
+        if (dryRun) continue;
+
+        const weekStart = startOfWeek(day.date);
+        let weekId = weekIdByStart.get(weekStart);
+        if (weekId === undefined) {
+          weekId = (await scheduleRepository.ensureWeek(db, day.date)).id;
+          weekIdByStart.set(weekStart, weekId);
+        }
+
+        pendingRows.push({
+          weekId,
+          scheduleDate: day.date,
+          dayOfWeek: dayOfWeek(day.date),
+          className,
+          menuId,
+          isHoliday: day.isHoliday ? 1 : 0,
+          notes: day.notes,
+          // Selalu `draft` — hasil tempelan masih harus ditinjau, dikunci,
+          // lalu dipublikasikan seperti jadwal yang disusun lewat layar.
+          status: "draft",
+        });
+      }
+
+      outcomes.push({
+        date: day.date,
+        dayName: day.dayName,
+        menuText: day.menuText,
+        isHoliday: day.isHoliday,
+        menuName,
+        menuCreated,
+        outcome: classesCreated.length > 0 ? "create" : "skip",
+        reason:
+          classesCreated.length > 0
+            ? null
+            : "Semua kelas sudah punya jadwal pada tanggal ini",
+        classesCreated,
+        classesSkipped,
+      });
+    }
+
+    const createdRows = outcomes.reduce(
+      (total, day) => total + day.classesCreated.length,
+      0,
+    );
+    const skippedRows = outcomes.reduce(
+      (total, day) => total + day.classesSkipped.length,
+      0,
+    );
+
+    if (!dryRun) {
+      try {
+        await scheduleRepository.insertSchedules(db, pendingRows);
+      } catch (error) {
+        // D1 tidak punya transaksi interaktif, dan menu harus dibuat lebih
+        // dulu karena baris jadwal merujuk id-nya. Jadi kalau penyisipan
+        // jadwal gagal, menu yang terlanjur dibuat dibersihkan di sini —
+        // supaya katalog tidak menyimpan menu yatim.
+        await catalogRepository.deleteMenus(db, createdMenuIds);
+        throw error;
+      }
+
+      await scheduleRepository.insertImportLog(db, {
+        sourceFile: "tempelan-jadwal",
+        recordsAdded: createdRows,
+        status: parsed.issues.length > 0 ? "partial" : "success",
+        errorMessage:
+          parsed.issues.length > 0
+            ? parsed.issues
+                .map((issue) => `baris ${issue.line}: ${issue.message}`)
+                .join("; ")
+            : null,
+      });
+    }
+
+    return {
+      dryRun,
+      parsedDays: days.length,
+      blocks: parsed.blocks.length,
+      createdRows,
+      skippedRows,
+      createdMenus,
+      reusedMenus,
+      classes,
+      days: outcomes,
+      warnings: parsed.warnings,
+      issues: parsed.issues,
     };
   }
 

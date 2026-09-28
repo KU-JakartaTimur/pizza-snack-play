@@ -2,6 +2,7 @@ import { and, asc, eq, gte, inArray, like, lte, or, sql, type SQL } from "drizzl
 import type { Db } from "../../database/db";
 import {
   holidays,
+  importLogs,
   menuItems,
   menus,
   schedules,
@@ -38,6 +39,18 @@ function monthBounds(year: number, month: number): { from: string; to: string } 
   const mm = String(month).padStart(2, "0");
   return { from: `${year}-${mm}-01`, to: `${year}-${mm}-31` };
 }
+
+/**
+ * Jumlah pernyataan per `db.batch()` saat menyisipkan baris jadwal.
+ *
+ * D1 membatasi **100 nilai terikat per pernyataan** — terbukti saat mengimpor
+ * 132 baris dalam satu `INSERT`: `D1_ERROR: too many SQL variables`. Karena
+ * satu baris jadwal mengikat sampai 8 nilai, satu pernyataan hanya boleh
+ * memuat belasan baris. Menyisipkan satu baris per pernyataan lalu
+ * mengirimkannya lewat `db.batch()` jauh lebih mudah dipercaya: tiap
+ * pernyataan hanya 8 nilai, dan batch-nya atomik.
+ */
+const MAX_STATEMENTS_PER_BATCH = 40;
 
 class ScheduleRepository {
   // ── Jadwal ──────────────────────────────────────────────────
@@ -135,6 +148,80 @@ class ScheduleRepository {
     return rows[0];
   }
 
+  /**
+   * Sisipkan banyak baris jadwal sekaligus.
+   *
+   * Dipakai impor teks, yang bisa menghasilkan ratusan baris (mis. 22 tanggal
+   * × 6 kelas = 132). Dua hal yang membuatnya tidak boleh naif:
+   *
+   *  1. **Tidak bisa satu `INSERT` besar.** D1 membatasi 100 nilai terikat per
+   *     pernyataan, sementara 132 baris mengikat ~1.000 nilai →
+   *     `D1_ERROR: too many SQL variables`. Jadi satu baris = satu pernyataan.
+   *  2. **Harus atomik.** Impor separuh jalan meninggalkan jadwal yang
+   *     setengah jadi. `db.batch()` menjalankan seluruh pernyataannya dalam
+   *     satu transaksi, dan itulah cara D1 yang dianjurkan (lihat catatan
+   *     "Transaksi D1" di README).
+   *
+   * Menu yang dirujuk baris-baris ini tetap dibuat di luar batch (id-nya harus
+   * ada lebih dulu), sehingga pemanggil masih perlu membersihkannya bila
+   * penyisipan ini gagal.
+   */
+  async insertSchedules(
+    db: Db,
+    values: Array<{
+      weekId: number | null;
+      scheduleDate: string;
+      dayOfWeek: number;
+      className: string;
+      menuId: number | null;
+      isHoliday: number;
+      notes: string | null;
+      status?: ScheduleStatus;
+    }>,
+  ): Promise<void> {
+    for (let start = 0; start < values.length; start += MAX_STATEMENTS_PER_BATCH) {
+      const chunk = values.slice(start, start + MAX_STATEMENTS_PER_BATCH);
+      const statements = chunk.map((row) => db.insert(schedules).values(row));
+      // `batch()` menuntut tuple tak-kosong; `chunk` sudah dipastikan berisi.
+      await db.batch(
+        statements as unknown as Parameters<typeof db.batch>[0],
+      );
+    }
+  }
+
+  /**
+   * Kunci `"<tanggal>|<kelas>"` untuk baris yang **sudah ada** pada rentang
+   * dan kelas yang diberikan.
+   *
+   * Sengaja hanya mengembalikan kunci, bukan baris utuh: impor cuma perlu tahu
+   * pasangan mana yang sudah terisi supaya bisa melewatinya, dan mengangkut
+   * seluruh kolom untuk 132 baris hanya membebani tanpa dipakai.
+   */
+  async findOccupiedDateClassKeys(
+    db: Db,
+    from: string,
+    to: string,
+    classNames: string[],
+  ): Promise<Set<string>> {
+    if (classNames.length === 0) return new Set();
+
+    const rows = await db
+      .select({
+        scheduleDate: schedules.scheduleDate,
+        className: schedules.className,
+      })
+      .from(schedules)
+      .where(
+        and(
+          gte(schedules.scheduleDate, from),
+          lte(schedules.scheduleDate, to),
+          inArray(schedules.className, classNames),
+        ),
+      );
+
+    return new Set(rows.map((row) => `${row.scheduleDate}|${row.className}`));
+  }
+
   async updateSchedule(
     db: Db,
     id: number,
@@ -164,8 +251,7 @@ class ScheduleRepository {
   async countSchedules(db: Db): Promise<number> {
     const rows = await db
       .select({ count: sql<number>`count(*)` })
-      .from(schedules);
-    return rows[0]?.count ?? 0;
+      .from(schedules);    return rows[0]?.count ?? 0;
   }
 
   // ── Kunci & Publikasi ───────────────────────────────────────
@@ -581,6 +667,29 @@ class ScheduleRepository {
   async countHolidays(db: Db): Promise<number> {
     const rows = await db.select({ count: sql<number>`count(*)` }).from(holidays);
     return rows[0]?.count ?? 0;
+  }
+
+  // ── Catatan impor ───────────────────────────────────────────
+
+  /**
+   * Catat satu impor teks ke `import_logs`.
+   *
+   * Tabel `import_logs` sudah ada sejak skema awal dengan maksud persis ini
+   * ("audit trail impor data dari file teks manual") tetapi belum pernah
+   * dipakai; impor jadwal adalah konsumen pertamanya. Diletakkan di
+   * repository ini karena jadwal satu-satunya yang mengimpor teks — kalau
+   * nanti ada impor lain, method ini yang paling wajar dipindahkan.
+   */
+  async insertImportLog(
+    db: Db,
+    values: {
+      sourceFile: string;
+      recordsAdded: number;
+      status: "success" | "partial" | "failed";
+      errorMessage: string | null;
+    },
+  ): Promise<void> {
+    await db.insert(importLogs).values(values);
   }
 }
 

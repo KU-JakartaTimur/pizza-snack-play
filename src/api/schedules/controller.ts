@@ -11,6 +11,7 @@ import type {
 } from "../../types/schedule";
 import type { JwtPayload } from "../../types/auth";
 import type { AuthEnv } from "../middleware/auth";
+import { classRepository } from "../classes/repository";
 import {
   canWriteClass,
   resolveReadClass,
@@ -60,6 +61,11 @@ function mapError(c: ScheduleContext, error: ScheduleError) {
       return responseConflict(c, "Jadwal sudah dikunci/dipublikasi, tidak dapat diubah");
     case "drafts_remaining":
       return responseConflict(c, "Masih ada jadwal draft — kunci semua dahulu sebelum publikasi");
+    case "import_empty":
+      return responseBadRequest(
+        c,
+        "Tidak ada satu pun baris jadwal yang terbaca. Periksa formatnya: blok rentang tanggal lalu baris \"Hari : menu\".",
+      );
   }
 }
 
@@ -771,6 +777,56 @@ class ScheduleController {
     if (!removed) return responseNotFound(c, "Hari libur tidak ditemukan");
 
     return responseOK(c, "Hari libur berhasil dihapus");
+  };
+
+  /**
+   * Impor jadwal dari teks tempelan (admin & korlas).
+   *
+   * `dryRun` (di body atau `?dryRun=1`) hanya menghitung — tidak menulis apa
+   * pun. UI memakainya untuk menampilkan pratinjau sebelum admin menekan
+   * "Terapkan", karena teks yang salah baca akan mengubah jadwal yang dilihat
+   * seluruh orang tua.
+   */
+  importSchedule = async (c: ScheduleContext) => {
+    let body: { text?: unknown; classNames?: unknown; dryRun?: unknown };
+    try {
+      body = await c.req.json();
+    } catch {
+      return responseBadRequest(c, "Body harus berupa JSON");
+    }
+
+    const text = typeof body.text === "string" ? body.text : "";
+    if (!text.trim()) {
+      return responseBadRequest(c, "Teks jadwal masih kosong");
+    }
+
+    const scope = resolveBulkClasses(
+      c.get("user"),
+      requestedClasses({ classNames: body.classNames }),
+    );
+    if (!scope.ok) return mapScopeError(c, scope.error);
+
+    // `null` = semua kelas. Diambil dari katalog kelas, bukan dipatok 1–6,
+    // supaya sekolah dengan penomoran kelas berbeda tetap benar.
+    const classNames =
+      scope.classNames ?? (await classRepository.listAll(getDb(c.env)));
+
+    const dryRun = body.dryRun === true || c.req.query("dryRun") === "1";
+
+    const result = await scheduleService.importSchedule(
+      getDb(c.env),
+      text,
+      classNames,
+      dryRun,
+    );
+
+    if (typeof result === "string") return mapError(c, result);
+
+    const message = dryRun
+      ? `Pratinjau: ${result.createdRows} baris baru, ${result.skippedRows} dilewati`
+      : `${result.createdRows} baris jadwal diimpor, ${result.skippedRows} dilewati`;
+
+    return responseOK(c, message, result);
   };
 }
 

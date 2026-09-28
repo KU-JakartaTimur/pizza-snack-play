@@ -1,6 +1,5 @@
 import { sql } from "drizzle-orm";
 import {
-  foreignKey,
   index,
   integer,
   primaryKey,
@@ -170,12 +169,31 @@ export const schedules = sqliteTable(
      * Siswa & orang tua yang jadi petugas — `null` bila piket belum ditunjuk
      * atau berasal dari data lama yang belum punya id.
      *
-     * Keduanya diikat dalam **satu foreign key komposit** ke pasangan
-     * `students(id, parent_id)`. Itu bukan hiasan: dengan dua FK terpisah,
-     * baris `(petugas_student_id = 7, petugas_parent_id = 3)` yang menunjuk
-     * anak dan orang tua berbeda tetap lolos, dan aplikasi harus menjaga
-     * konsistensinya sendiri di setiap jalur tulis. Dengan FK komposit,
-     * database yang menolaknya.
+     * Keduanya **sengaja tanpa foreign key.** Sebelumnya diikat dalam satu FK
+     * komposit ke `students(id, parent_id)` dengan harapan database yang
+     * menolak pasangan yang tidak cocok. Itu tidak dipertahankan, karena tiga
+     * alasan yang semuanya nyata di proyek ini:
+     *
+     *  1. **Tidak bisa dijalankan lewat migrasi D1.** FK komposit menuntut
+     *     indeks unik pada pasangan kolom tujuan yang persis, sehingga tabelnya
+     *     harus dibangun ulang. `PRAGMA foreign_keys=OFF` — cara lazim
+     *     mematikannya selama rebuild — **diabaikan secara senyap di dalam
+     *     transaksi**, dan `wrangler d1 migrations apply` membungkus migrasi
+     *     dalam transaksi. Akibatnya migrasi 0007 gagal di production dengan
+     *     `FOREIGN KEY constraint failed` padahal lolos di lokal, dan bahkan
+     *     saat "berhasil" ia meninggalkan tabel yang melanggar FK-nya sendiri.
+     *  2. **`ON UPDATE cascade` menimbulkan efek samping.** Karena FK-nya
+     *     menyertakan `class_name`, memindahkan anak ke kelas lain ikut
+     *     menulis `class_name` pada baris jadwalnya — dan itu menabrak
+     *     `UNIQUE(schedule_date, class_name)` bila baris tujuan sudah ada.
+     *  3. **88 baris jadwal lama punya nama petugas tanpa id siswa**, jadi
+     *     FK-nya tidak akan menolak apa pun pada data itu (NULL selalu lolos)
+     *     sambil menambah kerumitan yang tidak sepadan.
+     *
+     * Konsistensinya ditegakkan di `resolvePetugas()` (`src/api/schedules/
+     * service.ts`) — satu tempat, dipakai bersama oleh create/update/copyWeek/
+     * claims, dan sudah diuji. Petugas selalu dicari di roster kelas baris
+     * yang bersangkutan, jadi pasangan siswa–kelas tidak mungkin meleset.
      */
     petugasStudentId: integer("petugas_student_id"),
     petugasParentId: integer("petugas_parent_id"),
@@ -211,27 +229,6 @@ export const schedules = sqliteTable(
      * `idx_schedules_date_class`, yang hanya melayani pencarian hari tunggal.
      */
     index("idx_schedules_class_date").on(table.className, table.scheduleDate),
-    /**
-     * Petugas wajib siswa dari kelas baris ini sendiri. `ON UPDATE CASCADE`
-     * membuat kelas anak yang dikoreksi ikut memperbaiki baris jadwalnya,
-     * alih-alih membiarkan baris itu menunjuk kelas yang sudah tidak benar.
-     */
-    foreignKey({
-      columns: [table.className, table.petugasStudentId],
-      foreignColumns: [students.className, students.id],
-      name: "fk_schedules_petugas_student",
-    })
-      .onUpdate("cascade")
-      .onDelete("set null"),
-    /**
-     * Pasangan siswa–orang tua harus benar-benar ada di `students`, sehingga
-     * tidak mungkin menyimpan anak milik orang tua lain.
-     */
-    foreignKey({
-      columns: [table.petugasStudentId, table.petugasParentId],
-      foreignColumns: [students.id, students.parentId],
-      name: "fk_schedules_petugas_parent",
-    }).onDelete("set null"),
     index("idx_schedules_status").on(table.status),
   ],
 );
@@ -319,12 +316,10 @@ export const parents = sqliteTable(
   },
   (table) => [
     /**
-     * Satu akun hanya boleh punya satu profil orang tua. Ini juga alasan
-     * teknis, bukan cuma kerapian: SQLite mensyaratkan kolom tujuan sebuah
-     * foreign key komposit punya indeks unik, dan `schedules` menunjuk
-     * `students(id, parent_id)` — yang memerlukan `parents(id)` unik
-     * (sudah dari primary key) **dan** `users(id)` unik (dari primary key).
-     * Indeks di bawah menjaga sisi "satu user, satu profil orang tua".
+     * Satu akun hanya boleh punya satu profil orang tua. Semula ini ditulis
+     * demi memenuhi syarat indeks FK komposit di `schedules`, tetapi FK itu
+     * sudah dilepas (lihat catatan pada `petugasStudentId`). Aturannya tetap
+     * dipertahankan karena memang benar adanya: satu akun, satu profil.
      */
     uniqueIndex("idx_parents_user").on(table.userId),
     index("idx_parents_user_id").on(table.userId),
@@ -351,21 +346,6 @@ export const students = sqliteTable(
   (table) => [
     index("idx_students_parent_id").on(table.parentId),
     index("idx_students_class").on(table.className),
-    /**
-     * Syarat indeks untuk FK komposit `schedules(petugas_student_id,
-     * petugas_parent_id) → students(id, parent_id)`.
-     */
-    uniqueIndex("idx_students_id_parent").on(table.id, table.parentId),
-    /**
-     * Syarat indeks untuk FK komposit `schedules(class_name,
-     * petugas_student_id) → students(class_name, id)`. SQLite mewajibkan
-     * kolom tujuan sebuah FK komposit punya indeks **unik** pada pasangan
-     * kolomnya persis — indeks biasa (atau unik pada pasangan lain seperti
-     * `(class_name, name)`) tidak diterima, dan pelanggarannya baru muncul
-     * sebagai "foreign key mismatch" saat `PRAGMA foreign_key_check`
-     * dijalankan, bukan saat tabelnya dibuat.
-     */
-    uniqueIndex("idx_students_class_id").on(table.className, table.id),
     /** Roster per kelas: saring kelas, urutkan nama. */
     index("idx_students_class_name").on(table.className, table.name),
   ],

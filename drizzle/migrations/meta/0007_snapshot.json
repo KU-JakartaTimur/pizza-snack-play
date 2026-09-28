@@ -891,36 +891,6 @@
           ],
           "onDelete": "set null",
           "onUpdate": "no action"
-        },
-        "fk_schedules_petugas_student": {
-          "name": "fk_schedules_petugas_student",
-          "tableFrom": "schedules",
-          "tableTo": "students",
-          "columnsFrom": [
-            "class_name",
-            "petugas_student_id"
-          ],
-          "columnsTo": [
-            "class_name",
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "cascade"
-        },
-        "fk_schedules_petugas_parent": {
-          "name": "fk_schedules_petugas_parent",
-          "tableFrom": "schedules",
-          "tableTo": "students",
-          "columnsFrom": [
-            "petugas_student_id",
-            "petugas_parent_id"
-          ],
-          "columnsTo": [
-            "id",
-            "parent_id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -1052,14 +1022,6 @@
             "name"
           ],
           "isUnique": false
-        },
-        "idx_students_id_parent": {
-          "name": "idx_students_id_parent",
-          "columns": [
-            "id",
-            "parent_id"
-          ],
-          "isUnique": true
         }
       },
       "foreignKeys": {

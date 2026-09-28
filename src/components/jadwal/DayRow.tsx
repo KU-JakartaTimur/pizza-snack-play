@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { CalendarOff, Trash2, Unlock } from "lucide-react";
-import { Badge, Button, ConfirmDialog, Input, Select } from "@/components/ui";
+import { Badge, Button, Checkbox, ConfirmDialog, Input, Select } from "@/components/ui";
 import { formatCompactDate } from "@/lib/date";
 import { listItem } from "@/lib/motion";
 import type { MenuDto } from "@/types/catalog";
@@ -31,6 +31,10 @@ interface DayRowProps {
   busy: boolean;
   /** `true` bila pengguna berhak membuka kunci (admin). */
   canUnlock: boolean;
+  /** Baris ini tercentang di bilah aksi massal. */
+  selected: boolean;
+  /** Centang/batalkan centang baris ini — hanya untuk baris yang punya entri. */
+  onToggleSelect: (scheduleId: number) => void;
   className: string | null;
   onSave: (day: ScheduleDayDto, patch: DayPatch) => void;
   onUnlock: (scheduleId: number) => void;
@@ -52,12 +56,16 @@ export function DayRow({
   rosterEmpty,
   busy,
   canUnlock,
+  selected,
+  onToggleSelect,
   className,
   onSave,
   onUnlock,
   onDelete,
 }: DayRowProps) {
   const dayLocked = isDayLocked(day.status);
+  /** Baris tanpa entri jadwal tidak punya apa pun untuk diaksi-massalkan. */
+  const scheduleId = day.scheduleId;
 
   /**
    * Tindakan yang menunggu ditegaskan. Keduanya mengubah jadwal secara
@@ -83,6 +91,16 @@ export function DayRow({
       variants={listItem}
       className="flex flex-wrap items-center gap-3 px-5 py-3"
     >
+      {scheduleId !== null && (
+        <Checkbox
+          className="shrink-0"
+          checked={selected}
+          disabled={busy}
+          onChange={() => onToggleSelect(scheduleId)}
+          aria-label={`Pilih jadwal ${formatCompactDate(day.date)}`}
+        />
+      )}
+
       <div className="w-32 shrink-0">
         <p
           className={`text-sm font-medium ${
@@ -213,8 +231,7 @@ export function DayRow({
         tone={pending === "unlock" ? "primary" : "danger"}
         loading={busy}
         onConfirm={() => {
-          const scheduleId = day.scheduleId;
-          if (!scheduleId) return;
+          if (scheduleId === null) return;
           setPending(null);
           if (pending === "unlock") onUnlock(scheduleId);
           else onDelete(scheduleId);

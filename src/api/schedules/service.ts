@@ -4,6 +4,8 @@ import type { MenuDto, MenuItemType } from "../../types/catalog";
 import type { Role } from "../../types/auth";
 import type { ScheduleClaimSummaryDto } from "../../types/claim";
 import type {
+  BulkRowAction,
+  BulkRowScheduleResultDto,
   CopyWeekInput,
   CopyWeekResultDto,
   LockClassResult,
@@ -73,6 +75,29 @@ function toWeekDto(week: Week): WeekDto {
     label: week.label,
   };
 }
+
+/**
+ * Urutkan nama kelas secara alami — "1", "2", …, "10" — bukan abjad
+ * ("1", "10", "2"). Duplikat dibuang, karena yang dilaporkan selalu
+ * "kelas mana saja yang tersentuh", bukan berapa barisnya.
+ */
+function sortClassNames(names: Iterable<string>): string[] {
+  return [...new Set(names)].sort((a, b) =>
+    a.localeCompare(b, "id", { numeric: true }),
+  );
+}
+
+/**
+ * Status yang boleh berpindah oleh tiap aksi massal.
+ *
+ * Dinyatakan sebagai data, bukan rangkaian `if`, supaya aturannya terbaca
+ * sekali di satu tempat dan tidak mungkin berbeda antar-aksi.
+ */
+const BULK_ACTION_FROM: Record<BulkRowAction, ScheduleStatus[]> = {
+  lock: ["draft"],
+  publish: ["locked"],
+  unlock: ["locked", "published"],
+};
 
 class ScheduleService {
   /**
@@ -793,16 +818,17 @@ class ScheduleService {
   /**
    * Kunci semua jadwal 'draft' pada rentang `fromDate`–`toDate`.
    *
-   * `className` `null` berarti **semua kelas sekaligus** — dipakai admin
+   * `classNames` `null` berarti **semua kelas sekaligus** — dipakai admin
    * lewat tombol "Kunci bulan": satu bulan penuh untuk kelas 1–6 terkunci
-   * dalam satu tindakan, sehingga tidak ada kelas yang tertinggal. Korlas
-   * selalu memakai kelasnya sendiri (dijaga di controller).
+   * dalam satu tindakan, sehingga tidak ada kelas yang tertinggal. Daftar
+   * berisi → hanya kelas-kelas itu (dipakai aksi massal di kartu status,
+   * maupun korlas yang selalu terbatas pada kelasnya — dijaga di controller).
    *
    * Baris yang sudah 'locked' atau 'published' dilewati.
    */
   async lockSchedules(
     db: Db,
-    className: string | null,
+    classNames: string[] | null,
     input: LockScheduleInput,
     userId: number,
   ): Promise<LockScheduleResultDto> {
@@ -810,7 +836,7 @@ class ScheduleService {
     // `null` = sekolah-wide (admin) → semua kelas; selain itu hanya kelas ybs,
     // sehingga korlas tidak pernah menyentuh kelas lain.
     const targetClasses =
-      className === null ? await classRepository.listAll(db) : [className];
+      classNames === null ? await classRepository.listAll(db) : classNames;
 
     const perClass: LockClassResult[] = [];
     let totalLocked = 0;
@@ -849,11 +875,9 @@ class ScheduleService {
     }
 
     return {
-      className,
+      classNames,
       // Kelas yang benar-benar punya baris pada rentang ini.
-      classes: [...touched].sort((a, b) =>
-        a.localeCompare(b, "id", { numeric: true }),
-      ),
+      classes: sortClassNames(touched),
       fromDate: input.fromDate,
       toDate: input.toDate,
       locked: totalLocked,
@@ -866,24 +890,24 @@ class ScheduleService {
   /**
    * Publikasi semua jadwal 'locked' untuk satu bulan.
    *
-   * `className` `null` berarti **seluruh sekolah** — semua kelas dipublikasi
+   * `classNames` `null` berarti **seluruh sekolah** — semua kelas dipublikasi
    * bersamaan sehingga jadwal bulan itu terbuka untuk orang tua kelas 1–6
-   * pada saat yang sama.
+   * pada saat yang sama. Daftar berisi → hanya kelas-kelas itu.
    *
-   * Gagal (`drafts_remaining`) bila masih ada baris 'draft' — harus dikunci
-   * dulu. Untuk operasi sekolah-wide, draft di kelas mana pun menahan
-   * publikasi seluruh sekolah; itu disengaja agar tidak ada kelas yang
-   * terbit dengan jadwal separuh jadi.
+   * Gagal (`drafts_remaining`) bila masih ada baris 'draft' **di antara kelas
+   * yang dipilih** — harus dikunci dulu. Draft menahan publikasi kelas itu
+   * sendiri; itu disengaja agar tidak ada kelas yang terbit dengan jadwal
+   * separuh jadi. Kelas yang tidak dipilih tidak ikut menghalangi.
    */
   async publishMonth(
     db: Db,
-    className: string | null,
+    classNames: string[] | null,
     input: PublishScheduleInput,
     userId: number,
   ): Promise<PublishScheduleResultDto | ScheduleError> {
     // `null` = seluruh sekolah (admin) → semua kelas; selain itu hanya kelas ybs.
     const targetClasses =
-      className === null ? await classRepository.listAll(db) : [className];
+      classNames === null ? await classRepository.listAll(db) : classNames;
 
     const perClass: PublishClassResult[] = [];
     let totalPublished = 0;
@@ -952,7 +976,7 @@ class ScheduleService {
     this.lastDraftBlockers = [];
 
     return {
-      className,
+      classNames,
       // Kelas yang statusnya `published` setelah operasi ini — termasuk yang
       // sudah terbit sebelumnya, supaya laporan tidak mengecil saat publikasi
       // diulang.
@@ -980,6 +1004,64 @@ class ScheduleService {
 
     await scheduleRepository.unlockSchedule(db, id);
     return (await this.getById(db, id, "admin"))!;
+  }
+
+  /**
+   * Jalankan satu aksi massal atas baris-baris jadwal yang dicentang.
+   *
+   * Berbeda dari `/lock` & `/publish` yang berbasis rentang tanggal atau
+   * kelas, di sini pemilihannya **eksplisit per baris**. Karena itu tidak ada
+   * operasi yang digagalkan seluruhnya: baris yang statusnya tidak cocok
+   * dengan aksinya (mis. mempublikasi baris `draft`) hanya **dilewati** dan
+   * dilaporkan lewat `skipped` — bukan `409` — sebab pemakainya menyebut
+   * barisnya satu per satu dan berhak tahu hasilnya per baris.
+   *
+   * `scopeClass` `null` berarti tanpa batas kelas (admin). Selain itu hanya
+   * baris dengan kelas tersebut yang diproses; sisanya masuk `ignored`,
+   * sehingga korlas tidak bisa menyentuh kelas lain lewat centang.
+   */
+  async bulkRows(
+    db: Db,
+    ids: number[],
+    action: BulkRowAction,
+    scopeClass: string | null,
+    userId: number,
+  ): Promise<BulkRowScheduleResultDto> {
+    // Id ganda (mis. dari "pilih semua" yang bertumpang) dihitung sekali saja.
+    const uniqueIds = [...new Set(ids)].filter(
+      (id) => Number.isInteger(id) && id > 0,
+    );
+
+    const rows = await scheduleRepository.findSchedulesByIds(db, uniqueIds);
+    const inScope =
+      scopeClass === null
+        ? rows
+        : rows.filter((row) => row.className === scopeClass);
+
+    const allowed = BULK_ACTION_FROM[action];
+    const eligible = inScope.filter((row) =>
+      allowed.includes(row.status as ScheduleStatus),
+    );
+    const eligibleIds = eligible.map((row) => row.id);
+
+    // Statusnya sudah disaring di atas; syarat yang sama diulang di `WHERE`
+    // repository sebagai jaring pengaman bila baris berubah di sela-sela.
+    const apply: Record<BulkRowAction, () => Promise<number>> = {
+      lock: () =>
+        scheduleRepository.lockDraftSchedulesByIds(db, eligibleIds, userId),
+      publish: () =>
+        scheduleRepository.publishLockedSchedulesByIds(db, eligibleIds, userId),
+      unlock: () => scheduleRepository.unlockSchedulesByIds(db, eligibleIds),
+    };
+
+    return {
+      action,
+      changed: await apply[action](),
+      skipped: inScope.length - eligible.length,
+      // Tidak ditemukan + di luar cakupan kelas.
+      ignored: uniqueIds.length - inScope.length,
+      classes: sortClassNames(eligible.map((row) => row.className)),
+    };
   }
 
   async createHoliday(

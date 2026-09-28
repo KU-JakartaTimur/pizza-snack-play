@@ -36,7 +36,8 @@ Jadwal piket snack sekolah sebelumnya disusun dalam dokumen teks manual — suli
 | **Manajemen Menu**           | CRUD menu (makanan utama + buah pendamping) + kategori                                                                                 | Admin          | ✅         |
 | **Kelola Jadwal**            | Tetapkan menu per tanggal, tandai libur kelas, tambah catatan                                                                          | Admin, Korlas  | ✅         |
 | **Salin Jadwal Sepekan**     | Duplikasi jadwal Senin–Jumat ke minggu lain, opsional timpa                                                                            | Admin, Korlas  | ✅         |
-| **Kunci & Publikasi Jadwal** | `draft` → `locked` → `published`. **Admin** yang mengunci (dan boleh membuka kunci); korlas mempublikasi kelasnya. Setelah `locked`/`published` jadwal tidak dapat diubah lagi | Admin, Korlas  | ✅         |
+| **Kunci & Publikasi Jadwal** | `draft` → `locked` → `published`. Admin & korlas mengunci (korlas terbatas kelasnya); **hanya admin** yang boleh membuka kunci. Setelah `locked`/`published` jadwal tidak dapat diubah lagi | Admin, Korlas  | ✅         |
+| **Aksi Massal (Checkbox)**   | Centang hari di tabel jadwal — atau kelas di kartu status — lalu kunci/publikasi/buka kunci sekaligus, tanpa satu baris satu klik | Admin, Korlas  | ✅         |
 | **Pilih Jadwal**             | Orang tua berebut tanggal snack yang dibiarkan kosong korlas — siapa cepat dia dapat                                                   | Parent, Korlas | ✅         |
 | **PWA**                      | Pasang ke layar utama + service worker (cache offline)                                                                                 | Semua          | ✅         |
 | **Kelola Hari Libur**        | Tambah/hapus hari libur bernama (berlaku semua kelas)                                                                                  | Admin          | ✅         |
@@ -316,8 +317,11 @@ Meminta kelas di luar cakupan dijawab **403**.
 | `GET`    | `/schedules/:id`                        | Auth          | Detail satu entri jadwal                                                                          |
 | `POST`   | `/schedules`                            | Admin, Korlas | Buat entri jadwal — `className` **wajib** untuk admin, otomatis untuk korlas                      |
 | `POST`   | `/schedules/copy`                       | Admin, Korlas | Salin jadwal Senin–Jumat Sepekan, untuk satu kelas                                                |
-| `POST`   | `/schedules/lock`                       | Admin         | Kunci semua baris `draft` pada rentang tanggal — hanya admin yang boleh membekukan jadwal          |
-| `POST`   | `/schedules/publish`                    | Admin, Korlas | Publikasi sebulan — gagal **409** bila masih ada `draft`. Korlas hanya untuk kelasnya sendiri     |
+| `POST`   | `/schedules/lock`                       | Admin, Korlas | Kunci semua baris `draft` pada rentang tanggal — `classNames?` untuk memilih beberapa kelas; korlas terbatas kelasnya |
+| `POST`   | `/schedules/publish`                    | Admin, Korlas | Publikasi sebulan — gagal **409** bila masih ada `draft`. `classNames?` mempersempit ke kelas terpilih; korlas hanya kelasnya |
+| `POST`   | `/schedules/bulk/lock`                  | Admin, Korlas | Kunci **baris terpilih** (`{ ids }`) — hanya `draft` yang berubah, sisanya dilaporkan `skipped`                  |
+| `POST`   | `/schedules/bulk/publish`               | Admin, Korlas | Publikasi **baris terpilih** (`{ ids }`) — hanya `locked`; **tidak** memakai `409`                              |
+| `POST`   | `/schedules/bulk/unlock`                | Admin         | Buka kunci **baris terpilih** (`{ ids }`) — `locked`/`published` kembali ke `draft`                             |
 | `POST`   | `/schedules/:id/unlock`                 | Admin         | Kembalikan satu baris ke `draft`                                                                  |
 | `PUT`    | `/schedules/:id`                        | Admin, Korlas | Ubah menu / libur / catatan — korlas hanya baris kelasnya; **409** bila sudah dikunci/dipublikasi |
 | `DELETE` | `/schedules/:id`                        | Admin, Korlas | Hapus entri jadwal — korlas hanya baris kelasnya; **409** bila sudah dikunci/dipublikasi          |
@@ -676,8 +680,9 @@ jadwal maupun memakai Pilih Jadwal sampai `students`-nya diisi.
 | **5. Pilih Jadwal**              | Orang tua berebut tanggal yang dibiarkan kosong korlas; klaim menjadi sumber kebenaran petugas                                       | ✅ Selesai    |
 | **6. Ekspor Excel**              | Unduh jadwal Sepekan/bulanan sebagai `.xlsx` (admin & korlas) — ditulis sendiri, tanpa dependency                   | ✅ Selesai    |
 | **7. Keamanan Akun**             | Batas percobaan masuk (5× gagal → terkunci) + tombol buka kunci di halaman Akun Orang Tua                            | ✅ Selesai    |
-| **8. Ekspor & Cetak lanjutan**   | Halaman cetak ramah printer + ekspor CSV Sepekan/bulanan                                                            | ⏳ Berikutnya |
-| **9. Notifikasi**                | Push notification (PWA), WhatsApp broadcast (opsional)                                                               | ⏳ Rencana    |
+| **8. Aksi Massal Jadwal**        | Checkbox per hari & per kelas untuk kunci/publikasi/buka kunci sekaligus (`POST /schedules/bulk/*`, `classNames`)     | ✅ Selesai    |
+| **9. Ekspor & Cetak lanjutan**   | Halaman cetak ramah printer + ekspor CSV Sepekan/bulanan                                                            | ⏳ Berikutnya |
+| **10. Notifikasi**               | Push notification (PWA), WhatsApp broadcast (opsional)                                                               | ⏳ Rencana    |
 
 ---
 
@@ -690,6 +695,7 @@ jadwal maupun memakai Pilih Jadwal sampai `students`-nya diisi.
 - **JWT:** HS256 via `hono/jwt`. Catatan: pada Hono 4.12+, `verify()` mewajibkan argumen algoritma ketiga — `verify(token, secret, "HS256")`.
 - **Pencegahan N+1:** Menampilkan jadwal sebulan hanya butuh 4 query — jadwal, hari libur, minggu, dan menu dimuat sekali lalu dirakit di memori (`ScheduleService.loadContext`). Pencarian riwayat hanya 1 query ber-`JOIN` yang hasilnya dikelompokkan per tanggal di memori.
 - **Pencarian aman wildcard:** `%` dan `_` pada kata kunci pencarian di-escape (`utils/sql.ts`) sehingga diperlakukan sebagai karakter literal, bukan pola `LIKE`. Rentang pencarian dibatasi 400 hari (satu tahun ajaran) untuk membatasi beban query.
+- **Aksi massal per baris vs per rentang:** Kunci & publikasi punya dua bentuk yang aturannya sengaja berbeda. Berbasis **rentang/kelas** (`/schedules/lock`, `/schedules/publish`) menolak seluruh permintaan dengan `409 drafts_remaining` bila masih ada `draft` — pemakainya tidak menyebut baris satu per satu, jadi membiarkan separuh terbit berbahaya. Berbasis **baris terpilih** (`/schedules/bulk/*`, dari checkbox di tabel) tidak pernah `409`: baris yang statusnya tidak cocok hanya dihitung `skipped`, dan id di luar cakupan kelas dihitung `ignored` — sebab pilihannya eksplisit, sehingga memblokir semuanya hanya akan menghukum pilihan yang sah. Syarat status tetap ditulis di `WHERE` (`setStatusByIds`), bukan hanya diperiksa di aplikasi, agar baris yang berubah status di sela-sela pembacaan dan penulisan tidak ikut tersentuh.
 - **Rebutan tanggal dijaga database, bukan aplikasi:** `schedule_claims` punya indeks unik pada `schedule_id`. Pengecekan "sudah diambil belum?" di service hanya untuk pesan yang ramah — dua orang tua yang menekan tombol pada detik yang sama sama-sama lolos pengecekan itu, lalu salah satunya ditolak SQLite dan ditangkap sebagai `already_claimed` (409) beserta nama pemenangnya. Diuji dengan 5 permintaan serentak: tepat satu berhasil.
 - **Klaim = sumber kebenaran petugas:** Mengambil tanggal ikut menulis `schedules.petugas_name` (nama anak) dan `petugas_parent_name` (nama orang tua); membatalkan mengosongkannya lagi. Dengan begitu seluruh tampilan yang sudah merender petugas ikut terisi tanpa perubahan tambahan, dan tidak ada dua sumber kebenaran soal siapa yang bertugas. Sebaliknya, tanggal yang petugasnya **sudah terisi tanpa klaim** berarti ditunjuk korlas dari daftar piket manual — tanggal itu tidak ikut diperebutkan (`already_assigned`).
 - **Petugas = relasi ke siswa, bukan teks bebas:** Kolom *Petugas* pada tabel jadwal kini dropdown

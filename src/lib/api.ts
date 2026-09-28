@@ -16,6 +16,8 @@ import type {
 import type { ClaimInput, ScheduleClaimDto } from "@/types/claim";
 import type { ClassListDto, ClassRosterDto } from "@/types/class";
 import type {
+  BulkRowScheduleInput,
+  BulkRowScheduleResultDto,
   CopyWeekInput,
   CopyWeekResultDto,
   HolidayDto,
@@ -286,6 +288,26 @@ export const api = {
     /** Buka kunci satu baris jadwal — kembalikan ke draft (admin saja). */
     unlock: (id: number) =>
       unwrapFull<ScheduleDayDto>(http.post(`schedules/${id}/unlock`)),
+
+    /**
+     * Aksi massal atas baris terpilih (`{ ids }`) — dipakai checkbox di
+     * tabel jadwal supaya kunci/publikasi/buka kunci tidak perlu satu baris
+     * satu klik. Ketiganya berbagi bentuk permintaan & jawaban yang sama.
+     */
+    bulkLock: (body: BulkRowScheduleInput) =>
+      unwrapFull<BulkRowScheduleResultDto>(
+        http.post("schedules/bulk/lock", { json: body }),
+      ),
+
+    bulkPublish: (body: BulkRowScheduleInput) =>
+      unwrapFull<BulkRowScheduleResultDto>(
+        http.post("schedules/bulk/publish", { json: body }),
+      ),
+
+    bulkUnlock: (body: BulkRowScheduleInput) =>
+      unwrapFull<BulkRowScheduleResultDto>(
+        http.post("schedules/bulk/unlock", { json: body }),
+      ),
 
     weeks: (year: number, month: number) =>
       unwrap<WeekDto[]>(http.get(`weeks${query({ year, month })}`)),

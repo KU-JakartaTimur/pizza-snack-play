@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, inArray, like, lte, or, sql } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, like, lte, or, sql, type SQL } from "drizzle-orm";
 import type { Db } from "../../database/db";
 import {
   holidays,
@@ -331,6 +331,96 @@ class ScheduleRepository {
       .where(eq(schedules.id, id))
       .returning();
     return rows[0];
+  }
+
+  // ── Aksi massal atas baris terpilih ─────────────────────────
+
+  /**
+   * Baris jadwal berdasarkan daftar id.
+   *
+   * Daftar kosong sengaja dipintas: `IN ()` bukan SQL yang valid, jadi
+   * pemanggil tidak perlu menjaga kasus itu sendiri.
+   */
+  async findSchedulesByIds(db: Db, ids: number[]): Promise<Schedule[]> {
+    if (ids.length === 0) return [];
+
+    return db.select().from(schedules).where(inArray(schedules.id, ids));
+  }
+
+  /**
+   * Kunci baris-baris terpilih yang masih `draft`.
+   *
+   * Syarat statusnya ikut masuk ke `WHERE`, bukan diperiksa di aplikasi:
+   * dengan begitu baris yang berubah status di antara pembacaan dan
+   * penulisan tetap tidak ikut tersentuh. Mengembalikan jumlah baris
+   * yang benar-benar berubah.
+   */
+  async lockDraftSchedulesByIds(
+    db: Db,
+    ids: number[],
+    userId: number,
+  ): Promise<number> {
+    return this.setStatusByIds(db, ids, ["draft"], {
+      status: "locked",
+      lockedBy: userId,
+      lockedAt: sql`(datetime('now'))`,
+    });
+  }
+
+  /** Publikasi baris-baris terpilih yang sudah `locked`. */
+  async publishLockedSchedulesByIds(
+    db: Db,
+    ids: number[],
+    userId: number,
+  ): Promise<number> {
+    return this.setStatusByIds(db, ids, ["locked"], {
+      status: "published",
+      publishedBy: userId,
+      publishedAt: sql`(datetime('now'))`,
+    });
+  }
+
+  /**
+   * Buka kunci baris-baris terpilih — `locked` maupun `published` kembali
+   * ke `draft`, seluruh jejak kunci/publikasi dihapus.
+   */
+  async unlockSchedulesByIds(db: Db, ids: number[]): Promise<number> {
+    return this.setStatusByIds(db, ids, ["locked", "published"], {
+      status: "draft",
+      lockedBy: null,
+      lockedAt: null,
+      publishedBy: null,
+      publishedAt: null,
+    });
+  }
+
+  /**
+   * Satu tempat untuk semua perpindahan status massal: `WHERE id IN (…) AND
+   * status IN (…)` plus stempel waktu. `from` adalah status yang **boleh**
+   * berubah — sisanya dilewati diam-diam, sesuai janji aksi massal yang
+   * melaporkan `skipped` alih-alih gagal seluruhnya.
+   */
+  private async setStatusByIds(
+    db: Db,
+    ids: number[],
+    from: ScheduleStatus[],
+    to: Partial<{
+      status: ScheduleStatus;
+      lockedBy: number | null;
+      lockedAt: SQL | null;
+      publishedBy: number | null;
+      publishedAt: SQL | null;
+    }>,
+  ): Promise<number> {
+    if (ids.length === 0) return 0;
+
+    const rows = await db
+      .update(schedules)
+      .set({ ...to, updatedAt: sql`(datetime('now'))` })
+      .where(and(inArray(schedules.id, ids), inArray(schedules.status, from)))
+      .returning({ id: schedules.id });
+
+    return rows.length;
   }
 
   /**

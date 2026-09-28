@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useRef,
   type ButtonHTMLAttributes,
   type InputHTMLAttributes,
   type ReactNode,
@@ -164,6 +165,53 @@ export function Select({
     <select {...props} className={cnControl(`${CONTROL_CLASS} pr-8`, className)}>
       {children}
     </select>
+  );
+}
+
+// ── Checkbox ──────────────────────────────────────────────────
+
+interface CheckboxProps
+  extends Omit<InputHTMLAttributes<HTMLInputElement>, "type"> {
+  /** Teks di samping kotak. Kosongkan untuk kotak yang berdiri sendiri. */
+  label?: ReactNode;
+  /**
+   * Keadaan "sebagian tercentang" — dipakai kotak **pilih semua** saat baru
+   * sebagian barisnya dipilih. Tidak ada atribut HTML untuk ini, jadi
+   * nilainya dipasang lewat DOM (lihat efek di bawah).
+   */
+  indeterminate?: boolean;
+}
+
+export function Checkbox({
+  label,
+  indeterminate = false,
+  className,
+  disabled,
+  ...props
+}: CheckboxProps) {
+  const ref = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (ref.current) ref.current.indeterminate = indeterminate;
+  }, [indeterminate]);
+
+  return (
+    <label
+      className={cn(
+        "inline-flex items-center gap-2",
+        disabled ? "cursor-not-allowed" : "cursor-pointer",
+        className,
+      )}
+    >
+      <input
+        {...props}
+        ref={ref}
+        type="checkbox"
+        disabled={disabled}
+        className="h-4 w-4 shrink-0 accent-brand-600 disabled:cursor-not-allowed"
+      />
+      {label && <span className="text-sm text-slate-700">{label}</span>}
+    </label>
   );
 }
 

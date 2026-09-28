@@ -25,8 +25,8 @@ const scheduleWriters = requireRole("admin", "korlas");
  * sesuai role (lihat `resolveReadClass`).
  *
  * Rute statis (`/today`, `/week`, `/month`, `/status`, `/range`, `/search`,
- * `/export`, `/lock`, `/publish`) didaftarkan sebelum `/:id` agar tidak
- * tertangkap sebagai parameter ID.
+ * `/export`, `/lock`, `/publish`, `/bulk/*`) didaftarkan sebelum `/:id` agar
+ * tidak tertangkap sebagai parameter ID.
  *
  * Kunci (`/lock`) dan publikasi (`/publish`):
  * - Admin dapat mengosongkan `className` (atau kirim `"*"`) untuk menerapkan
@@ -54,6 +54,24 @@ export const schedulesRoute = new Hono<AuthEnv>()
   .post("/copy", requireAuth, scheduleWriters, scheduleController.copy)
   .post("/lock", requireAuth, scheduleWriters, scheduleController.lock)
   .post("/publish", requireAuth, scheduleWriters, scheduleController.publish)
+  /**
+   * Aksi massal atas baris jadwal yang dicentang di tabel (`{ ids }`).
+   *
+   * Didaftarkan **sebelum** `/:id/unlock` supaya `/bulk/unlock` tidak
+   * tertangkap sebagai `:id = "bulk"`.
+   *
+   * Wewenangnya sama dengan padanannya yang berbasis rentang: kunci &
+   * publikasi untuk admin + korlas (korlas hanya baris kelasnya — ditegakkan
+   * di controller), buka kunci khusus admin.
+   */
+  .post("/bulk/lock", requireAuth, scheduleWriters, scheduleController.bulkLock)
+  .post(
+    "/bulk/publish",
+    requireAuth,
+    scheduleWriters,
+    scheduleController.bulkPublish,
+  )
+  .post("/bulk/unlock", requireAuth, admin, scheduleController.bulkUnlock)
   .post("/:id/unlock", requireAuth, admin, scheduleController.unlock)
   .put("/:id", requireAuth, scheduleWriters, scheduleController.update)
   .delete("/:id", requireAuth, scheduleWriters, scheduleController.remove);

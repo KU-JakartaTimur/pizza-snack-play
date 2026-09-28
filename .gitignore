@@ -218,5 +218,5 @@ outputs/.edge-profile/
 # `outputs/check-export-excel.mjs` dijalankan, jadi tidak perlu ikut berversi.
 outputs/exports/
 
-# Cache lokal `slidep` (log + pid daemon) untuk dek Panduan Orang Tua.
-Panduan Orang Tua Pizza Snack Play/.slidep/
+# Cache lokal `slidep` (log + pid daemon) untuk setiap dek di repo ini.
+*/.slidep/

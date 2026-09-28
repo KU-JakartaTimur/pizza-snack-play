@@ -1,0 +1,172 @@
+<Slide
+    style={{
+        width: '1280px',
+        height: '720px',
+        background: '#FAF7F2',
+        paddingTop: 20,
+        paddingBottom: 20,
+        paddingLeft: 64,
+        paddingRight: 64,
+    }}
+>
+    {/* ── A · blok judul ── */}
+    <Box style={{ height: 110, justifyContent: 'center' }}>
+        <Text
+            style={{
+                fontSize: 34,
+                fontWeight: 'bold',
+                color: '#51277C',
+                fontFamily: 'Trebuchet MS',
+                lineHeight: 1.3,
+            }}
+        >
+            Empat hal yang perlu diingat
+        </Text>
+        <Box style={{ marginTop: 10, width: 72, height: 6, borderRadius: 3, background: '#51277C' }} />
+    </Box>
+
+    {/* ── B · area konten ── */}
+    <Box style={{ height: 530 }}>
+        <Box style={{ height: 470, flexDirection: 'row', gap: 18 }}>
+            {[
+                {
+                    d: 'M7 2v3M17 2v3M3 9h18M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM8 13h8',
+                    t: 'Kosongkan petugas sebelum terbit',
+                    d: 'Bila tanggalnya ingin direbut orang tua, biarkan petugas kosong sebelum dipublikasikan. Setelah terbit, tidak bisa diubah lagi.',
+                    g: 'Tentukan sebelum kunci',
+                },
+                {
+                    d: 'M7 4h10a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3zM7 11l2 2 3-4M8 16h7',
+                    t: 'Selesaikan semua dulu',
+                    d: 'Publikasi menolak selama masih ada hari yang belum dikunci. Periksa kartu status per kelas sebelum menekan tombolnya.',
+                    g: 'Jangan separuh jadi',
+                },
+                {
+                    d: 'M7 11h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2zM8 11V8a4 4 0 0 1 7.5-2',
+                    t: 'Revisi sesudah terbit: minta admin',
+                    d: 'Membuka kunci jadwal wewenang admin. Korlas tidak bisa mencairkan jadwal yang sudah dikunci atau terbit.',
+                    g: 'Sampaikan ke admin',
+                },
+                {
+                    d: 'M7 2v3M17 2v3M3 9h18M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM9 14l6 6M15 14l-6 6',
+                    t: 'Hari libur sekolah wewenang admin',
+                    d: 'Korlas bisa menandai libur pada jadwal kelasnya sendiri. Hari libur yang berlaku untuk semua kelas ditambahkan admin.',
+                    g: 'Berlaku sekolah',
+                },
+            ].map((c, idx) => (
+                <Box
+                    key={idx}
+                    style={{
+                        flex: 1,
+                        height: '100%',
+                        background: '#FFFFFF',
+                        borderRadius: 16,
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                        padding: 24,
+                        borderTop: '8px solid #AFC440',
+                    }}
+                >
+                    <Box
+                        style={{
+                            width: 60,
+                            height: 60,
+                            borderRadius: 30,
+                            background: 'rgba(81,39,124,0.10)',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                        }}
+                    >
+                        <svg width={30} height={30} viewBox='0 0 24 24' xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                fill='none'
+                                stroke='#51277C'
+                                strokeWidth='2'
+                                strokeLinecap='round'
+                                strokeLinejoin='round'
+                                d={c.d}
+                            />
+                        </svg>
+                    </Box>
+
+                    <Text
+                        style={{
+                            marginTop: 16,
+                            fontSize: 23,
+                            fontWeight: 'bold',
+                            color: '#51277C',
+                            fontFamily: 'Trebuchet MS',
+                            lineHeight: 1.32,
+                        }}
+                    >
+                        {c.t}
+                    </Text>
+
+                    <Box style={{ marginTop: 12, width: 44, height: 3, borderRadius: 2, background: '#AFC440' }} />
+
+                    <Text
+                        style={{
+                            marginTop: 12,
+                            fontSize: 17,
+                            color: '#6B6478',
+                            fontFamily: 'Verdana',
+                            lineHeight: 1.5,
+                        }}
+                    >
+                        {c.d}
+                    </Text>
+
+                    <Box style={{ marginTop: 'auto' }}>
+                        <Text
+                            style={{
+                                fontSize: 16,
+                                color: '#51277C',
+                                fontFamily: 'Verdana',
+                                fontWeight: 'bold',
+                            }}
+                        >
+                            {c.g}
+                        </Text>
+                    </Box>
+                </Box>
+            ))}
+        </Box>
+
+        {/* simpulan */}
+        <Box
+            style={{
+                marginTop: 14,
+                height: 46,
+                background: '#51277C',
+                borderRadius: 14,
+                justifyContent: 'center',
+                alignItems: 'center',
+            }}
+        >
+            <Text
+                style={{
+                    fontSize: 19,
+                    color: '#FFFFFF',
+                    fontFamily: 'Verdana',
+                    fontWeight: 'bold',
+                }}
+            >
+                Intinya: susun, tentukan petugas, kunci, lalu terbitkan.
+            </Text>
+        </Box>
+    </Box>
+
+    {/* ── C · bilah kaki ── */}
+    <Box
+        style={{
+            height: 40,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+        }}
+    >
+        <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>
+            Pizza Snack Play · Panduan Korlas &amp; Admin
+        </Text>
+        <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>14 / 15</Text>
+    </Box>
+</Slide>

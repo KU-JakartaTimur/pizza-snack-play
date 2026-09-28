@@ -1,0 +1,175 @@
+<Slide
+    style={{
+        width: '1280px',
+        height: '720px',
+        background: '#FAF7F2',
+        paddingTop: 20,
+        paddingBottom: 20,
+        paddingLeft: 64,
+        paddingRight: 64,
+    }}
+>
+    {/* ── A · blok judul ── */}
+    <Box style={{ height: 110, justifyContent: 'center' }}>
+        <Text
+            style={{
+                fontSize: 34,
+                fontWeight: 'bold',
+                color: '#51277C',
+                fontFamily: 'Trebuchet MS',
+                lineHeight: 1.3,
+            }}
+        >
+            Admin &amp; Korlas: bedanya di mana
+        </Text>
+        <Box style={{ marginTop: 10, width: 72, height: 6, borderRadius: 3, background: '#51277C' }} />
+    </Box>
+
+    {/* ── B · area konten ── */}
+    <Box style={{ height: 530, flexDirection: 'row', gap: 26 }}>
+        {/* kiri 60% · dua kartu wewenang */}
+        <Box style={{ width: '60%', height: '100%', justifyContent: 'space-between' }}>
+            <Box
+                style={{
+                    height: 258,
+                    background: '#FFFFFF',
+                    borderRadius: 16,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    padding: 22,
+                    borderTop: '8px solid #AFC440',
+                }}
+            >
+                <Text
+                    style={{
+                        fontSize: 25,
+                        fontWeight: 'bold',
+                        color: '#51277C',
+                        fontFamily: 'Trebuchet MS',
+                    }}
+                >
+                    Korlas boleh sendiri
+                </Text>
+                <Box style={{ marginTop: 12 }}>
+                    {[
+                        'Menyusun & mengubah jadwal kelasnya, selama belum dikunci',
+                        'Menentukan petugas, atau membiarkannya kosong',
+                        'Menyalin Sepekan & menempel teks jadwal dari sekolah',
+                        'Mengunci lalu mempublikasikan jadwal kelasnya',
+                        'Mengambil tanggal piket seperti orang tua lainnya',
+                    ].map((s, i) => (
+                        <Box key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 7 }}>
+                            <svg width={18} height={18} viewBox='0 0 24 24'>
+                                <path d='M5 13l4 4 10-11' fill='none' stroke='#AFC440' strokeWidth='3' strokeLinecap='round' strokeLinejoin='round' />
+                            </svg>
+                            <Text style={{ flex: 1, fontSize: 16, color: '#2A2333', fontFamily: 'Verdana', lineHeight: 1.45 }}>
+                                {s}
+                            </Text>
+                        </Box>
+                    ))}
+                </Box>
+            </Box>
+
+            <Box
+                style={{
+                    height: 254,
+                    background: '#FFFFFF',
+                    borderRadius: 16,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    padding: 22,
+                    borderTop: '8px solid #F3B26C',
+                }}
+            >
+                <Text
+                    style={{
+                        fontSize: 25,
+                        fontWeight: 'bold',
+                        color: '#51277C',
+                        fontFamily: 'Trebuchet MS',
+                    }}
+                >
+                    Tetap wewenang admin
+                </Text>
+                <Box style={{ marginTop: 12 }}>
+                    {[
+                        'Mengelola katalog menu & kategori',
+                        'Mengelola akun orang tua, termasuk mengangkat korlas',
+                        'Hari libur sekolah — berlaku untuk semua kelas',
+                        'Membuka kunci jadwal yang sudah dikunci atau terbit',
+                    ].map((s, i) => (
+                        <Box key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 7 }}>
+                            <svg width={18} height={18} viewBox='0 0 24 24'>
+                                <path d='M7 7l10 10M17 7L7 17' fill='none' stroke='#F3B26C' strokeWidth='3' strokeLinecap='round' />
+                            </svg>
+                            <Text style={{ flex: 1, fontSize: 16, color: '#2A2333', fontFamily: 'Verdana', lineHeight: 1.45 }}>
+                                {s}
+                            </Text>
+                        </Box>
+                    ))}
+                </Box>
+            </Box>
+        </Box>
+
+        {/* kanan 40% · ilustrasi dua peran */}
+        <Box
+            style={{
+                width: '40%',
+                height: '100%',
+                background: 'rgba(81,39,124,0.06)',
+                borderRadius: 20,
+                justifyContent: 'center',
+                alignItems: 'center',
+            }}
+        >
+            <svg width={360} height={400} viewBox='0 0 360 400'>
+                {/* korlas */}
+                <rect x='24' y='24' width='312' height='150' rx='18' fill='#FFFFFF' stroke='#AFC440' strokeWidth='3' />
+                <circle cx='76' cy='78' r='30' fill='#AFC440' />
+                <text x='76' y='90' fontFamily='Trebuchet MS' fontSize='30' fontWeight='bold' fill='#3F4718' textAnchor='middle'>
+                    K
+                </text>
+                <text x='124' y='70' fontFamily='Trebuchet MS' fontSize='24' fontWeight='bold' fill='#51277C'>
+                    Korlas
+                </text>
+                <text x='124' y='102' fontFamily='Verdana' fontSize='15' fill='#6B6478'>
+                    satu kelas
+                </text>
+                <rect x='52' y='122' width='256' height='9' rx='5' fill='#DED7CB' />
+                <rect x='52' y='140' width='196' height='9' rx='5' fill='#EDE8DF' />
+
+                {/* admin */}
+                <rect x='24' y='196' width='312' height='150' rx='18' fill='#51277C' />
+                <circle cx='76' cy='250' r='30' fill='#F3B26C' />
+                <text x='76' y='262' fontFamily='Trebuchet MS' fontSize='30' fontWeight='bold' fill='#51277C' textAnchor='middle'>
+                    A
+                </text>
+                <text x='124' y='242' fontFamily='Trebuchet MS' fontSize='24' fontWeight='bold' fill='#FFFFFF'>
+                    Admin
+                </text>
+                <text x='124' y='274' fontFamily='Verdana' fontSize='15' fill='#EFEAE1'>
+                    semua kelas
+                </text>
+                <rect x='52' y='294' width='256' height='9' rx='5' fill='rgba(255,255,255,0.5)' />
+                <rect x='52' y='312' width='216' height='9' rx='5' fill='rgba(255,255,255,0.3)' />
+
+                <text x='180' y='380' fontFamily='Verdana' fontSize='16' fill='#6B6478' textAnchor='middle'>
+                    Admin melihat semua kelas
+                </text>
+            </svg>
+        </Box>
+    </Box>
+
+    {/* ── C · bilah kaki ── */}
+    <Box
+        style={{
+            height: 40,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+        }}
+    >
+        <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>
+            Pizza Snack Play · Panduan Korlas &amp; Admin
+        </Text>
+        <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>06 / 15</Text>
+    </Box>
+</Slide>

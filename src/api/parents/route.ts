@@ -12,6 +12,13 @@ const admin = requireRole("admin");
 
 export const parentsRoute = new Hono<AuthEnv>()
   .get("/", requireAuth, admin, parentController.list)
+  /**
+   * Unduh daftar akun sebagai berkas Excel (`.xlsx`) — **admin saja**.
+   *
+   * Didaftarkan **sebelum** `/:id` supaya `/export` tidak tertangkap sebagai
+   * `:id = "export"` dan gagal dengan "ID tidak valid".
+   */
+  .get("/export", requireAuth, admin, parentController.exportAccounts)
   .get("/:id", requireAuth, admin, parentController.detail)
   .post("/", requireAuth, admin, parentController.create)
   .put("/:id", requireAuth, admin, parentController.update)

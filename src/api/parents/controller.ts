@@ -6,6 +6,7 @@ import type {
   ParentRelationship,
 } from "../../types/account";
 import type { AuthEnv } from "../middleware/auth";
+import { todayInWib } from "../utils/date";
 import { parseId } from "../utils/params";
 import {
   responseBadRequest,
@@ -13,7 +14,9 @@ import {
   responseCreated,
   responseNotFound,
   responseOK,
+  xlsxResponse,
 } from "../utils/response";
+import { accountsFilename, buildAccountsSheet } from "./export";
 import {
   MANAGED_ROLES,
   RELATIONSHIPS,
@@ -176,6 +179,37 @@ class ParentController {
     if (!data) return responseNotFound(c, "Data orang tua tidak ditemukan");
 
     return responseOK(c, "Detail orang tua", data);
+  };
+
+  /**
+   * Unduh daftar akun sebagai berkas Excel.
+   * `GET /parents/export?active=true|false`
+   *
+   * `active` opsional: tanpa itu seluruh akun ikut, dengan itu hanya akun
+   * aktif/nonaktif saja — berguna saat admin perlu memeriksa siapa yang
+   * sudah tidak dipakai lagi. Isi lembar mengikuti kolom di layar.
+   *
+   * Didaftarkan **sebelum** `/:id` pada route, supaya `/export` tidak
+   * tertangkap sebagai `:id = "export"`.
+   */
+  exportAccounts = async (c: ParentContext) => {
+    const activeRaw = c.req.query("active");
+    const active = activeRaw === undefined ? undefined : activeRaw === "true";
+
+    const items = await parentService.listForExport(getDb(c.env), { active });
+
+    const label =
+      active === undefined
+        ? "Semua akun"
+        : active
+          ? "Hanya akun aktif"
+          : "Hanya akun nonaktif";
+
+    return xlsxResponse(
+      c,
+      buildAccountsSheet(items, label),
+      accountsFilename(todayInWib()),
+    );
   };
 
   create = async (c: ParentContext) => {

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { AdminOnly } from "@/components/AdminOnly";
 import { PageHeader } from "@/components/AppShell";
+import { ExportButton } from "@/components/ExportButton";
 import {
   Badge,
   Button,
@@ -313,10 +314,19 @@ function ParentsContent() {
         title="Akun Orang Tua"
         description="Setiap orang tua punya akun sendiri untuk melihat jadwal."
         action={
-          <Button onClick={openCreate}>
-            <Plus className="h-4 w-4" />
-            Akun baru
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Berkasnya memuat **seluruh** akun, bukan hanya halaman yang
+                sedang tampil — mencari-cari di berkas justru lebih susah
+                kalau isinya terpotong per halaman. */}
+            <ExportButton
+              onExport={() => api.parents.exportXlsx()}
+              title="Unduh seluruh akun sebagai berkas Excel"
+            />
+            <Button onClick={openCreate}>
+              <Plus className="h-4 w-4" />
+              Akun baru
+            </Button>
+          </div>
         }
       />
 

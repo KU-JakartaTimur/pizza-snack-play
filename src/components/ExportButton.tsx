@@ -1,37 +1,35 @@
 import { useState } from "react";
 import { FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui";
-import { api, errorMessage } from "@/lib/api";
+import { errorMessage } from "@/lib/api";
 import { saveBlob } from "@/lib/download";
 
 interface ExportButtonProps {
-  /** `week` = halaman Sepekan, `month` = halaman Bulanan. */
-  scope: "week" | "month";
-  /** Tanggal mana pun pada pekan yang sedang dilihat — hanya untuk `week`. */
-  date?: string;
-  /** Bulan yang sedang dilihat — hanya untuk `month`. */
-  year?: number;
-  month?: number;
-  /** Kelas yang sedang tampil di layar; berkasnya dibuat untuk kelas ini. */
-  className: string | null;
+  /**
+   * Ambil berkasnya dari server. Mengembalikan `blob` + `filename` yang siap
+   * disimpan; melempar `ApiError` bila server menolak.
+   */
+  onExport: () => Promise<{ blob: Blob; filename: string }>;
+  /** Teks tombol, mis. `Unduh Excel`. */
+  label?: string;
+  /** Keterangan tambahan saat kursor berhenti di tombol. */
+  title?: string;
   /** Matikan tombol selama data halaman belum siap. */
   disabled?: boolean;
 }
 
 /**
- * Tombol "Unduh Excel" untuk halaman Sepekan & Bulanan.
+ * Tombol "Unduh Excel" yang dipakai bersama halaman yang punya ekspor.
  *
- * Sengaja satu komponen untuk dua halaman: keduanya harus berperilaku sama —
- * kelas yang diunduh adalah kelas yang sedang tampil, dan kegagalan apa pun
- * (mis. `403` karena role-nya bukan admin/korlas) muncul sebagai pesan di
- * sebelah tombol, bukan menggagalkan halaman.
+ * Sengaja tidak tahu apa yang diekspor: pemanggil menyerahkan `onExport`,
+ * sehingga perilakunya seragam di mana pun dipasang — berkasnya disimpan
+ * lewat `saveBlob`, dan kegagalan apa pun (mis. `403` karena role tidak
+ * berhak) muncul sebagai pesan di sebelah tombol, bukan menggagalkan halaman.
  */
 export function ExportButton({
-  scope,
-  date,
-  year,
-  month,
-  className,
+  onExport,
+  label = "Unduh Excel",
+  title,
   disabled = false,
 }: ExportButtonProps) {
   const [downloading, setDownloading] = useState(false);
@@ -41,13 +39,7 @@ export function ExportButton({
     setDownloading(true);
     setError(null);
     try {
-      const file = await api.schedules.exportXlsx({
-        scope,
-        date,
-        year,
-        month,
-        className,
-      });
+      const file = await onExport();
       saveBlob(file.blob, file.filename);
     } catch (cause) {
       setError(errorMessage(cause));
@@ -64,10 +56,10 @@ export function ExportButton({
         loading={downloading}
         disabled={disabled}
         onClick={() => void download()}
-        title={`Unduh jadwal ${scope === "week" ? "sepekan" : "bulanan"} ini sebagai berkas Excel`}
+        title={title ?? label}
       >
         <FileSpreadsheet className="h-4 w-4" />
-        Unduh Excel
+        {label}
       </Button>
       {error && <span className="text-xs text-red-600">{error}</span>}
     </div>

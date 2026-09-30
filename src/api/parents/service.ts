@@ -94,6 +94,20 @@ class ParentService {
   }
 
   /**
+   * Seluruh akun dalam bentuk DTO — untuk ekspor, bukan untuk layar.
+   *
+   * Sengaja tidak memakai `list`: `list` memotong hasilnya per halaman, dan
+   * berkas ekspor yang hanya berisi 20 baris pertama justru menyesatkan.
+   */
+  async listForExport(
+    db: Db,
+    options: { active?: boolean } = {},
+  ): Promise<ParentDto[]> {
+    const rows = await parentRepository.listParentsForExport(db, options);
+    return rows.map(toParentDto);
+  }
+
+  /**
    * Buat akun login + profil orang tua sekaligus.
    * Username wajib unik di seluruh tabel `users`.
    */

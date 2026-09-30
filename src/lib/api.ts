@@ -464,6 +464,22 @@ export const api = {
      */
     unlock: (id: number) =>
       unwrapFull<null>(http.post(`parents/${id}/unlock`)),
+
+    /**
+     * Unduh daftar akun sebagai berkas Excel — **admin saja**.
+     *
+     * `active` opsional: biarkan kosong untuk seluruh akun, isi `true`/`false`
+     * untuk membatasi ke akun aktif/nonaktif saja.
+     */
+    exportXlsx: (params: { active?: boolean } = {}) =>
+      unwrapFile(
+        http.get(
+          `parents/export${query({
+            active: params.active === undefined ? undefined : params.active,
+          })}`,
+        ),
+        "akun-orang-tua.xlsx",
+      ),
   },
 
   stats: {

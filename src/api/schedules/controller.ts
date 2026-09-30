@@ -27,8 +27,8 @@ import {
   responseForbidden,
   responseNotFound,
   responseOK,
+  xlsxResponse,
 } from "../utils/response";
-import { XLSX_CONTENT_TYPE } from "../utils/xlsx";
 import {
   buildMonthSheet,
   buildWeekSheet,
@@ -99,26 +99,6 @@ function integerOrNull(value: unknown): number | null {
 /** Label kelas untuk pesan 409 — sebutkan kelasnya, bukan sekadar "ada draft". */
 function classLabel(classes: string[]): string {
   return classes.map((name) => `kelas ${name}`).join(", ");
-}
-
-/**
- * Bungkus byte `.xlsx` menjadi respons unduhan.
- *
- * Nama berkas hanya bisa dikirim lewat `Content-Disposition` — itu satu-satunya
- * cara browser menamai berkas yang disimpan, karena nama di URL selalu
- * ditimpa. `no-store` dipasang karena isi berkas berubah begitu jadwal diubah.
- */
-function xlsxResponse(
-  c: ScheduleContext,
-  bytes: Uint8Array<ArrayBuffer>,
-  filename: string,
-) {
-  return c.body(bytes, 200, {
-    "Content-Type": XLSX_CONTENT_TYPE,
-    "Content-Disposition": `attachment; filename="${filename}"`,
-    "Content-Length": String(bytes.length),
-    "Cache-Control": "no-store",
-  });
 }
 
 /**

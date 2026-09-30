@@ -15,10 +15,11 @@
 | **Browser Engine**               | Google Chrome Headless via Puppeteer Core (`scripts/run-uat.mjs`)       |
 | **Folder Bukti Tangkapan Layar** | [`outputs/screenshots/`](../outputs/screenshots/)                       |
 
-> **Catatan pembaruan — 28 September 2026.** Bagian 1 sampai 5 adalah rekam UAT **v1.7** yang
+> **Catatan pembaruan — 30 September 2026.** Bagian 1 sampai 5 adalah rekam UAT **v1.7** yang
 > dijalankan 19 September 2026 dan dibiarkan apa adanya sebagai arsip. Regresi berikutnya
-> dicatat terpisah: **v1.9** di [bagian 6](#6-uji-regresi--cakupan-sekolah-wide--endpoint-status-20-september-2026)
-> dan **v1.11–v1.12** di [bagian 7](#7-uji-regresi--aksi-massal--impor-jadwal-28-september-2026).
+> dicatat terpisah: **v1.9** di [bagian 6](#6-uji-regresi--cakupan-sekolah-wide--endpoint-status-20-september-2026),
+> **v1.11–v1.12** di [bagian 7](#7-uji-regresi--aksi-massal--impor-jadwal-28-september-2026),
+> dan **v1.13** di [bagian 8](#8-uji-regresi--laporan-jadwal-petugas-pada-jadwal-terbit--ekspor-akun-30-september-2026).
 
 ---
 
@@ -365,6 +366,51 @@ Senin–Jumat minggu itu beserta peringatan.
 **Pembersihan.** Basis data lokal kembali ke baseline setelah pengujian; sisa yang disengaja
 hanya `import_logs` (jejak audit, belum ada endpoint baca) dan baris `weeks` kosong hasil
 `ensureWeek`.
+
+---
+
+## 8. Uji Regresi — Laporan Jadwal, Petugas pada Jadwal Terbit & Ekspor Akun (30 September 2026)
+
+Perubahan **v1.13** menambah modul laporan (`GET /laporan`), satu pengecualian sempit pada
+baris jadwal terbit, dan ekspor Excel akun orang tua. Ke-21 skenario pada bagian 3 tidak
+menyentuh ketiganya, sehingga diuji terpisah di bawah ini.
+
+| Suite                                     | Hasil         | Catatan                                                        |
+| :---------------------------------------- | :------------ | :------------------------------------------------------------- |
+| `bun run test:auth`                       | **33 / 33**   | Tidak berubah                                                  |
+| `bun run test:api`                        | **396 / 396** | § laporan **baru** (agregat, cakupan kelas, 400/401/403)        |
+| `bun run test:status`                     | **33 / 33**   | Tidak berubah                                                  |
+| `bun run test:profile`                    | **33 / 33**   | Tidak berubah                                                  |
+| `bun run outputs/check-laporan.mjs`       | **14 / 14**   | **Baru** — halaman laporan lewat peramban (Edge CDP)            |
+| `bun run outputs/check-petugas-terkunci.mjs` | **9 / 9**  | **Baru** — dropdown petugas pada baris terbit (Edge CDP)        |
+
+**Total: 495 assertion hijau, 0 gagal.** `bun run lint` dan `tsc` bersih.
+
+**Yang diuji pada laporan.** Agregat jumlah ambil per orang tua; cakupan kelas (admin tanpa
+`class` = seluruh sekolah, korlas = hanya kelasnya, kelas lain `403`, orang tua `403`);
+validasi rentang (maksimum 92 hari → `400`, parameter tidak lengkap → `400`); dan `401` tanpa
+token.
+
+**Yang diuji pada petugas di jadwal terbit.** `PUT /schedules/:id` dengan
+`petugasStudentId` saja pada baris `published` → `200` dan nama petugas diturunkan server;
+patch **campuran** (petugas + menu, atau petugas + catatan) → `409 not_editable`; baris
+`isHoliday=1` → `409`; korlas kelas lain → `403`. Di peramban: dropdown **Petugas**
+`disabled=false` pada baris Dipublikasi, sedangkan Menu & Catatan `disabled=true`, dan
+pilihannya **tersimpan di server** (dibaca ulang lewat `GET /schedules/range`).
+
+**Yang diuji pada ekspor akun.** `GET /parents/export?active=` mengembalikan `.xlsx`
+admin-only; orang tua & korlas ditolak.
+
+**Catatan lingkungan.** `test:api` sempat gagal pada
+`table schedules has no column named petugas_student_id`. Itu **bukan** akibat perubahan ini:
+D1 lokal tertinggal di migrasi 0000–0006, diperbaiki dengan `bun run db:migrate:local`.
+Gejala "kolom hilang padahal kode tidak disentuh" selalu berarti migrasi lokal belum
+diterapkan.
+
+**Verifikasi produksi.** `bun run deploy` sukses dengan *no migrations to apply* (perubahan
+murni kode). Tanpa kredensial produksi, yang bisa dibuktikan: `/api/health` → `db: connected`,
+`PUT /api/schedules/1` tanpa token → `401`, dan aset `/assets/jadwal-CAFIt8-8.js`
+**byte-identik** (31.942 B) dengan build lokal — jadi build yang diuji itulah yang melayani.
 
 ---
 

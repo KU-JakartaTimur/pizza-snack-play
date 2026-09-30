@@ -95,9 +95,9 @@
                 },
                 {
                     n: '04',
-                    t: 'Kunci & publikasi',
-                    d: 'Urutan yang tidak bisa dibalik, plus aksi massal.',
-                    p: '12–14',
+                    t: 'Kunci, publikasi & laporan',
+                    d: 'Urutan yang tidak bisa dibalik, aksi massal, lalu rekap piket.',
+                    p: '12–15',
                 },
             ].map((it, i) => (
                 <Box
@@ -187,6 +187,6 @@
         <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>
             Pizza Snack Play · Panduan Korlas &amp; Admin
         </Text>
-        <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>02 / 15</Text>
+        <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>02 / 16</Text>
     </Box>
 </Slide>

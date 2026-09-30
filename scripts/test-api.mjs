@@ -1840,6 +1840,140 @@ section("19. Korlas — jadwal kelasnya, kunci tetap admin");
     JSON.stringify(publishedWeek.data?.days?.map((d) => d.status)),
   );
 
+  // ── Petugas boleh ditunjuk walau jadwal sudah terbit ───────
+  //
+  // Piket sering baru terisi setelah publikasi, jadi `petugasStudentId`
+  // adalah satu-satunya kolom yang boleh berubah pada baris `locked`/
+  // `published`. Kolom lain tetap menolak `409 not_editable`, dan patch
+  // campuran ikut ditolak supaya tidak tersimpan separuh.
+  const publishedRows = await call(
+    "GET",
+    `/schedules/range?from=${from}&to=${to}&class=1`,
+    { token: adminToken },
+  );
+  const publishedRow = (publishedRows.data ?? []).find(
+    (day) => day.status === "published" && day.scheduleId,
+  );
+  check(
+    "ada baris published kelas 1 untuk uji petugas",
+    Boolean(publishedRow),
+    JSON.stringify((publishedRows.data ?? []).map((d) => d.status)),
+  );
+
+  const roster = await call("GET", "/classes/1/roster", { token: adminToken });
+  const petugasCandidate = (roster.data?.students ?? []).find(
+    (student) => student.studentId !== publishedRow?.petugasStudentId,
+  );
+  check(
+    "roster kelas 1 tersedia untuk penunjukan petugas",
+    Boolean(petugasCandidate),
+    JSON.stringify(roster.data?.students?.map((s) => s.studentName)),
+  );
+
+  if (publishedRow && petugasCandidate) {
+    const petugasOnPublished = await call(
+      "PUT",
+      `/schedules/${publishedRow.scheduleId}`,
+      {
+        token: adminToken,
+        body: { petugasStudentId: petugasCandidate.studentId },
+      },
+    );
+    check(
+      "petugas pada baris published dapat dipilih -> 200",
+      petugasOnPublished.status === 200,
+      `got ${petugasOnPublished.status} :: ${JSON.stringify(petugasOnPublished.json?.message)}`,
+    );
+    check(
+      "nama petugas diturunkan server dari siswa terpilih",
+      petugasOnPublished.data?.petugasStudentId === petugasCandidate.studentId &&
+        petugasOnPublished.data?.petugasName === petugasCandidate.studentName,
+      `id=${petugasOnPublished.data?.petugasStudentId}/${petugasCandidate.studentId} nama=${petugasOnPublished.data?.petugasName}`,
+    );
+    check(
+      "status tetap published sesudah petugas diganti",
+      petugasOnPublished.data?.status === "published",
+      petugasOnPublished.data?.status,
+    );
+
+    // Perubahan itu benar-benar tersimpan, bukan hanya tampak di respons.
+    const reread = await call("GET", `/schedules/${publishedRow.scheduleId}`, {
+      token: adminToken,
+    });
+    check(
+      "petugas tersimpan di database",
+      reread.data?.petugasStudentId === petugasCandidate.studentId,
+      String(reread.data?.petugasStudentId),
+    );
+
+    // Menu tetap beku pada baris published.
+    const menuOnPublished = await call(
+      "PUT",
+      `/schedules/${publishedRow.scheduleId}`,
+      { token: adminToken, body: { menuId: secondMenuId } },
+    );
+    check(
+      "mengganti menu pada baris published -> 409",
+      menuOnPublished.status === 409,
+      `got ${menuOnPublished.status}`,
+    );
+
+    // Patch campuran (menu + petugas) ditolak seluruhnya.
+    const mixedPatch = await call("PUT", `/schedules/${publishedRow.scheduleId}`, {
+      token: adminToken,
+      body: { menuId: secondMenuId, petugasStudentId: petugasCandidate.studentId },
+    });
+    check(
+      "patch campuran menu+petugas pada baris published -> 409",
+      mixedPatch.status === 409,
+      `got ${mixedPatch.status}`,
+    );
+
+    // Catatan juga tidak boleh ikut menumpang.
+    const notesOnPublished = await call(
+      "PUT",
+      `/schedules/${publishedRow.scheduleId}`,
+      { token: adminToken, body: { notes: "menumpang" } },
+    );
+    check(
+      "catatan pada baris published -> 409",
+      notesOnPublished.status === 409,
+      `got ${notesOnPublished.status}`,
+    );
+
+    // Petugas lewat bulk/unlock tidak berubah — status tetap utuh.
+    const stillPublished = await call("GET", `/schedules/${publishedRow.scheduleId}`, {
+      token: adminToken,
+    });
+    check(
+      "menu & catatan tidak ikut berubah oleh patch yang ditolak",
+      stillPublished.data?.menu?.id === publishedRow.menu?.id,
+      `menu ${stillPublished.data?.menu?.id} vs ${publishedRow.menu?.id}`,
+    );
+
+    // Korlas tetap terbatas kelasnya: baris kelas 2 yang published.
+    const otherPublishedRows = await call(
+      "GET",
+      `/schedules/range?from=${from}&to=${to}&class=2`,
+      { token: adminToken },
+    );
+    const otherPublished = (otherPublishedRows.data ?? []).find(
+      (day) => day.status === "published" && day.scheduleId,
+    );
+    if (otherPublished) {
+      const korlasHijack = await call(
+        "PUT",
+        `/schedules/${otherPublished.scheduleId}`,
+        { token: korlasToken, body: { petugasStudentId: petugasCandidate.studentId } },
+      );
+      check(
+        "korlas mengganti petugas jadwal published kelas lain -> 403",
+        korlasHijack.status === 403,
+        `got ${korlasHijack.status}`,
+      );
+    }
+  }
+
   // Hari libur & akun tetap khusus admin.
   const holiday = await call("POST", "/holidays", {
     token: korlasToken,

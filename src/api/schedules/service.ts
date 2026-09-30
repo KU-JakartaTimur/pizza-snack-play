@@ -696,9 +696,30 @@ class ScheduleService {
     const current = await scheduleRepository.findScheduleById(db, id);
     if (!current) return "not_found";
 
-    // Jadwal yang sudah dikunci/dipublikasi tidak dapat diubah.
+    /*
+      Baris `locked`/`published` memang beku — menu, catatan, dan hari libur
+      sudah disetujui sekolah dan tidak boleh bergeser setelah orang tua
+      melihatnya.
+
+      Satu pengecualian: **penunjukan petugas**. Piket sering baru terisi
+      setelah jadwal terbit (orang tua menyanggupi belakangan, atau anak yang
+      ditunjuk berhalangan), dan itulah satu-satunya kolom yang isinya bukan
+      kesepakatan menu. Karena itu pintunya dibuka lewat jalur sempit ini:
+      **hanya** `petugasStudentId` yang boleh ikut, `undefined` atau bukan.
+
+      Begitu ada kolom lain di patch, aturan lama berlaku penuh — supaya
+      perubahan campuran tidak diam-diam tersimpan separuh dan klien tidak
+      mengira menu/catatannya ikut berubah.
+    */
     if (current.status === "locked" || current.status === "published") {
-      return "not_editable";
+      const onlyPetugas =
+        input.petugasStudentId !== undefined &&
+        input.menuId === undefined &&
+        input.isHoliday === undefined &&
+        input.notes === undefined;
+
+      // Hari libur tidak punya petugas piket — tidak ada yang bisa diubah.
+      if (!onlyPetugas || current.isHoliday === 1) return "not_editable";
     }
 
     if (input.menuId != null) {

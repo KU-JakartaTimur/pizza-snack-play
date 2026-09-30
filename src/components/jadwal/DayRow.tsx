@@ -145,6 +145,13 @@ export function DayRow({
       )}
 
       {!day.isHoliday && (
+        /*
+          Petugas sengaja **tidak** ikut dinonaktifkan saat baris terkunci:
+          piket sering baru terisi setelah jadwal terbit, dan server memang
+          masih menerima perubahan kolom ini sendirian (lihat
+          `updateSchedule`). Menu, catatan, dan tombol libur/hapus tetap
+          mengikuti `dayLocked`.
+        */
         <DayRowPetugas
           className={className}
           studentId={day.petugasStudentId}
@@ -152,6 +159,7 @@ export function DayRow({
           petugasParentName={day.petugasParentName}
           roster={roster}
           disabled={busy || rosterLoading}
+          locked={dayLocked}
           rosterEmpty={rosterEmpty}
           onSelectStudent={(studentId) => onSave(day, { petugasStudentId: studentId })}
         />

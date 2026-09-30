@@ -15,6 +15,8 @@ interface DayRowPetugasProps {
   roster: StudentRosterDto[];
   /** Roster masih dimuat atau baris sedang tidak boleh diubah. */
   disabled: boolean;
+  /** Baris jadwal ini `locked`/`published` — petugas masih boleh, lihat di bawah. */
+  locked: boolean;
   /** `true` bila kelas ini memang belum punya siswa — pesannya dibedakan. */
   rosterEmpty: boolean;
   onSelectStudent: (studentId: number | null) => void;
@@ -34,6 +36,12 @@ interface DayRowPetugasProps {
  * yang cocok, tetapi nama tersimpannya muncul sebagai opsi pertama sehingga
  * korlas tahu baris itu sudah ada isinya. Memilih siswa lain akan
  * menggantinya secara normal.
+ *
+ * **Baris yang sudah terkunci/dipublikasi pun tetap bisa diisi petugasnya** —
+ * piket sering baru ditunjuk setelah jadwal terbit, dan server memang masih
+ * menerima perubahan kolom ini sendirian. `locked` hanya dipakai untuk
+ * memberi penanda halus, bukan untuk menonaktifkan; yang benar-benar
+ * menonaktifkan hanyalah `disabled` (sedang menyimpan / roster belum siap).
  */
 export function DayRowPetugas({
   className,
@@ -42,6 +50,7 @@ export function DayRowPetugas({
   petugasParentName,
   roster,
   disabled,
+  locked,
   rosterEmpty,
   onSelectStudent,
 }: DayRowPetugasProps) {
@@ -63,7 +72,9 @@ export function DayRowPetugas({
         title={
           rosterEmpty
             ? `Kelas ${className ?? ""} belum punya siswa`.trim()
-            : `Petugas kelas ${className ?? ""}`.trim()
+            : locked
+              ? `Petugas kelas ${className ?? ""} — jadwal sudah terbit, petugas masih bisa diubah`.trim()
+              : `Petugas kelas ${className ?? ""}`.trim()
         }
         onChange={(event) => {
           const value = event.target.value;

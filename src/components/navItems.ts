@@ -1,6 +1,7 @@
 import {
   CalendarDays,
   CalendarRange,
+  ChartColumn,
   HandHeart,
   LayoutDashboard,
   Search,
@@ -38,6 +39,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/menu", label: "Menu", icon: UtensilsCrossed },
   { to: "/kategori", label: "Kategori", icon: Tags, need: "catalog" },
   { to: "/jadwal", label: "Kelola Jadwal", icon: CalendarRange, need: "schedule" },
+  { to: "/laporan", label: "Laporan", icon: ChartColumn, need: "schedule" },
   { to: "/orang-tua", label: "Akun Orang Tua", icon: Users, need: "admin" },
 ];
 

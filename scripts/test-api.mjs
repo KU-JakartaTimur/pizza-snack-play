@@ -3087,6 +3087,175 @@ section("24. Impor jadwal dari teks tempelan (admin & korlas)");
   );
 }
 
+// ── 24. Laporan jadwal per orang tua ──────────────────────────
+
+section("24. Laporan jadwal — rekap ambil per orang tua");
+{
+  // Bulan uji sendiri agar tidak bertabrakan dengan section lain.
+  const YEAR = 2036;
+  const MONTH = 2;
+  const TANGGAL = `${YEAR}-02-04`; // Selasa
+  const TAG_LAPORAN = `uji-laporan-${Date.now().toString(36)}`;
+
+  const korlasLogin = await call("POST", "/auth/login", { body: KORLAS });
+  const korlasToken = korlasLogin.data?.token;
+  const korlasClass = korlasLogin.data?.user?.className;
+
+  // 1) Siapkan jadwal published di kelas korlas, tanpa petugas.
+  const dibuat = await call("POST", "/schedules", {
+    token: adminToken,
+    body: {
+      scheduleDate: TANGGAL,
+      className: korlasClass,
+      menuId: 1,
+      notes: `${TAG_LAPORAN} laporan`,
+    },
+  });
+  check(
+    "siapkan jadwal laporan -> 201",
+    dibuat.status === 201,
+    `got ${dibuat.status}`,
+  );
+  const scheduleId = dibuat.data?.scheduleId ?? dibuat.data?.id;
+
+  await call("POST", "/schedules/lock", {
+    token: adminToken,
+    body: {
+      fromDate: TANGGAL,
+      toDate: TANGGAL,
+      className: korlasClass,
+    },
+  });
+  const terbit = await call("POST", "/schedules/publish", {
+    token: adminToken,
+    body: { year: YEAR, month: MONTH, className: korlasClass },
+  });
+  check(
+    "jadwal laporan dipublikasi",
+    [200, 201].includes(terbit.status),
+    `got ${terbit.status}`,
+  );
+
+  // 2) Orang tua (sari) mengambil tanggal itu.
+  const klaim = await call("POST", "/claims", {
+    token: parentToken,
+    body: { scheduleId },
+  });
+  check("orang tua mengambil jadwal -> 201", klaim.status === 201, `got ${klaim.status}`);
+
+  const rentang = `from=${YEAR}-02-01&to=${YEAR}-02-31`;
+
+  // 3) Admin melihat rekap.
+  const adminLaporan = await call(
+    "GET",
+    `/laporan?${rentang}&class=${encodeURIComponent(korlasClass)}`,
+    { token: adminToken },
+  );
+  check("GET /laporan (admin) -> 200", adminLaporan.status === 200, `got ${adminLaporan.status}`);
+  check(
+    "laporan memuat ringkasan",
+    typeof adminLaporan.data?.ringkasan?.totalAmbil === "number",
+    JSON.stringify(adminLaporan.data?.ringkasan)?.slice(0, 120),
+  );
+  check(
+    "laporan menghitung klaim uji",
+    (adminLaporan.data?.orangTua ?? []).some(
+      (row) => row.parentName === "Sari Wulandari" && row.jumlahAmbil >= 1,
+    ),
+    JSON.stringify((adminLaporan.data?.orangTua ?? []).map((r) => r.parentName)),
+  );
+  check(
+    "laporan menyertakan rincian tanggal",
+    (adminLaporan.data?.orangTua ?? []).some((row) =>
+      row.tanggal.some((t) => t.scheduleDate === TANGGAL),
+    ),
+    JSON.stringify(adminLaporan.data?.orangTua?.[0]?.tanggal?.map((t) => t.scheduleDate)),
+  );
+  check(
+    "laporan menghitung orang tua yang belum ambil",
+    typeof adminLaporan.data?.ringkasan?.orangTuaKosong === "number",
+  );
+
+  // 4) Kelas lain tidak memuat klaim uji.
+  const kelasLainLaporan = await call(
+    "GET",
+    `/laporan?${rentang}&class=${encodeURIComponent(
+      korlasClass === "1" ? "2" : "1",
+    )}`,
+    { token: adminToken },
+  );
+  check(
+    "kelas lain tidak memuat klaim uji",
+    !(kelasLainLaporan.data?.orangTua ?? []).some((row) =>
+      row.tanggal.some((t) => t.scheduleDate === TANGGAL),
+    ),
+    JSON.stringify(kelasLainLaporan.data?.ringkasan),
+  );
+
+  // 5) Admin tanpa `class` = seluruh kelas (cakupan sekolah).
+  const semuaKelas = await call("GET", `/laporan?${rentang}`, {
+    token: adminToken,
+  });
+  check("admin tanpa class -> 200 (semua kelas)", semuaKelas.status === 200, `got ${semuaKelas.status}`);
+  check(
+    "admin tanpa class: className null",
+    semuaKelas.data?.className === null,
+    JSON.stringify(semuaKelas.data?.className),
+  );
+
+  // 6) Korlas terbatas kelasnya sendiri.
+  const korlasLaporan = await call("GET", `/laporan?${rentang}`, {
+    token: korlasToken,
+  });
+  check("korlas melihat laporan kelasnya -> 200", korlasLaporan.status === 200, `got ${korlasLaporan.status}`);
+  check(
+    "korlas terkunci ke kelasnya sendiri",
+    korlasLaporan.data?.className === korlasClass,
+    JSON.stringify(korlasLaporan.data?.className),
+  );
+
+  const korlasKelasLain = await call(
+    "GET",
+    `/laporan?${rentang}&class=${encodeURIComponent(korlasClass === "1" ? "2" : "1")}`,
+    { token: korlasToken },
+  );
+  check(
+    "korlas minta kelas lain -> 403",
+    korlasKelasLain.status === 403,
+    `got ${korlasKelasLain.status}`,
+  );
+
+  // 7) Orang tua tidak berhak.
+  const parentLaporan = await call("GET", `/laporan?${rentang}`, {
+    token: parentToken,
+  });
+  check("orang tua -> 403", parentLaporan.status === 403, `got ${parentLaporan.status}`);
+
+  // 8) Validasi parameter.
+  const tanpaToken = await call("GET", `/laporan?${rentang}`);
+  check("tanpa token -> 401", tanpaToken.status === 401, `got ${tanpaToken.status}`);
+
+  const rentangTerlalu = await call("GET", "/laporan?from=2000-01-01&to=2001-12-31", {
+    token: adminToken,
+  });
+  check("rentang > 92 hari -> 400", rentangTerlalu.status === 400, `got ${rentangTerlalu.status}`);
+
+  const tanpaRentang = await call("GET", "/laporan", { token: adminToken });
+  check("tanpa from/to -> 400", tanpaRentang.status === 400, `got ${tanpaRentang.status}`);
+
+  // 9) Bersih-bersih: klaim lalu jadwal uji.
+  await call("DELETE", `/claims/${klaim.data?.id}`, { token: adminToken });
+  await call("POST", `/schedules/${scheduleId}/unlock`, { token: adminToken });
+  const hapusJadwal = await call("DELETE", `/schedules/${scheduleId}`, {
+    token: adminToken,
+  });
+  check(
+    "jadwal uji laporan dihapus",
+    hapusJadwal.status === 200,
+    `got ${hapusJadwal.status}`,
+  );
+}
+
 // ── Ringkasan ─────────────────────────────────────────────────
 
 console.log(`\n=== HASIL: ${pass} pass, ${fail} fail ===`);

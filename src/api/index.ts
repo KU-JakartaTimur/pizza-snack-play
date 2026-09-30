@@ -4,6 +4,7 @@ import authRoute from "./auth/route";
 import { categoriesRoute, menusRoute } from "./catalog/route";
 import { claimsRoute } from "./claims/route";
 import { classesRoute } from "./classes/route";
+import { laporanRoute } from "./laporan/route";
 import { parentsRoute } from "./parents/route";
 import { profileRoute } from "./profile/route";
 import {
@@ -31,6 +32,7 @@ app.route("/auth", authRoute);
 app.route("/classes", classesRoute);
 app.route("/schedules", schedulesRoute);
 app.route("/claims", claimsRoute);
+app.route("/laporan", laporanRoute);
 app.route("/weeks", weeksRoute);
 app.route("/holidays", holidaysRoute);
 app.route("/menus", menusRoute);

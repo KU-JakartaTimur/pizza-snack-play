@@ -15,6 +15,7 @@ import type {
 } from "@/types/catalog";
 import type { ClaimInput, ScheduleClaimDto } from "@/types/claim";
 import type { ClassListDto, ClassRosterDto } from "@/types/class";
+import type { LaporanJadwalDto } from "@/types/laporan";
 import type {
   BulkRowScheduleInput,
   BulkRowScheduleResultDto,
@@ -371,6 +372,24 @@ export const api = {
     list: (from: string, to: string, className?: string | null) =>
       unwrap<ScheduleClaimDto[]>(
         http.get(`claims${query({ from, to, class: className ?? undefined })}`),
+      ),
+  },
+
+  /**
+   * Laporan jadwal — rekap berapa kali setiap orang tua mengambil tanggal
+   * piket pada rentang & kelas yang dipilih. **Admin & korlas saja**;
+   * korlas selalu terbatas kelasnya sendiri (ditegakkan server).
+   */
+  laporan: {
+    list: (params: { from: string; to: string; className?: string | null }) =>
+      unwrap<LaporanJadwalDto>(
+        http.get(
+          `laporan${query({
+            from: params.from,
+            to: params.to,
+            class: params.className ?? undefined,
+          })}`,
+        ),
       ),
   },
 

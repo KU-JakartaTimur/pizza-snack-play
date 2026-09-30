@@ -47,6 +47,7 @@ Jadwal piket snack sekolah sebelumnya disusun dalam dokumen teks manual — suli
 | **Dashboard**                | Ringkasan jumlah akun, menu, jadwal, dan hari libur                                                                                    | Admin          | ✅         |
 | **Ubah Password**            | Setiap pengguna dapat mengganti password sendiri                                                                                       | Semua          | ✅         |
 | **Ekspor Excel**             | Unduh jadwal Sepekan/bulanan sebagai `.xlsx` — kolomnya sama dengan yang tampil di layar, siap dibagikan atau dicetak                | Admin, Korlas  | ✅         |
+| **Laporan Jadwal**           | Rekap berapa kali setiap orang tua mengambil jadwal piket + daftar yang belum pernah ambil, dengan filter rentang tanggal & kelas     | Admin, Korlas  | ✅         |
 | **Batas Percobaan Masuk**    | 5 kali salah password berturut-turut dalam 15 menit → akun terkunci (`423`); admin membukanya dari halaman Akun Orang Tua            | Semua          | ✅         |
 | **Kelola Anak Sendiri**      | Orang tua & korlas menambah, mengubah, dan menghapus **anaknya sendiri** dari menu Profil — tanpa menunggu admin                     | Parent, Korlas | ✅         |
 | **Mode Tiru**                | Admin masuk sebagai orang tua tertentu tanpa password untuk membantu, ditandai bilah kuning selama sesi berlangsung                  | Admin          | ✅         |
@@ -134,6 +135,7 @@ pizza-snack-play/
 │   │   ├── catalog/              # Menu + kategori (katalog bersama)
 │   │   ├── claims/               # Pilih jadwal — klaim tanggal oleh orang tua
 │   │   ├── classes/              # Daftar kelas yang boleh diakses user
+│   │   ├── laporan/              # Laporan jadwal — rekap ambil per orang tua (admin & korlas)
 │   │   ├── schedules/            # Jadwal per kelas, minggu, hari libur, kunci & publikasi,
 │   │   │                         # ekspor Excel, impor teks, aksi massal
 │   │   ├── parents/              # CRUD akun orang tua (termasuk angkat korlas & buka kunci)
@@ -171,6 +173,7 @@ pizza-snack-play/
 │   │       ├── menu.tsx          # Katalog menu — baca untuk semua, ubah hanya admin
 │   │       ├── kategori.tsx      # CRUD kategori (admin)
 │   │       ├── jadwal.tsx        # Kelola jadwal & publikasi (admin, korlas)
+│   │       ├── laporan.tsx       # Laporan ambil jadwal per orang tua (admin, korlas)
 │   │       ├── orang-tua.tsx     # CRUD akun orang tua (admin)
 │   │       └── profil.tsx        # Profil + ubah password
 │   ├── lib/
@@ -374,6 +377,29 @@ admin tidak punya profil orang tua sehingga hanya bisa membaca rekap dan membata
 Kode konflik `POST /claims`: **409** `already_claimed` (keduluan orang tua lain),
 `already_mine` (sudah diambil sendiri), `already_assigned` (petugasnya sudah ditetapkan korlas),
 `not_published` (jadwal belum dipublikasi), `past_date`; **403** bila kelasnya bukan kelas anaknya.
+
+### Laporan Jadwal
+
+Rekap **berapa kali setiap orang tua sudah mengambil jadwal piket snack** — menjawab pertanyaan
+"beban piket sudah merata belum?" saat rapat koordinasi. Sumbernya tabel `schedule_claims` yang
+sama dengan fitur Pilih Jadwal, jadi angkanya tidak pernah berbeda dari yang dilihat orang tua.
+
+| Method | Endpoint                              | Role          | Keterangan                                                              |
+| ------ | ------------------------------------- | ------------- | ---------------------------------------------------------------------- |
+| `GET`  | `/laporan?from=&to=&class=`           | Admin, Korlas | Rekap ambil per orang tua + ringkasan + daftar yang belum pernah ambil  |
+
+- **Rentang maksimum 92 hari** (sama dengan `utils/params.ts`), supaya tidak ada query tanpa batas.
+- **Admin** tanpa `class` melihat **seluruh sekolah** (`className: null`); dengan `class` melihat
+  satu kelas. Kelas yang tidak dikenal dijawab **403**.
+- **Korlas** selalu terbatas **kelasnya sendiri** — bukan karena ia tidak boleh membaca kelas lain
+  (halaman jadwal mengizinkan itu), tetapi karena laporan memuat nama orang tua sekaligus
+  kebiasaannya mengambil piket. Menyebut kelas lain dijawab **403**.
+- **Orang tua** dijawab **403**: alasan yang sama dengan `/classes/:class/roster`.
+- Isi jawaban: `ringkasan` (total ambil, orang tua aktif, tanggal terisi, orang tua kosong,
+  rata-rata ambil, `belumAmbil[]`) dan `orangTua[]` (per orang tua: `jumlahAmbil` + rincian
+  `tanggal[]` berisi tanggal, kelas, menu, anak, dan catatan).
+- Daftar `belumAmbil` **tidak bisa diturunkan dari tabel klaim** — justru ketiadaan barisnya yang
+  jadi artinya, karena itu dihitung dari `students` (siapa yang punya anak di kelas itu).
 
 ### Katalog
 

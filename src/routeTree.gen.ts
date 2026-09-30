@@ -18,6 +18,7 @@ import { Route as AppPencarianRouteImport } from './routes/_app/pencarian'
 import { Route as AppOrangTuaRouteImport } from './routes/_app/orang-tua'
 import { Route as AppMingguIniRouteImport } from './routes/_app/minggu-ini'
 import { Route as AppMenuRouteImport } from './routes/_app/menu'
+import { Route as AppLaporanRouteImport } from './routes/_app/laporan'
 import { Route as AppKategoriRouteImport } from './routes/_app/kategori'
 import { Route as AppJadwalRouteImport } from './routes/_app/jadwal'
 import { Route as AppHariIniRouteImport } from './routes/_app/hari-ini'
@@ -68,6 +69,11 @@ const AppMenuRoute = AppMenuRouteImport.update({
   path: '/menu',
   getParentRoute: () => AppRoute,
 } as any)
+const AppLaporanRoute = AppLaporanRouteImport.update({
+  id: '/laporan',
+  path: '/laporan',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppKategoriRoute = AppKategoriRouteImport.update({
   id: '/kategori',
   path: '/kategori',
@@ -102,6 +108,7 @@ export interface FileRoutesByFullPath {
   '/hari-ini': typeof AppHariIniRoute
   '/jadwal': typeof AppJadwalRoute
   '/kategori': typeof AppKategoriRoute
+  '/laporan': typeof AppLaporanRoute
   '/menu': typeof AppMenuRoute
   '/minggu-ini': typeof AppMingguIniRoute
   '/orang-tua': typeof AppOrangTuaRoute
@@ -116,6 +123,7 @@ export interface FileRoutesByTo {
   '/hari-ini': typeof AppHariIniRoute
   '/jadwal': typeof AppJadwalRoute
   '/kategori': typeof AppKategoriRoute
+  '/laporan': typeof AppLaporanRoute
   '/menu': typeof AppMenuRoute
   '/minggu-ini': typeof AppMingguIniRoute
   '/orang-tua': typeof AppOrangTuaRoute
@@ -133,6 +141,7 @@ export interface FileRoutesById {
   '/_app/hari-ini': typeof AppHariIniRoute
   '/_app/jadwal': typeof AppJadwalRoute
   '/_app/kategori': typeof AppKategoriRoute
+  '/_app/laporan': typeof AppLaporanRoute
   '/_app/menu': typeof AppMenuRoute
   '/_app/minggu-ini': typeof AppMingguIniRoute
   '/_app/orang-tua': typeof AppOrangTuaRoute
@@ -151,6 +160,7 @@ export interface FileRouteTypes {
     | '/hari-ini'
     | '/jadwal'
     | '/kategori'
+    | '/laporan'
     | '/menu'
     | '/minggu-ini'
     | '/orang-tua'
@@ -165,6 +175,7 @@ export interface FileRouteTypes {
     | '/hari-ini'
     | '/jadwal'
     | '/kategori'
+    | '/laporan'
     | '/menu'
     | '/minggu-ini'
     | '/orang-tua'
@@ -181,6 +192,7 @@ export interface FileRouteTypes {
     | '/_app/hari-ini'
     | '/_app/jadwal'
     | '/_app/kategori'
+    | '/_app/laporan'
     | '/_app/menu'
     | '/_app/minggu-ini'
     | '/_app/orang-tua'
@@ -260,6 +272,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppMenuRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/laporan': {
+      id: '/_app/laporan'
+      path: '/laporan'
+      fullPath: '/laporan'
+      preLoaderRoute: typeof AppLaporanRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/kategori': {
       id: '/_app/kategori'
       path: '/kategori'
@@ -304,6 +323,7 @@ interface AppRouteChildren {
   AppHariIniRoute: typeof AppHariIniRoute
   AppJadwalRoute: typeof AppJadwalRoute
   AppKategoriRoute: typeof AppKategoriRoute
+  AppLaporanRoute: typeof AppLaporanRoute
   AppMenuRoute: typeof AppMenuRoute
   AppMingguIniRoute: typeof AppMingguIniRoute
   AppOrangTuaRoute: typeof AppOrangTuaRoute
@@ -319,6 +339,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppHariIniRoute: AppHariIniRoute,
   AppJadwalRoute: AppJadwalRoute,
   AppKategoriRoute: AppKategoriRoute,
+  AppLaporanRoute: AppLaporanRoute,
   AppMenuRoute: AppMenuRoute,
   AppMingguIniRoute: AppMingguIniRoute,
   AppOrangTuaRoute: AppOrangTuaRoute,

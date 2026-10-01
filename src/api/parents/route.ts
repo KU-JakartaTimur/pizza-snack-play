@@ -19,6 +19,16 @@ export const parentsRoute = new Hono<AuthEnv>()
    * `:id = "export"` dan gagal dengan "ID tidak valid".
    */
   .get("/export", requireAuth, admin, parentController.exportAccounts)
+  /**
+   * Impor akun dari berkas Excel (isi dikirim base64 di dalam JSON) —
+   * **admin saja**. Didaftarkan sebelum `/:id` dengan alasan yang sama
+   * seperti `/export`.
+   *
+   * Yang sudah ada **ditimpa** (dicocokkan lewat username), yang belum
+   * dibuat. Kirim `dryRun: true` untuk melihat nasib tiap baris tanpa
+   * menulis apa pun.
+   */
+  .post("/import", requireAuth, admin, parentController.importAccounts)
   .get("/:id", requireAuth, admin, parentController.detail)
   .post("/", requireAuth, admin, parentController.create)
   .put("/:id", requireAuth, admin, parentController.update)

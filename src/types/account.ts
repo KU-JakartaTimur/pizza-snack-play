@@ -83,6 +83,61 @@ export interface PaginatedDto<T> {
   totalPages: number;
 }
 
+// ── Impor akun dari berkas Excel ────────────────────────────────
+
+/** Nasib satu baris pada impor akun. */
+export type ParentImportOutcome = "create" | "update" | "skip";
+
+export interface ParentImportRowDto {
+  /** Nomor baris di lembar Excel (1-based) — memudahkan admin mencarinya. */
+  row: number;
+  parentName: string;
+  username: string;
+  /**
+   * `create` = akun baru, `update` = akun lama ditimpa,
+   * `skip` = dilewati (sebabnya di `reason`).
+   */
+  outcome: ParentImportOutcome;
+  /** Alasan dilewati — `null` bila barisnya diproses. */
+  reason: string | null;
+  /** Nama anak yang ditulis, sesuai urutan di berkas. */
+  students: string[];
+}
+
+export interface ParentImportIssueDto {
+  /** Nomor baris di lembar Excel (1-based). */
+  row: number;
+  message: string;
+}
+
+export interface ParentImportResultDto {
+  /** `true` bila ini hanya pratinjau — belum ada yang ditulis. */
+  dryRun: boolean;
+  /** Jumlah baris data yang terbaca dari berkas. */
+  totalRows: number;
+  created: number;
+  updated: number;
+  skipped: number;
+  /** Nasib tiap baris yang bentuknya sudah sah — termasuk yang dilewati. */
+  rows: ParentImportRowDto[];
+  /**
+   * Baris yang **tidak terbaca** dari lembar (username tidak sah, anak
+   * kosong, dsb.). Baris yang terbaca tetapi tidak diproses — mis. username
+   * kembar atau akun baru tanpa password — tidak di sini, melainkan pada
+   * `rows` dengan `outcome: "skip"` beserta `reason`-nya.
+   */
+  issues: ParentImportIssueDto[];
+}
+
+export interface ParentImportInput {
+  /** Nama berkas asli — hanya untuk jejak, tidak dipakai membuka apa pun. */
+  filename: string;
+  /** Isi berkas `.xlsx` dalam base64 (tanpa awalan `data:`). */
+  content: string;
+  /** `true` = hanya menghitung, tidak menulis apa pun. */
+  dryRun?: boolean;
+}
+
 export interface StatsSummaryDto {
   parents: { total: number; active: number };
   menus: { total: number; active: number };

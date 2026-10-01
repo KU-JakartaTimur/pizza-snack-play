@@ -15,6 +15,7 @@ import {
 import { AdminOnly } from "@/components/AdminOnly";
 import { PageHeader } from "@/components/AppShell";
 import { ExportButton } from "@/components/ExportButton";
+import { ImportButton } from "@/components/ImportButton";
 import {
   Badge,
   Button,
@@ -29,11 +30,28 @@ import {
   Spinner,
 } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
-import type { ManagedRole, ParentDto, ParentRelationship } from "@/types/account";
+import { readFileAsBase64 } from "@/lib/upload";
+import type {
+  ManagedRole,
+  ParentDto,
+  ParentImportOutcome,
+  ParentImportResultDto,
+  ParentRelationship,
+} from "@/types/account";
 
 export const Route = createFileRoute("/_app/orang-tua")({
   component: ParentsPage,
 });
+
+/** Tulisan & warna tiap nasib baris pada pratinjau impor. */
+const IMPORT_OUTCOMES: Record<
+  ParentImportOutcome,
+  { label: string; tone: "success" | "info" | "warning" }
+> = {
+  create: { label: "Akun baru", tone: "success" },
+  update: { label: "Ditimpa", tone: "info" },
+  skip: { label: "Dilewati", tone: "warning" },
+};
 
 const RELATIONSHIP_OPTIONS: { value: ParentRelationship; label: string }[] = [
   { value: "ibu", label: "Ibu" },
@@ -121,6 +139,22 @@ function ParentsContent() {
 
   /** Akun terkunci yang menunggu ditegaskan pembukaan kuncinya. */
   const [pendingUnlock, setPendingUnlock] = useState<ParentDto | null>(null);
+
+  /**
+   * Berkas impor yang sedang menunggu diterapkan. Isinya disimpan, bukan
+   * `File`-nya: pratinjau dan penerapan harus memakai byte yang **persis
+   * sama**, dan berkas di disk bisa saja berubah di antara dua langkah itu.
+   */
+  const [importFile, setImportFile] = useState<{
+    name: string;
+    content: string;
+  } | null>(null);
+
+  /** Nasib tiap baris hasil pratinjau — `null` selama dialognya tertutup. */
+  const [importPreview, setImportPreview] = useState<ParentImportResultDto | null>(
+    null,
+  );
+  const [importError, setImportError] = useState<string | null>(null);
 
   const parentsQuery = useQuery({
     queryKey: ["parents", { search, page }],
@@ -234,6 +268,60 @@ function ParentsContent() {
     setFormOpen(true);
   };
 
+  const closeImport = () => {
+    setImportFile(null);
+    setImportPreview(null);
+    setImportError(null);
+  };
+
+  /**
+   * Langkah pertama impor: baca berkasnya, lalu minta server menghitung
+   * nasib tiap baris **tanpa menulis apa pun**. Yang ditampilkan sesudah ini
+   * adalah pratinjau — admin masih bisa membatalkannya.
+   */
+  const previewImport = useMutation({
+    mutationFn: async (file: File) => {
+      const content = await readFileAsBase64(file);
+      const result = await api.parents.importXlsx({
+        filename: file.name,
+        content,
+        dryRun: true,
+      });
+      return { name: file.name, content, result };
+    },
+    onSuccess: ({ name, content, result }) => {
+      setImportError(null);
+      setImportFile({ name, content });
+      setImportPreview(result.data);
+    },
+    onError: (error) =>
+      setImportError(errorMessage(error, "Berkas impor tidak bisa dibaca")),
+  });
+
+  /** Langkah kedua: kirim ulang byte yang sama, kali ini untuk ditulis. */
+  const applyImport = useMutation({
+    mutationFn: () => {
+      if (!importFile) throw new Error("Berkas belum dipilih");
+      return api.parents.importXlsx({
+        filename: importFile.name,
+        content: importFile.content,
+        dryRun: false,
+      });
+    },
+    onSuccess: async (result) => {
+      closeImport();
+      setBanner({ kind: "ok", text: result.message });
+      await invalidate();
+    },
+    onError: (error) =>
+      setImportError(errorMessage(error, "Impor gagal diterapkan")),
+  });
+
+  /** Baris yang benar-benar mengubah data — sisanya tidak perlu ditulis. */
+  const importChanges = importPreview
+    ? importPreview.created + importPreview.updated
+    : 0;
+
   const openEdit = (parent: ParentDto) => {
     setEditing(parent);
     setForm({
@@ -322,6 +410,15 @@ function ParentsContent() {
               onExport={() => api.parents.exportXlsx()}
               title="Unduh seluruh akun sebagai berkas Excel"
             />
+            <ImportButton
+              onFile={(file) => previewImport.mutate(file)}
+              loading={previewImport.isPending}
+              disabled={applyImport.isPending}
+              title="Impor akun dari berkas Excel hasil ekspor yang sudah disunting"
+            />
+            {importError && !importPreview && (
+              <span className="text-xs text-red-600">{importError}</span>
+            )}
             <Button onClick={openCreate}>
               <Plus className="h-4 w-4" />
               Akun baru
@@ -744,6 +841,140 @@ function ParentsContent() {
             autoFocus
           />
         </Field>
+      </Modal>
+
+      {/*
+        Pratinjau impor. Ditampilkan **sebelum** apa pun ditulis: impor
+        menimpa akun yang sudah ada, dan berkas yang salah pilih bisa
+        merusak banyak akun sekaligus. Nasib tiap baris ditampilkan apa
+        adanya, termasuk yang tidak bisa diproses beserta sebabnya.
+      */}
+      <Modal
+        open={importPreview !== null}
+        title={`Pratinjau impor — ${importFile?.name ?? ""}`}
+        onClose={closeImport}
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              onClick={closeImport}
+              disabled={applyImport.isPending}
+            >
+              Batal
+            </Button>
+            <Button
+              onClick={() => applyImport.mutate()}
+              loading={applyImport.isPending}
+              disabled={importChanges === 0}
+            >
+              Terapkan
+            </Button>
+          </>
+        }
+      >
+        {importPreview && (
+          <div className="space-y-4">
+            <p className="text-sm text-slate-600">
+              {importPreview.totalRows} baris terbaca ·{" "}
+              <strong className="text-accent-700">
+                {importPreview.created} akun baru
+              </strong>{" "}
+              ·{" "}
+              <strong className="text-brand-700">
+                {importPreview.updated} ditimpa
+              </strong>{" "}
+              · {importPreview.skipped} dilewati
+            </p>
+
+            {importPreview.issues.length > 0 && (
+              <div className="rounded-lg border border-highlight-200 bg-highlight-50 px-3 py-2">
+                <p className="text-xs font-semibold text-highlight-900">
+                  {importPreview.issues.length} baris tidak terbaca
+                </p>
+                <ul className="mt-1 max-h-32 space-y-0.5 overflow-y-auto text-xs text-highlight-900">
+                  {importPreview.issues.map((issue, index) => (
+                    <li key={index}>
+                      <span className="font-mono">Baris {issue.row}</span> —{" "}
+                      {issue.message}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {importPreview.rows.length > 0 && (
+              <div className="max-h-64 overflow-y-auto rounded-lg border border-slate-200">
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 bg-slate-50 text-left">
+                    <tr className="border-b border-slate-200">
+                      <th className="px-3 py-2 font-medium text-slate-500">Baris</th>
+                      <th className="px-3 py-2 font-medium text-slate-500">
+                        Orang tua
+                      </th>
+                      <th className="px-3 py-2 font-medium text-slate-500">
+                        Username
+                      </th>
+                      <th className="px-3 py-2 font-medium text-slate-500">
+                        Tindakan
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {importPreview.rows.map((row) => {
+                      const outcome = IMPORT_OUTCOMES[row.outcome];
+                      return (
+                        <tr key={row.row}>
+                          <td className="px-3 py-2 font-mono text-xs text-slate-500">
+                            {row.row}
+                          </td>
+                          <td className="px-3 py-2 text-slate-800">
+                            {row.parentName}
+                            <span className="block text-xs text-slate-400">
+                              {row.students.length > 0
+                                ? row.students.join(", ")
+                                : "anak tidak diubah"}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2 font-mono text-xs text-slate-600">
+                            {row.username}
+                          </td>
+                          <td className="px-3 py-2">
+                            <Badge tone={outcome.tone}>{outcome.label}</Badge>
+                            {row.reason && (
+                              <span className="mt-1 block text-xs text-slate-500">
+                                {row.reason}
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {importChanges === 0 && (
+              <p className="text-sm text-slate-500">
+                Tidak ada baris yang bisa diterapkan. Pastikan kolom Username,
+                Password, dan Anak terisi — unduh dulu berkas contoh lewat
+                tombol “Unduh Excel”, lalu sunting berkas itu.
+              </p>
+            )}
+
+            <p className="text-xs text-slate-500">
+              Akun dicocokkan lewat <strong>username</strong>: yang sudah ada
+              ditimpa, yang belum dibuat. Password hanya diganti bila kolomnya
+              diisi — berkas hasil ekspor membiarkannya kosong.
+            </p>
+
+            {importError && (
+              <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {importError}
+              </p>
+            )}
+          </div>
+        )}
       </Modal>
 
       {/*

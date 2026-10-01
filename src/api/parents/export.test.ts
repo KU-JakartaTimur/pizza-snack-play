@@ -83,6 +83,30 @@ describe("buildAccountsSheet", () => {
     expect(text).toContain("Budi (1A), Ani");
     expect(text).toContain("1 terkunci");
   });
+
+  /**
+   * Dua kolom ini yang membuat berkasnya bisa diunggah kembali lewat
+   * `POST /parents/import`: `Username` sebagai kunci pencocokan, `Password`
+   * sebagai tempat mengisi password akun baru.
+   */
+  test("memuat kolom Username dan Password agar bisa diimpor kembali", () => {
+    const text = new TextDecoder().decode(
+      buildAccountsSheet([base], "Semua akun"),
+    );
+    expect(text).toContain("Username");
+    expect(text).toContain("Password");
+    expect(text).toContain("sari");
+  });
+
+  test("kolom Password selalu kosong — hash tidak pernah diekspor", () => {
+    const text = new TextDecoder().decode(
+      buildAccountsSheet([base], "Semua akun"),
+    );
+    // Tidak ada nilai apa pun yang bocor ke sel password; satu-satunya
+    // kemunculan "pbkdf2"/"password" yang boleh ada hanyalah kepalanya.
+    expect(text).not.toContain("pbkdf2");
+    expect(text.match(/Password/g)).toHaveLength(1);
+  });
 });
 
 describe("accountsFilename", () => {

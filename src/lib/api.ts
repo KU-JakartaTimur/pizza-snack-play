@@ -41,6 +41,8 @@ import type {
 import type {
   PaginatedDto,
   ParentDto,
+  ParentImportInput,
+  ParentImportResultDto,
   ParentInput,
   StatsSummaryDto,
 } from "@/types/account";
@@ -479,6 +481,22 @@ export const api = {
           })}`,
         ),
         "akun-orang-tua.xlsx",
+      ),
+
+    /**
+     * Impor akun dari berkas Excel hasil ekspor yang sudah disunting —
+     * **admin saja**.
+     *
+     * Yang sudah ada **ditimpa** (dicocokkan lewat username), yang belum
+     * dibuat. Isi berkasnya dikirim sebagai base64 di dalam JSON; lihat
+     * `readFileAsBase64`.
+     *
+     * `dryRun: true` mengembalikan nasib tiap baris tanpa menulis apa pun —
+     * itulah yang ditampilkan sebagai pratinjau sebelum admin menerapkannya.
+     */
+    importXlsx: (body: ParentImportInput) =>
+      unwrapFull<ParentImportResultDto>(
+        http.post("parents/import", { json: body }),
       ),
   },
 

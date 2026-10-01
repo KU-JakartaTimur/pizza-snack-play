@@ -6,28 +6,67 @@
  * berkasnya keluar dari aplikasi (terkunci & kapan terakhir masuk). Berkas
  * yang dicetak jadi tidak pernah berbeda dari yang dilihat admin.
  *
+ * Dua kolom tambahan membuat berkas ini bisa **kembali masuk** lewat
+ * `POST /parents/import`:
+ *  - **Username** — kunci pencocokan saat impor. Tanpa ini, dua orang tua
+ *    bernama sama tidak bisa dibedakan dan baris yang salah akan tertimpa.
+ *  - **Password** — selalu **kosong**; hash password tidak pernah keluar dari
+ *    server. Kolomnya disediakan sebagai tempat mengisi password akun baru,
+ *    karena impor mewajibkannya. Dikosongkan = password akun lama tidak
+ *    diubah.
+ *
  * Modul ini murni: daftar DTO masuk, byte `.xlsx` keluar. Tidak menyentuh
  * database maupun `Context` Hono, sehingga bisa diuji tanpa menyalakan server.
  */
 
-import type { ParentDto } from "../../types/account";
+import type { ManagedRole, ParentDto } from "../../types/account";
 import { downloadFileName } from "../utils/response";
 import { slugify } from "../utils/slug";
 import { buildXlsx, type XlsxCell, type XlsxRow } from "../utils/xlsx";
 
+/**
+ * Nama kolom lembar akun — **satu sumber untuk ekspor dan impor**.
+ *
+ * Impor (`import.ts`) mencari kolom berdasarkan teks kepala ini, bukan
+ * berdasarkan posisinya. Karena itu mengubah nama di sini otomatis mengubah
+ * keduanya, dan berkas yang kolomnya diacak admin tetap terbaca benar.
+ */
+export const ACCOUNT_COLUMNS = {
+  parentName: "Nama orang tua",
+  username: "Username",
+  password: "Password",
+  role: "Peran",
+  className: "Kelas dikoordinasi",
+  students: "Anak",
+  active: "Aktif",
+  locked: "Terkunci",
+  lastLogin: "Login terakhir",
+} as const;
+
+/** Tulisan peran di lembar; dipakai juga saat membacanya kembali. */
+export const ROLE_LABELS: Record<ManagedRole, string> = {
+  parent: "Orang tua",
+  korlas: "Korlas",
+};
+
+/** Tulisan kolom `Aktif`/`Terkunci` — dibaca kembali apa adanya oleh impor. */
+export const YES_NO = { yes: "Ya", no: "Tidak" } as const;
+
 /** Kolom tabel, urut kiri ke kanan. */
 const HEADERS = [
-  "Nama orang tua",
-  "Peran",
-  "Kelas dikoordinasi",
-  "Anak",
-  "Aktif",
-  "Terkunci",
-  "Login terakhir",
+  ACCOUNT_COLUMNS.parentName,
+  ACCOUNT_COLUMNS.username,
+  ACCOUNT_COLUMNS.password,
+  ACCOUNT_COLUMNS.role,
+  ACCOUNT_COLUMNS.className,
+  ACCOUNT_COLUMNS.students,
+  ACCOUNT_COLUMNS.active,
+  ACCOUNT_COLUMNS.locked,
+  ACCOUNT_COLUMNS.lastLogin,
 ] as const;
 
 /** Lebar kolom (satuan Excel) — disetel agar isi terpanjang tidak terpotong. */
-const COLUMN_WIDTHS = [24, 16, 18, 40, 10, 12, 22];
+const COLUMN_WIDTHS = [24, 18, 16, 16, 18, 40, 10, 12, 22];
 
 /** Gaya "tebal" di `styles.xml`; dipakai judul, ringkasan, dan kepala tabel. */
 const BOLD = 1 as const;
@@ -73,11 +112,11 @@ const DAY_NAMES_MONTH = [
 
 /** `Ya` / `Tidak` — lebih terbaca di Excel daripada 1/0. */
 function yesNo(value: boolean): string {
-  return value ? "Ya" : "Tidak";
+  return value ? YES_NO.yes : YES_NO.no;
 }
 
 function roleLabel(parent: ParentDto): string {
-  return parent.role === "korlas" ? "Korlas" : "Orang tua";
+  return ROLE_LABELS[parent.role];
 }
 
 /** Satu baris data untuk satu akun. */
@@ -91,12 +130,16 @@ function accountRow(parent: ParentDto): XlsxRow {
   return {
     cells: [
       cell(parent.parentName),
+      cell(parent.username),
+      // Sel kosong sengaja tidak ditulis sama sekali — lihat `buildXlsx`.
+      // Hash password tidak pernah keluar dari server.
+      cell(""),
       cell(roleLabel(parent)),
       // Kelas hanya bermakna untuk korlas; orang tua biasa dibiarkan kosong.
       cell(parent.role === "korlas" ? (parent.className ?? "") : ""),
       cell(students),
       cell(yesNo(parent.isActive)),
-      cell(parent.lockedAt ? "Ya" : "Tidak"),
+      cell(parent.lockedAt ? YES_NO.yes : YES_NO.no),
       cell(parent.lastLoginAt ? longDateTime(parent.lastLoginAt) : "Belum pernah"),
     ],
   };

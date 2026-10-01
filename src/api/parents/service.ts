@@ -4,6 +4,9 @@ import type {
   ManagedRole,
   PaginatedDto,
   ParentDto,
+  ParentImportIssueDto,
+  ParentImportResultDto,
+  ParentImportRowDto,
   ParentInput,
   ParentRelationship,
   StudentDto,
@@ -11,6 +14,7 @@ import type {
 } from "../../types/account";
 import { authRepository } from "../auth/repository";
 import { hashPassword } from "../utils/password";
+import { nameKey, type ParsedAccountRow, type ParsedChild, type SheetIssue } from "./import";
 import { parentRepository, type ParentRow } from "./repository";
 
 export type ParentError =
@@ -286,6 +290,212 @@ class ParentService {
     await parentRepository.deleteStudentsExcept(db, parentId, keepIds);
 
     return parentRepository.findStudentsByParentId(db, parentId);
+  }
+
+  /**
+   * Impor akun dari lembar Excel: **yang sudah ada ditimpa, yang belum dibuat**.
+   *
+   * Kuncinya **username**, bukan nama orang tua. Nama bukan pengenal — dua
+   * orang tua bisa bernama sama, dan menimpakan data ke akun yang salah justru
+   * lebih buruk daripada menolak barisnya. Username juga satu-satunya kolom
+   * yang dijamin unik oleh skema.
+   *
+   * Aturan per baris:
+   *  - akun lama → nama, peran, kelas, anak, dan status aktifnya ditimpa.
+   *    Password hanya diganti bila kolomnya diisi; dikosongkan berarti
+   *    "jangan sentuh", sehingga berkas hasil ekspor bisa diunggah kembali
+   *    tanpa mengubah satu pun password.
+   *  - akun baru → wajib punya password; `relationship` diisi `ibu` karena
+   *    lembar ekspor tidak memuatnya.
+   *
+   * `dryRun` menghitung nasib tiap baris **tanpa menulis apa pun** — termasuk
+   * tanpa menghitung hash password, yang mahal.
+   */
+  async importAccounts(
+    db: Db,
+    rows: ParsedAccountRow[],
+    sheetIssues: SheetIssue[],
+    options: { dryRun?: boolean } = {},
+  ): Promise<ParentImportResultDto> {
+    const dryRun = options.dryRun === true;
+
+    // Satu query untuk seluruh akun — pencocokan username tidak boleh
+    // menembak database sekali per baris.
+    const existing = await parentRepository.listParentsForExport(db);
+    const byUsername = new Map<string, ParentRow>();
+    for (const row of existing) {
+      byUsername.set(row.user.username.toLowerCase(), row);
+    }
+
+    const issues: ParentImportIssueDto[] = sheetIssues.map((issue) => ({ ...issue }));
+    const outcomes: ParentImportRowDto[] = [];
+    /** Username yang sudah muncul di berkas ini — cegah baris saling menimpa. */
+    const seen = new Set<string>();
+
+    let created = 0;
+    let updated = 0;
+    let skipped = 0;
+
+    /**
+     * Catat baris yang dilewati.
+     *
+     * Sebabnya **hanya** ditaruh di barisnya (`reason`), tidak ikut ke
+     * `issues`: `issues` khusus untuk baris yang tidak terbaca dari lembar.
+     * Mengisi keduanya membuat satu masalah tampil dua kali di pratinjau.
+     */
+    const skip = (row: ParsedAccountRow, reason: string) => {
+      skipped++;
+      outcomes.push({
+        row: row.row,
+        parentName: row.parentName,
+        username: row.username,
+        outcome: "skip",
+        reason,
+        students: row.students?.map((child) => child.name) ?? [],
+      });
+    };
+
+    for (const row of rows) {
+      if (seen.has(row.username)) {
+        skip(row, `Username "${row.username}" muncul lebih dari sekali di berkas ini`);
+        continue;
+      }
+      seen.add(row.username);
+
+      const current = byUsername.get(row.username);
+      const studentNames = row.students?.map((child) => child.name) ?? [];
+
+      if (!current) {
+        // Akun baru wajib punya anak: tanpa itu ia tidak punya kelas, dan
+        // seluruh layar untuk orang tua jadi kosong. Aturan yang sama
+        // ditegakkan form "Akun baru".
+        if (!row.students || row.students.length === 0) {
+          skip(row, "Akun baru wajib punya minimal satu anak");
+          continue;
+        }
+
+        if (!row.password) {
+          skip(row, `Akun baru "${row.username}" memerlukan password`);
+          continue;
+        }
+
+        if (!dryRun) {
+          const isActive = row.isActive === false ? 0 : 1;
+
+          const user = await parentRepository.insertUser(db, {
+            username: row.username,
+            passwordHash: await hashPassword(row.password),
+            fullName: row.parentName,
+            email: null,
+            phone: null,
+            role: row.role,
+            className: row.role === "korlas" ? row.className : null,
+            isActive,
+          });
+
+          const parent = await parentRepository.insertParent(db, {
+            userId: user.id,
+            parentName: row.parentName,
+            // Lembar ekspor tidak memuat hubungan keluarga; `ibu` adalah
+            // default yang sama dengan form "Akun baru".
+            relationship: "ibu",
+            phone: null,
+            address: null,
+            isActive,
+          });
+
+          await this.syncStudents(db, parent.id, row.students);
+        }
+
+        created++;
+        outcomes.push({
+          row: row.row,
+          parentName: row.parentName,
+          username: row.username,
+          outcome: "create",
+          reason: null,
+          students: studentNames,
+        });
+        continue;
+      }
+
+      if (!dryRun) {
+        const activeValue =
+          row.isActive === null ? {} : { isActive: row.isActive ? 1 : 0 };
+
+        await parentRepository.updateUser(db, current.user.id, {
+          fullName: row.parentName,
+          role: row.role,
+          className: row.role === "korlas" ? row.className : null,
+          ...activeValue,
+          ...(row.password
+            ? { passwordHash: await hashPassword(row.password) }
+            : {}),
+        });
+
+        await parentRepository.updateParent(db, current.parent.id, {
+          parentName: row.parentName,
+          ...activeValue,
+        });
+
+        // Daftar anak menggantikan: yang tidak lagi disebut di berkas dihapus.
+        // Id anak yang namanya masih sama dipertahankan, supaya riwayat piket
+        // dan relasi lain yang menunjuk ke sana tidak ikut terputus.
+        // Kolom Anak yang dikosongkan berarti daftarnya tidak disentuh.
+        if (row.students) {
+          await this.syncStudents(
+            db,
+            current.parent.id,
+            this.mergeStudentIds(current.students, row.students),
+          );
+        }
+      }
+
+      updated++;
+      outcomes.push({
+        row: row.row,
+        parentName: row.parentName,
+        username: row.username,
+        outcome: "update",
+        reason: null,
+        students: studentNames,
+      });
+    }
+
+    return {
+      dryRun,
+      totalRows: rows.length + sheetIssues.length,
+      created,
+      updated,
+      skipped,
+      rows: outcomes,
+      issues,
+    };
+  }
+
+  /**
+   * Tempelkan `id` anak lama pada baris impor yang namanya masih sama.
+   *
+   * Tanpa ini, `syncStudents` akan menghapus seluruh anak lalu menambahkannya
+   * kembali dengan id baru setiap kali impor dijalankan — dan setiap rujukan
+   * ke id lama (mis. petugas piket yang sudah tersimpan di jadwal) kehilangan
+   * sasarannya.
+   */
+  private mergeStudentIds(
+    existing: Student[],
+    parsed: ParsedChild[],
+  ): StudentInput[] {
+    const ids = new Map<string, number>();
+    for (const student of existing) {
+      ids.set(nameKey(student.name), student.id);
+    }
+
+    return parsed.map((child) => {
+      const id = ids.get(nameKey(child.name));
+      return id === undefined
+        ? { name: child.name, className: child.className }
+        : { id, name: child.name, className: child.className };
+    });
   }
 
   /**

@@ -7,23 +7,8 @@
         paddingBottom: 20,
         paddingLeft: 64,
         paddingRight: 64,
-        position: 'relative',
-        overflow: 'hidden',
     }}
 >
-    <Box
-        style={{
-            position: 'absolute',
-            bottom: -130,
-            left: -110,
-            width: 380,
-            height: 380,
-            borderRadius: 190,
-            background: 'linear-gradient(135deg, #AFC440 0%, #F3B26C 100%)',
-            opacity: 0.12,
-        }}
-    />
-
     {/* ── A · blok judul ── */}
     <Box style={{ height: 110, justifyContent: 'center' }}>
         <Text
@@ -35,126 +20,140 @@
                 lineHeight: 1.3,
             }}
         >
-            Tempel teks dari sekolah
+            Isi menu per hari
         </Text>
-        <Box style={{ marginTop: 10, width: 72, height: 6, borderRadius: 3, background: '#F3B26C' }} />
+        <Box style={{ marginTop: 10, width: 72, height: 6, borderRadius: 3, background: '#51277C' }} />
     </Box>
 
     {/* ── B · area konten ── */}
-    <Box style={{ height: 530, flexDirection: 'row', gap: 34, position: 'relative', zIndex: 1 }}>
-        {/* kiri 45% · pesan */}
-        <Box style={{ width: '45%', height: '100%', justifyContent: 'center' }}>
-            <Text
-                style={{
-                    fontSize: 44,
-                    fontWeight: 'bold',
-                    color: '#51277C',
-                    fontFamily: 'Trebuchet MS',
-                    lineHeight: 1.15,
-                }}
-            >
-                Tidak perlu{'\n'}ketik ulang.
-            </Text>
-
-            <Text
-                style={{
-                    marginTop: 20,
-                    fontSize: 19,
-                    color: '#2A2333',
-                    fontFamily: 'Verdana',
-                    lineHeight: 1.55,
-                }}
-            >
-                Jadwal yang dikirim sekolah lewat WhatsApp bisa ditempel apa adanya. Aplikasi
-                membaca rentang tanggal dan baris harinya sendiri.
-            </Text>
-
-            <Box style={{ marginTop: 18 }}>
-                {[
-                    'Pratinjau ditampilkan lebih dulu — bisa dibatalkan',
-                    'Tanggal yang sudah ada jadwalnya dilewati, jadi tempel ulang aman',
-                    'Hasilnya masuk sebagai jadwal yang masih bisa diubah',
-                ].map((s, i) => (
-                    <Box key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 9 }}>
-                        <svg width={20} height={20} viewBox='0 0 24 24'>
-                            <path d='M5 13l4 4 10-11' fill='none' stroke='#AFC440' strokeWidth='3' strokeLinecap='round' strokeLinejoin='round' />
-                        </svg>
-                        <Text style={{ flex: 1, fontSize: 17, color: '#6B6478', fontFamily: 'Verdana', lineHeight: 1.45 }}>
-                            {s}
-                        </Text>
-                    </Box>
-                ))}
-            </Box>
-
-            <Box
-                style={{
-                    marginTop: 22,
-                    alignSelf: 'flex-start',
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 10,
-                    background: '#51277C',
-                    borderRadius: 12,
-                    paddingTop: 12,
-                    paddingBottom: 12,
-                    paddingLeft: 22,
-                    paddingRight: 22,
-                }}
-            >
-                <svg width={22} height={22} viewBox='0 0 24 24'>
-                    <path d='M9 3h6v3H9z' fill='#F3B26C' />
-                    <path d='M6 5h12v16H6z' fill='none' stroke='#F3B26C' strokeWidth='2' />
-                </svg>
-                <Text style={{ fontSize: 18, color: '#FFFFFF', fontFamily: 'Verdana', fontWeight: 'bold' }}>
-                    Tombol: Impor Jadwal
-                </Text>
-            </Box>
-        </Box>
-
-        {/* kanan 55% · ilustrasi tempel → pratinjau */}
+    <Box style={{ height: 530 }}>
+        {/* atas · ilustrasi tabel jadwal */}
         <Box
             style={{
-                width: '55%',
-                height: '100%',
+                height: 306,
                 background: 'rgba(81,39,124,0.06)',
                 borderRadius: 20,
                 justifyContent: 'center',
                 alignItems: 'center',
             }}
         >
-            <svg width={580} height={450} viewBox='0 0 580 450'>
-                {/* teks asal */}
-                <rect x='12' y='12' width='556' height='176' rx='16' fill='#FFFFFF' stroke='#E6DFD2' strokeWidth='2' />
-                <circle cx='44' cy='44' r='14' fill='#AFC440' />
-                <rect x='70' y='38' width='150' height='11' rx='5' fill='#DED7CB' />
-                <rect x='34' y='80' width='160' height='10' rx='5' fill='#51277C' opacity='0.65' />
-                <rect x='34' y='106' width='214' height='10' rx='5' fill='#DED7CB' />
-                <rect x='34' y='132' width='188' height='10' rx='5' fill='#DED7CB' />
-                <rect x='34' y='158' width='150' height='10' rx='5' fill='#DED7CB' />
-                <text x='300' y='112' fontFamily='Verdana' fontSize='14' fill='#6B6478'>Kamis : Puding + jeruk</text>
-                <text x='300' y='140' fontFamily='Verdana' fontSize='14' fill='#6B6478'>Jumat : Donat + melon</text>
-
-                {/* panah */}
-                <path d='M290 196v46' stroke='#F3B26C' strokeWidth='6' strokeLinecap='round' />
-                <path d='M276 234l14 16 14-16' fill='none' stroke='#F3B26C' strokeWidth='6' strokeLinecap='round' strokeLinejoin='round' />
-                <text x='318' y='228' fontFamily='Verdana' fontSize='15' fill='#51277C'>pratinjau</text>
-
-                {/* pratinjau */}
-                <rect x='12' y='258' width='556' height='180' rx='16' fill='#51277C' />
-                <text x='40' y='294' fontFamily='Trebuchet MS' fontSize='21' fontWeight='bold' fill='#FFFFFF'>
-                    Pratinjau — 12 baris baru
+            <svg width={1100} height={270} viewBox='0 0 1100 270'>
+                <rect x='6' y='6' width='1088' height='46' rx='10' fill='#51277C' />
+                <text x='46' y='37' fontFamily='Trebuchet MS' fontSize='20' fontWeight='bold' fill='#FFFFFF'>
+                    Tanggal
                 </text>
-                <rect x='40' y='312' width='500' height='34' rx='8' fill='rgba(255,255,255,0.16)' />
-                <text x='58' y='335' fontFamily='Verdana' fontSize='14' fill='#FFFFFF'>Kamis, 2 Okt</text>
-                <text x='230' y='335' fontFamily='Verdana' fontSize='14' fill='#EFEAE1'>Puding + jeruk</text>
-                <rect x='40' y='354' width='500' height='34' rx='8' fill='rgba(255,255,255,0.16)' />
-                <text x='58' y='377' fontFamily='Verdana' fontSize='14' fill='#FFFFFF'>Jumat, 3 Okt</text>
-                <text x='230' y='377' fontFamily='Verdana' fontSize='14' fill='#EFEAE1'>Donat + melon</text>
-                <rect x='392' y='400' width='148' height='26' rx='13' fill='#F3B26C' />
-                <text x='466' y='419' fontFamily='Verdana' fontSize='14' fontWeight='bold' fill='#51277C' textAnchor='middle'>
-                    Impor
+                <text x='330' y='37' fontFamily='Trebuchet MS' fontSize='20' fontWeight='bold' fill='#FFFFFF'>
+                    Menu
                 </text>
+                <text x='760' y='37' fontFamily='Trebuchet MS' fontSize='20' fontWeight='bold' fill='#FFFFFF'>
+                    Petugas
+                </text>
+                <text x='990' y='37' fontFamily='Trebuchet MS' fontSize='20' fontWeight='bold' fill='#FFFFFF'>
+                    Status
+                </text>
+
+                {/* Senin */}
+                <rect x='6' y='60' width='1088' height='46' rx='10' fill='#FFFFFF' stroke='#E6DFD2' strokeWidth='2' />
+                <text x='46' y='90' fontFamily='Verdana' fontSize='16' fill='#51277C'>Senin, 5</text>
+                <text x='330' y='90' fontFamily='Verdana' fontSize='16' fill='#2A2333'>Roti coklat + jeruk</text>
+                <text x='760' y='90' fontFamily='Verdana' fontSize='16' fill='#6B6478'>Rafa</text>
+                <rect x='940' y='71' width='118' height='24' rx='12' fill='#DED7CB' />
+                <text x='999' y='88' fontFamily='Verdana' fontSize='13' fill='#51277C' textAnchor='middle'>bisa diubah</text>
+
+                {/* Selasa */}
+                <rect x='6' y='112' width='1088' height='46' rx='10' fill='#FFFFFF' stroke='#E6DFD2' strokeWidth='2' />
+                <text x='46' y='142' fontFamily='Verdana' fontSize='16' fill='#51277C'>Selasa, 6</text>
+                <text x='330' y='142' fontFamily='Verdana' fontSize='16' fill='#2A2333'>Puding + pisang</text>
+                <text x='760' y='142' fontFamily='Verdana' fontSize='16' fill='#6B6478'>—</text>
+                <rect x='940' y='123' width='118' height='24' rx='12' fill='#DED7CB' />
+                <text x='999' y='140' fontFamily='Verdana' fontSize='13' fill='#51277C' textAnchor='middle'>bisa diubah</text>
+
+                {/* Rabu — libur */}
+                <rect x='6' y='164' width='1088' height='46' rx='10' fill='#FFFFFF' stroke='#F3B26C' strokeWidth='2' />
+                <text x='46' y='194' fontFamily='Verdana' fontSize='16' fill='#51277C'>Rabu, 7</text>
+                <text x='330' y='194' fontFamily='Verdana' fontSize='16' fill='#2A2333'>Libur</text>
+                <text x='760' y='194' fontFamily='Verdana' fontSize='16' fill='#6B6478'>—</text>
+                <rect x='940' y='175' width='118' height='24' rx='12' fill='#F3B26C' />
+                <text x='999' y='192' fontFamily='Verdana' fontSize='13' fill='#51277C' textAnchor='middle'>libur</text>
+
+                {/* Kamis — petugas kosong */}
+                <rect x='6' y='216' width='1088' height='46' rx='10' fill='#FFFFFF' stroke='#AFC440' strokeWidth='3' />
+                <text x='46' y='246' fontFamily='Verdana' fontSize='16' fill='#51277C'>Kamis, 8</text>
+                <text x='330' y='246' fontFamily='Verdana' fontSize='16' fill='#2A2333'>Donat + melon</text>
+                <text x='760' y='246' fontFamily='Verdana' fontSize='16' fill='#6B6478'>—</text>
+                <rect x='940' y='227' width='118' height='24' rx='12' fill='#AFC440' />
+                <text x='999' y='244' fontFamily='Verdana' fontSize='13' fill='#3F4718' textAnchor='middle'>petugas kosong</text>
             </svg>
+        </Box>
+
+        {/* bawah · dua kartu 60:40 */}
+        <Box style={{ marginTop: 18, height: 206, flexDirection: 'row', gap: 24 }}>
+            <Box
+                style={{
+                    width: '60%',
+                    background: '#FFFFFF',
+                    borderRadius: 16,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    padding: 24,
+                    borderLeft: '8px solid #AFC440',
+                }}
+            >
+                <Text
+                    style={{
+                        fontSize: 26,
+                        fontWeight: 'bold',
+                        color: '#51277C',
+                        fontFamily: 'Trebuchet MS',
+                    }}
+                >
+                    Pilih menu di setiap tanggal
+                </Text>
+                <Text
+                    style={{
+                        marginTop: 10,
+                        fontSize: 18,
+                        color: '#6B6478',
+                        fontFamily: 'Verdana',
+                        lineHeight: 1.5,
+                    }}
+                >
+                    Satu hari berisi makanan utama dan buah pendamping. Hari yang tidak masuk
+                    sekolah cukup ditandai libur — menunya tidak perlu diisi.
+                </Text>
+            </Box>
+
+            <Box
+                style={{
+                    width: '40%',
+                    background: '#FFFFFF',
+                    borderRadius: 16,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    padding: 24,
+                    borderLeft: '8px solid #F3B26C',
+                }}
+            >
+                <Text
+                    style={{
+                        fontSize: 26,
+                        fontWeight: 'bold',
+                        color: '#51277C',
+                        fontFamily: 'Trebuchet MS',
+                    }}
+                >
+                    Salin Sepekan
+                </Text>
+                <Text
+                    style={{
+                        marginTop: 10,
+                        fontSize: 18,
+                        color: '#6B6478',
+                        fontFamily: 'Verdana',
+                        lineHeight: 1.5,
+                    }}
+                >
+                    Duplikasi Senin–Jumat ke minggu lain. Tanggal yang sudah terisi dilewati.
+                </Text>
+            </Box>
         </Box>
     </Box>
 
@@ -170,6 +169,6 @@
         <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>
             Pizza Snack Play · Panduan Korlas &amp; Admin
         </Text>
-        <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>09 / 16</Text>
+        <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>09 / 17</Text>
     </Box>
 </Slide>

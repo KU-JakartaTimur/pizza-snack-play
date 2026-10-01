@@ -3,98 +3,170 @@
         width: '1280px',
         height: '720px',
         background: '#FAF7F2',
-        justifyContent: 'center',
-        alignItems: 'center',
-        position: 'relative',
-        overflow: 'hidden',
+        paddingTop: 20,
+        paddingBottom: 20,
+        paddingLeft: 64,
+        paddingRight: 64,
     }}
 >
-    <Box
-        style={{
-            position: 'absolute',
-            top: 90,
-            width: 520,
-            height: 520,
-            borderRadius: 260,
-            background: 'linear-gradient(135deg, #51277C 0%, #7A45A8 100%)',
-            opacity: 0.10,
-        }}
-    />
-    <Box
-        style={{
-            position: 'absolute',
-            bottom: -80,
-            left: -80,
-            width: 320,
-            height: 320,
-            borderRadius: 160,
-            background: 'linear-gradient(135deg, #AFC440 0%, #F3B26C 100%)',
-            opacity: 0.18,
-        }}
-    />
-
-    <Box style={{ position: 'relative', zIndex: 1, alignItems: 'center', paddingLeft: 72, paddingRight: 72 }}>
-        <Image src="assets/app_logo.png" style={{ width: 200, height: 194, objectFit: 'contain' }} />
-
+    {/* ── A · blok judul ── */}
+    <Box style={{ height: 110, justifyContent: 'center' }}>
         <Text
             style={{
-                marginTop: 26,
-                fontSize: 60,
+                fontSize: 34,
                 fontWeight: 'bold',
                 color: '#51277C',
                 fontFamily: 'Trebuchet MS',
-                lineHeight: 1.15,
+                lineHeight: 1.3,
             }}
         >
-            Terima kasih
+            Empat hal yang perlu diingat
         </Text>
+        <Box style={{ marginTop: 10, width: 72, height: 6, borderRadius: 3, background: '#51277C' }} />
+    </Box>
 
-        <Box style={{ marginTop: 18, width: 96, height: 7, borderRadius: 4, background: '#AFC440' }} />
+    {/* ── B · area konten ── */}
+    <Box style={{ height: 530 }}>
+        <Box style={{ height: 470, flexDirection: 'row', gap: 18 }}>
+            {[
+                {
+                    d: 'M7 2v3M17 2v3M3 9h18M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM8 13h8',
+                    t: 'Kosongkan petugas sebelum terbit',
+                    d: 'Bila tanggalnya ingin direbut orang tua, biarkan petugas kosong sebelum dipublikasikan. Setelah terbit, yang masih bisa diisi hanya petugas — menu & catatan tetap terkunci.',
+                    g: 'Tentukan sebelum kunci',
+                },
+                {
+                    d: 'M7 4h10a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3zM7 11l2 2 3-4M8 16h7',
+                    t: 'Selesaikan semua dulu',
+                    d: 'Publikasi menolak selama masih ada hari yang belum dikunci. Periksa kartu status per kelas sebelum menekan tombolnya.',
+                    g: 'Jangan separuh jadi',
+                },
+                {
+                    d: 'M7 11h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2zM8 11V8a4 4 0 0 1 7.5-2',
+                    t: 'Revisi sesudah terbit: minta admin',
+                    d: 'Membuka kunci jadwal wewenang admin. Korlas tidak bisa mencairkan jadwal yang sudah dikunci atau terbit.',
+                    g: 'Sampaikan ke admin',
+                },
+                {
+                    d: 'M7 2v3M17 2v3M3 9h18M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM9 14l6 6M15 14l-6 6',
+                    t: 'Hari libur sekolah wewenang admin',
+                    d: 'Korlas bisa menandai libur pada jadwal kelasnya sendiri. Hari libur yang berlaku untuk semua kelas ditambahkan admin.',
+                    g: 'Berlaku sekolah',
+                },
+            ].map((c, idx) => (
+                <Box
+                    key={idx}
+                    style={{
+                        flex: 1,
+                        height: '100%',
+                        background: '#FFFFFF',
+                        borderRadius: 16,
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                        padding: 24,
+                        borderTop: '8px solid #AFC440',
+                    }}
+                >
+                    <Box
+                        style={{
+                            width: 60,
+                            height: 60,
+                            borderRadius: 30,
+                            background: 'rgba(81,39,124,0.10)',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                        }}
+                    >
+                        <svg width={30} height={30} viewBox='0 0 24 24' xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                fill='none'
+                                stroke='#51277C'
+                                strokeWidth='2'
+                                strokeLinecap='round'
+                                strokeLinejoin='round'
+                                d={c.d}
+                            />
+                        </svg>
+                    </Box>
 
-        <Text
-            style={{
-                marginTop: 22,
-                fontSize: 22,
-                color: '#2A2333',
-                fontFamily: 'Verdana',
-                lineHeight: 1.5,
-                textAlign: 'center',
-            }}
-        >
-            Coba tempel jadwal dari teks sekolah minggu ini, lalu periksa Laporannya.
-        </Text>
+                    <Text
+                        style={{
+                            marginTop: 16,
+                            fontSize: 23,
+                            fontWeight: 'bold',
+                            color: '#51277C',
+                            fontFamily: 'Trebuchet MS',
+                            lineHeight: 1.32,
+                        }}
+                    >
+                        {c.t}
+                    </Text>
 
-        <Text
-            style={{
-                marginTop: 14,
-                fontSize: 19,
-                color: '#6B6478',
-                fontFamily: 'Verdana',
-                lineHeight: 1.5,
-                textAlign: 'center',
-            }}
-        >
-            Ada yang tidak beres? Sampaikan kepada admin sekolah.
-        </Text>
+                    <Box style={{ marginTop: 12, width: 44, height: 3, borderRadius: 2, background: '#AFC440' }} />
 
+                    <Text
+                        style={{
+                            marginTop: 12,
+                            fontSize: 17,
+                            color: '#6B6478',
+                            fontFamily: 'Verdana',
+                            lineHeight: 1.5,
+                        }}
+                    >
+                        {c.d}
+                    </Text>
+
+                    <Box style={{ marginTop: 'auto' }}>
+                        <Text
+                            style={{
+                                fontSize: 16,
+                                color: '#51277C',
+                                fontFamily: 'Verdana',
+                                fontWeight: 'bold',
+                            }}
+                        >
+                            {c.g}
+                        </Text>
+                    </Box>
+                </Box>
+            ))}
+        </Box>
+
+        {/* simpulan */}
         <Box
             style={{
-                marginTop: 26,
-                flexDirection: 'row',
+                marginTop: 14,
+                height: 46,
+                background: '#51277C',
+                borderRadius: 14,
+                justifyContent: 'center',
                 alignItems: 'center',
-                gap: 12,
-                background: '#F3B26C',
-                borderRadius: 999,
-                paddingTop: 13,
-                paddingBottom: 13,
-                paddingLeft: 28,
-                paddingRight: 30,
             }}
         >
-            <svg width={22} height={22} viewBox="0 0 576 512" xmlns="http://www.w3.org/2000/svg"><path fill="#51277C" d="M316.9 18C311.6 7 300.4 0 288.1 0s-23.4 7-28.8 18L195 150.3 51.4 171.5c-12 1.8-22 10.2-25.7 21.7s-.7 24.2 7.9 32.7L137.8 329 113.2 474.7c-2 12 3 24.2 12.9 31.3s23 8 33.8 2.3l128.3-68.5 128.3 68.5c10.8 5.7 23.9 4.9 33.8-2.3s14.9-19.3 12.9-31.3L438.5 329 542.7 225.9c8.6-8.5 11.7-21.2 7.9-32.7s-13.7-19.9-25.7-21.7L381.2 150.3 316.9 18z" /></svg>
-            <Text style={{ fontSize: 19, color: '#51277C', fontFamily: 'Trebuchet MS', fontWeight: 'bold' }}>
-                Pizza Snack Play
+            <Text
+                style={{
+                    fontSize: 19,
+                    color: '#FFFFFF',
+                    fontFamily: 'Verdana',
+                    fontWeight: 'bold',
+                }}
+            >
+                Intinya: susun, tentukan petugas, kunci, lalu terbitkan.
             </Text>
         </Box>
+    </Box>
+
+    {/* ── C · bilah kaki ── */}
+    <Box
+        style={{
+            height: 40,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+        }}
+    >
+        <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>
+            Pizza Snack Play · Panduan Korlas &amp; Admin
+        </Text>
+        <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>16 / 17</Text>
     </Box>
 </Slide>

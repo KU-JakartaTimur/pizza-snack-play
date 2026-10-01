@@ -47,6 +47,7 @@ Jadwal piket snack sekolah sebelumnya disusun dalam dokumen teks manual — suli
 | **Dashboard**                | Ringkasan jumlah akun, menu, jadwal, dan hari libur                                                                                    | Admin          | ✅         |
 | **Ubah Password**            | Setiap pengguna dapat mengganti password sendiri                                                                                       | Semua          | ✅         |
 | **Ekspor Excel**             | Unduh jadwal Sepekan/bulanan **dan** rekap akun orang tua sebagai `.xlsx` — kolomnya sama dengan yang tampil di layar, siap dibagikan atau dicetak | Admin, Korlas  | ✅         |
+| **Impor Akun (Excel)**       | Unggah kembali berkas hasil ekspor akun untuk memperbarui banyak akun sekaligus: yang usernamenya sudah ada **ditimpa**, yang belum **dibuat baru**. Selalu lewat pratinjau; sel kosong tidak mengubah data | Admin          | ✅         |
 | **Laporan Jadwal**           | Rekap berapa kali setiap orang tua mengambil jadwal piket + daftar yang belum pernah ambil, dengan filter rentang tanggal & kelas     | Admin, Korlas  | ✅         |
 | **Batas Percobaan Masuk**    | 5 kali salah password berturut-turut dalam 15 menit → akun terkunci (`423`); admin membukanya dari halaman Akun Orang Tua            | Semua          | ✅         |
 | **Kelola Anak Sendiri**      | Orang tua & korlas menambah, mengubah, dan menghapus **anaknya sendiri** dari menu Profil — tanpa menunggu admin                     | Parent, Korlas | ✅         |
@@ -138,11 +139,11 @@ pizza-snack-play/
 │   │   ├── laporan/              # Laporan jadwal — rekap ambil per orang tua (admin & korlas)
 │   │   ├── schedules/            # Jadwal per kelas, minggu, hari libur, kunci & publikasi,
 │   │   │                         # ekspor Excel, impor teks, aksi massal
-│   │   ├── parents/              # CRUD akun orang tua (termasuk angkat korlas & buka kunci)
+│   │   ├── parents/              # CRUD akun orang tua (angkat korlas, buka kunci, ekspor/impor Excel)
 │   │   ├── profile/              # Layanan mandiri: orang tua kelola anaknya sendiri
 │   │   ├── stats/                # Ringkasan dashboard
 │   │   ├── middleware/           # requireAuth, requireRole
-│   │   └── utils/                # response, password, date, slug, params, classScope, sql, xlsx
+│   │   └── utils/                # response, password, date, slug, params, classScope, sql, xlsx, xlsxRead, base64
 │   ├── database/
 │   │   ├── db.ts                 # Inisialisasi Drizzle + D1 binding + tipe Db
 │   │   └── schema.ts             # Drizzle schema (13 tabel)
@@ -248,6 +249,8 @@ Middleware dipasang berurutan: `requireAuth` (401 bila tanpa token) lalu
 | `utils/sql.ts`      | `escapeLike` / `likePattern` — membuat pola `LIKE` aman dari wildcard user                                                                                          |
 | `utils/classScope.ts` | `resolveReadClass` / `resolveWriteClass` / `canWriteClass` — menentukan cakupan kelas user saat baca & tulis                                                       |
 | `utils/xlsx.ts`     | Penulis berkas `.xlsx` **tanpa dependency** (ZIP mode store + SpreadsheetML) — dipakai `schedules/export.ts`                                                        |
+| `utils/xlsxRead.ts` | Pembaca berkas `.xlsx` **tanpa dependency** (inflate ZIP via `DecompressionStream`, `sharedStrings` + inline string, grid dari referensi sel) — dipakai `parents/import.ts` |
+| `utils/base64.ts`   | `base64ToBytes` — menerima base64 standar maupun base64url, memperbaiki padding yang hilang                                                                        |
 | `utils/slug.ts`     | Pembuat slug dari nama kategori                                                                                                                                     |
 
 ---
@@ -432,6 +435,7 @@ di tangan admin. Korlas hanya membaca katalog — wewenang tulisnya ada di jadwa
 | `POST`   | `/parents/:id/reset-password`             | Admin | Reset password (sekaligus membuka kunci akun)                                |
 | `POST`   | `/parents/:id/unlock`                     | Admin | Buka kunci akun akibat percobaan masuk yang gagal                            |
 | `GET`    | `/parents/export?active=`                 | Admin | Unduh rekap akun sebagai `.xlsx` (**tanpa paginasi**)                        |
+| `POST`   | `/parents/import`                         | Admin | Impor/upsert akun massal dari `.xlsx` hasil ekspor (body JSON base64; `dryRun` untuk pratinjau) |
 | `GET`    | `/stats/summary`                          | Admin | Ringkasan dashboard                                                          |
 
 ### Profil (layanan mandiri)
@@ -738,8 +742,9 @@ jadwal maupun memakai Pilih Jadwal sampai `students`-nya diisi.
 | **8. Aksi Massal Jadwal**        | Checkbox per hari & per kelas untuk kunci/publikasi/buka kunci sekaligus (`POST /schedules/bulk/*`, `classNames`)     | ✅ Selesai    |
 | **9. Impor Jadwal dari Teks**    | Tempel jadwal dari sekolah ke `POST /schedules/import` (pratinjau dulu, idempoten)                                   | ✅ Selesai    |
 | **10. Laporan Jadwal**           | Rekap ambil piket per orang tua + daftar yang belum pernah ambil (`GET /laporan`)                    | ✅ Selesai    |
-| **11. Ekspor & Cetak lanjutan**  | Halaman cetak ramah printer + ekspor CSV Sepekan/bulanan                                                            | ⏳ Berikutnya |
-| **12. Notifikasi**               | Push notification (PWA), WhatsApp broadcast (opsional)                                                               | ⏳ Rencana    |
+| **11. Impor Akun dari Excel**    | Unggah kembali berkas hasil ekspor akun ke `POST /parents/import` — timpa bila ada, buat bila baru, pratinjau dulu | ✅ Selesai    |
+| **12. Ekspor & Cetak lanjutan**  | Halaman cetak ramah printer + ekspor CSV Sepekan/bulanan                                                            | ⏳ Berikutnya |
+| **13. Notifikasi**               | Push notification (PWA), WhatsApp broadcast (opsional)                                                               | ⏳ Rencana    |
 
 ---
 
@@ -808,7 +813,7 @@ jadwal maupun memakai Pilih Jadwal sampai `students`-nya diisi.
 - [Struktur Tabel — DDL + Drizzle + Seed + Queries](docs/Struktur_Tabel_Pizza_Snack_Play.md)
 - [UAT Result](docs/UAT_Result.md)
 - [Panduan Orang Tua — dek sosialisasi 15 halaman](Panduan%20Orang%20Tua%20Pizza%20Snack%20Play/STORY.md) (`.pptx` + sumber `slides/*.slide`)
-- [Panduan Korlas & Admin — dek pembekalan 15 halaman](Panduan%20Korlas%20dan%20Admin%20Pizza%20Snack%20Play/STORY.md) (`.pptx` + sumber `slides/*.slide`)
+- [Panduan Korlas & Admin — dek pembekalan 17 halaman](Panduan%20Korlas%20dan%20Admin%20Pizza%20Snack%20Play/STORY.md) (`.pptx` + sumber `slides/*.slide`)
 
 ## Testing
 

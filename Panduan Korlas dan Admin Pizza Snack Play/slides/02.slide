@@ -84,20 +84,20 @@
                 {
                     n: '02',
                     t: 'Akun & wewenang',
-                    d: 'Apa yang boleh korlas, dan mana wewenang admin.',
-                    p: '6',
+                    d: 'Batas wewenang, dan cara mengurus akun sekaligus.',
+                    p: '6–7',
                 },
                 {
                     n: '03',
                     t: 'Menyusun jadwal',
                     d: 'Isi menu, salin Sepekan, atau tempel teks sekolah.',
-                    p: '8–10',
+                    p: '9–11',
                 },
                 {
                     n: '04',
                     t: 'Kunci, publikasi & laporan',
                     d: 'Urutan yang tidak bisa dibalik, aksi massal, lalu rekap piket.',
-                    p: '12–15',
+                    p: '13–16',
                 },
             ].map((it, i) => (
                 <Box
@@ -187,6 +187,6 @@
         <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>
             Pizza Snack Play · Panduan Korlas &amp; Admin
         </Text>
-        <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>02 / 16</Text>
+        <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>02 / 17</Text>
     </Box>
 </Slide>

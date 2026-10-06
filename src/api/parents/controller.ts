@@ -2,6 +2,8 @@ import type { Context } from "hono";
 import { getDb } from "../../database/db";
 import type {
   ManagedRole,
+  ParentBulkAction,
+  ParentBulkInput,
   ParentInput,
   ParentRelationship,
 } from "../../types/account";
@@ -152,6 +154,60 @@ function validateInput(
 }
 
 class ParentController {
+  // ── Aksi massal atas akun terpilih (checkbox di tabel) ──────
+
+  /** Label kata kerja untuk pesan hasil aksi massal. */
+  private readonly BULK_ACTION_LABEL: Record<ParentBulkAction, string> = {
+    activate: "diaktifkan",
+    deactivate: "dinonaktifkan",
+    delete: "dihapus",
+  };
+
+  /**
+   * Pesan ringkas hasil aksi massal: yang berubah selalu disebut, sisanya
+   * hanya bila ada — supaya banner "5 akun diaktifkan." tidak penuh angka nol.
+   */
+  private bulkMessage(
+    action: ParentBulkAction,
+    data: { changed: number; skipped: number; ignored: number },
+  ): string {
+    const parts = [`${data.changed} akun ${this.BULK_ACTION_LABEL[action]}`];
+    if (data.skipped > 0) {
+      parts.push(`${data.skipped} dilewati (sudah cocok)`);
+    }
+    if (data.ignored > 0) parts.push(`${data.ignored} diabaikan (tidak ditemukan)`);
+    return `${parts.join(", ")}.`;
+  }
+
+  bulk = async (c: ParentContext) => {
+    let body: Partial<ParentBulkInput>;
+    try {
+      body = await c.req.json<Partial<ParentBulkInput>>();
+    } catch {
+      return responseBadRequest(c, "Body harus berupa JSON");
+    }
+
+    if (!Array.isArray(body.ids) || body.ids.length === 0) {
+      return responseBadRequest(c, "`ids` wajib berisi daftar id akun");
+    }
+
+    const action = body.action;
+    if (
+      action !== "activate" &&
+      action !== "deactivate" &&
+      action !== "delete"
+    ) {
+      return responseBadRequest(
+        c,
+        "`action` harus salah satu dari: activate, deactivate, delete",
+      );
+    }
+
+    const data = await parentService.bulk(getDb(c.env), body.ids, action);
+
+    return responseOK(c, this.bulkMessage(action, data), data);
+  };
+
   list = async (c: ParentContext) => {
     const page = Number.parseInt(c.req.query("page") ?? "1", 10);
     const perPage = Number.parseInt(c.req.query("perPage") ?? "20", 10);

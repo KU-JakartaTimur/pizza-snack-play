@@ -3,6 +3,8 @@ import type { Student } from "../../database/schema";
 import type {
   ManagedRole,
   PaginatedDto,
+  ParentBulkAction,
+  ParentBulkResultDto,
   ParentDto,
   ParentInput,
   ParentRelationship,
@@ -328,6 +330,68 @@ class ParentService {
     await authRepository.clearLoginFailures(db, row.user.id);
 
     return true;
+  }
+
+  /**
+   * Aksi massal atas akun yang dicentang di tabel.
+   *
+   * Berbeda dari perubahan per-baris, di sini pemilihannya **eksplisit per
+   * akun**; karenanya tidak ada operasi yang gagal seluruhnya. Akun yang
+   * keadaannya sudah cocok dengan aksi (mis. mengaktifkan akun yang sudah
+   * aktif) hanya **dilewati** dan dilaporkan lewat `skipped` — bukan `409`
+   * — sebab admin menyebut id-nya satu per satu dan berhak tahu hasilnya.
+   *
+   * Modul ini khusus admin, sehingga tidak ada pembatasan kelas seperti pada
+   * jadwal: seluruh id yang ditemukan diproses.
+   */
+  async bulk(
+    db: Db,
+    ids: number[],
+    action: ParentBulkAction,
+  ): Promise<ParentBulkResultDto> {
+    // Id ganda (mis. dari "pilih semua" yang bertumpang) dihitung sekali saja.
+    const uniqueIds = [...new Set(ids)].filter(
+      (id) => Number.isInteger(id) && id > 0,
+    );
+
+    const rows = await parentRepository.findRowsByIds(db, uniqueIds);
+    const foundIds = new Set(rows.map((row) => row.parent.id));
+    const ignored = uniqueIds.length - foundIds.size;
+
+    // Hapus permanen — seluruh akun yang ditemukan dihapus (ON DELETE
+    // CASCADE menarik profil & anaknya). Tidak ada `skipped`: penghapusan
+    // bersifat idempoten terhadap id yang tak ditemukan.
+    if (action === "delete") {
+      for (const row of rows) {
+        await parentRepository.deleteUser(db, row.user.id);
+      }
+      return { action, changed: rows.length, skipped: 0, ignored };
+    }
+
+    const target = action === "activate" ? 1 : 0;
+    const isActiveRow = (row: ParentRow) =>
+      row.parent.isActive === 1 && row.user.isActive === 1;
+
+    // Hanya akun yang keadaannya berlawanan dengan tujuan yang benar-benar
+    // berubah; sisanya masuk `skipped`.
+    const eligible = rows.filter(
+      (row) => isActiveRow(row) !== (target === 1),
+    );
+
+    const userIds = eligible.map((row) => row.user.id);
+    const parentIds = eligible.map((row) => row.parent.id);
+
+    // `isActive` disimpan di dua tabel — kedua sisi harus seirama supaya
+    // `toParentDto` tidak pernah mengembalikan nilai yang bertentangan.
+    await parentRepository.setUsersActive(db, userIds, target);
+    await parentRepository.setParentsActive(db, parentIds, target);
+
+    return {
+      action,
+      changed: eligible.length,
+      skipped: rows.length - eligible.length,
+      ignored,
+    };
   }
 }
 

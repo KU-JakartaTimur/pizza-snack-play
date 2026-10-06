@@ -3087,6 +3087,132 @@ section("24. Impor jadwal dari teks tempelan (admin & korlas)");
   );
 }
 
+// ── 25. Aksi massal akun orang tua (bulk) ───────────────────
+
+section("25. Aksi massal akun orang tua (bulk)");
+{
+  const mkUser = () =>
+    `bulk${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`;
+  const makeParent = async (uname) =>
+    call("POST", "/parents", {
+      token: adminToken,
+      body: {
+        username: uname,
+        password: "rahasia123",
+        parentName: `Bulk ${uname}`,
+        students: [{ name: "Anak Bulk", className: "3" }],
+        relationship: "ibu",
+      },
+    });
+
+  const u1 = mkUser();
+  const u2 = mkUser();
+  const p1 = await makeParent(u1);
+  const p2 = await makeParent(u2);
+  check("buat akun uji 1 -> 201", p1.status === 201, `got ${p1.status}`);
+  check("buat akun uji 2 -> 201", p2.status === 201, `got ${p2.status}`);
+  const id1 = p1.data?.id;
+  const id2 = p2.data?.id;
+
+  // ── Wewenang: bukan admin ditolak ───────────────────────────
+  const asParent = await call("POST", "/parents/bulk", {
+    token: parentToken,
+    body: { ids: [id1, id2], action: "deactivate" },
+  });
+  check("bulk dari orang tua -> 403", asParent.status === 403, `got ${asParent.status}`);
+
+  // ── Validasi body ───────────────────────────────────────────
+  const noIds = await call("POST", "/parents/bulk", {
+    token: adminToken,
+    body: { action: "activate" },
+  });
+  check("bulk tanpa `ids` -> 400", noIds.status === 400, `got ${noIds.status}`);
+
+  const badAction = await call("POST", "/parents/bulk", {
+    token: adminToken,
+    body: { ids: [id1], action: "nonsense" },
+  });
+  check("bulk `action` salah -> 400", badAction.status === 400, `got ${badAction.status}`);
+
+  // ── Nonaktifkan massal dua akun yang masih aktif ────────────
+  const deact = await call("POST", "/parents/bulk", {
+    token: adminToken,
+    body: { ids: [id1, id2], action: "deactivate" },
+  });
+  check("bulk deactivate -> 200", deact.status === 200, `got ${deact.status}`);
+  check(
+    "bulk deactivate changed=2",
+    deact.data?.changed === 2,
+    JSON.stringify(deact.data),
+  );
+  check(
+    "bulk deactivate skipped=0",
+    deact.data?.skipped === 0,
+    JSON.stringify(deact.data),
+  );
+
+  const d1 = await call("GET", `/parents/${id1}`, { token: adminToken });
+  check(
+    "akun 1 kini nonaktif",
+    d1.data?.isActive === false,
+    JSON.stringify(d1.data?.isActive),
+  );
+
+  // Mengulang aksi yang sudah cocok -> skipped, bukan changed.
+  const deactAgain = await call("POST", "/parents/bulk", {
+    token: adminToken,
+    body: { ids: [id1, id2], action: "deactivate" },
+  });
+  check(
+    "bulk deactivate ulang skipped=2",
+    deactAgain.data?.skipped === 2,
+    JSON.stringify(deactAgain.data),
+  );
+
+  // ── Aktifkan massal kembali ─────────────────────────────────
+  const act = await call("POST", "/parents/bulk", {
+    token: adminToken,
+    body: { ids: [id1, id2], action: "activate" },
+  });
+  check(
+    "bulk activate changed=2",
+    act.data?.changed === 2,
+    JSON.stringify(act.data),
+  );
+  const a1 = await call("GET", `/parents/${id1}`, { token: adminToken });
+  check(
+    "akun 1 kembali aktif",
+    a1.data?.isActive === true,
+    JSON.stringify(a1.data?.isActive),
+  );
+
+  // Id tak ditemukan masuk `ignored`, bukan menggagalkan seluruhnya.
+  const withGhost = await call("POST", "/parents/bulk", {
+    token: adminToken,
+    body: { ids: [id1, 9_999_999], action: "deactivate" },
+  });
+  check(
+    "bulk id tak ditemukan -> ignored=1",
+    withGhost.data?.ignored === 1,
+    JSON.stringify(withGhost.data),
+  );
+
+  // ── Hapus permanen dua akun uji ─────────────────────────────
+  const del = await call("POST", "/parents/bulk", {
+    token: adminToken,
+    body: { ids: [id1, id2], action: "delete" },
+  });
+  check("bulk delete -> 200", del.status === 200, `got ${del.status}`);
+  check(
+    "bulk delete changed=2",
+    del.data?.changed === 2,
+    JSON.stringify(del.data),
+  );
+
+  const gone1 = await call("GET", `/parents/${id1}`, { token: adminToken });
+  check("akun 1 terhapus (404)", gone1.status === 404, `got ${gone1.status}`);
+}
+
 // ── Ringkasan ─────────────────────────────────────────────────
 
 console.log(`\n=== HASIL: ${pass} pass, ${fail} fail ===`);

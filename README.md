@@ -43,7 +43,7 @@ Jadwal piket snack sekolah sebelumnya disusun dalam dokumen teks manual — suli
 | **PWA**                      | Pasang ke layar utama + service worker (cache offline)                                                                                 | Semua          | ✅         |
 | **Kelola Hari Libur**        | Tambah/hapus hari libur bernama (berlaku semua kelas)                                                                                  | Admin          | ✅         |
 | **Pencarian Riwayat Menu**   | "Kapan jeruk pernah disajikan?" — cari menu/komponen lintas bulan                                                                      | Semua          | ✅         |
-| **Kelola Akun Orang Tua**    | Buat, ubah, nonaktifkan, hapus, reset password, **buka kunci** — satu akun boleh punya **lebih dari satu anak**, dan dapat diangkat menjadi **korlas** | Admin          | ✅         |
+| **Kelola Akun Orang Tua**    | Buat, ubah, nonaktifkan, hapus, reset password, **buka kunci** — satu akun boleh punya **lebih dari satu anak**, dan dapat diangkat menjadi **korlas**; juga **aksi massal** (aktifkan/nonaktifkan/hapus) lewat kotak centang | Admin          | ✅         |
 | **Dashboard**                | Ringkasan jumlah akun, menu, jadwal, dan hari libur                                                                                    | Admin          | ✅         |
 | **Ubah Password**            | Setiap pengguna dapat mengganti password sendiri                                                                                       | Semua          | ✅         |
 | **Ekspor Excel**             | Unduh jadwal Sepekan/bulanan sebagai `.xlsx` — kolomnya sama dengan yang tampil di layar, siap dibagikan atau dicetak                | Admin, Korlas  | ✅         |
@@ -154,7 +154,9 @@ pizza-snack-play/
 │   │   ├── ScheduleDayCard.tsx   # Kartu satu hari jadwal
 │   │   ├── jadwal/               # Bagian jadwal: ExportButton, CopyWeekModal, ImportDialog,
 │   │   │                         # BulkActionBar, MonthToolbar, selection.ts, messages.ts
-│   │   └── ui.tsx                # Button, Card, Input, Modal, Badge, dll.
+│   │   ├── parents/              # Bagian akun orang tua: ParentTable, ParentFormModal,
+│   │   │                         # ParentBulkBar, selection.ts, form.ts
+│   │   └── ui.tsx                # Button, Card, Input, Modal, Badge, Checkbox, dll.
 │   ├── hooks/
 │   │   └── usePWA.ts             # State installability + update service worker
 │   ├── routes/                   # TanStack Router — halaman frontend
@@ -405,6 +407,7 @@ di tangan admin. Korlas hanya membaca katalog — wewenang tulisnya ada di jadwa
 | `DELETE` | `/parents/:id?hard=`                      | Admin | Nonaktifkan, atau hapus permanen bila `hard=true`                            |
 | `POST`   | `/parents/:id/reset-password`             | Admin | Reset password (sekaligus membuka kunci akun)                                |
 | `POST`   | `/parents/:id/unlock`                     | Admin | Buka kunci akun akibat percobaan masuk yang gagal                            |
+| `POST`   | `/parents/bulk`                           | Admin | Aksi massal akun tercentang: `{ ids, action }` — `action` = `activate` \| `deactivate` \| `delete`; baris yang sudah cocok dilewati (`skipped`) |
 | `GET`    | `/stats/summary`                          | Admin | Ringkasan dashboard                                                          |
 
 ### Profil (layanan mandiri)

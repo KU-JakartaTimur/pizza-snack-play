@@ -1,87 +1,39 @@
 import { useState, type FormEvent } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  KeyRound,
-  LockOpen,
-  Pencil,
-  Plus,
-  Search,
-  Trash2,
-  UserX,
-  Users,
-  X,
-} from "lucide-react";
+import { Plus, Search, Users } from "lucide-react";
 import { AdminOnly } from "@/components/AdminOnly";
 import { PageHeader } from "@/components/AppShell";
 import {
-  Badge,
   Button,
   Card,
   ConfirmDialog,
-  EmptyState,
   ErrorState,
+  EmptyState,
   Field,
   Input,
   Modal,
-  Select,
   Spinner,
 } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
-import type { ManagedRole, ParentDto, ParentRelationship } from "@/types/account";
+import type { ParentBulkAction, ParentDto } from "@/types/account";
+import { ParentFormModal } from "@/components/parents/ParentFormModal";
+import {
+  type ParentForm,
+  EMPTY_FORM,
+  formFromParent,
+} from "@/components/parents/form";
+import { ParentTable } from "@/components/parents/ParentTable";
+import { ParentBulkBar } from "@/components/parents/ParentBulkBar";
+import {
+  summarizeParentSelection,
+} from "@/components/parents/selection";
 
 export const Route = createFileRoute("/_app/orang-tua")({
   component: ParentsPage,
 });
 
-const RELATIONSHIP_OPTIONS: { value: ParentRelationship; label: string }[] = [
-  { value: "ibu", label: "Ibu" },
-  { value: "ayah", label: "Ayah" },
-  { value: "wali", label: "Wali" },
-];
-
-const ROLE_OPTIONS: { value: ManagedRole; label: string }[] = [
-  { value: "parent", label: "Orang tua" },
-  { value: "korlas", label: "Korlas (koordinator kelas)" },
-];
-
 const PER_PAGE = 20;
-
-interface FormStudent {
-  /** Ada bila anak sudah tersimpan (mode ubah); kosong = anak baru. */
-  id?: number;
-  name: string;
-  className: string;
-}
-
-interface ParentForm {
-  username: string;
-  password: string;
-  parentName: string;
-  relationship: ParentRelationship;
-  /** Satu orang tua boleh punya lebih dari satu anak. */
-  students: FormStudent[];
-  /** `parent` biasa, atau `korlas` (koordinator kelas). */
-  role: ManagedRole;
-  /** Kelas yang dikoordinasi — hanya dipakai bila role `korlas`. */
-  className: string;
-  phone: string;
-  email: string;
-}
-
-const EMPTY_STUDENT: FormStudent = { name: "", className: "" };
-
-const EMPTY_FORM: ParentForm = {
-  username: "",
-  password: "",
-  parentName: "",
-  relationship: "ibu",
-  students: [{ ...EMPTY_STUDENT }],
-  role: "parent",
-  className: "",
-  phone: "",
-  email: "",
-};
 
 function ParentsPage() {
   return (
@@ -120,6 +72,13 @@ function ParentsContent() {
 
   /** Akun terkunci yang menunggu ditegaskan pembukaan kuncinya. */
   const [pendingUnlock, setPendingUnlock] = useState<ParentDto | null>(null);
+
+  /** Centang aksi massal — id akun yang dipilih di tabel. */
+  const [selected, setSelected] = useState<ReadonlySet<number>>(new Set());
+  /** Aksi massal yang sedang diproses, agar spinner muncul di tombol tepat. */
+  const [pendingAction, setPendingAction] = useState<ParentBulkAction | null>(null);
+  /** Konfirmasi sebelum menghapus banyak akun sekaligus. */
+  const [pendingBulkDelete, setPendingBulkDelete] = useState(false);
 
   const parentsQuery = useQuery({
     queryKey: ["parents", { search, page }],
@@ -226,6 +185,37 @@ function ParentsContent() {
     },
   });
 
+  /**
+   * Aksi massal atas akun tercentang. `delete` digoda dengan konfirmasi di
+   * luar sini (lihat `pendingBulkDelete`); tiga aksi lainnya idempoten dan
+   * dapat dibatalkan, sehingga langsung dijalankan.
+   */
+  const bulkMutation = useMutation({
+    mutationFn: (vars: { ids: number[]; action: ParentBulkAction }) =>
+      api.parents.bulk(vars.ids, vars.action),
+    onSuccess: async (result) => {
+      setBanner({ kind: "ok", text: result.message });
+      setSelected(new Set());
+      setPendingAction(null);
+      setPendingBulkDelete(false);
+      await invalidate();
+    },
+    onError: (error) => {
+      setPendingAction(null);
+      setPendingBulkDelete(false);
+      setBanner({
+        kind: "error",
+        text: errorMessage(error, "Tindakan massal gagal"),
+      });
+    },
+  });
+
+  const runBulk = (action: ParentBulkAction) => {
+    if (selected.size === 0) return;
+    setPendingAction(action);
+    bulkMutation.mutate({ ids: [...selected], action });
+  };
+
   const openCreate = () => {
     setEditing(null);
     setForm(EMPTY_FORM);
@@ -235,24 +225,7 @@ function ParentsContent() {
 
   const openEdit = (parent: ParentDto) => {
     setEditing(parent);
-    setForm({
-      username: parent.username,
-      password: "",
-      parentName: parent.parentName,
-      relationship: parent.relationship,
-      role: parent.role,
-      className: parent.className ?? "",
-      students:
-        parent.students.length > 0
-          ? parent.students.map((student) => ({
-              id: student.id,
-              name: student.name,
-              className: student.className ?? "",
-            }))
-          : [{ ...EMPTY_STUDENT }],
-      phone: parent.phone ?? "",
-      email: parent.email ?? "",
-    });
+    setForm(formFromParent(parent));
     setFormError(null);
     setFormOpen(true);
   };
@@ -260,10 +233,10 @@ function ParentsContent() {
   const addStudent = () =>
     setForm((current) => ({
       ...current,
-      students: [...current.students, { ...EMPTY_STUDENT }],
+      students: [...current.students, { name: "", className: "" }],
     }));
 
-  const updateStudent = (index: number, patch: Partial<FormStudent>) =>
+  const updateStudent = (index: number, patch: Partial<ParentForm["students"][number]>) =>
     setForm((current) => ({
       ...current,
       students: current.students.map((student, i) =>
@@ -277,8 +250,8 @@ function ParentsContent() {
       students: current.students.filter((_, i) => i !== index),
     }));
 
-  const handleSubmit = (event: FormEvent) => {
-    event.preventDefault();
+  const handleSubmit = (event?: FormEvent) => {
+    event?.preventDefault();
     setFormError(null);
 
     if (!form.username.trim()) return setFormError("Username wajib diisi");
@@ -304,8 +277,33 @@ function ParentsContent() {
     saveMutation.mutate();
   };
 
+  // ── Pemilihan baris untuk aksi massal ───────────────────────
+
+  const toggleRow = (id: number) =>
+    setSelected((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  const toggleAll = (checked: boolean) => {
+    const pageIds = (parentsQuery.data?.items ?? []).map((item) => item.id);
+    setSelected((current) => {
+      const next = new Set(current);
+      if (checked) pageIds.forEach((id) => next.add(id));
+      else pageIds.forEach((id) => next.delete(id));
+      return next;
+    });
+  };
+
+  const clearSelection = () => setSelected(new Set());
+
   const data = parentsQuery.data;
   const busy = removeMutation.isPending || unlockMutation.isPending;
+  const selectionSummary = data
+    ? summarizeParentSelection(data.items, selected)
+    : { count: 0, active: 0, inactive: 0 };
 
   return (
     <>
@@ -346,15 +344,33 @@ function ParentsContent() {
       </div>
 
       <Card>
-        {parentsQuery.isPending && <Spinner />}
+        {data && data.items.length > 0 && (
+          <ParentTable
+            items={data.items}
+            selected={selected}
+            busy={busy}
+            onToggleRow={toggleRow}
+            onToggleAll={toggleAll}
+            onEdit={openEdit}
+            onResetPassword={(parent) => {
+              setResetTarget(parent);
+              setResetPassword("");
+            }}
+            onUnlock={(parent) => setPendingUnlock(parent)}
+            onDeactivate={(parent) =>
+              setPendingRemove({ parent, hard: false })
+            }
+            onDelete={(parent) => setPendingRemove({ parent, hard: true })}
+          />
+        )}
 
+        {parentsQuery.isPending && <Spinner />}
         {parentsQuery.isError && (
           <ErrorState
             message={parentsQuery.error.message}
             onRetry={() => void parentsQuery.refetch()}
           />
         )}
-
         {data && data.items.length === 0 && (
           <EmptyState
             icon={<Users className="h-8 w-8" />}
@@ -366,133 +382,6 @@ function ParentsContent() {
             }
             action={!search ? <Button onClick={openCreate}>Tambah akun</Button> : undefined}
           />
-        )}
-
-        {data && data.items.length > 0 && (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 text-left">
-                  <th className="px-5 py-3 font-medium text-slate-500">Username</th>
-                  <th className="px-5 py-3 font-medium text-slate-500">Orang tua</th>
-                  <th className="px-5 py-3 font-medium text-slate-500">Anak</th>
-                  <th className="px-5 py-3 font-medium text-slate-500">Status</th>
-                  <th className="px-5 py-3" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {data.items.map((parent) => (
-                  <tr key={parent.id} className="hover:bg-slate-50">
-                    <td className="px-5 py-3 font-mono text-xs text-slate-600">
-                      {parent.username}
-                    </td>
-                    <td className="px-5 py-3 text-slate-800">
-                      {parent.parentName}
-                      <span className="ml-2 text-xs text-slate-400">
-                        ({parent.relationship})
-                      </span>
-                      {parent.role === "korlas" && (
-                        <Badge tone="brand" className="ml-2">
-                          Korlas {parent.className ?? "—"}
-                        </Badge>
-                      )}
-                    </td>
-                    <td className="px-5 py-3">
-                      {parent.students.length === 0 ? (
-                        <span className="text-slate-400">—</span>
-                      ) : (
-                        <ul className="space-y-0.5">
-                          {parent.students.map((student) => (
-                            <li key={student.id} className="text-slate-800">
-                              {student.name}
-                              {student.className && (
-                                <span className="ml-1.5 text-xs text-slate-400">
-                                  {student.className}
-                                </span>
-                              )}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </td>
-                    <td className="px-5 py-3">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        {parent.isActive ? (
-                          <Badge tone="success">Aktif</Badge>
-                        ) : (
-                          <Badge tone="danger">Nonaktif</Badge>
-                        )}
-                        {/* Akun bisa aktif sekaligus terkunci: penguncian
-                            datang dari percobaan masuk yang gagal, bukan
-                            dari admin, jadi keduanya ditampilkan terpisah. */}
-                        {parent.lockedAt && <Badge tone="warning">Terkunci</Badge>}
-                      </div>
-                    </td>
-                    <td className="px-5 py-3">
-                      <div className="flex justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEdit(parent)}
-                          title="Ubah"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setResetTarget(parent);
-                            setResetPassword("");
-                          }}
-                          title="Reset password"
-                        >
-                          <KeyRound className="h-4 w-4" />
-                        </Button>
-                        {/* Hanya muncul untuk akun yang benar-benar terkunci,
-                            supaya deretan tombol tidak penuh tindakan yang
-                            tidak berlaku untuk sebagian besar baris. */}
-                        {parent.lockedAt && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-accent-700 hover:bg-accent-50"
-                            disabled={busy}
-                            onClick={() => setPendingUnlock(parent)}
-                            title="Buka kunci akun"
-                          >
-                            <LockOpen className="h-4 w-4" />
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-highlight-700 hover:bg-highlight-50"
-                          disabled={busy}
-                          onClick={() =>
-                            setPendingRemove({ parent, hard: false })
-                          }
-                          title="Nonaktifkan"
-                        >
-                          <UserX className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-600 hover:bg-red-50"
-                          disabled={busy}
-                          onClick={() => setPendingRemove({ parent, hard: true })}
-                          title="Hapus permanen"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
         )}
 
         {data && data.totalPages > 1 && (
@@ -522,183 +411,30 @@ function ParentsContent() {
         )}
       </Card>
 
-      <Modal
+      {selectionSummary.count > 0 && (
+        <ParentBulkBar
+          summary={selectionSummary}
+          busy={bulkMutation.isPending}
+          pendingAction={pendingAction}
+          onAction={(action) => runBulk(action)}
+          onRequestDelete={() => setPendingBulkDelete(true)}
+          onClear={clearSelection}
+        />
+      )}
+
+      <ParentFormModal
         open={formOpen}
-        title={editing ? "Ubah akun orang tua" : "Akun orang tua baru"}
+        editing={editing}
+        form={form}
+        formError={formError}
+        submitting={saveMutation.isPending}
+        onChange={(patch) => setForm((current) => ({ ...current, ...patch }))}
+        onStudentChange={updateStudent}
+        onAddStudent={addStudent}
+        onRemoveStudent={removeStudent}
+        onSubmit={handleSubmit}
         onClose={() => setFormOpen(false)}
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setFormOpen(false)}>
-              Batal
-            </Button>
-            <Button onClick={handleSubmit} loading={saveMutation.isPending} type="submit">
-              Simpan
-            </Button>
-          </>
-        }
-      >
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Username" hint="Huruf kecil, angka, titik, - atau _">
-              <Input
-                value={form.username}
-                onChange={(event) =>
-                  setForm({ ...form, username: event.target.value })
-                }
-                placeholder="mis. sari"
-                autoComplete="off"
-              />
-            </Field>
-
-            <Field
-              label={editing ? "Password baru" : "Password"}
-              hint={editing ? "Kosongkan bila tidak diubah" : "Minimal 8 karakter"}
-            >
-              <Input
-                type="password"
-                value={form.password}
-                onChange={(event) =>
-                  setForm({ ...form, password: event.target.value })
-                }
-                autoComplete="new-password"
-              />
-            </Field>
-
-            <Field label="Nama orang tua">
-              <Input
-                value={form.parentName}
-                onChange={(event) =>
-                  setForm({ ...form, parentName: event.target.value })
-                }
-                placeholder="mis. Sari Wulandari"
-              />
-            </Field>
-
-            <Field label="Hubungan">
-              <Select
-                value={form.relationship}
-                onChange={(event) =>
-                  setForm({
-                    ...form,
-                    relationship: event.target.value as ParentRelationship,
-                  })
-                }
-              >
-                {RELATIONSHIP_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-
-            <Field
-              label="Peran"
-              hint="Korlas boleh mengubah jadwal kelasnya sendiri dan mengelola katalog menu."
-            >
-              <Select
-                value={form.role}
-                onChange={(event) =>
-                  setForm({ ...form, role: event.target.value as ManagedRole })
-                }
-              >
-                {ROLE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-
-            {form.role === "korlas" && (
-              <Field
-                label="Kelas yang dikoordinasi"
-                hint="Mis. 1A. Korlas hanya dapat mengubah jadwal kelas ini."
-              >
-                <Input
-                  value={form.className}
-                  onChange={(event) =>
-                    setForm({ ...form, className: event.target.value })
-                  }
-                  placeholder="1A"
-                />
-              </Field>
-            )}
-
-            <Field label="No. HP" hint="Opsional.">
-              <Input
-                value={form.phone}
-                onChange={(event) => setForm({ ...form, phone: event.target.value })}
-                placeholder="08xxxxxxxxxx"
-              />
-            </Field>
-
-            <Field label="Email" hint="Opsional.">
-              <Input
-                type="email"
-                value={form.email}
-                onChange={(event) => setForm({ ...form, email: event.target.value })}
-                placeholder="nama@contoh.com"
-              />
-            </Field>
-          </div>
-
-          <div>
-            <div className="mb-2 flex items-center justify-between gap-2">
-              <span className="text-sm font-medium text-slate-700">
-                Anak
-                <span className="ml-1.5 text-xs font-normal text-slate-400">
-                  boleh lebih dari satu
-                </span>
-              </span>
-              <Button variant="ghost" size="sm" type="button" onClick={addStudent}>
-                <Plus className="h-3.5 w-3.5" />
-                Tambah anak
-              </Button>
-            </div>
-
-            <div className="space-y-2">
-              {form.students.map((student, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <Input
-                    value={student.name}
-                    onChange={(event) =>
-                      updateStudent(index, { name: event.target.value })
-                    }
-                    placeholder={`Nama anak ${index + 1}`}
-                    className="min-w-0 flex-1"
-                  />
-                  <Input
-                    value={student.className}
-                    onChange={(event) =>
-                      updateStudent(index, { className: event.target.value })
-                    }
-                    placeholder="Kelas"
-                    className="w-28 shrink-0"
-                  />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    type="button"
-                    className="shrink-0 text-slate-400 hover:bg-red-50 hover:text-red-600"
-                    onClick={() => removeStudent(index)}
-                    disabled={form.students.length === 1}
-                    title="Hapus anak"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {formError && (
-            <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-              {formError}
-            </p>
-          )}
-        </form>
-      </Modal>
+      />
 
       <Modal
         open={resetTarget !== null}
@@ -793,6 +529,31 @@ function ParentsContent() {
           pendingUnlock && unlockMutation.mutate(pendingUnlock.id)
         }
         onClose={() => setPendingUnlock(null)}
+      />
+
+      {/*
+        Konfirmasi sebelum menghapus banyak akun sekaligus. Berbeda dari
+        aksi massal lainnya, penghapusan tidak dapat dibatalkan — maka ia
+        mendapat dialog sendiri, bukan sekadar tombol langsung.
+      */}
+      <ConfirmDialog
+        open={pendingBulkDelete}
+        title="Hapus akun terpilih?"
+        description={
+          <>
+            <strong>{selectionSummary.count}</strong> akun orang tua beserta
+            seluruh datanya akan dihapus permanen. Tindakan ini tidak bisa
+            dibatalkan.
+          </>
+        }
+        confirmLabel="Hapus permanen"
+        tone="danger"
+        loading={bulkMutation.isPending}
+        onConfirm={() => runBulk("delete")}
+        onClose={() => {
+          setPendingBulkDelete(false);
+          setPendingAction(null);
+        }}
       />
     </>
   );

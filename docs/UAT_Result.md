@@ -34,7 +34,7 @@ Pengujian mencakup seluruh alur bisnis utama:
 4. **Manajemen Jadwal**: Alur status jadwal tiga tahap (_Draft_ $\rightarrow$ _Locked_ $\rightarrow$ _Published_), duplikasi jadwal antar ahad (_Copy Week_), dan penetapan hari libur.
 5. **Katalog & Kategori Menu**: CRUD menu snack (makanan utama + buah pendamping) serta _tagging_ kategori berwarna.
 6. **Pencarian Riwayat Menu**: Pencarian kata kunci lintas bulan dengan penyorotan teks (_highlighting_) pada nama menu maupun komponennya.
-7. **Manajemen Akun Orang Tua**: Pengelolaan data orang tua, relasi anak multi-kelas, dan pengangkatan wali murid menjadi Korlas.
+7. **Manajemen Akun Orang Tua**: Pengelolaan data orang tua, relasi anak multi-kelas, pengangkatan wali murid menjadi Korlas, serta aksi massal (aktifkan/nonaktifkan/hapus) lewat kotak centang per baris.
 8. **Pilih / Klaim Jadwal (F9)**: Alur orang tua memilih tanggal piket snack yang belum berpetugas (_siapa cepat dia dapat_).
 9. **Class Switcher (Multi-Anak)**: Kemampuan beralih konteks kelas bagi orang tua yang memiliki anak di kelas berbeda.
 10. **Pengalaman Pengguna Responsif & PWA (F10)**: Tampilan pada layar smartphone serta banner instalasi _Progressive Web App_.
@@ -217,7 +217,7 @@ Pengujian mencakup seluruh alur bisnis utama:
 ### UAT-15: Kelola Akun Orang Tua
 
 - **Tujuan**: Memverifikasi tabel daftar akun wali murid, relasi siswa terdaftar, dan peran Korlas.
-- **Hasil**: Tabel menampilkan kolom username, nama orang tua (beserta relasi _ibu/ayah_), nama anak & kelas, status aktif, serta lencana khusus `Korlas 1` untuk Pak Budi Santoso.
+- **Hasil**: Tabel menampilkan kolom username, nama orang tua (beserta relasi _ibu/ayah_), nama anak & kelas, status aktif, serta lencana khusus `Korlas 1` untuk Pak Budi Santoso. Tiap baris memiliki kotak centang dan kepala tabel menyediakan "Pilih semua"; mencentang satu atau lebih akun menampilkan bilah aksi massal (Aktifkan / Nonaktifkan / Hapus / Bersihkan) yang hanya menghidupkan tombol yang cocok dengan keadaan akun terpilih. Aksi massal diuji lewat `POST /parents/bulk` di `scripts/test-api.mjs` (section 25).
 - **Screenshot**:
   ![UAT-15: Kelola Akun Orang Tua](../outputs/screenshots/uat-15-kelola-akun-orang-tua.png)
 

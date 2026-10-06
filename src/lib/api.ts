@@ -40,6 +40,8 @@ import type {
 } from "@/types/schedule";
 import type {
   PaginatedDto,
+  ParentBulkAction,
+  ParentBulkResultDto,
   ParentDto,
   ParentImportInput,
   ParentImportResultDto,
@@ -466,6 +468,15 @@ export const api = {
      */
     unlock: (id: number) =>
       unwrapFull<null>(http.post(`parents/${id}/unlock`)),
+
+    /**
+     * Aksi massal atas akun yang dicentang (`{ ids, action }`).
+     * `action`: `activate` | `deactivate` | `delete`.
+     */
+    bulk: (ids: number[], action: ParentBulkAction) =>
+      unwrapFull<ParentBulkResultDto>(
+        http.post("parents/bulk", { json: { ids, action } }),
+      ),
 
     /**
      * Unduh daftar akun sebagai berkas Excel — **admin saja**.

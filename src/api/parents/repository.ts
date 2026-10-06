@@ -150,6 +150,37 @@ class ParentRepository {
     return { ...row, students: await this.findStudentsByParentId(db, row.parent.id) };
   }
 
+  /**
+   * Ambil beberapa profil orang tua sekaligus beserta akun & anaknya.
+   * Dipakai aksi massal untuk mengetahui keadaan aktif tiap akun sebelum
+   * menentukan baris mana yang benar-benar berubah (`changed`/`skipped`).
+   */
+  async findRowsByIds(db: Db, ids: number[]): Promise<ParentRow[]> {
+    if (ids.length === 0) return [];
+
+    const rows = await db
+      .select({ parent: parents, user: users })
+      .from(parents)
+      .innerJoin(users, eq(parents.userId, users.id))
+      .where(inArray(parents.id, ids));
+
+    const parentIds = rows.map((row) => row.parent.id);
+    const studentRows = parentIds.length
+      ? await db
+          .select()
+          .from(students)
+          .where(inArray(students.parentId, parentIds))
+          .orderBy(asc(students.id))
+      : [];
+
+    const byParent = groupByParent(studentRows);
+
+    return rows.map((row) => ({
+      ...row,
+      students: byParent.get(row.parent.id) ?? [],
+    }));
+  }
+
   async findByUserId(db: Db, userId: number): Promise<ParentRow | undefined> {
     const rows = await db
       .select({ parent: parents, user: users })
@@ -259,6 +290,40 @@ class ParentRepository {
       .update(parents)
       .set({ ...values, updatedAt: sql`(datetime('now'))` })
       .where(eq(parents.id, id));
+  }
+
+  /**
+   * Atur `is_active` sejumlah akun sekaligus. Penguncian (login failures)
+   * tidak disentuh — hanya status aktif yang berpindah. Mengembalikan
+   * jumlah baris yang benar-benar berubah.
+   */
+  async setUsersActive(
+    db: Db,
+    userIds: number[],
+    active: number,
+  ): Promise<number> {
+    if (userIds.length === 0) return 0;
+    const rows = await db
+      .update(users)
+      .set({ isActive: active, updatedAt: sql`(datetime('now'))` })
+      .where(inArray(users.id, userIds))
+      .returning({ id: users.id });
+    return rows.length;
+  }
+
+  /** Pasang `is_active` pada sisi profil orang tua (tabel `parents`). */
+  async setParentsActive(
+    db: Db,
+    parentIds: number[],
+    active: number,
+  ): Promise<number> {
+    if (parentIds.length === 0) return 0;
+    const rows = await db
+      .update(parents)
+      .set({ isActive: active, updatedAt: sql`(datetime('now'))` })
+      .where(inArray(parents.id, parentIds))
+      .returning({ id: parents.id });
+    return rows.length;
   }
 
   // ── Anak ────────────────────────────────────────────────────

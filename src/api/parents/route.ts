@@ -13,6 +13,14 @@ const admin = requireRole("admin");
 export const parentsRoute = new Hono<AuthEnv>()
   .get("/", requireAuth, admin, parentController.list)
   /**
+   * Aksi massal atas akun yang dicentang di tabel (`{ ids, action }`).
+   *
+   * Didaftarkan **sebelum** `/:id` agar `/bulk` tidak tertangkap sebagai
+   * `:id = "bulk"` (parameter id memanggil `parseId` yang akan menolaknya
+   * sebagai "ID tidak valid", tapi lebih baik tidak sampai ke sana).
+   */
+  .post("/bulk", requireAuth, admin, parentController.bulk)
+  /**
    * Unduh daftar akun sebagai berkas Excel (`.xlsx`) — **admin saja**.
    *
    * Didaftarkan **sebelum** `/:id` supaya `/export` tidak tertangkap sebagai

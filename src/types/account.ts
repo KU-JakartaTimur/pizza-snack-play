@@ -75,6 +75,38 @@ export interface ParentInput {
   isActive?: boolean;
 }
 
+// ─────────────────────────────────────────────────────────────
+// Aksi massal atas akun terpilih (checkbox di tabel orang tua)
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Aksi yang bisa dijalankan atas sekumpulan akun orang tua terpilih.
+ *
+ * Berbeda dari perubahan per-baris, aksi ini bekerja pada **daftar id**
+ * hasil centang di tabel — admin tidak perlu mengubah satu akun satu klik.
+ * Seluruh aksi bersifat idempoten dan (kecuali `delete`) dapat dibatalkan.
+ */
+export type ParentBulkAction = "activate" | "deactivate" | "delete";
+
+/** Body untuk `POST /parents/bulk`. */
+export interface ParentBulkInput {
+  /** `parents.id` yang dicentang. Id duplikat/tidak valid diabaikan. */
+  ids: number[];
+  /** Aksi yang diterapkan ke seluruh id terpilih. */
+  action: ParentBulkAction;
+}
+
+/** Hasil aksi massal — cukup untuk menyusun pesan banner. */
+export interface ParentBulkResultDto {
+  action: ParentBulkAction;
+  /** Akun yang benar-benar berubah (diaktifkan/dinonaktifkan/dihapus). */
+  changed: number;
+  /** Akun yang dilewati karena keadaannya sudah cocok (mis. aktifkan akun yang sudah aktif). */
+  skipped: number;
+  /** Id yang diabaikan: tidak ditemukan. */
+  ignored: number;
+}
+
 export interface PaginatedDto<T> {
   items: T[];
   total: number;

@@ -8,8 +8,8 @@
 | Field               | Value                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Nama Produk**     | Pizza Snack Play                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| **Versi Dokumen**   | 1.12                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| **Tanggal**         | 28 September 2026                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| **Versi Dokumen**   | 1.14                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| **Tanggal**         | 1 Oktober 2026                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | **Stack Teknologi** | BHVR — Bun + Hono + Vite + React (Cloudflare Workers + D1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | **Status**          | Draft for Review                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | **Sumber Data**     | `data/output_jadwal_piket.txt` — Jadwal Piket Snack September 2026 (menu + penugasan siswa per kelas); `data/jadwal_piket_snack.txt` — arsip Agustus & September 2026 (menu saja)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
@@ -25,7 +25,9 @@
 | **Perubahan v1.10**  | **Petugas tanpa foreign key komposit (koreksi implementasi v1.8).** Rancangan FK komposit untuk `petugas_student_id`/`petugas_parent_id` dibatalkan: FK komposit menuntut indeks unik pada pasangan kolom target yang persis sehingga `schedules` harus dibangun ulang, sedangkan `PRAGMA foreign_keys=OFF` **diabaikan senyap di dalam transaksi** — dan `wrangler d1 migrations apply` membungkus migrasi dalam transaksi. Akibatnya migrasi `0007` gagal di produksi (`FOREIGN KEY constraint failed`) padahal berhasil di lokal, dan jalur yang "berhasil" menghasilkan tabel korup (292 pelanggaran `foreign_key_check`). Migrasi `0007` kini hanya `ALTER TABLE ... ADD COLUMN`; konsistensi petugas ditegakkan `resolvePetugas()` di `src/api/schedules/service.ts`. Detail di catatan desain `README.md` |
 | **Perubahan v1.11**  | **Aksi massal lewat checkbox di modul jadwal (F8) + pembersihan halaman `/jadwal`.** Kunci/publikasi/buka kunci tidak lagi harus satu baris satu klik — ada **dua jalur aksi massal**. **(a) Per hari:** kotak centang di setiap baris tabel jadwal, ditambah "Pilih minggu ini" pada header tiap minggu dan "Pilih semua" di toolbar; bilah aksi muncul di bawah layar dan **hanya menghidupkan tombol yang cocok dengan status baris terpilih** (Kunci untuk `draft`, Publikasi untuk `locked`, Buka kunci untuk `locked`/`published`). Endpoint baru `POST /schedules/bulk/{lock,publish,unlock}` berisi `{ ids }`. Berbeda dari aksi berbasis rentang, baris yang statusnya tidak cocok **dilewati** dan dilaporkan (`changed`/`skipped`/`ignored`) alih-alih menggagalkan seluruh permintaan dengan `409` — sebab pemilihannya eksplisit per baris. Buka kunci massal tetap **khusus admin**; korlas hanya baris kelasnya (sisanya `ignored`). **(b) Per kelas:** kotak centang di kartu *Status per kelas*; `POST /schedules/lock` & `POST /schedules/publish` menerima `classNames` (daftar kelas) sehingga satu/beberapa kelas dapat terbit tanpa menunggu kelas lain yang jadwalnya belum siap. `className` lama tetap didukung dan `classNames` menang bila keduanya dikirim. `LockScheduleResultDto`/`PublishScheduleResultDto` kini membawa `classNames` (sebelumnya `className`). **Refactor:** kalimat banner pindah ke `src/components/jadwal/messages.ts`, logika pemilihan ke `selection.ts`, bilah aksi ke `BulkActionBar.tsx`, dan primitif `Checkbox` (dengan keadaan *indeterminate*) ditambahkan ke `src/components/ui.tsx`. Uji baru: section 23 `scripts/test-api.mjs` (19 assertion) — total suite 328 assertion hijau |
 | **Perubahan v1.12**  | **Impor jadwal dari teks tempelan (F11).** Sekolah mengirim jadwal sebagai teks biasa (`1 - 2 Oktober 2026`, lalu baris `Kamis : Puding Roti + jeruk`). Endpoint baru `POST /schedules/import` (`{ text, classNames?, dryRun? }`) membacanya dari dalam aplikasi — menggantikan alur skrip Python + `wrangler d1 execute` yang dipakai untuk patch Oktober 2026. Parser murni di `src/api/schedules/importParser.ts` (tanpa DB, tanpa jam, tanpa throw) mencocokkan tiap label hari dengan tanggal aslinya; bila blok sepekan penuh dilabeli keliru, rentangnya **digeser** ke Senin–Jumat minggu itu dan pemakai diberi peringatan (kasus nyata: `14 - 18 Oktober 2026` ditulis Senin–Jumat padahal 14 Oktober 2026 hari Rabu). Impor **idempoten**: pasangan `(tanggal, kelas)` yang sudah ada dilewati, bukan ditimpa, sehingga jadwal `locked`/`published` tidak pernah berubah karena tempelan; baris baru selalu `draft`. Menu dikenali dari pasangan utama+buah (bukan nama persis), sehingga beda huruf besar/kecil tidak melahirkan menu kembar. `dryRun` mengembalikan pratinjau tanpa menulis apa pun — dialog `/jadwal` menampilkan pratinjau lebih dulu (mitigasi risiko salah input yang diminta §14). Admin menyasar **semua kelas**, korlas **kelasnya sendiri**. Jejak audit ditulis ke `import_logs` yang selama ini belum terpakai. Uji baru: section 24 `scripts/test-api.mjs` (38 assertion) — total suite 366 assertion hijau |
-| **Perubahan v1.13**  | **Checkbox pilih-baris + aksi massal di modul akun orang tua (F3b) + pembersihan halaman `/orang-tua`.** Admin tidak lagi harus mengubah satu akun satu klik: tabel akun kini punya **kotak centang per baris** dan **"Pilih semua"** di kepala, serta bilah aksi di bawah layar (`Aktifkan` / `Nonaktifkan` / `Hapus` / `Bersihkan`) yang **hanya menghidupkan tombol yang cocok dengan keadaan akun terpilih** (Aktifkan untuk yang nonaktif, Nonaktifkan untuk yang aktif). Endpoint baru `POST /parents/bulk` (`{ ids, action }`, `action` = `activate` \| `deactivate` \| `delete`) mengikuti jalur aksi massal yang sama dengan jadwal v1.11: baris yang keadaannya sudah cocok **dilewati** (`skipped`), id tak ditemukan `ignored`, dan seluruhnya mengembalikan `200` beserta `{ changed, skipped, ignored }` — bukan `409`. Hapus permanen meminta konfirmasi terpisah karena tidak dapat dibatalkan. `isActive` disimpan di dua tabel (`users` + `parents`) dan kedua sisi seirama. **Refactor:** halaman `/orang-tua` (~800 baris, satu komponen) dipecah menjadi `ParentsContent` (orchestrator) + `ParentTable`, `ParentFormModal`, `ParentBulkBar`, `selection.ts`, dan `form.ts` di `src/components/parents/` — meminjam pola yang sudah mapan di `src/components/jadwal/`. Uji baru: section 25 `scripts/test-api.mjs` (aksi massal akun) |
+| **Perubahan v1.13**  | **Laporan jadwal (F12) + satu pengecualian pada jadwal terbit.** **(a) Fitur Laporan Jadwal:** `GET /api/laporan?from=&to=&class=` menjawab pertanyaan rapat koordinasi "beban piket sudah merata belum?" — rekap **berapa kali setiap orang tua mengambil jadwal piket** beserta rincian tanggal/menu/anak, ringkasan (total ambil, orang tua aktif, tanggal terisi, rata-rata ambil), dan **daftar orang tua yang belum pernah ambil**. Sumbernya tabel `schedule_claims` yang sama dengan F9, jadi angkanya tidak pernah berbeda dari yang dilihat orang tua. Daftar "belum ambil" **tidak bisa diturunkan dari tabel klaim** — justru ketiadaan barisnya yang bermakna — karena itu dihitung dari `students`. Modul baru `src/api/laporan/` (repository → service → controller → route). Cakupan: **admin** tanpa `class` melihat seluruh sekolah, dengan `class` melihat satu kelas; **korlas selalu terbatas kelasnya sendiri** (kelas lain → `403`) karena laporan memuat nama orang tua sekaligus kebiasaannya mengambil piket; **orang tua → `403`**. Rentang maksimum **92 hari** agar tidak ada query tanpa batas. **(b) Pengecualian petugas pada baris terbit:** `locked`/`published` tetap tidak dapat diubah, **kecuali `petugasStudentId` sendirian** — piket sering baru terisi setelah jadwal terbit, dan memaksa admin membuka kunci hanya untuk mengisi nama petugas terbukti mengganggu. Patch **campuran** (petugas + menu/catatan/libur dalam satu permintaan) tetap `409 not_editable`, baris `isHoliday=1` juga `409`. Wewenang tidak dilonggarkan: `canWriteClass` tetap berlaku. **(c) Ekspor Excel akun orang tua:** `GET /api/parents/export?active=` (admin only) melengkapi ekspor jadwal yang sudah ada, dipakai untuk rekap akun sekolah. Uji baru: section 25 `scripts/test-api.mjs` (§ laporan) — total suite **495 assertion hijau** (auth 33 · api 396 · status 33 · profile 33) |
+| **Perubahan v1.14**  | **Impor akun orang tua dari Excel (F5).** Melengkapi ekspor akun v1.13: berkas hasil `GET /parents/export` kini bisa **disunting di Excel lalu diunggah kembali** lewat `POST /parents/import` (admin only) — satu format untuk dua arah, jadi tidak ada template kedua yang harus dijelaskan ke pengguna. Aturannya: **yang usernamenya sudah ada ditimpa, yang belum ada dibuat sebagai baris baru**. **(a) Pembaca `.xlsx` tanpa dependency** di `src/api/utils/xlsxRead.ts` — ZIP inflate lewat `DecompressionStream("deflate-raw")`, `sharedStrings.xml` + *inline string*, grid dibangun dari referensi sel (`r="C5"`) supaya baris/kolom kosong tidak menggeser data; Worker tidak punya pustaka spreadsheet, dan menambah satu dependency demi satu fitur berarti menambah bobot bundel. **(b) Kolom dicocokkan dari header, bukan posisi** — admin bebas mengurutkan ulang atau menambah kolom; yang wajib hanya *Nama orang tua*, *Username*, *Password*. **(c) Kunci pencocokan = username**, bukan nama orang tua: nama boleh kembar, username tidak (unik di skema). **(d) Sel kosong berarti "jangan sentuh"**, bukan "kosongkan" — berlaku untuk password, aktif, dan anak. Ini bukan detail kosmetik: tanpa aturan itu, mengunggah ulang berkas hasil ekspor akan menghapus password dan daftar anak seluruh akun, sebab sel *Password* pada ekspor memang sengaja kosong (hash tidak pernah keluar server). Id anak dipertahankan lewat pencocokan nama (`mergeStudentIds`), sehingga impor tidak menghapus-lalu-membuat ulang anak yang sebenarnya sama. **(e) Selalu lewat pratinjau** (`dryRun`) berisi ringkasan `{created, updated, skipped, errors[]}` + tabel keputusan per baris; penulisan baru terjadi setelah admin menekan "Terapkan". Baris baru tanpa username/password dilewati dan alasannya dilaporkan per baris (`rows[].reason`). **(f) Body dikirim sebagai JSON base64**, bukan `multipart/form-data`, karena klien memakai `ky` yang memaksa `Content-Type: application/json`. Uji: 34 uji unit (`bun test src/`, termasuk bundar ekspor → baca → tafsir) + `outputs/check-import-akun.mjs` (33 skenario API) + `outputs/check-import-akun-ui.mjs` (17 skenario browser) |
+| **Perubahan v1.15**  | **Checkbox pilih-baris + aksi massal di modul akun orang tua (F3b) + pembersihan halaman `/orang-tua`.** Admin tidak lagi harus mengubah satu akun satu klik: tabel akun kini punya **kotak centang per baris** dan **"Pilih semua"** di kepala, serta bilah aksi di bawah layar (`Aktifkan` / `Nonaktifkan` / `Hapus` / `Bersihkan`) yang **hanya menghidupkan tombol yang cocok dengan keadaan akun terpilih** (Aktifkan untuk yang nonaktif, Nonaktifkan untuk yang aktif). Endpoint baru `POST /parents/bulk` (`{ ids, action }`, `action` = `activate` \| `deactivate` \| `delete`) mengikuti jalur aksi massal yang sama dengan jadwal v1.11: baris yang keadaannya sudah cocok **dilewati** (`skipped`), id tak ditemukan `ignored`, dan seluruhnya mengembalikan `200` beserta `{ changed, skipped, ignored }` — bukan `409`. Hapus permanen meminta konfirmasi terpisah karena tidak dapat dibatalkan. `isActive` disimpan di dua tabel (`users` + `parents`) dan kedua sisi seirama. **Refactor:** halaman `/orang-tua` (~800 baris, satu komponen) dipecah menjadi `ParentsContent` (orchestrator) + `ParentTable`, `ParentFormModal`, `ParentBulkBar`, `selection.ts`, dan `form.ts` di `src/components/parents/` — meminjam pola yang sudah mapan di `src/components/jadwal/`. Uji baru: section 25 `scripts/test-api.mjs` (aksi massal akun) |
 
 ---
 
@@ -163,10 +165,34 @@ Saat ini jadwal piket snack disusun dalam format teks manual (lihat lampiran), d
 - **Filter by buah** — "kapan terakhir jeruk disajikan?"
 - **Statistik ringan** — jumlah menu unik per bulan, distribusi kategori.
 
-### F5: Ekspor & Cetak
+### F5: Ekspor, Impor & Cetak — ✅ SEBAGIAN (Excel terimplementasi, PDF belum)
 
-- **Ekspor PDF** — jadwal Sepekan/bulanan untuk cetak/pengumuman.
-- **Ekspor Excel** — untuk perencanaan koperasi.
+- **Ekspor PDF** — jadwal Sepekan/bulanan untuk cetak/pengumuman. **Belum dibuat**; yang sudah
+  ada adalah `.xlsx`, dan tombolnya berada di halaman jadwal & akun.
+- **Ekspor Excel — jadwal** ✅ `GET /api/schedules/export?scope=week|month&date=&class=`
+  (admin & korlas). Isi lembar dirakit dari **DTO yang sama** dengan yang dipakai UI, jadi
+  hasil unduhan tidak pernah berbeda dari yang tampil di layar. Tanpa kolom Status.
+- **Ekspor Excel — akun orang tua** ✅ `GET /api/parents/export?active=` (admin only).
+  9 kolom: nama orang tua, **username**, password, peran, kelas yang dikoordinasi, anak,
+  aktif, terkunci, login terakhir. Sel **Password sengaja selalu kosong** — hash tidak pernah
+  keluar dari server. Dipakai untuk rekap akun sekolah.
+- **Impor Excel — akun orang tua** ✅ `POST /api/parents/import` (admin only). Berkas yang
+  diunggah **layoutnya persis sama dengan hasil ekspor**, jadi berkas yang sama bisa disunting
+  di Excel lalu diunggah kembali — tidak ada format kedua yang harus dijelaskan ke pengguna.
+  **Data yang sudah ada ditimpa, yang belum ada dibuat sebagai baris baru.**
+  - Kunci pencocokan adalah **username** (unik di skema), bukan nama orang tua: nama boleh
+    kembar, username tidak.
+  - Kolom dicocokkan **berdasarkan header, bukan posisi** — admin bebas mengurutkan ulang atau
+    menambah kolom tanpa merusak impor. Wajib: *Nama orang tua*, *Username*, *Password*.
+  - **Sel kosong berarti "jangan sentuh"**, bukan "kosongkan" — berlaku untuk Password, Aktif,
+    dan Anak. Tanpa aturan ini, mengunggah ulang berkas hasil ekspor akan menghapus password
+    dan daftar anak semua akun.
+  - Baris baru tanpa username/password **dilewati** dan dilaporkan alasannya per baris.
+  - Selalu ada **pratinjau** (`dryRun`) berisi ringkasan `{created, updated, skipped, errors[]}`
+    plus tabel per baris; penulisan sebenarnya baru terjadi setelah admin menekan "Terapkan".
+- Berkas ekspor ditulis oleh `src/api/utils/xlsx.ts` dan berkas impor dibaca oleh
+  `src/api/utils/xlsxRead.ts` — keduanya **tanpa dependency**, karena `.xlsx` hanyalah ZIP
+  berisi XML (lihat catatan teknis di `README.md`).
 
 ### F6: Notifikasi (Opsional / Future)
 
@@ -355,6 +381,42 @@ Selasa  : Bubur kacang hijau + pisang
 > berat dan hanya bisa dijalankan developer. F11 tidak menggantikan kehati-hatian itu; ia
 > memindahkan pekerjaan berulangnya ke tempat yang bisa dilakukan pemakainya sendiri.
 
+### F12: Laporan Jadwal (Admin & Korlas — Rekap Piket)
+
+Menjawab satu pertanyaan rapat koordinasi: **"beban piket sudah merata belum?"**
+
+- **Rekap per orang tua** — berapa kali setiap orang tua mengambil jadwal piket dalam rentang
+  yang dipilih, beserta rincian tiap ambil (tanggal, kelas, menu, anak, catatan).
+- **Ringkasan** — total ambil, jumlah orang tua aktif, jumlah tanggal terisi, rata-rata ambil,
+  dan daftar orang tua yang **belum pernah ambil**.
+- **Filter** — rentang tanggal (`from`/`to`) dan kelas (`class`).
+
+**Sumber data:** tabel `schedule_claims` — **sama persis** dengan yang dipakai F9 (Pilih
+Jadwal). Konsekuensinya, angka di laporan tidak pernah berbeda dari yang dilihat orang tua di
+halaman Pilih Jadwal; tidak ada perhitungan paralel yang bisa menyimpang.
+
+> **Kenapa daftar "belum ambil" tidak dihitung dari tabel klaim.** Ketidakterlibatan seorang
+> orang tua justru ditandai oleh **ketiadaan baris** di `schedule_claims`. Karena itu daftar
+> ini diturunkan dari `students` (siapa yang punya anak di kelas itu) lewat
+> `parentsWithStudents()`, lalu dikurangi dengan yang sudah punya klaim.
+
+**Aturan cakupan** (modul `src/api/laporan/`):
+
+| Role       | Cakupan                                                          | Menyebut kelas lain |
+| ---------- | ---------------------------------------------------------------- | ------------------- |
+| Admin      | tanpa `class` = **seluruh sekolah**; dengan `class` = satu kelas  | `403`               |
+| Korlas     | **selalu kelasnya sendiri**, tidak peduli apa yang diminta       | `403`               |
+| Orang tua  | —                                                                | `403`               |
+
+> **Kenapa korlas dibatasi padahal halaman jadwal mengizinkannya membaca semua kelas.**
+> Laporan memuat **nama orang tua sekaligus kebiasaannya mengambil piket**. Membaca jadwal
+> kelas lain untuk koordinasi itu wajar; membaca rekap kehadiran orang tua kelas lain tidak.
+
+- **Rentang maksimum 92 hari** — memakai konstanta yang sama dengan `utils/params.ts`, supaya
+  tidak ada query tanpa batas yang menghabiskan kuota D1.
+- **Bukan laporan keuangan** — tidak ada nominal, tidak ada peringkat yang dihukum; tujuannya
+  semata-mata meratakan giliran.
+
 ---
 
 ## 5. Struktur Data dari File Sumber
@@ -459,11 +521,11 @@ pizza-snack-play/
 │   │   ├── classes/              # Daftar kelas yang boleh diakses user (turunan, tanpa tabel)
 │   │   ├── catalog/              # Menu + kategori (admin & korlas)
 │   │   ├── schedules/            # Jadwal per kelas, minggu, hari libur (global)
-│   │   ├── parents/              # CRUD akun orang tua + anak + pengangkatan korlas
+│   │   ├── parents/              # CRUD akun orang tua + anak + korlas + ekspor/impor Excel
 │   │   ├── piket/                # Penugasan siswa piket per kelas per hari (Phase 4)
 │   │   ├── stats/                # Ringkasan dashboard (admin)
 │   │   ├── middleware/           # requireAuth, requireRole
-│   │   └── utils/                # response, password, date, slug, params, sql, classScope
+│   │   └── utils/                # response, password, date, slug, params, sql, classScope, xlsx, xlsxRead, base64
 │   ├── database/
 │   │   ├── db.ts                 # Inisialisasi Drizzle + D1 binding + tipe Db
 │   │   └── schema.ts             # Drizzle schema (13 tabel)
@@ -578,12 +640,23 @@ JWT_SECRET=              # (BARU) untuk signing JWT
 | DELETE | `/api/parents/:id?hard=`          | Nonaktifkan akun (soft delete), atau hapus permanen                                     | Admin |
 | POST   | `/api/parents/:id/reset-password` | Reset password akun orang tua                                                           | Admin |
 | POST   | `/api/parents/bulk`               | **Aksi massal** atas akun tercentang: `{ ids, action }` dengan `action` = `activate` \| `deactivate` \| `delete`. Baris yang keadaannya sudah cocok **dilewati** (`skipped`) alih-alih menggagalkan seluruh permintaan | Admin |
+| POST   | `/api/parents/import`             | Impor/upsert akun massal dari berkas `.xlsx` hasil ekspor                              | Admin |
 
 > **Bentuk `students`:** array objek `{ id?, name, className? }`. Saat `PUT`, entri yang menyertakan `id` akan **diperbarui**, entri tanpa `id` **dibuat baru**, dan entri yang tidak disebut lagi **dihapus**. `id` hanya dipercaya bila anak tersebut memang milik orang tua itu.
 
 > **Aksi massal (`POST /parents/bulk`):** memungkinkan admin mengaktifkan/menonaktifkan/menghapus banyak akun sekaligus dari kotak centang di tabel (lihat F3b). Body `{ ids: number[], action }`. Berbeda dari perubahan per-baris, di sini pemilihannya **eksplisit per akun**, sehingga tidak ada operasi yang gagal seluruhnya: akun yang keadaannya sudah cocok dengan aksi (mis. mengaktifkan akun yang sudah aktif) **dilewati** dan dilaporkan lewat `skipped`; id yang tidak ditemukan masuk `ignored`. Respons `{ action, changed, skipped, ignored }`. `isActive` disimpan di dua tabel (`users` + `parents`) dan kedua sisi seirama. Hapus permanen (`delete`) menarik profil & anak via `ON DELETE CASCADE`. Endpoint khusus admin — tidak ada pembatasan kelas seperti pada jadwal.
 
 > **Bentuk `role` / `className`:** `role` menerima `"parent"` atau `"korlas"`. Bila `role = "korlas"`, `className` **wajib** diisi (mis. `"1"`); bila `role = "parent"`, `className` diabaikan dan dikosongkan otomatis. Lihat §3.3 untuk wewenang korlas.
+
+> **`POST /parents/import`** — body JSON `{ file: "<base64>", filename?, dryRun? }`. Isinya
+> berkas `.xlsx` (layout = hasil `GET /parents/export`) yang dikirim sebagai **base64**, bukan
+> `multipart/form-data`; klien memakai `ky` yang memaksa `Content-Type: application/json`,
+> sehingga base64 adalah satu-satunya jalur tanpa menambah dependency parser multipart.
+> Batas 6 MB untuk string base64. Respons:
+> `{ dryRun, created, updated, skipped, errors[], rows[] }`, dengan `rows[]` memuat keputusan
+> per baris (`create` / `update` / `skip` + alasannya). `dryRun: true` tidak menulis apa pun.
+> Aturan lengkapnya ada di **F5**. Route ini didaftarkan **sebelum** `/:id` agar `/import`
+> tidak ditangkap sebagai id.
 
 ### 7.3 Kelas Endpoints
 
@@ -712,6 +785,26 @@ Semua pembacaan menerima query **`?class=`** opsional. Bila kosong, kelas defaul
 | GET    | `/api/reports/month/:month/excel`  | Ekspor Excel bulanan                                                                    | Admin                 |
 | GET    | `/api/reports/stats?month=YYYY-MM` | Statistik menu bulanan                                                                  | Admin                 |
 
+### 7.7b Laporan Jadwal (F12) — ✅ Terimplementasi
+
+| Method | Path                             | Deskripsi                                                                    | Role          |
+| ------ | -------------------------------- | ---------------------------------------------------------------------------- | ------------- |
+| GET    | `/api/laporan?from=&to=&class=`  | Rekap ambil per orang tua + ringkasan + daftar yang belum pernah ambil       | Admin, Korlas |
+
+**Kode kegagalan:**
+
+| Kode | Kondisi           | Keterangan                                                            |
+| ---- | ----------------- | --------------------------------------------------------------------- |
+| 400  | Rentang tidak sah | `from`/`to` wajib; rentang maksimum **92 hari**; format tanggal salah |
+| 401  | Tanpa token       | —                                                                     |
+| 403  | Di luar cakupan   | Orang tua selalu `403`; korlas & admin yang menyebut kelas lain `403` |
+
+**Bentuk jawaban** (`src/types/laporan.ts`):
+
+- `ringkasan` — `totalAmbil`, `orangTuaAktif`, `tanggalTerisi`, `orangTuaKosong`,
+  `rataAmbil`, `belumAmbil[]`.
+- `orangTua[]` — per orang tua: `jumlahAmbil` + `tanggal[]` (tanggal, kelas, menu, anak, catatan).
+
 ### 7.8 Claim Endpoints (Pilih Jadwal) — ✅ Terimplementasi
 
 | Method | Path                           | Deskripsi                                                | Role               |
@@ -794,6 +887,28 @@ Semua pembacaan menerima query **`?class=`** opsional seperti endpoint jadwal. P
 6. Bisa edit akun kapan saja — mengubah daftar anak akan **menggantikan** daftar lama (anak yang dihapus dari formulir ikut terhapus dari database)
 7. Nonaktifkan (default) atau hapus permanen; reset password bila orang tua lupa password
 8. Pencarian pada daftar akun juga mencocokkan **nama anak** dan **kelas anak**
+
+**Impor massal dari Excel:**
+
+9. Klik **"Impor"** di header halaman → pilih berkas `.xlsx` yang layoutnya sama dengan hasil
+   **Ekspor** (nama orang tua, username, password, peran, kelas dikoordinasi, anak, aktif,
+   terkunci, login terakhir). Berkasnya boleh langsung dari hasil ekspor, atau diisi manual
+   selama header kolomnya sama.
+10. Sistem membaca berkas lalu menampilkan **pratinjau**: ringkasan `Dibuat / Diperbarui /
+    Dilewati`, daftar baris yang tidak terbaca, dan tabel per baris berisi keputusan
+    (`Akun baru` / `Diperbarui` / `Dilewati` + alasan). **Belum ada yang ditulis** pada tahap ini.
+11. Tekan **"Terapkan"** → akun yang usernamenya sudah ada **ditimpa**, yang belum ada
+    **dibuat baru**. Selesai → dialog sukses berisi jumlah perubahan.
+12. Yang perlu diketahui sebelum menekan Terapkan:
+    - Kolom yang **dikosongkan** pada suatu baris **tidak diubah** — password, status aktif, dan
+      daftar anak yang selnya kosong akan dipertahankan apa adanya. Jadi mengunggah ulang berkas
+      ekspor tidak akan menghapus data.
+    - Baris **baru** wajib punya username **dan** password; tanpa itu baris dilewati dan
+      alasannya dilaporkan.
+    - Sel *Password* pada hasil ekspor selalu kosong (hash tidak pernah keluar server), jadi
+      password hanya terisi bila admin mengetiknya sendiri di berkas.
+    - Mengimpor berkas yang sama dua kali aman: putaran kedua hanya melaporkan `Diperbarui`
+      dengan nilai yang sama.
 
 ### 8.5 Semua Role: Cari Riwayat Menu — ✅ Terimplementasi
 
@@ -895,6 +1010,32 @@ keduanya menghapus keharusan mengulang satu baris satu klik.
 > sekolah mengirim ulang teks yang sama, atau teks yang diperluas dengan minggu berikutnya,
 > pemakai bisa menempelkannya langsung tanpa takut merusak jadwal yang sudah dikunci.
 
+### 8.11 Admin & Korlas: Lihat Laporan Piket — ✅ Terimplementasi
+
+1. Login → menu **Laporan** (ikon grafik; hanya tampil untuk admin & korlas)
+2. Tentukan rentang tanggal (Dari / Sampai) — maksimum 92 hari
+3. Pilih kelas — admin bisa mengosongkannya untuk melihat **seluruh sekolah**; korlas otomatis
+   terkunci pada kelasnya sendiri (kolomnya *read-only*)
+4. Kartu ringkasan menyajikan total ambil, orang tua aktif, tanggal terisi, dan rata-rata ambil
+5. Tabel rekap memperlihatkan jumlah ambil per orang tua; rincian tiap tanggal bisa dibuka
+6. Daftar **"Belum pernah ambil"** dipakai untuk mengajak orang tua yang belum pernah piket
+
+> **Yang dilakukan korlas memakai laporan ini:** mengecek apakah giliran sudah merata sebelum
+> menyusun jadwal bulan berikutnya, bukan untuk mencari siapa yang "kurang berpartisipasi".
+
+### 8.12 Admin & Korlas: Isi Petugas pada Jadwal yang Sudah Terbit — ✅ Terimplementasi
+
+1. Buka `/jadwal`, temukan tanggal berstatus **Dipublikasi** yang petugasnya masih kosong
+2. Dropdown **Petugas** tetap aktif — menu, catatan, dan tombol libur/hapus yang mati
+3. Pilih nama siswanya → tersimpan langsung, meski barisnya sudah `published`
+4. Mengubah **menu** atau **catatan** pada baris yang sama tetap ditolak (`409 not_editable`) —
+   minta admin membuka kunci lebih dulu
+
+> **Kenapa ada pengecualian ini.** Piket sering baru terisi setelah jadwal terbit: korlas
+> mengumumkan dulu, baru orang tua mendaftar. Tanpa pengecualian, satu nama petugas memaksa
+> seluruh jadwal dibuka kuncinya. Pengecualiannya **sempit**: hanya `petugasStudentId`, dan
+> hanya bila tidak digabung dengan perubahan lain.
+
 ---
 
 ## 9. Tampilan / UI Screenshots (Wireframe Konsep)
@@ -988,6 +1129,28 @@ Formulir tambah/ubah akun:
 │  [+ Tambah anak]                          │
 │                       [Batal] [Simpan]    │
 └──────────────────────────────────────────┘
+```
+
+Pratinjau impor (setelah memilih berkas `.xlsx`, sebelum menekan Terapkan):
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Impor akun orang tua                                    [x]  │
+├──────────────────────────────────────────────────────────────┤
+│  Dari akun-2026-10-01.xlsx                                   │
+│  Dibuat 2 · Diperbarui 34 · Dilewati 1                       │
+│                                                              │
+│  ⚠ 1 baris tidak terbaca (lihat daftar di bawah)             │
+│                                                              │
+│  Baris │ Nama      │ Username │ Keputusan                    │
+│  ──────┼───────────┼──────────┼─────────────────────────────│
+│  3     │ Sari      │ sari     │ Diperbarui                   │
+│  4     │ Budi      │ budi     │ Diperbarui                   │
+│  5     │ Rina      │ rina     │ Akun baru                    │
+│  6     │ —         │ dewi     │ Dilewati · password kosong   │
+│                                                              │
+│  Sel kosong pada password/aktif/anak tidak mengubah data.    │
+│                                     [Batal] [Terapkan]       │
+└──────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -1233,10 +1396,22 @@ bunx wrangler secret put JWT_SECRET
 - [x] UI: `ImportDialog.tsx` (dua langkah: Pratinjau → Impor; pratinjau dibuang saat teks berubah), tombol "Impor Jadwal" di `MonthToolbar`, `importMessage()` di `messages.ts`
 - [x] Test: section 24 `scripts/test-api.mjs` (38 assertion) — akses, validasi teks, pratinjau tanpa tulis, idempotensi, jadwal terkunci tidak tersentuh, cakupan korlas, pergeseran rentang, pembersihan
 
-### Phase 5: Ekspor & Cetak — 🔶 SEBAGIAN
+### Phase 4f: Laporan Jadwal (v1.13) — ✅ SELESAI
+
+- [x] `GET /laporan?from=&to=&class=` — rekap ambil per orang tua + ringkasan + daftar yang belum pernah ambil
+- [x] Cakupan: admin = sekolah-wide atau satu kelas; korlas = kelasnya sendiri; orang tua `403`
+- [x] Rentang maksimum 92 hari
+- [x] Halaman `/laporan` + item navigasi (admin & korlas), diuji di `outputs/check-laporan.mjs`
+- [x] Pengecualian petugas pada baris `locked`/`published` (patch petugas-murni tetap diterapkan)
+
+### Phase 5: Ekspor, Impor & Cetak — 🔶 SEBAGIAN
 
 - [ ] Ekspor PDF jadwal Sepekan/bulanan (termasuk daftar siswa piket)
-- [x] Ekspor Excel — `GET /schedules/export?scope=week|month` (admin & korlas), diuji di section 21 `scripts/test-api.mjs`
+- [x] Ekspor Excel — jadwal: `GET /schedules/export?scope=week|month` (admin & korlas), diuji di section 21 `scripts/test-api.mjs`
+- [x] Ekspor Excel — akun orang tua: `GET /parents/export?active=` (admin only)
+- [x] Impor Excel — akun orang tua (v1.14): `POST /parents/import` (admin only); pembaca `.xlsx`
+      tanpa dependency di `src/api/utils/xlsxRead.ts`; diuji di `outputs/check-import-akun.mjs`
+      (33 skenario) + `outputs/check-import-akun-ui.mjs` (17 skenario)
 - [ ] Cetak langsung dari browser
 
 ### Phase 6: Notifikasi (Opsional)
@@ -1289,7 +1464,7 @@ bunx wrangler secret put JWT_SECRET
 | AC35  | Admin dapat memublikasi jadwal yang sudah terkunci penuh satu bulan untuk **seluruh sekolah** (`locked` → `published`) | ✅ Done — `POST /schedules/publish` tanpa `className` + tombol "Publikasi (semua kelas)" di `/jadwal`                                                                                                         |
 | AC36  | Publikasi ditolak bila masih ada baris `draft` di bulan tersebut, dengan menyebut kelas penyebabnya                    | ✅ Done — `409 drafts_remaining` berserta daftar kelas; tombol dinonaktifkan bila `draftCount > 0`                                                                                                            |
 | AC37  | Orang tua hanya melihat jadwal `published`; baris `draft`/`locked` tidak muncul                                        | ✅ Done — filter `statusFilter = ["published"]` di repository untuk role `parent`                                                                                                                             |
-| AC38  | Baris `locked`/`published` tidak dapat diedit, dihapus, atau ditimpa (copy)                                            | ✅ Done — `409 not_editable` di service; kontrol edit dinonaktifkan di UI                                                                                                                                     |
+| AC38  | Baris `locked`/`published` tidak dapat diedit, dihapus, atau ditimpa (copy)                                            | ✅ Done — `409 not_editable` di service; kontrol edit dinonaktifkan di UI. **Satu pengecualian sejak v1.13:** patch `petugasStudentId`-murni tetap diterapkan (lihat AC62 & AC63)     |
 | AC39  | Admin dapat membuka kunci (unlock) baris individual kembali ke `draft`                                                 | ✅ Done — `POST /schedules/:id/unlock` (admin only) + tombol 🔓 di `/jadwal`                                                                                                                                  |
 | AC40  | Orang tua dapat mengambil tanggal snack yang masih kosong                                                              | ✅ Done — `POST /claims` + halaman `/pilih-jadwal`                                                                                                                                                            |
 | AC41  | **Dua orang tua tidak pernah bisa mendapat tanggal yang sama**, meski menekan tombol bersamaan                         | ✅ Done — `UNIQUE(schedule_id)` di `schedule_claims`; diuji dengan 5 permintaan serentak → tepat 1 berhasil, 4 dijawab `409`                                                                                  |
@@ -1310,6 +1485,19 @@ bunx wrangler secret put JWT_SECRET
 | AC55  | Baris hasil impor berstatus **`draft`**, sehingga masih melewati kunci & publikasi                     | ✅ Done — service selalu menulis `status: "draft"`; diverifikasi lewat `GET /schedules/range` (diuji section 24)                                                                                                            |
 | AC56  | Cakupan impor mengikuti peran: admin = semua kelas, korlas = kelasnya sendiri                          | ✅ Done — `resolveBulkClasses` + `requestedClasses`; korlas menyebut kelas lain → `403`, orang tua → `403` (diuji section 24)                                                                                               |
 | AC57  | Rentang tanggal yang salah tulis **digeser** mengikuti kalender dan diberitahukan, bukan ditolak       | ✅ Done — `isFullSchoolWeek` + percobaan ulang `assignDays`; `15 - 19 Oktober 2036` dilabeli Senin–Jumat → digeser ke `13 - 17 Oktober 2036` + peringatan (diuji section 24)                                                |
+| AC58  | Admin & korlas dapat melihat **rekap berapa kali setiap orang tua mengambil piket** dalam satu rentang | ✅ Done — `GET /laporan`; rekap per orang tua + rincian tanggal/menu/anak; halaman `/laporan` (diuji section 25 `test-api.mjs` & `outputs/check-laporan.mjs` 14/14)                                                          |
+| AC59  | Laporan menyertakan **daftar orang tua yang belum pernah ambil**                                       | ✅ Done — dihitung dari `students` lewat `parentsWithStudents()`, bukan dari ketiadaan baris klaim (yang tidak bisa di-query)                                                                                                |
+| AC60  | Cakupan laporan mengikuti peran: admin sekolah-wide, korlas kelasnya sendiri, orang tua `403`         | ✅ Done — `laporanService.resolveScope`; kelas di luar cakupan dijawab `403` (diuji section 25)                                                                                                                            |
+| AC61  | Rentang laporan dibatasi agar tidak ada query tanpa batas                                             | ✅ Done — maksimum **92 hari**, konstanta yang sama dengan `utils/params.ts`; rentang lebih panjang dijawab `400`                                                                                                            |
+| AC62  | **Petugas** dapat diisi pada jadwal yang sudah `locked`/`published`                                   | ✅ Done — patch `petugasStudentId`-murni diterapkan; dropdown Petugas tidak mengikuti `dayLocked` (diuji section 6 `test-api.mjs` & `outputs/check-petugas-terkunci.mjs` 9/9)                                                |
+| AC63  | Pengecualian petugas **tidak** menjadi celah untuk mengubah menu/catatan pada jadwal terbit           | ✅ Done — patch campuran tetap `409 not_editable`; baris `isHoliday=1` juga `409`; korlas kelas lain tetap `403` (diuji section 6)                                                                                          |
+| AC64  | Admin dapat mengunduh **rekap akun orang tua** sebagai Excel                                           | ✅ Done — `GET /parents/export?active=` (admin only); nama ortu, peran, kelas, anak, aktif, terkunci, login terakhir                                                                                                        |
+
+| AC65  | Admin dapat **mengunggah kembali** berkas hasil ekspor akun orang tua sebagai impor                   | ✅ Done — `POST /parents/import` (admin only); layout impor = layout ekspor (diuji `outputs/check-import-akun.mjs` 33/33 + `check-import-akun-ui.mjs` 17/17)                                                                  |
+| AC66  | Impor **menimpa** akun yang sudah ada dan **membuat baris baru** untuk yang belum ada                  | ✅ Done — upsert per **username** (unik di skema), bukan nama; hasil dilaporkan `{created, updated, skipped}`                                                                                                                 |
+| AC67  | Mengunggah ulang berkas ekspor **tidak menghapus** password, status aktif, atau daftar anak            | ✅ Done — sel kosong = "jangan sentuh"; id anak dipertahankan lewat pencocokan nama (`mergeStudentIds`); diuji khusus untuk akun tanpa anak                                                                                   |
+| AC68  | Impor selalu melewati **pratinjau** sebelum menulis, dan alasannya dilaporkan per baris                | ✅ Done — `dryRun: true` tidak menulis apa pun; `rows[].reason` memuat alasan tiap baris yang dilewati                                                                                                                        |
+| AC69  | Impor akun tertutup bagi selain admin                                                                  | ✅ Done — `requireRole("admin")`; korlas & orang tua dijawab `403` (diuji di `check-import-akun.mjs`)                                                                                                                         |
 
 ---
 

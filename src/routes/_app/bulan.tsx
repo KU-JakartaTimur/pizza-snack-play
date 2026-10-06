@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/AppShell";
 import { MonthNavigator } from "@/components/MonthNavigator";
 import { ScheduleDayCard } from "@/components/ScheduleDayCard";
 import { ListReveal, RevealItem } from "@/components/motion/ListReveal";
-import { ExportButton } from "@/components/jadwal/ExportButton";
+import { ExportButton } from "@/components/ExportButton";
 import { Card, ErrorState, Spinner } from "@/components/ui";
 import { useActiveClass } from "@/lib/active-class";
 import { api } from "@/lib/api";
@@ -69,10 +69,15 @@ function MonthPage() {
             {/* Kelas yang diunduh sengaja kelas yang tampil di layar, bukan
                 sekadar kelas aktif di pemilih kelas. */}
             <ExportButton
-              scope="month"
-              year={year}
-              month={month}
-              className={monthQuery.data?.className ?? activeClass}
+              onExport={() =>
+                api.schedules.exportXlsx({
+                  scope: "month",
+                  year,
+                  month,
+                  className: monthQuery.data?.className ?? activeClass,
+                })
+              }
+              title="Unduh jadwal bulan ini sebagai berkas Excel"
               disabled={!monthQuery.data}
             />
           </div>

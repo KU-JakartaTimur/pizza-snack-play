@@ -1,6 +1,7 @@
 import type { Context } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import type { ApiResponse } from "../../types/apiResponse";
+import { XLSX_CONTENT_TYPE } from "./xlsx";
 
 export const sendResponse = <T>(
   c: Context,
@@ -76,3 +77,37 @@ export const responseInternalError = (
 ) => {
   return sendResponse(c, 500, message);
 };
+
+/**
+ * Bungkus byte `.xlsx` menjadi respons unduhan.
+ *
+ * Nama berkas hanya bisa dikirim lewat `Content-Disposition` — itu satu-satunya
+ * cara browser menamai berkas yang disimpan, karena nama di URL selalu
+ * ditimpa. `no-store` dipasang karena isi berkas berubah begitu datanya diubah.
+ *
+ * Diletakkan di sini, bukan di salah satu modul fitur, supaya tiap modul yang
+ * menyediakan ekspor (jadwal, akun orang tua, …) memakai bentuk respons yang
+ * persis sama dan tidak ada yang perlu mengimpor lintas modul.
+ */
+export function xlsxResponse(
+  c: Context,
+  bytes: Uint8Array<ArrayBuffer>,
+  filename: string,
+) {
+  return c.body(bytes, 200, {
+    "Content-Type": XLSX_CONTENT_TYPE,
+    "Content-Disposition": `attachment; filename="${filename}"`,
+    "Content-Length": String(bytes.length),
+    "Cache-Control": "no-store",
+  });
+}
+
+/**
+ * Nama berkas unduhan dari potongan-potongan.
+ *
+ * Sengaja ASCII tanpa spasi: sebagian browser mengabaikan `filename*` dan
+ * memotong nama berkas di spasi pertama.
+ */
+export function downloadFileName(parts: Array<string | null>): string {
+  return `${parts.filter(Boolean).join("-")}.xlsx`;
+}

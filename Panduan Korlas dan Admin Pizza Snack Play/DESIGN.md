@@ -28,7 +28,7 @@ family. The only difference is register: orang tua → "ajakan"; korlas/admin �
 | :--- | :---------------- | :----- | :------ |
 | **A · Title block** | 20 – 130px | 110px | Main title 34px bold; a 6px-high, 72px-wide purple rule below it (`secondary` lime on section pages) |
 | **B · Content area** | 130 – 660px | 530px | Body / cards / illustration / giant type |
-| **C · Footer bar** | 660 – 700px | 40px | Left: project watermark `Pizza Snack Play · Panduan Korlas & Admin` (14px `#6B6478`) · Right: page number `NN / 15` (14px `#6B6478`) |
+| **C · Footer bar** | 660 – 700px | 40px | Left: project watermark `Pizza Snack Play · Panduan Korlas & Admin` (14px `#6B6478`) · Right: page number `NN / 16` (14px `#6B6478`) |
 
 **Height check:** 20 + 110 + 530 + 40 + 20 = 720 ✓ (the sum of all card heights + gaps inside
 zone B must be ≤ 530)
@@ -73,8 +73,9 @@ zone B must be ≤ 530)
 | 11 Section | 60% | 15% | 5% | Purple ground, reversed-out |
 | 12 Terkunci lalu terbit | 45% | 15% | 20% | **Hero**, giant phrase + orange status bar |
 | 13 Aksi massal | 30% | 20% | 10% | Accent lands on the checkboxes |
-| 14 Four cards | 25% | 25% | 5% | Card top rules in secondary |
-| 15 Ending | 55% | 15% | 12% | Hero |
+| 14 Laporan piket | 42% | 18% | 18% | **Hero** (v1.13), giant phrase + accent on the "0" bar |
+| 15 Four cards | 25% | 25% | 5% | Card top rules in secondary |
+| 16 Ending | 55% | 15% | 12% | Hero |
 
 ---
 
@@ -102,7 +103,7 @@ delivery):
 
 ## 4. Density gates
 
-- Whitespace on regular content pages **≤ 35%**; hero pages may reach 40–45% (pages 01/09/12/15).
+- Whitespace on regular content pages **≤ 35%**; hero pages may reach 40–45% (pages 01/09/12/14/16).
 - **Container fill rate ≥ 85%:** text + icon inside a card must occupy ≥ 85% of the container height.
 - **Footer anchoring:** the last element in a card (tag rule / highlighted sentence) uses
   `marginTop: 'auto'` to pin to the bottom.
@@ -126,7 +127,7 @@ elements and **never impersonates photography or a group of people**.
 
 | File | Source | Actual content | Size | Used on | Verified |
 | :--- | :----- | :------------- | :--- | :------ | :------- |
-| `assets/app_logo.png` | P0 material (copied from `public/logo.png`) | The app's official logo: pizza + calendar + "PIZZA SNACK PLAY", on teal | 690×670 | 01, 15 | ✅ Read and confirmed |
+| `assets/app_logo.png` | P0 material (copied from `public/logo.png`) | The app's official logo: pizza + calendar + "PIZZA SNACK PLAY", on teal | 690×670 | 01, 16 | ✅ Read and confirmed |
 
 ### SVG plan (per page)
 
@@ -145,10 +146,11 @@ elements and **never impersonates photography or a group of people**.
 | 11 | Translucent purple circle + padlock + megaphone | Full-bleed background, opacity 0.14 | L1 (atmosphere) |
 | 12 | Three-stage status bar: bisa diubah → dikunci → terbit | Right, approx. 420×360 | L1 |
 | 13 | Table + three filled checkboxes | Left column, approx. 560×440 | L1 |
-| 14 | — (one inline `<svg>` per card, 32px, uniform solid) | Top of each card | L3 |
-| 15 | Glow circle + logo | Centred | L1 |
+| 14 | Bar recap per orang tua (4/3/2/1) + satu bar "0" accent | Right, approx. 430×430 | L1 |
+| 15 | — (one inline `<svg>` per card, 32px, uniform solid) | Top of each card | L3 |
+| 16 | Glow circle + logo | Centred | L1 |
 
-**L3 placement consistency:** the L3 badges on pages 02/14 sit at the **top-left** of their card /
+**L3 placement consistency:** the L3 badges on pages 02/15 sit at the **top-left** of their card /
 row, consistently across the deck.
 
 **Icons must be inline `<svg>`, not `<FAIcon>`:** `icon://fa/...` never resolves on this machine —
@@ -177,8 +179,9 @@ therefore written as `<svg viewBox="..."><path fill="..." d="..."/></svg>` with 
 | 11 | `slides/11.slide` | section | transition | Full-bleed visual + large title | SVG padlock + megaphone | 30 | 45% | 60/15/5 | Purple ground, reversed-out, chapter number 04 |
 | 12 | `slides/12.slide` | content | hero | Giant type + insight | SVG three-stage status bar | 140 | 40% | 45/15/20 | Giant phrase **64px**, never tucked into a corner |
 | 13 | `slides/13.slide` | content | supporting | Large image left + text right | SVG table + check marks | 190 | 22% | 30/20/10 | Illustration occupies the left 55%, three points on the right |
-| 14 | `slides/14.slide` | content | supporting | N cards in a row (the only one) | L3 icons ×4 | 230 | 22% | 25/25/5 | 4 cards, ≥ 55 words each, footer rule pinned to the bottom |
-| 15 | `slides/15.slide` | ending | hero | Full-bleed visual + large title | app_logo.png | 45 | 45% | 55/15/12 | Logo centred 200×200 + a one-line sign-off |
+| 14 | `slides/14.slide` | content | hero | Giant type + insight | SVG recap bars | 120 | 40% | 42/18/18 | Giant phrase **62px**; the numbers on the bars are **worked examples**, not measured data |
+| 15 | `slides/15.slide` | content | supporting | N cards in a row (the only one) | L3 icons ×4 | 230 | 22% | 25/25/5 | 4 cards, ≥ 55 words each, footer rule pinned to the bottom |
+| 16 | `slides/16.slide` | ending | hero | Full-bleed visual + large title | app_logo.png | 45 | 45% | 55/15/12 | Logo centred 200×200 + a one-line sign-off |
 
 ---
 

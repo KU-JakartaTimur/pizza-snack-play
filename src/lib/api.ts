@@ -15,6 +15,7 @@ import type {
 } from "@/types/catalog";
 import type { ClaimInput, ScheduleClaimDto } from "@/types/claim";
 import type { ClassListDto, ClassRosterDto } from "@/types/class";
+import type { LaporanJadwalDto } from "@/types/laporan";
 import type {
   BulkRowScheduleInput,
   BulkRowScheduleResultDto,
@@ -42,6 +43,8 @@ import type {
   ParentBulkAction,
   ParentBulkResultDto,
   ParentDto,
+  ParentImportInput,
+  ParentImportResultDto,
   ParentInput,
   StatsSummaryDto,
 } from "@/types/account";
@@ -376,6 +379,24 @@ export const api = {
       ),
   },
 
+  /**
+   * Laporan jadwal — rekap berapa kali setiap orang tua mengambil tanggal
+   * piket pada rentang & kelas yang dipilih. **Admin & korlas saja**;
+   * korlas selalu terbatas kelasnya sendiri (ditegakkan server).
+   */
+  laporan: {
+    list: (params: { from: string; to: string; className?: string | null }) =>
+      unwrap<LaporanJadwalDto>(
+        http.get(
+          `laporan${query({
+            from: params.from,
+            to: params.to,
+            class: params.className ?? undefined,
+          })}`,
+        ),
+      ),
+  },
+
   holidays: {
     list: (from?: string, to?: string) =>
       unwrap<HolidayDto[]>(http.get(`holidays${query({ from, to })}`)),
@@ -455,6 +476,38 @@ export const api = {
     bulk: (ids: number[], action: ParentBulkAction) =>
       unwrapFull<ParentBulkResultDto>(
         http.post("parents/bulk", { json: { ids, action } }),
+      ),
+
+    /**
+     * Unduh daftar akun sebagai berkas Excel — **admin saja**.
+     *
+     * `active` opsional: biarkan kosong untuk seluruh akun, isi `true`/`false`
+     * untuk membatasi ke akun aktif/nonaktif saja.
+     */
+    exportXlsx: (params: { active?: boolean } = {}) =>
+      unwrapFile(
+        http.get(
+          `parents/export${query({
+            active: params.active === undefined ? undefined : params.active,
+          })}`,
+        ),
+        "akun-orang-tua.xlsx",
+      ),
+
+    /**
+     * Impor akun dari berkas Excel hasil ekspor yang sudah disunting —
+     * **admin saja**.
+     *
+     * Yang sudah ada **ditimpa** (dicocokkan lewat username), yang belum
+     * dibuat. Isi berkasnya dikirim sebagai base64 di dalam JSON; lihat
+     * `readFileAsBase64`.
+     *
+     * `dryRun: true` mengembalikan nasib tiap baris tanpa menulis apa pun —
+     * itulah yang ditampilkan sebagai pratinjau sebelum admin menerapkannya.
+     */
+    importXlsx: (body: ParentImportInput) =>
+      unwrapFull<ParentImportResultDto>(
+        http.post("parents/import", { json: body }),
       ),
   },
 

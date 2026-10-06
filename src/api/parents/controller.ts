@@ -8,6 +8,8 @@ import type {
   ParentRelationship,
 } from "../../types/account";
 import type { AuthEnv } from "../middleware/auth";
+import { base64ToBytes } from "../utils/base64";
+import { todayInWib } from "../utils/date";
 import { parseId } from "../utils/params";
 import {
   responseBadRequest,
@@ -15,7 +17,11 @@ import {
   responseCreated,
   responseNotFound,
   responseOK,
+  xlsxResponse,
 } from "../utils/response";
+import { readXlsxGrid } from "../utils/xlsxRead";
+import { accountsFilename, buildAccountsSheet } from "./export";
+import { parseAccountsSheet } from "./import";
 import {
   MANAGED_ROLES,
   RELATIONSHIPS,
@@ -27,6 +33,14 @@ type ParentContext = Context<AuthEnv>;
 
 const USERNAME_PATTERN = /^[a-z0-9._-]{3,32}$/;
 const MIN_PASSWORD_LENGTH = 8;
+
+/**
+ * Batas ukuran berkas impor. Klien mengirim isinya sebagai base64, jadi
+ * angkanya kira-kira 4/3 dari ukuran berkas sebenarnya — 6 juta karakter
+ * ≈ 4,5 MB, jauh di atas daftar akun sekolah mana pun, tetapi tetap menahan
+ * unggahan yang jelas salah (mis. berkas lain yang kebetulan bernama .xlsx).
+ */
+const MAX_IMPORT_BASE64_LENGTH = 6_000_000;
 
 function mapError(c: ParentContext, error: ParentError) {
   switch (error) {
@@ -232,6 +246,112 @@ class ParentController {
     if (!data) return responseNotFound(c, "Data orang tua tidak ditemukan");
 
     return responseOK(c, "Detail orang tua", data);
+  };
+
+  /**
+   * Unduh daftar akun sebagai berkas Excel.
+   * `GET /parents/export?active=true|false`
+   *
+   * `active` opsional: tanpa itu seluruh akun ikut, dengan itu hanya akun
+   * aktif/nonaktif saja — berguna saat admin perlu memeriksa siapa yang
+   * sudah tidak dipakai lagi. Isi lembar mengikuti kolom di layar.
+   *
+   * Didaftarkan **sebelum** `/:id` pada route, supaya `/export` tidak
+   * tertangkap sebagai `:id = "export"`.
+   */
+  exportAccounts = async (c: ParentContext) => {
+    const activeRaw = c.req.query("active");
+    const active = activeRaw === undefined ? undefined : activeRaw === "true";
+
+    const items = await parentService.listForExport(getDb(c.env), { active });
+
+    const label =
+      active === undefined
+        ? "Semua akun"
+        : active
+          ? "Hanya akun aktif"
+          : "Hanya akun nonaktif";
+
+    return xlsxResponse(
+      c,
+      buildAccountsSheet(items, label),
+      accountsFilename(todayInWib()),
+    );
+  };
+
+  /**
+   * Impor akun dari berkas Excel hasil ekspor yang sudah disunting.
+   * `POST /parents/import` — hanya admin.
+   *
+   * Isi berkasnya dikirim sebagai base64 di dalam JSON, bukan
+   * `multipart/form-data`: klien HTTP aplikasi ini memasang
+   * `Content-Type: application/json` untuk semua permintaan, dan multipart
+   * menuntut header itu dilepas agar `boundary` bisa diisi otomatis. Berkasnya
+   * kecil, jadi pembengkakan base64 tidak sebanding dengan pengecualian yang
+   * harus ditembus di klien.
+   *
+   * `dryRun` mengembalikan nasib tiap baris tanpa menulis apa pun — dipakai
+   * UI untuk menampilkan pratinjau sebelum admin menekan "Terapkan".
+   *
+   * Didaftarkan **sebelum** `/:id` pada route, seperti `/export`.
+   */
+  importAccounts = async (c: ParentContext) => {
+    let body: { content?: unknown; dryRun?: unknown };
+    try {
+      body = await c.req.json();
+    } catch {
+      return responseBadRequest(c, "Body harus berupa JSON");
+    }
+
+    if (typeof body.content !== "string" || !body.content) {
+      return responseBadRequest(c, "Berkas belum dipilih");
+    }
+    if (body.content.length > MAX_IMPORT_BASE64_LENGTH) {
+      return responseBadRequest(
+        c,
+        "Berkas terlalu besar — maksimal sekitar 4 MB",
+      );
+    }
+
+    let bytes: Uint8Array<ArrayBuffer>;
+    try {
+      bytes = base64ToBytes(body.content);
+    } catch {
+      return responseBadRequest(c, "Isi berkas tidak bisa dibaca");
+    }
+
+    let grid: string[][];
+    try {
+      grid = await readXlsxGrid(bytes);
+    } catch {
+      return responseBadRequest(
+        c,
+        "Berkas bukan Excel (.xlsx) yang sah. Unduh dulu berkas contoh lewat " +
+          "tombol \"Unduh Excel\", lalu sunting berkas itu.",
+      );
+    }
+
+    const parsed = parseAccountsSheet(grid);
+    if (!parsed.ok) return responseBadRequest(c, parsed.error);
+
+    const dryRun = body.dryRun === true || c.req.query("dryRun") === "1";
+
+    const result = await parentService.importAccounts(
+      getDb(c.env),
+      parsed.rows,
+      parsed.issues,
+      { dryRun },
+    );
+
+    const summary =
+      `${result.created} akun baru, ${result.updated} diperbarui, ` +
+      `${result.skipped} dilewati`;
+
+    return responseOK(
+      c,
+      dryRun ? `Pratinjau: ${summary}` : `Impor selesai: ${summary}`,
+      result,
+    );
   };
 
   create = async (c: ParentContext) => {

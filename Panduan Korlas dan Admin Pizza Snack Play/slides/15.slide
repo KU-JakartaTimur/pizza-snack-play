@@ -3,8 +3,10 @@
         width: '1280px',
         height: '720px',
         background: '#FAF7F2',
-        justifyContent: 'center',
-        alignItems: 'center',
+        paddingTop: 20,
+        paddingBottom: 20,
+        paddingLeft: 64,
+        paddingRight: 64,
         position: 'relative',
         overflow: 'hidden',
     }}
@@ -12,89 +14,180 @@
     <Box
         style={{
             position: 'absolute',
-            top: 90,
-            width: 520,
-            height: 520,
-            borderRadius: 260,
-            background: 'linear-gradient(135deg, #51277C 0%, #7A45A8 100%)',
-            opacity: 0.10,
-        }}
-    />
-    <Box
-        style={{
-            position: 'absolute',
-            bottom: -80,
-            left: -80,
-            width: 320,
-            height: 320,
-            borderRadius: 160,
+            top: -150,
+            left: -120,
+            width: 440,
+            height: 440,
+            borderRadius: 220,
             background: 'linear-gradient(135deg, #AFC440 0%, #F3B26C 100%)',
-            opacity: 0.18,
+            opacity: 0.14,
         }}
     />
 
-    <Box style={{ position: 'relative', zIndex: 1, alignItems: 'center', paddingLeft: 72, paddingRight: 72 }}>
-        <Image src="assets/app_logo.png" style={{ width: 200, height: 194, objectFit: 'contain' }} />
-
+    {/* ── A · blok judul ── */}
+    <Box style={{ height: 110, justifyContent: 'center' }}>
         <Text
             style={{
-                marginTop: 26,
-                fontSize: 60,
+                fontSize: 34,
                 fontWeight: 'bold',
                 color: '#51277C',
                 fontFamily: 'Trebuchet MS',
-                lineHeight: 1.15,
+                lineHeight: 1.3,
             }}
         >
-            Terima kasih
+            Laporan piket: sudah merata?
         </Text>
+        <Box style={{ marginTop: 10, width: 72, height: 6, borderRadius: 3, background: '#F3B26C' }} />
+    </Box>
 
-        <Box style={{ marginTop: 18, width: 96, height: 7, borderRadius: 4, background: '#AFC440' }} />
+    {/* ── B · area konten ── */}
+    <Box style={{ height: 530, flexDirection: 'row', gap: 34, position: 'relative', zIndex: 1 }}>
+        {/* kiri 55% · frasa raksasa */}
+        <Box style={{ width: '55%', height: '100%', justifyContent: 'center' }}>
+            <Text
+                style={{
+                    fontSize: 62,
+                    fontWeight: 'bold',
+                    color: '#51277C',
+                    fontFamily: 'Trebuchet MS',
+                    lineHeight: 1.1,
+                }}
+            >
+                Merata,{'\n'}bukan sekadar penuh.
+            </Text>
 
-        <Text
-            style={{
-                marginTop: 22,
-                fontSize: 22,
-                color: '#2A2333',
-                fontFamily: 'Verdana',
-                lineHeight: 1.5,
-                textAlign: 'center',
-            }}
-        >
-            Coba tempel jadwal dari teks sekolah minggu ini.
-        </Text>
+            <Text
+                style={{
+                    marginTop: 22,
+                    fontSize: 19,
+                    color: '#2A2333',
+                    fontFamily: 'Verdana',
+                    lineHeight: 1.55,
+                }}
+            >
+                Menu Laporan menghitung berapa kali setiap orang tua sudah mengambil piket,
+                lengkap dengan tanggal dan menunya. Angkanya diambil dari tempat yang sama
+                dengan yang dipakai orang tua saat mengambil tanggal.
+            </Text>
 
-        <Text
-            style={{
-                marginTop: 14,
-                fontSize: 19,
-                color: '#6B6478',
-                fontFamily: 'Verdana',
-                lineHeight: 1.5,
-                textAlign: 'center',
-            }}
-        >
-            Ada yang tidak beres? Sampaikan kepada admin sekolah.
-        </Text>
+            <Box
+                style={{
+                    marginTop: 24,
+                    background: 'rgba(243,178,108,0.22)',
+                    borderRadius: 14,
+                    borderLeft: '8px solid #F3B26C',
+                    padding: 18,
+                }}
+            >
+                <Text
+                    style={{
+                        fontSize: 18,
+                        color: '#2A2333',
+                        fontFamily: 'Verdana',
+                        lineHeight: 1.5,
+                    }}
+                >
+                    Yang paling berguna justru satu daftar ini:
+                </Text>
+                <Text
+                    style={{
+                        marginTop: 10,
+                        fontSize: 19,
+                        fontWeight: 'bold',
+                        color: '#51277C',
+                        fontFamily: 'Trebuchet MS',
+                        lineHeight: 1.35,
+                    }}
+                >
+                    Belum pernah ambil
+                </Text>
+                <Text
+                    style={{
+                        marginTop: 4,
+                        fontSize: 17,
+                        color: '#2A2333',
+                        fontFamily: 'Verdana',
+                        lineHeight: 1.5,
+                    }}
+                >
+                    merekalah yang bisa diajak lebih dulu bulan depan.
+                </Text>
+            </Box>
+        </Box>
 
+        {/* kanan 45% · rekap per orang tua */}
         <Box
             style={{
-                marginTop: 26,
-                flexDirection: 'row',
+                width: '45%',
+                height: '100%',
+                background: 'rgba(81,39,124,0.06)',
+                borderRadius: 20,
+                justifyContent: 'center',
                 alignItems: 'center',
-                gap: 12,
-                background: '#F3B26C',
-                borderRadius: 999,
-                paddingTop: 13,
-                paddingBottom: 13,
-                paddingLeft: 28,
-                paddingRight: 30,
             }}
         >
-            <svg width={22} height={22} viewBox="0 0 576 512" xmlns="http://www.w3.org/2000/svg"><path fill="#51277C" d="M316.9 18C311.6 7 300.4 0 288.1 0s-23.4 7-28.8 18L195 150.3 51.4 171.5c-12 1.8-22 10.2-25.7 21.7s-.7 24.2 7.9 32.7L137.8 329 113.2 474.7c-2 12 3 24.2 12.9 31.3s23 8 33.8 2.3l128.3-68.5 128.3 68.5c10.8 5.7 23.9 4.9 33.8-2.3s14.9-19.3 12.9-31.3L438.5 329 542.7 225.9c8.6-8.5 11.7-21.2 7.9-32.7s-13.7-19.9-25.7-21.7L381.2 150.3 316.9 18z" /></svg>
-            <Text style={{ fontSize: 19, color: '#51277C', fontFamily: 'Trebuchet MS', fontWeight: 'bold' }}>
-                Pizza Snack Play
-            </Text>
+            <svg width={430} height={430} viewBox='0 0 430 430'>
+                <text x='18' y='38' fontFamily='Trebuchet MS' fontSize='21' fontWeight='bold' fill='#51277C'>
+                    Rekap ambil piket
+                </text>
+                <text x='18' y='62' fontFamily='Verdana' fontSize='14' fill='#6B6478'>
+                    1 – 31 Oktober · Kelas 1
+                </text>
+
+                {/* Sari · 4 */}
+                <text x='18' y='120' fontFamily='Verdana' fontSize='15' fill='#2A2333'>Sari</text>
+                <rect x='110' y='104' width='250' height='22' rx='11' fill='#EFEAE1' />
+                <rect x='110' y='104' width='250' height='22' rx='11' fill='#51277C' />
+                <text x='372' y='120' fontFamily='Trebuchet MS' fontSize='16' fontWeight='bold' fill='#51277C'>4</text>
+
+                {/* Budi · 3 */}
+                <text x='18' y='176' fontFamily='Verdana' fontSize='15' fill='#2A2333'>Budi</text>
+                <rect x='110' y='160' width='250' height='22' rx='11' fill='#EFEAE1' />
+                <rect x='110' y='160' width='188' height='22' rx='11' fill='#51277C' />
+                <text x='372' y='176' fontFamily='Trebuchet MS' fontSize='16' fontWeight='bold' fill='#51277C'>3</text>
+
+                {/* Dewi · 2 */}
+                <text x='18' y='232' fontFamily='Verdana' fontSize='15' fill='#2A2333'>Dewi</text>
+                <rect x='110' y='216' width='250' height='22' rx='11' fill='#EFEAE1' />
+                <rect x='110' y='216' width='125' height='22' rx='11' fill='#51277C' />
+                <text x='372' y='232' fontFamily='Trebuchet MS' fontSize='16' fontWeight='bold' fill='#51277C'>2</text>
+
+                {/* Rina · 1 */}
+                <text x='18' y='288' fontFamily='Verdana' fontSize='15' fill='#2A2333'>Rina</text>
+                <rect x='110' y='272' width='250' height='22' rx='11' fill='#EFEAE1' />
+                <rect x='110' y='272' width='63' height='22' rx='11' fill='#51277C' />
+                <text x='372' y='288' fontFamily='Trebuchet MS' fontSize='16' fontWeight='bold' fill='#51277C'>1</text>
+
+                {/* Anto · 0 — belum pernah */}
+                <text x='18' y='344' fontFamily='Verdana' fontSize='15' fill='#2A2333'>Anto</text>
+                <rect x='110' y='328' width='250' height='22' rx='11' fill='#EFEAE1' />
+                <rect x='110' y='328' width='250' height='22' rx='11' fill='#F3B26C' opacity='0.35' />
+                <text x='372' y='344' fontFamily='Trebuchet MS' fontSize='16' fontWeight='bold' fill='#F3B26C'>0</text>
+
+                {/* simpulan */}
+                <rect x='18' y='374' width='394' height='48' rx='14' fill='#51277C' />
+                <text x='38' y='396' fontFamily='Verdana' fontSize='15' fill='#F3B26C' fontWeight='bold'>
+                    Belum pernah ambil: Anto
+                </text>
+                <text x='38' y='414' fontFamily='Verdana' fontSize='13' fill='#EFEAE1'>
+                    ajak lebih dulu saat menyusun bulan depan
+                </text>
+            </svg>
         </Box>
+    </Box>
+
+    {/* ── C · bilah kaki ── */}
+    <Box
+        style={{
+            height: 40,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+        }}
+    >
+        <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>
+            Pizza Snack Play · Panduan Korlas &amp; Admin
+        </Text>
+        <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>15 / 17</Text>
     </Box>
 </Slide>

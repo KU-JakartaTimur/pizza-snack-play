@@ -93,6 +93,49 @@ class ParentRepository {
     };
   }
 
+  /**
+   * Seluruh akun orang tua untuk keperluan ekspor — **tanpa paginasi**.
+   *
+   * Sengaja terpisah dari `listParents`: berkas ekspor harus memuat semuanya,
+   * sedangkan daftar di layar dipotong per halaman. Keduanya berbagi
+   * `groupByParent` yang sama supaya pengelompokan anaknya tetap satu query.
+   *
+   * Urutannya nama orang tua, agar berkasnya enak dibaca dan cocok dengan
+   * urutan di layar.
+   */
+  async listParentsForExport(
+    db: Db,
+    options: { active?: boolean } = {},
+  ): Promise<ParentRow[]> {
+    const where =
+      options.active === undefined
+        ? undefined
+        : eq(parents.isActive, options.active ? 1 : 0);
+
+    const rows = await db
+      .select({ parent: parents, user: users })
+      .from(parents)
+      .innerJoin(users, eq(parents.userId, users.id))
+      .where(where)
+      .orderBy(asc(parents.parentName));
+
+    const parentIds = rows.map((row) => row.parent.id);
+    const studentRows = parentIds.length
+      ? await db
+          .select()
+          .from(students)
+          .where(inArray(students.parentId, parentIds))
+          .orderBy(asc(students.id))
+      : [];
+
+    const byParent = groupByParent(studentRows);
+
+    return rows.map((row) => ({
+      ...row,
+      students: byParent.get(row.parent.id) ?? [],
+    }));
+  }
+
   async findById(db: Db, id: number): Promise<ParentRow | undefined> {
     const rows = await db
       .select({ parent: parents, user: users })

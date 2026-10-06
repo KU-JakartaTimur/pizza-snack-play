@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/AppShell";
 import { ScheduleDayCard } from "@/components/ScheduleDayCard";
 import { ListReveal, RevealItem } from "@/components/motion/ListReveal";
-import { ExportButton } from "@/components/jadwal/ExportButton";
+import { ExportButton } from "@/components/ExportButton";
 import { Button, Card, ErrorState, Spinner } from "@/components/ui";
 import { useActiveClass } from "@/lib/active-class";
 import { api } from "@/lib/api";
@@ -86,9 +86,14 @@ function WeekPage() {
             {/* Kelas yang diunduh sengaja `shownClass` — persis yang tampil
                 di layar, bukan sekadar kelas aktif di pemilih kelas. */}
             <ExportButton
-              scope="week"
-              date={anchor}
-              className={shownClass}
+              onExport={() =>
+                api.schedules.exportXlsx({
+                  scope: "week",
+                  date: anchor,
+                  className: shownClass,
+                })
+              }
+              title="Unduh jadwal sepekan ini sebagai berkas Excel"
               disabled={!weekQuery.data}
             />
           </div>

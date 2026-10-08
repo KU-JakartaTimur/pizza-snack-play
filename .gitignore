@@ -220,3 +220,14 @@ outputs/exports/
 
 # Cache lokal `slidep` (log + pid daemon) untuk setiap dek di repo ini.
 */.slidep/
+
+# `.slidep/` di akar repo (state daemon `slidep start`).
+.slidep
+
+# Rekaman video promosi (mp4 + frame PNG) — biner besar, dibuat ulang lewat
+# `outputs/render-brag*.sh`; tidak perlu ikut berversi.
+brag-output/
+
+# Skrip sekali pakai + tangkapan layar di `outputs/`. Berkas yang sudah terlacak
+# tetap terlacak; berkas baru di sini tidak ikut berversi.
+outputs/

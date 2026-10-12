@@ -39,7 +39,8 @@ function parseId(raw: string | undefined): number | null {
   return parseIdParam(raw);
 }
 
-/** Validasi & normalisasi daftar komponen menu dari body request. */function parseMenuItems(
+/** Validasi & normalisasi daftar komponen menu dari body request. */
+function parseMenuItems(
   raw: unknown,
 ): { ok: true; items: NonNullable<MenuInput["items"]> } | { ok: false; message: string } {
   if (raw === undefined) return { ok: true, items: [] };

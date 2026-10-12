@@ -1,0 +1,295 @@
+<!--
+  Sumber ikon kategori Pizza Snack Play — delapan gambar, satu berkas.
+
+  Berkas ini **bukan** halaman aplikasi; ia hanya dipakai
+  `scripts/generate-category-icons.mjs` untuk memanggang PNG-nya lewat
+  browser. Tidak ada yang memuatnya saat aplikasi berjalan.
+
+  Kenapa SVG lalu dipanggang, bukan digambar langsung dengan Pillow:
+
+  - Semua gambar sudah ada di repo sebagai berkas yang bisa dibaca manusia,
+    jadi satu ikon bisa diperbaiki tanpa menyentuh kode generator.
+  - Ikon kategori disimpan di kolom `categories.image` sebagai **data URI
+    base64**. Aplikasi menolak SVG (`validateCategoryImage` hanya menerima
+    png/jpeg/webp/gif), sebab SVG bisa membawa skrip — jadi bentuk simpannya
+    harus raster.
+
+  Aturan gambar, supaya kedelapan ikon tampak satu keluarga:
+
+  - Latar **penuh 512x512** tanpa sudut membulat. Pembulatan datang dari
+    kelas `rounded-lg` pada `<img>`; kalau ikonnya sendiri yang membulat,
+    sudutnya akan membulat dua kali.
+  - Latar memakai gradien tiga titik dari warna kategori itu sendiri (kolom
+    `categories.color`), dicampur putih di atas dan digelapkan di bawah.
+  - Bentuknya putih, dengan rincian sekunder memakai putih transparan atau
+    hitam transparan — bukan warna lain — supaya tetap terbaca di warna
+    kategori apa pun, termasuk abu-abu "Lainnya".
+  - Tiap bentuk diberi garis `rgba(0,0,0,0.16)` tipis agar tidak saling
+    melebur saat putih bertemu putih.
+  - `<g transform="translate(256 256) scale(1.1) translate(-256 -256)">`
+    memperbesar seluruh bentuk 10% dari titik tengah. Semua koordinat di
+    dalamnya ditulis pada bidang 512 dengan margin longgar; tanpa skala ini
+    bentuknya terlihat kekecilan di thumbnail 32px.
+-->
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <title>Ikon kategori Pizza Snack Play</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #ffffff;
+      }
+      .icon {
+        width: 512px;
+        height: 512px;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+      .icon svg {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 1. Gorengan — bakwan bersisik tepi (scalloped fritter) -->
+    <div class="icon" id="cat-gorengan">
+      <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="bg-gorengan" x1="0" y1="0" x2="0.6" y2="1">
+            <stop offset="0" stop-color="#FFBC6B" />
+            <stop offset="0.5" stop-color="#FFA23D" />
+            <stop offset="1" stop-color="#DB7800" />
+          </linearGradient>
+        </defs>
+        <rect width="512" height="512" fill="url(#bg-gorengan)" />
+        <g transform="translate(256 256) scale(1.1) translate(-256 -256)">
+          <g fill="#FFFFFF">
+            <circle cx="256" cy="250" r="84" />
+            <circle cx="336" cy="250" r="32" />
+            <circle cx="321" cy="297" r="32" />
+            <circle cx="281" cy="326" r="32" />
+            <circle cx="231" cy="326" r="32" />
+            <circle cx="191" cy="297" r="32" />
+            <circle cx="176" cy="250" r="32" />
+            <circle cx="191" cy="203" r="32" />
+            <circle cx="231" cy="174" r="32" />
+            <circle cx="281" cy="174" r="32" />
+            <circle cx="321" cy="203" r="32" />
+          </g>
+          <g fill="rgba(146,74,0,0.3)">
+            <circle cx="222" cy="206" r="11" />
+            <circle cx="296" cy="238" r="10" />
+            <circle cx="240" cy="296" r="11" />
+            <circle cx="306" cy="290" r="9" />
+            <circle cx="256" cy="246" r="10" />
+            <circle cx="200" cy="262" r="9" />
+          </g>
+        </g>
+      </svg>
+    </div>
+
+    <!-- 2. Kukusan — kukusan bambu bertingkat + uap -->
+    <div class="icon" id="cat-kukusan">
+      <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="bg-kukusan" x1="0" y1="0" x2="0.6" y2="1">
+            <stop offset="0" stop-color="#91A8EE" />
+            <stop offset="0.5" stop-color="#5C82E6" />
+            <stop offset="1" stop-color="#385AC2" />
+          </linearGradient>
+        </defs>
+        <rect width="512" height="512" fill="url(#bg-kukusan)" />
+        <g transform="translate(256 256) scale(1.1) translate(-256 -256)">
+          <g fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="14" stroke-linecap="round">
+            <path d="M126,238 C104,210 148,196 126,164" />
+            <path d="M386,238 C408,210 364,196 386,164" />
+          </g>
+          <g stroke="rgba(0,0,0,0.16)" stroke-width="5">
+            <path d="M140,318 L372,318 L356,404 Q354,414 344,414 L168,414 Q158,414 156,404 Z" fill="#FFFFFF" />
+            <path d="M140,240 L372,240 L372,318 L140,318 Z" fill="#FFFFFF" />
+            <ellipse cx="256" cy="318" rx="116" ry="26" fill="#FFFFFF" />
+            <ellipse cx="256" cy="240" rx="116" ry="26" fill="#FFFFFF" />
+            <path d="M140,240 C140,176 198,150 256,150 C314,150 372,176 372,240 Z" fill="#FFFFFF" />
+            <circle cx="256" cy="138" r="17" fill="#FFFFFF" />
+          </g>
+        </g>
+      </svg>
+    </div>
+
+    <!-- 3. Rebusan — panci mendidih -->
+    <div class="icon" id="cat-rebusan">
+      <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="bg-rebusan" x1="0" y1="0" x2="0.6" y2="1">
+            <stop offset="0" stop-color="#7ED2CE" />
+            <stop offset="0.5" stop-color="#3FC4BC" />
+            <stop offset="1" stop-color="#1C9992" />
+          </linearGradient>
+        </defs>
+        <rect width="512" height="512" fill="url(#bg-rebusan)" />
+        <g transform="translate(256 256) scale(1.1) translate(-256 -256)">
+          <g fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="16" stroke-linecap="round">
+            <path d="M124,292 C88,296 88,352 124,356" />
+            <path d="M388,292 C424,296 424,352 388,356" />
+          </g>
+          <g stroke="rgba(0,0,0,0.16)" stroke-width="5">
+            <path d="M136,300 L376,300 L350,398 Q348,410 336,410 L176,410 Q164,410 162,398 Z" fill="#FFFFFF" />
+            <rect x="120" y="278" width="272" height="28" rx="14" fill="#FFFFFF" />
+          </g>
+          <g fill="rgba(255,255,255,0.85)">
+            <circle cx="150" cy="226" r="12" />
+            <circle cx="196" cy="232" r="18" />
+            <circle cx="256" cy="206" r="24" />
+            <circle cx="318" cy="234" r="16" />
+            <circle cx="352" cy="224" r="11" />
+            <circle cx="222" cy="178" r="8" />
+            <circle cx="300" cy="174" r="9" />
+          </g>
+        </g>
+      </svg>
+    </div>
+
+    <!-- 4. Panggangan — sate di atas bara -->
+    <div class="icon" id="cat-panggangan">
+      <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="bg-panggangan" x1="0" y1="0" x2="0.6" y2="1">
+            <stop offset="0" stop-color="#E2B890" />
+            <stop offset="0.5" stop-color="#D59A56" />
+            <stop offset="1" stop-color="#B07236" />
+          </linearGradient>
+        </defs>
+        <rect width="512" height="512" fill="url(#bg-panggangan)" />
+        <g transform="translate(256 256) scale(1.1) translate(-256 -256)">
+          <g fill="rgba(255,255,255,0.7)">
+            <rect x="168" y="112" width="16" height="300" rx="8" transform="rotate(-32 176 262)" />
+            <rect x="248" y="100" width="16" height="300" rx="8" transform="rotate(-32 256 250)" />
+            <rect x="328" y="88" width="16" height="300" rx="8" transform="rotate(-32 336 238)" />
+          </g>
+          <g fill="#FFFFFF">
+            <rect x="185" y="290" width="46" height="46" rx="13" />
+            <rect x="153" y="239" width="46" height="46" rx="13" />
+            <rect x="121" y="188" width="46" height="46" rx="13" />
+            <rect x="265" y="278" width="46" height="46" rx="13" />
+            <rect x="233" y="227" width="46" height="46" rx="13" />
+            <rect x="201" y="176" width="46" height="46" rx="13" />
+            <rect x="345" y="266" width="46" height="46" rx="13" />
+            <rect x="313" y="215" width="46" height="46" rx="13" />
+            <rect x="281" y="164" width="46" height="46" rx="13" />
+          </g>
+        </g>
+      </svg>
+    </div>
+
+    <!-- 5. Buah Segar — apel + daun -->
+    <div class="icon" id="cat-buah-segar">
+      <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="bg-buah-segar" x1="0" y1="0" x2="0.6" y2="1">
+            <stop offset="0" stop-color="#88E288" />
+            <stop offset="0.5" stop-color="#4DD44D" />
+            <stop offset="1" stop-color="#2BB02B" />
+          </linearGradient>
+        </defs>
+        <rect width="512" height="512" fill="url(#bg-buah-segar)" />
+        <g transform="translate(256 256) scale(1.1) translate(-256 -256)">
+          <path
+            d="M256,150 C214,120 150,132 138,190 C124,258 156,362 200,386 C222,398 240,388 256,388 C272,388 290,398 312,386 C356,362 388,258 374,190 C362,132 298,120 256,150 Z"
+            fill="#FFFFFF"
+          />
+          <path d="M256,152 C250,120 244,104 232,90" fill="none" stroke="rgba(0,0,0,0.25)" stroke-width="15" stroke-linecap="round" />
+          <path d="M266,102 C300,68 350,70 368,88 C356,126 312,142 278,128 Z" fill="rgba(255,255,255,0.72)" />
+        </g>
+      </svg>
+    </div>
+
+    <!-- 6. Roti/Bakery — roti sobek dengan goresan -->
+    <div class="icon" id="cat-roti-bakery">
+      <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="bg-roti-bakery" x1="0" y1="0" x2="0.6" y2="1">
+            <stop offset="0" stop-color="#EACB7E" />
+            <stop offset="0.5" stop-color="#E4B84C" />
+            <stop offset="1" stop-color="#BC8E1C" />
+          </linearGradient>
+        </defs>
+        <rect width="512" height="512" fill="url(#bg-roti-bakery)" />
+        <g transform="translate(256 256) scale(1.1) translate(-256 -256)">
+          <path
+            d="M132,398 C120,398 112,390 112,378 L112,282 C112,186 176,140 256,140 C336,140 400,186 400,282 L400,378 C400,390 392,398 380,398 Z"
+            fill="#FFFFFF"
+            stroke="rgba(0,0,0,0.16)"
+            stroke-width="5"
+          />
+          <g stroke="rgba(0,0,0,0.16)" stroke-width="16" stroke-linecap="round" fill="none">
+            <path d="M166,262 L232,212" />
+            <path d="M232,262 L298,212" />
+            <path d="M298,262 L364,212" />
+          </g>
+        </g>
+      </svg>
+    </div>
+
+    <!-- 7. Kue Tradisional — potongan kue lapis + ceri -->
+    <div class="icon" id="cat-kue-tradisional">
+      <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="bg-kue-tradisional" x1="0" y1="0" x2="0.6" y2="1">
+            <stop offset="0" stop-color="#FFA8D4" />
+            <stop offset="0.5" stop-color="#FF86C2" />
+            <stop offset="1" stop-color="#DB5A9B" />
+          </linearGradient>
+        </defs>
+        <rect width="512" height="512" fill="url(#bg-kue-tradisional)" />
+        <g transform="translate(256 256) scale(1.1) translate(-256 -256)">
+          <g stroke="rgba(0,0,0,0.16)" stroke-width="5">
+            <path d="M112,208 L256,266 L256,382 L112,324 Z" fill="rgba(255,255,255,0.88)" />
+            <path d="M400,208 L256,266 L256,382 L400,324 Z" fill="rgba(255,255,255,0.74)" />
+          </g>
+          <g fill="rgba(0,0,0,0.14)">
+            <path d="M349.6,228.3 L292,251.5 L292,267.5 L349.6,244.3 Z" />
+            <path d="M162.4,228.3 L220,251.5 L220,267.5 L162.4,244.3 Z" />
+            <path d="M349.6,298.3 L292,321.5 L292,337.5 L349.6,314.3 Z" />
+            <path d="M162.4,298.3 L220,321.5 L220,337.5 L162.4,314.3 Z" />
+          </g>
+          <path d="M256,150 L400,208 L256,266 L112,208 Z" fill="#FFFFFF" stroke="rgba(0,0,0,0.16)" stroke-width="5" />
+          <circle cx="256" cy="140" r="26" fill="#FFFFFF" stroke="rgba(0,0,0,0.16)" stroke-width="5" />
+          <path d="M256,116 C262,96 276,88 292,86" fill="none" stroke="rgba(0,0,0,0.25)" stroke-width="10" stroke-linecap="round" />
+        </g>
+      </svg>
+    </div>
+
+    <!-- 8. Lainnya — mangkuk camilan campur -->
+    <div class="icon" id="cat-lainnya">
+      <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="bg-lainnya" x1="0" y1="0" x2="0.6" y2="1">
+            <stop offset="0" stop-color="#CDCDCD" />
+            <stop offset="0.5" stop-color="#B4B4B4" />
+            <stop offset="1" stop-color="#919191" />
+          </linearGradient>
+        </defs>
+        <rect width="512" height="512" fill="url(#bg-lainnya)" />
+        <g transform="translate(256 256) scale(1.1) translate(-256 -256)">
+          <ellipse cx="256" cy="272" rx="130" ry="30" fill="rgba(255,255,255,0.45)" />
+          <g fill="#FFFFFF">
+            <circle cx="196" cy="240" r="40" />
+            <rect x="228" y="192" width="76" height="76" rx="16" transform="rotate(14 266 230)" />
+            <path d="M320,278 L352,206 L384,278 Z" />
+          </g>
+          <path
+            d="M128,272 C134,394 186,408 256,408 C326,408 378,394 384,272 Z"
+            fill="#FFFFFF"
+            stroke="rgba(0,0,0,0.16)"
+            stroke-width="5"
+          />
+        </g>
+      </svg>
+    </div>
+  </body>
+</html>

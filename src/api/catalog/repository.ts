@@ -10,7 +10,7 @@ import {
 import type { Category, Menu, MenuItem } from "../../database/schema";
 import { likePattern } from "../utils/sql";
 import type {
-  CategoryDto,
+  CategorySummaryDto,
   MenuDto,
   MenuItemDto,
   MenuItemType,
@@ -75,7 +75,12 @@ class CatalogRepository {
 
   async insertCategory(
     db: Db,
-    values: { name: string; slug: string; color?: string | null },
+    values: {
+      name: string;
+      slug: string;
+      color?: string | null;
+      image?: string | null;
+    },
   ): Promise<Category> {
     const rows = await db.insert(categories).values(values).returning();
     return rows[0];
@@ -84,7 +89,12 @@ class CatalogRepository {
   async updateCategory(
     db: Db,
     id: number,
-    values: Partial<{ name: string; slug: string; color: string | null }>,
+    values: Partial<{
+      name: string;
+      slug: string;
+      color: string | null;
+      image: string | null;
+    }>,
   ): Promise<Category | undefined> {
     const rows = await db
       .update(categories)
@@ -323,7 +333,7 @@ class CatalogRepository {
       itemsByMenu.set(row.menuId, list);
     }
 
-    const categoriesByMenu = new Map<number, CategoryDto[]>();
+    const categoriesByMenu = new Map<number, CategorySummaryDto[]>();
     for (const row of categoryRows) {
       const list = categoriesByMenu.get(row.menuId) ?? [];
       list.push({

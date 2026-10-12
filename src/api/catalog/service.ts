@@ -18,12 +18,14 @@ function toCategoryDto(row: {
   name: string;
   slug: string;
   color: string | null;
+  image: string | null;
 }): CategoryDto {
   return {
     id: row.id,
     name: row.name,
     slug: row.slug,
     color: row.color,
+    image: row.image,
   };
 }
 
@@ -54,6 +56,7 @@ class CatalogService {
       name: input.name.trim(),
       slug: slugTaken ? `${slug}-${Date.now().toString(36)}` : slug,
       color: input.color ?? "#CCCCCC",
+      image: input.image ?? null,
     });
 
     return toCategoryDto(row);
@@ -79,6 +82,8 @@ class CatalogService {
       ...(input.name !== undefined ? { name: input.name.trim() } : {}),
       ...(input.slug !== undefined ? { slug: slugify(input.slug) } : {}),
       ...(input.color !== undefined ? { color: input.color } : {}),
+      // `null` mengosongkan gambar; tidak disebut berarti dibiarkan.
+      ...(input.image !== undefined ? { image: input.image } : {}),
     });
 
     return row ? toCategoryDto(row) : "not_found";

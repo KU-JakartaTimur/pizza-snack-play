@@ -1,9 +1,13 @@
-import { useState, type FormEvent } from "react";
+import { useState, type ChangeEvent, type FormEvent } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Plus, Tags, Trash2 } from "lucide-react";
+import { Pencil, Plus, Tags, Trash2, Upload } from "lucide-react";
 import { RoleGate } from "@/components/AdminOnly";
 import { PageHeader } from "@/components/AppShell";
+import {
+  CategoryPreview,
+  CategoryThumb,
+} from "@/components/kategori/CategoryThumb";
 import {
   Badge,
   Button,
@@ -17,13 +21,27 @@ import {
   Spinner,
 } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
-import type { CategoryDto } from "@/types/catalog";
+import { readImageAsDataUrl } from "@/lib/upload";
+import { CATEGORY_IMAGE_MAX_LENGTH, type CategoryDto } from "@/types/catalog";
 
 export const Route = createFileRoute("/_app/kategori")({
   component: CategoriesPage,
 });
 
-const EMPTY_FORM = { name: "", color: "#10B981" };
+/** Isian formulir; gambar kosong sampai admin memilih berkasnya sendiri. */
+interface CategoryForm {
+  name: string;
+  color: string;
+  image: string | null;
+}
+
+const EMPTY_FORM: CategoryForm = { name: "", color: "#10B981", image: null };
+
+/** Batas gambar dalam KB — angka yang sama dengan yang ditegakkan server. */
+const MAX_IMAGE_KB = Math.round(CATEGORY_IMAGE_MAX_LENGTH / 1000);
+
+/** Tipe berkas yang boleh dipilih, sama dengan daftar di `types/catalog.ts`. */
+const IMAGE_ACCEPT = "image/png,image/jpeg,image/webp,image/gif";
 
 function CategoriesPage() {
   return (
@@ -42,8 +60,11 @@ function CategoriesContent() {
   // menggantikan `confirm()` bawaan peramban, yang tidak bisa diberi nada
   // maupun gaya dan memblokir seluruh halaman.
   const [pendingDelete, setPendingDelete] = useState<CategoryDto | null>(null);
-  const [form, setForm] = useState(EMPTY_FORM);
+  const [form, setForm] = useState<CategoryForm>(EMPTY_FORM);
   const [formError, setFormError] = useState<string | null>(null);
+  // Dipesan terpisah dari `formError` supaya letaknya menempel pada kolom
+  // gambar, bukan di bawah formulir.
+  const [imageError, setImageError] = useState<string | null>(null);
   const [banner, setBanner] = useState<{ kind: "ok" | "error"; text: string } | null>(
     null,
   );
@@ -58,7 +79,11 @@ function CategoriesContent() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const payload = { name: form.name.trim(), color: form.color };
+      const payload = {
+        name: form.name.trim(),
+        color: form.color,
+        image: form.image,
+      };
       return editing
         ? api.categories.update(editing.id, payload)
         : api.categories.create(payload);
@@ -89,14 +114,62 @@ function CategoriesContent() {
     setEditing(null);
     setForm(EMPTY_FORM);
     setFormError(null);
+    setImageError(null);
     setModalOpen(true);
   };
 
   const openEdit = (category: CategoryDto) => {
     setEditing(category);
-    setForm({ name: category.name, color: category.color ?? "#10B981" });
+    setForm({
+      name: category.name,
+      color: category.color ?? "#10B981",
+      image: category.image,
+    });
     setFormError(null);
+    setImageError(null);
     setModalOpen(true);
+  };
+
+  /**
+   * Baca berkas yang dipilih menjadi data URI, lalu simpan di formulir.
+   *
+   * Ukurannya diperiksa **dua kali**: perkiraan cepat dari `file.size` lebih
+   * dulu (supaya berkas raksasa tidak perlu dibaca dan ditahan di memori),
+   * lalu panjang data URI sebenarnya — karena base64 ±4/3 ukuran berkas,
+   * perkiraan itu saja tidak cukup tepat.
+   */
+  const handleImagePick = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    // Dikosongkan supaya berkas yang sama bisa dipilih ulang — mis. setelah
+    // ditolak karena terlalu besar.
+    event.target.value = "";
+    if (!file) return;
+
+    if (file.size * 1.4 > CATEGORY_IMAGE_MAX_LENGTH) {
+      setImageError(`Gambar terlalu besar — maksimum sekitar ${MAX_IMAGE_KB} KB`);
+      return;
+    }
+
+    try {
+      const dataUrl = await readImageAsDataUrl(file);
+
+      if (dataUrl.length > CATEGORY_IMAGE_MAX_LENGTH) {
+        setImageError(
+          `Gambar terlalu besar — maksimum sekitar ${MAX_IMAGE_KB} KB`,
+        );
+        return;
+      }
+
+      setImageError(null);
+      setForm((current) => ({ ...current, image: dataUrl }));
+    } catch (error) {
+      setImageError(errorMessage(error, "Berkas tidak bisa dibaca"));
+    }
+  };
+
+  const clearImage = () => {
+    setImageError(null);
+    setForm((current) => ({ ...current, image: null }));
   };
 
   const handleSubmit = (event: FormEvent) => {
@@ -161,10 +234,7 @@ function CategoriesContent() {
                 className="flex items-center justify-between gap-4 px-5 py-3.5"
               >
                 <div className="flex min-w-0 items-center gap-3">
-                  <span
-                    className="h-8 w-8 shrink-0 rounded-lg border border-slate-200"
-                    style={{ backgroundColor: category.color ?? "#E2E8F0" }}
-                  />
+                  <CategoryThumb category={category} />
                   <div className="min-w-0">
                     <p className="font-medium text-slate-900">{category.name}</p>
                     <p className="font-mono text-xs text-slate-400">
@@ -226,6 +296,40 @@ function CategoriesContent() {
               placeholder="mis. Buah segar"
               autoFocus
             />
+          </Field>
+
+          <Field
+            label="Gambar"
+            hint={`Opsional. Disimpan sebagai base64 di database — maksimum sekitar ${MAX_IMAGE_KB} KB.`}
+            error={imageError ?? undefined}
+          >
+            <div className="flex items-center gap-3">
+              <CategoryPreview image={form.image} name={form.name} />
+
+              <div className="flex flex-col items-start gap-1.5">
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700">
+                  <Upload className="h-4 w-4" />
+                  {form.image ? "Ganti gambar" : "Pilih gambar"}
+                  <input
+                    type="file"
+                    accept={IMAGE_ACCEPT}
+                    className="hidden"
+                    onChange={handleImagePick}
+                  />
+                </label>
+
+                {form.image && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearImage}
+                  >
+                    Hapus gambar
+                  </Button>
+                )}
+              </div>
+            </div>
           </Field>
 
           <Field label="Warna" hint="Dipakai sebagai penanda visual.">

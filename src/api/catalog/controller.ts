@@ -14,6 +14,7 @@ import {
   responseNotFound,
   responseOK,
 } from "../utils/response";
+import { validateCategoryImage } from "./image";
 import { MENU_ITEM_TYPES, catalogService, type CatalogError } from "./service";
 
 type CatalogContext = Context<AuthEnv>;
@@ -125,10 +126,14 @@ class CatalogController {
       }
     }
 
+    const imageError = validateCategoryImage(body.image);
+    if (imageError) return responseBadRequest(c, imageError);
+
     const result = await catalogService.createCategory(getDb(c.env), {
       name,
       slug: typeof body.slug === "string" ? body.slug : undefined,
       color: typeof body.color === "string" ? body.color : undefined,
+      image: typeof body.image === "string" ? body.image : undefined,
     });
 
     if (typeof result === "string") return mapError(c, result);
@@ -157,10 +162,14 @@ class CatalogController {
       return responseBadRequest(c, "Warna harus format hex, contoh #FFAA00");
     }
 
+    const imageError = validateCategoryImage(body.image);
+    if (imageError) return responseBadRequest(c, imageError);
+
     const result = await catalogService.updateCategory(getDb(c.env), id, {
       ...(body.name !== undefined ? { name: body.name } : {}),
       ...(body.slug !== undefined ? { slug: body.slug } : {}),
       ...(body.color !== undefined ? { color: body.color } : {}),
+      ...(body.image !== undefined ? { image: body.image } : {}),
     });
 
     if (typeof result === "string") return mapError(c, result);

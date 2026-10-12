@@ -27,6 +27,20 @@ export const categories = sqliteTable(
     name: text("name").notNull(),
     slug: text("slug").notNull(),
     color: text("color").default("#CCCCCC"),
+    /**
+     * Gambar kategori sebagai **data URI base64** (`data:image/png;base64,…`),
+     * atau `null` bila belum diunggah.
+     *
+     * Disimpan di dalam baris ini — bukan di object storage terpisah — karena
+     * jumlah kategori sedikit dan gambarnya cuma ikon penanda, sehingga satu
+     * kolom menghilangkan seluruh urusan unggah/unduh berkas. Awalan
+     * `data:…;base64,` sengaja ikut tersimpan: bentuknya sudah siap dipakai
+     * `<img src>` dan tipe berkasnya tidak perlu ditebak.
+     *
+     * Batas panjangnya dijaga `CATEGORY_IMAGE_MAX_LENGTH` di
+     * `src/types/catalog.ts`, jauh di bawah batas 2 MB per baris D1.
+     */
+    image: text("image"),
     createdAt: text("created_at").notNull().default(now),
     updatedAt: text("updated_at").notNull().default(now),
   },

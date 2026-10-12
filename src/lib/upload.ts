@@ -25,3 +25,33 @@ export function readFileAsBase64(file: File): Promise<string> {
     reader.readAsDataURL(file);
   });
 }
+
+/**
+ * Baca berkas gambar menjadi **data URI utuh** (`data:image/png;base64,…`).
+ *
+ * Berbeda dari `readFileAsBase64` yang justru membuang awalannya: di sini
+ * awalan itulah yang dibutuhkan. Nilainya disimpan apa adanya di kolom
+ * `categories.image` dan langsung dipakai `<img src>`, sehingga tipe
+ * berkasnya tidak perlu ditebak saat menampilkan.
+ */
+export function readImageAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onerror = () => reject(new Error("Berkas tidak bisa dibaca"));
+    reader.onload = () => {
+      const result = typeof reader.result === "string" ? reader.result : "";
+
+      // `readAsDataURL` selalu menghasilkan awalan ini untuk berkas gambar;
+      // bila tidak ada, berkasnya bukan gambar yang bisa ditampilkan.
+      if (!result.startsWith("data:image/")) {
+        reject(new Error("Berkas bukan gambar"));
+        return;
+      }
+
+      resolve(result);
+    };
+
+    reader.readAsDataURL(file);
+  });
+}

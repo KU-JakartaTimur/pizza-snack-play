@@ -8,8 +8,8 @@
 | Field               | Value                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Nama Produk**     | Pizza Snack Play                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| **Versi Dokumen**   | 1.14                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| **Tanggal**         | 1 Oktober 2026                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| **Versi Dokumen**   | 1.16                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| **Tanggal**         | 12 Oktober 2026                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | **Stack Teknologi** | BHVR — Bun + Hono + Vite + React (Cloudflare Workers + D1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | **Status**          | Draft for Review                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | **Sumber Data**     | `data/output_jadwal_piket.txt` — Jadwal Piket Snack September 2026 (menu + penugasan siswa per kelas); `data/jadwal_piket_snack.txt` — arsip Agustus & September 2026 (menu saja)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
@@ -28,6 +28,9 @@
 | **Perubahan v1.13**  | **Laporan jadwal (F12) + satu pengecualian pada jadwal terbit.** **(a) Fitur Laporan Jadwal:** `GET /api/laporan?from=&to=&class=` menjawab pertanyaan rapat koordinasi "beban piket sudah merata belum?" — rekap **berapa kali setiap orang tua mengambil jadwal piket** beserta rincian tanggal/menu/anak, ringkasan (total ambil, orang tua aktif, tanggal terisi, rata-rata ambil), dan **daftar orang tua yang belum pernah ambil**. Sumbernya tabel `schedule_claims` yang sama dengan F9, jadi angkanya tidak pernah berbeda dari yang dilihat orang tua. Daftar "belum ambil" **tidak bisa diturunkan dari tabel klaim** — justru ketiadaan barisnya yang bermakna — karena itu dihitung dari `students`. Modul baru `src/api/laporan/` (repository → service → controller → route). Cakupan: **admin** tanpa `class` melihat seluruh sekolah, dengan `class` melihat satu kelas; **korlas selalu terbatas kelasnya sendiri** (kelas lain → `403`) karena laporan memuat nama orang tua sekaligus kebiasaannya mengambil piket; **orang tua → `403`**. Rentang maksimum **92 hari** agar tidak ada query tanpa batas. **(b) Pengecualian petugas pada baris terbit:** `locked`/`published` tetap tidak dapat diubah, **kecuali `petugasStudentId` sendirian** — piket sering baru terisi setelah jadwal terbit, dan memaksa admin membuka kunci hanya untuk mengisi nama petugas terbukti mengganggu. Patch **campuran** (petugas + menu/catatan/libur dalam satu permintaan) tetap `409 not_editable`, baris `isHoliday=1` juga `409`. Wewenang tidak dilonggarkan: `canWriteClass` tetap berlaku. **(c) Ekspor Excel akun orang tua:** `GET /api/parents/export?active=` (admin only) melengkapi ekspor jadwal yang sudah ada, dipakai untuk rekap akun sekolah. Uji baru: section 25 `scripts/test-api.mjs` (§ laporan) — total suite **495 assertion hijau** (auth 33 · api 396 · status 33 · profile 33) |
 | **Perubahan v1.14**  | **Impor akun orang tua dari Excel (F5).** Melengkapi ekspor akun v1.13: berkas hasil `GET /parents/export` kini bisa **disunting di Excel lalu diunggah kembali** lewat `POST /parents/import` (admin only) — satu format untuk dua arah, jadi tidak ada template kedua yang harus dijelaskan ke pengguna. Aturannya: **yang usernamenya sudah ada ditimpa, yang belum ada dibuat sebagai baris baru**. **(a) Pembaca `.xlsx` tanpa dependency** di `src/api/utils/xlsxRead.ts` — ZIP inflate lewat `DecompressionStream("deflate-raw")`, `sharedStrings.xml` + *inline string*, grid dibangun dari referensi sel (`r="C5"`) supaya baris/kolom kosong tidak menggeser data; Worker tidak punya pustaka spreadsheet, dan menambah satu dependency demi satu fitur berarti menambah bobot bundel. **(b) Kolom dicocokkan dari header, bukan posisi** — admin bebas mengurutkan ulang atau menambah kolom; yang wajib hanya *Nama orang tua*, *Username*, *Password*. **(c) Kunci pencocokan = username**, bukan nama orang tua: nama boleh kembar, username tidak (unik di skema). **(d) Sel kosong berarti "jangan sentuh"**, bukan "kosongkan" — berlaku untuk password, aktif, dan anak. Ini bukan detail kosmetik: tanpa aturan itu, mengunggah ulang berkas hasil ekspor akan menghapus password dan daftar anak seluruh akun, sebab sel *Password* pada ekspor memang sengaja kosong (hash tidak pernah keluar server). Id anak dipertahankan lewat pencocokan nama (`mergeStudentIds`), sehingga impor tidak menghapus-lalu-membuat ulang anak yang sebenarnya sama. **(e) Selalu lewat pratinjau** (`dryRun`) berisi ringkasan `{created, updated, skipped, errors[]}` + tabel keputusan per baris; penulisan baru terjadi setelah admin menekan "Terapkan". Baris baru tanpa username/password dilewati dan alasannya dilaporkan per baris (`rows[].reason`). **(f) Body dikirim sebagai JSON base64**, bukan `multipart/form-data`, karena klien memakai `ky` yang memaksa `Content-Type: application/json`. Uji: 34 uji unit (`bun test src/`, termasuk bundar ekspor → baca → tafsir) + `outputs/check-import-akun.mjs` (33 skenario API) + `outputs/check-import-akun-ui.mjs` (17 skenario browser) |
 | **Perubahan v1.15**  | **Checkbox pilih-baris + aksi massal di modul akun orang tua (F3b) + pembersihan halaman `/orang-tua`.** Admin tidak lagi harus mengubah satu akun satu klik: tabel akun kini punya **kotak centang per baris** dan **"Pilih semua"** di kepala, serta bilah aksi di bawah layar (`Aktifkan` / `Nonaktifkan` / `Hapus` / `Bersihkan`) yang **hanya menghidupkan tombol yang cocok dengan keadaan akun terpilih** (Aktifkan untuk yang nonaktif, Nonaktifkan untuk yang aktif). Endpoint baru `POST /parents/bulk` (`{ ids, action }`, `action` = `activate` \| `deactivate` \| `delete`) mengikuti jalur aksi massal yang sama dengan jadwal v1.11: baris yang keadaannya sudah cocok **dilewati** (`skipped`), id tak ditemukan `ignored`, dan seluruhnya mengembalikan `200` beserta `{ changed, skipped, ignored }` — bukan `409`. Hapus permanen meminta konfirmasi terpisah karena tidak dapat dibatalkan. `isActive` disimpan di dua tabel (`users` + `parents`) dan kedua sisi seirama. **Refactor:** halaman `/orang-tua` (~800 baris, satu komponen) dipecah menjadi `ParentsContent` (orchestrator) + `ParentTable`, `ParentFormModal`, `ParentBulkBar`, `selection.ts`, dan `form.ts` di `src/components/parents/` — meminjam pola yang sudah mapan di `src/components/jadwal/`. Uji baru: section 25 `scripts/test-api.mjs` (aksi massal akun) |
+
+| **Perubahan v1.16**  | **Gambar kategori + panel keterangan bulan berjalan.** **(a) Gambar kategori disimpan di database** sebagai data URI base64 pada kolom baru `categories.image` (migrasi `0008`; maksimum ~1 MB, tipe PNG/JPEG/WebP/GIF, divalidasi **dua sisi** — klien menolak berkas kebesaran sebelum dikirim lewat `readImageAsDataUrl()`, server memeriksanya lagi lewat `validateCategoryImage()` di `src/api/catalog/image.ts`). Tiga arti kolomnya sengaja dibedakan: `undefined` = "biarkan gambar yang tersimpan", `null` = "kosongkan", string = harus data URI yang sah dan tidak kebesaran. Halaman **Kategori** berubah dari tabel menjadi **daftar ber-thumbnail**: gambarnya bila sudah diunggah, kalau belum jatuh ke kotak warna — kategori lama tetap punya penanda yang bisa dibedakan sebelum gambarnya diisi. **Delapan kategori bawaan diberi ikon asli** (SVG di `scripts/category-icons.html`, dirasterkan tanpa dependency baru oleh `scripts/generate-category-icons.mjs` lewat Edge headless, lalu disemai `scripts/sql/kategori-icons.sql` yang mencocokkan **per `slug`**, bukan `id`, supaya aman dijalankan di D1 lokal maupun produksi). **(b) DTO katalog dipisah dua:** `CategorySummaryDto` (tanpa gambar — inilah bentuk yang menempel pada menu & jadwal) dan `CategoryDto` (dengan gambar — hanya halaman Kategori). Repository menu **tidak pernah** menyeleksi kolom `image`, sehingga satu bulan jadwal yang memuat puluhan menu tidak menggandakan data URI berkali-kali tanpa ada yang menampilkannya. **(c) Panel "Keterangan <bulan> <tahun>" di `/pilih-jadwal`**, hanya untuk **korlas & admin**: empat angka (sudah diambil · ditetapkan korlas · masih kosong · total tanggal) plus bilah kemajuan "x dari y tanggal sudah ada petugas". Angkanya turunan murni dari data jadwal yang sudah dimuat halaman (`summarizeMonth()` di `src/components/pilih-jadwal/summary.ts`), jadi korlas/admin membaca angka yang sama persis dengan yang dilihat orang tua. Grid-nya sendiri disaring `isClaimableDay()` — hanya baris `published`, bukan hari libur, dan benar-benar punya entri jadwal. **(d) Refactor:** `/pilih-jadwal` dari satu berkas menjadi `src/components/pilih-jadwal/` (MonthSnapshot, ClaimAction, ConflictDialog, PickToolbar, `summary.ts` + 6 uji unit) dan `src/hooks/useClaimActions.ts`; halaman tinggal jadi orkestrator. **(e) Gerbang migrasi** `scripts/check-migrations.mjs` dipasang di depan `db:migrate` & `db:migrate:local`: titik-koma di dalam komentar migrasi ditolak **sebelum** migrasi dijalankan. Sebabnya bukan soal gaya penulisan — `wrangler d1 migrations apply` mengirim isi berkas sebagai **satu string perintah** dan menempelkan `INSERT INTO d1_migrations` di belakangnya, sedangkan D1 memecah string itu per `;` **sebelum** membuang komentar, sehingga fragmen pertama (tinggal pembuka komentar) menyusut jadi kosong dan dijawab `SQL code did not contain a statement [code: 7500]`. Berkas yang sama berhasil bila dijalankan lewat `--file`, jadi jebakan ini hanya muncul di `migrations apply` |
+| **Perubahan v1.16b** | **Koreksi dokumen.** F1 dan AC26 masih menyatakan korlas boleh mengubah katalog menu & kategori. Itu **tidak lagi benar sejak commit `a0df518`** (19 Sep 2026), yang mempersempit `catalogWriters` menjadi `requireRole("admin")` dan menandai `canManageCatalog` sebagai admin-only di `src/lib/auth-context.ts`. Yang berlaku adalah kalimat di §3.3: korlas **membaca** katalog (semua menu yang ditambahkan admin langsung bisa ia pakai untuk kelasnya), sedangkan `POST`/`PUT`/`DELETE` di `/menus` & `/categories` dijawab `403`. Dokumen ini sekaligus diselaraskan dengan kode: tabel §7.6 dilengkapi `PUT`/`DELETE` kategori yang selama ini belum tercatat, §11.3 dikoreksi karena `db:migrate` sudah lama memakai `wrangler d1 migrations apply`, bukan `drizzle-kit migrate`, dan §6.3 tidak lagi menyebut folder `src/api/piket/` yang memang tidak pernah dibuat (F7 ditinggalkan sejak v1.7) |
 
 ---
 
@@ -119,10 +122,20 @@ Saat ini jadwal piket snack disusun dalam format teks manual (lihat lampiran), d
 - **Hapus menu** — soft delete (arsip).
 - **Katalog menu** — semua menu yang pernah dibuat, bisa dipakai ulang.
 - **Tagging** — kategori: "rebus", "goreng", "kukus", "panggang", "buah", dll.
+- **Gambar kategori** — setiap kategori boleh punya gambar (data URI base64, maks. ~1 MB) yang
+  tampil sebagai thumbnail di daftar kategori dan sebagai pratinjau di formulir. Delapan kategori
+  bawaan sudah diisi ikon aslinya.
 
-> Katalog menu bersifat **sekolah-wide** — dipakai bersama semua kelas, sehingga korlas ikut
-> mengelolanya (bukan hanya admin). Ini yang membuat korlas bisa langsung memakai menu baru
-> untuk kelasnya tanpa menunggu admin.
+> Katalog menu bersifat **sekolah-wide** — dipakai bersama semua kelas, jadi satu menu baru
+> langsung terpakai di kelas mana pun tanpa perlu diinput ulang per kelas.
+>
+> **Yang mengubahnya tetap admin saja.** Ini koreksi atas versi dokumen sebelumnya yang
+> menyatakan korlas ikut mengelola katalog: sejak commit `a0df518` penulis katalog adalah
+> `requireRole("admin")`, dan `canManageCatalog` menyembunyikan tombolnya dari korlas. Alasannya
+> masuk akal — katalog adalah satu-satunya daftar yang dipakai **bersama** seluruh sekolah,
+> sehingga tidak boleh ada dua kelas yang isinya berbeda. Yang dibutuhkan korlas bukan wewenang
+> menulis, melainkan **ketersediaan**: semua menu yang ditambahkan admin langsung bisa ia pilih
+> untuk kelasnya.
 
 ### F2: Manajemen Jadwal (Admin & Korlas — Per Kelas)
 
@@ -164,6 +177,10 @@ Saat ini jadwal piket snack disusun dalam format teks manual (lihat lampiran), d
 - **Filter by kategori** — mis. "menu gorengan saja minggu ini".
 - **Filter by buah** — "kapan terakhir jeruk disajikan?"
 - **Statistik ringan** — jumlah menu unik per bulan, distribusi kategori.
+- **Penanda visual kategori** — setiap kategori punya **warna** dan boleh punya **gambar**.
+  Warna sudah lama dipakai sebagai penanda; sejak v1.16 gambarnya bisa diunggah dan tampil di
+  daftar kategori, sedangkan kategori yang belum punya gambar tetap memakai kotak warnanya.
+  Jadi daftar tidak pernah tampak kosong hanya karena gambar belum diisi.
 
 ### F5: Ekspor, Impor & Cetak — ✅ SEBAGIAN (Excel terimplementasi, PDF belum)
 
@@ -308,6 +325,13 @@ Menjawab kebiasaan yang selama ini berjalan lewat grup WhatsApp: korlas mengumum
 - **Batas kelas tetap berlaku** — orang tua hanya bisa mengambil tanggal di kelas anaknya.
 - **Rebutan berjalan per kelas, bukan per tanggal sekolah.** Karena setiap kelas punya baris jadwalnya sendiri, klaim seorang **orang tua kelas 1** hanya menutup tanggal itu **bagi orang tua kelas 1 lain**. Orang tua **kelas 2** (dan kelas lain) tetap bisa mengambil tanggal yang sama pada baris kelasnya — menu memang sama, tetapi yang diperebutkan adalah giliran piket per kelas. Contoh: Bu Sari (kelas 1) mengambil Selasa 1 Sep → Bu Ani (kelas 1) ditolak `409`; Bu Dewi (kelas 2) tetap berhasil mengambil Selasa 1 Sep di kelas 2.
 - **Korlas ikut boleh memilih** karena ia tetap orang tua murid. Admin tidak punya profil orang tua, sehingga hanya bisa membaca rekap dan membatalkan klaim.
+- **Keterangan bulan berjalan (korlas & admin).** Di atas papan ada panel **"Keterangan <bulan> <tahun>"**
+  berisi empat angka — *Sudah diambil*, *Ditetapkan korlas*, *Masih kosong*, *Total tanggal* — plus
+  bilah kemajuan "x dari y tanggal sudah ada petugas". Angkanya turunan dari data jadwal yang sama
+  dengan yang dilihat orang tua, jadi kedua pihak tidak mungkin membaca angka yang berbeda.
+  **Admin tidak ikut memilih**, sehingga yang ia lihat hanya panel ini; rincian per orang tua ada di
+  Laporan Jadwal. Orang tua tidak melihat panelnya — yang ia butuhkan cuma tanggal mana yang masih
+  kosong, dan itu sudah dijawab penghitung di bilah atas.
 
 > **Jaminan tidak ada klaim ganda ada di database, bukan di aplikasi.** `schedule_claims` punya indeks unik pada `schedule_id`. Karena `schedule_id` menunjuk satu baris **(tanggal × kelas)**, keunikan itu otomatis berarti "satu tanggal per kelas untuk satu orang tua" — bukan "satu tanggal untuk seluruh sekolah". Dua permintaan yang tiba bersamaan pada baris yang sama sama-sama lolos pengecekan di service — lalu salah satunya ditolak SQLite dan dijawab **409**. Pengecekan di service hanya untuk pesan yang ramah; constraint-nyalah yang menegakkan aturan.
 >
@@ -517,12 +541,14 @@ pizza-snack-play/
 ├── src/
 │   ├── api/                      # Cloudflare Worker — Hono backend
 │   │   ├── index.ts              # Worker entry point (basePath /api)
-│   │   ├── auth/                 # Login, logout, me, ubah password
-│   │   ├── classes/              # Daftar kelas yang boleh diakses user (turunan, tanpa tabel)
-│   │   ├── catalog/              # Menu + kategori (admin & korlas)
-│   │   ├── schedules/            # Jadwal per kelas, minggu, hari libur (global)
+│   │   ├── auth/                 # Login, logout, me, ubah password, login-as (admin)
+│   │   ├── catalog/              # Menu + kategori — baca untuk semua, ubah **admin saja**
+│   │   ├── claims/               # Pilih jadwal — klaim tanggal oleh orang tua & korlas
+│   │   ├── classes/              # Daftar kelas + roster siswa per kelas (dropdown petugas)
+│   │   ├── laporan/              # Laporan jadwal — rekap ambil per orang tua (admin & korlas)
 │   │   ├── parents/              # CRUD akun orang tua + anak + korlas + ekspor/impor Excel
-│   │   ├── piket/                # Penugasan siswa piket per kelas per hari (Phase 4)
+│   │   ├── profile/              # Layanan mandiri: orang tua mengelola anaknya sendiri
+│   │   ├── schedules/            # Jadwal per kelas, minggu, hari libur, kunci & publikasi
 │   │   ├── stats/                # Ringkasan dashboard (admin)
 │   │   ├── middleware/           # requireAuth, requireRole
 │   │   └── utils/                # response, password, date, slug, params, sql, classScope, xlsx, xlsxRead, base64
@@ -530,6 +556,11 @@ pizza-snack-play/
 │   │   ├── db.ts                 # Inisialisasi Drizzle + D1 binding + tipe Db
 │   │   └── schema.ts             # Drizzle schema (13 tabel)
 │   ├── components/               # AppShell, ScheduleDayCard, ClassSwitcher, ui.tsx
+│   │   ├── jadwal/               # Bagian jadwal: MonthToolbar, ImportDialog, BulkActionBar, selection.ts
+│   │   ├── kategori/             # CategoryThumb + CategoryPreview (penanda gambar kategori)
+│   │   ├── parents/              # Bagian akun orang tua: ParentTable, ParentFormModal, ParentBulkBar
+│   │   └── pilih-jadwal/         # MonthSnapshot, ClaimAction, ConflictDialog, PickToolbar, summary.ts
+│   ├── hooks/                    # useClaimActions, useClassRoster, useClasses, useMonthNavigator, usePWA
 │   ├── routes/                   # TanStack Router — halaman frontend
 │   │   ├── __root.tsx            # Root + AuthProvider
 │   │   ├── login.tsx             # Halaman login
@@ -540,8 +571,8 @@ pizza-snack-play/
 │   │       ├── minggu-ini.tsx    # Jadwal Sepekan (per kelas aktif)
 │   │       ├── bulan.tsx         # Jadwal bulanan (per kelas aktif)
 │   │       ├── pencarian.tsx     # Cari riwayat menu (per kelas aktif)
-│   │       ├── menu.tsx          # CRUD menu (admin & korlas)
-│   │       ├── kategori.tsx      # CRUD kategori (admin & korlas)
+│   │       ├── menu.tsx          # Katalog menu — baca untuk semua, ubah hanya admin
+│   │       ├── kategori.tsx      # Katalog kategori + gambar (admin)
 │   │       ├── jadwal.tsx        # Kelola jadwal kelas (admin & korlas) + hari libur (admin)
 │   │       ├── orang-tua.tsx     # CRUD akun orang tua + anak + role/kelas (admin)
 │   │       └── profil.tsx        # Profil + daftar anak + ubah password
@@ -556,7 +587,9 @@ pizza-snack-play/
 ├── drizzle/
 │   ├── migrations/               # Migrasi D1 (drizzle-kit) — termasuk 0002 jadwal per kelas
 │   └── seed.sql                  # Seed SQL (di luar folder migrations)
-├── scripts/                      # seed.ts, test-auth.mjs, test-api.mjs
+├── scripts/                      # seed.ts, test-*.mjs, check-migrations.mjs
+│                                 #   category-icons.html + generate-category-icons.mjs — ikon kategori
+│                                 #   sql/ — semai ikon kategori & patch jadwal bulanan
 ├── docs/
 │   ├── PRD_Pizza_Snack_Play.md
 │   └── Struktur_Tabel_Pizza_Snack_Play.md
@@ -770,10 +803,28 @@ Semua pembacaan menerima query **`?class=`** opsional. Bila kosong, kelas defaul
 
 ### 7.6 Category Endpoints
 
-| Method | Path              | Deskripsi       | Role                  |
-| ------ | ----------------- | --------------- | --------------------- |
-| GET    | `/api/categories` | List kategori   | Admin, Korlas, Parent |
-| POST   | `/api/categories` | Tambah kategori | **Admin**             |
+| Method | Path                  | Deskripsi                                | Role                  |
+| ------ | --------------------- | ---------------------------------------- | --------------------- |
+| GET    | `/api/categories`     | List kategori **beserta gambarnya**       | Admin, Korlas, Parent |
+| GET    | `/api/categories/:id` | Detail satu kategori                     | Admin, Korlas, Parent |
+| POST   | `/api/categories`     | Tambah kategori (`name`, `color?`, `image?`) | **Admin**          |
+| PUT    | `/api/categories/:id` | Ubah kategori                            | **Admin**             |
+| DELETE | `/api/categories/:id` | Hapus kategori                           | **Admin**             |
+
+> **Kolom `image` menerima tiga arti.** `undefined` (tidak dikirim) → gambar yang tersimpan
+> dibiarkan; `null` → gambar dikosongkan; string → harus data URI base64 bertipe PNG/JPEG/WebP/GIF
+> dan tidak melebihi `CATEGORY_IMAGE_MAX_LENGTH` (1.000.000 karakter, ≈ 1 MB), atau dijawab `400`.
+> Panjangnya diperiksa **sebelum** regex dijalankan, supaya teks raksasa tidak pernah masuk ke
+> mesin pencocokan.
+>
+> **Gambar tidak pernah ikut ke payload menu & jadwal.** Daftar kategori yang menempel pada
+> `MenuDto` bertipe `CategorySummaryDto` (tanpa `image`), dan repository menu memang tidak
+> menyeleksi kolomnya. Satu bulan jadwal memuat puluhan menu, dan setiap menu membawa daftar
+> kategorinya — menyalin data URI di situ akan menggandakan ukuran jawaban berkali-kali tanpa ada
+> yang menampilkannya.
+>
+> **Yang mengubah kategori adalah admin** (`catalogWriters = requireRole("admin")`). Korlas dan
+> orang tua hanya membaca.
 
 ### 7.7 Report Endpoints
 
@@ -993,6 +1044,14 @@ keduanya menghapus keharusan mengulang satu baris satu klik.
 7. Berubah pikiran → **"Batalkan"** selama tanggalnya belum lewat; tanggal itu kembali terbuka untuk orang tua lain
 
 > Kartu yang berlabel **"Ditetapkan korlas"** tidak bisa diambil — petugasnya sudah ditentukan dari daftar piket manual.
+>
+> **Korlas & admin melihat satu panel tambahan.** Di atas papan ada **"Keterangan <bulan> <tahun>"**
+> berisi empat angka — *Sudah diambil*, *Ditetapkan korlas*, *Masih kosong*, *Total tanggal* —
+> plus bilah kemajuan "x dari y tanggal sudah ada petugas". Angkanya dihitung dari data jadwal yang
+> sama dengan yang dilihat orang tua, jadi tidak mungkin berbeda. **Admin tidak ikut memilih** (ia
+> tidak punya profil orang tua); yang ia lihat hanya panel ini, dan rincian per orang tua ada di
+> halaman Laporan. Orang tua tidak melihat panelnya — yang ia butuhkan cuma tanggal mana yang masih
+> kosong, dan itu sudah dijawab penghitung di bilah atas.
 
 ### 8.10 Admin & Korlas: Impor Jadwal dari Teks — ✅ Terimplementasi
 
@@ -1153,6 +1212,57 @@ Pratinjau impor (setelah memilih berkas `.xlsx`, sebelum menekan Terapkan):
 └──────────────────────────────────────────────────────────────┘
 ```
 
+### 9.5 Admin: Katalog Kategori (dengan gambar)
+
+```
+┌───────────────────────────────────────────────────────┐
+│  Kategori Menu                          [Logout]      │
+├───────────────────────────────────────────────────────┤
+│  [+ Tambah kategori]                                   │
+├───────────────────────────────────────────────────────┤
+│ [img]  Gorengan          #F59E0B   [Ubah] [Hapus]      │
+│        gorengan                                        │
+│ [img]  Kukusan           #10B981   [Ubah] [Hapus]      │
+│        kukusan                                         │
+│ [■]    Rebusan           #3B82F6   [Ubah] [Hapus]      │
+│        rebusan         ← belum punya gambar,           │
+│                          memakai kotak warna           │
+└───────────────────────────────────────────────────────┘
+```
+
+Formulir tambah/ubah kategori:
+```
+┌──────────────────────────────────────────┐
+│  Nama kategori   [Buah segar____]         │
+│  Gambar          [img] [Pilih gambar]     │
+│                        [Hapus gambar]     │
+│  Warna           [■] [#F59E0B___]         │
+│                       [Batal] [Simpan]    │
+└──────────────────────────────────────────┘
+```
+
+### 9.6 Korlas & Admin: Keterangan Bulan Berjalan (di /pilih-jadwal)
+
+```
+┌───────────────────────────────────────────────────────────────┐
+│  Keterangan September 2026                                    │
+│  Kelas 1 · jumlah snack yang sudah diambil pada bulan ini     │
+├───────────────────────────────────────────────────────────────┤
+│  ┌── Sudah diambil ──┐  ┌─ Ditetapkan korlas ┐               │
+│  │        12         │  │         5          │               │
+│  └───────────────────┘  └────────────────────┘               │
+│  ┌── Masih kosong ───┐  ┌── Total tanggal ──┐                │
+│  │         3         │  │        20          │               │
+│  └───────────────────┘  └────────────────────┘               │
+│                                                               │
+│  17 dari 20 tanggal sudah ada petugas              85%        │
+│  ████████████████████████████████████░░░░░░                  │
+└───────────────────────────────────────────────────────────────┘
+```
+
+> Panel ini **hanya dirender untuk korlas & admin** (`isAdmin || isKorlas`). Orang tua tidak
+> melihatnya; admin melihat panelnya tanpa papan tanggal, karena ia tidak ikut mengambil.
+
 ---
 
 ## 10. Non-Functional Requirements
@@ -1162,6 +1272,9 @@ Pratinjau impor (setelah memilih berkas `.xlsx`, sebelum menekan Terapkan):
 - Halaman utama load < 500ms — aset statis disajikan dari edge Cloudflare (CDN global).
 - API response < 100ms untuk query single record (Worker dieksekusi di edge terdekat).
 - Query D1 dioptimalkan dengan index pada kolom `schedule_date`.
+- **Gambar kategori tidak ikut ke payload menu & jadwal** (`CategorySummaryDto`), sehingga
+  menambahkan gambar tidak memperbesar respons halaman jadwal sama sekali — hanya `GET /categories`
+  yang membawanya.
 - Caching data fetching di frontend via TanStack Query (stale-while-revalidate).
 
 ### 10.2 Security
@@ -1229,12 +1342,15 @@ bun run dev        # → http://localhost:5173
 | `dev`         | `vite`                                              | Dev server dengan HMR                      |
 | `build`       | `tsc -b && vite build`                              | Build produksi (frontend + worker)         |
 | `preview`     | `vite preview`                                      | Preview hasil build secara lokal           |
-| `deploy`      | `bun run build && wrangler deploy --env production` | Deploy ke Cloudflare Workers               |
+| `deploy`      | `bun run build && bun run db:migrate && wrangler deploy --env production` | Build, terapkan migrasi, lalu deploy ke Cloudflare Workers |
 | `check`       | `tsc && vite build && wrangler deploy --dry-run`    | Validasi penuh sebelum deploy              |
 | `lint`        | `eslint .`                                          | Cek kualitas kode                          |
 | `cf-typegen`  | `wrangler types`                                    | Generate tipe dari binding `wrangler.json` |
 | `db:generate` | `drizzle-kit generate`                              | Generate file migrasi dari schema          |
-| `db:migrate`  | `drizzle-kit migrate`                               | Terapkan migrasi ke D1                     |
+| `db:migrate`  | `check-migrations.mjs && wrangler d1 migrations apply --remote` | Periksa komentar migrasi, lalu terapkan ke D1 produksi |
+| `db:migrate:local` | `check-migrations.mjs && wrangler d1 migrations apply --local` | Sama, untuk D1 lokal              |
+| `db:seed`     | `bun run scripts/seed.ts`                            | Bangkitkan `drizzle/seed.sql` dari file sumber |
+| `test:unit`   | `bun test src/`                                      | Uji unit murni (tanpa jaringan & tanpa D1) |
 | `db:push`     | `drizzle-kit push`                                  | Push schema langsung (dev)                 |
 | `db:studio`   | `drizzle-kit studio`                                | GUI untuk inspeksi database                |
 
@@ -1404,6 +1520,25 @@ bunx wrangler secret put JWT_SECRET
 - [x] Halaman `/laporan` + item navigasi (admin & korlas), diuji di `outputs/check-laporan.mjs`
 - [x] Pengecualian petugas pada baris `locked`/`published` (patch petugas-murni tetap diterapkan)
 
+### Phase 4g: Gambar Kategori & Panel Keterangan Bulan (v1.16) — ✅ SELESAI
+
+- [x] Kolom `categories.image` (data URI base64) + migrasi `0008_heavy_human_robot.sql`
+- [x] Validasi dua sisi: `validateCategoryImage()` (`src/api/catalog/image.ts`, 10 uji unit) dan
+      `readImageAsDataUrl()` (`src/lib/upload.ts`) yang menolak berkas kebesaran sebelum dikirim
+- [x] `CategorySummaryDto` (tanpa gambar) vs `CategoryDto` (dengan gambar); repository menu tidak
+      menyeleksi kolom `image` sehingga payload jadwal tidak membengkak
+- [x] Halaman `/kategori` menjadi daftar ber-thumbnail + pratinjau & unggah gambar di formulir
+- [x] Ikon asli untuk 8 kategori bawaan: `scripts/category-icons.html` (SVG) →
+      `scripts/generate-category-icons.mjs` (raster 256×256 lewat Edge headless, tanpa dependency)
+      → `scripts/sql/kategori-icons.sql` (dicocokkan per `slug`, idempoten)
+- [x] Panel **Keterangan <bulan>** di `/pilih-jadwal` untuk korlas & admin
+      (`MonthSnapshot.tsx` + `summarizeMonth()`; 6 uji unit)
+- [x] Refactor `/pilih-jadwal` → `src/components/pilih-jadwal/` + `src/hooks/useClaimActions.ts`
+- [x] `scripts/check-migrations.mjs` dipasang di depan `db:migrate` & `db:migrate:local`
+- [x] Verifikasi: 50 uji unit hijau; 8 ikon di D1 produksi dibandingkan **byte-per-byte** dengan
+      berkas lokal (`outputs/check-kategori-icons-api.mjs`, 27 assertion); UI diperiksa di peramban
+      nyata (`outputs/check-kategori-icons-ui.mjs`, 10 assertion)
+
 ### Phase 5: Ekspor, Impor & Cetak — 🔶 SEBAGIAN
 
 - [ ] Ekspor PDF jadwal Sepekan/bulanan (termasuk daftar siswa piket)
@@ -1452,7 +1587,7 @@ bunx wrangler secret put JWT_SECRET
 | AC23  | Data jadwal lama tidak hilang saat migrasi ke model per kelas                                                          | ✅ Done — migrasi `0002_*.sql` mereplikasi baris global ke tiap kelas: 43 → **129 baris**, 0 baris yatim (fallback kelas `'Umum'` bila belum ada kelas)                                                       |
 | AC24  | Korlas dapat mengubah jadwal **kelasnya sendiri**                                                                      | ✅ Done — `resolveWriteClass` + guard baris `canWriteClass`; `budi` (korlas 1) berhasil create/update/copy kelas 1; diuji di `test-api` section 19                                                            |
 | AC25  | Korlas **tidak dapat** menyentuh jadwal kelas lain (baca maupun tulis)                                                 | ✅ Done — `403 forbidden_class` / `Kelas ini bukan cakupan Anda`; diuji untuk read, create, update, delete, dan copy kelas lain (baris korban diverifikasi tidak berubah)                                     |
-| AC26  | Korlas dapat mengelola katalog menu & kategori                                                                         | ✅ Done — `requireRole("admin","korlas")` di `/menus` & `/categories`; diuji di `test-api` section 19                                                                                                         |
+| AC26  | Korlas **membaca** katalog menu & kategori, tetapi **tidak** mengubahnya                                                                         | ✅ Done — baca lewat `requireAuth`; `POST`/`PUT`/`DELETE` di `/menus` & `/categories` memakai `requireRole("admin")` dan dijawab `403` untuk korlas; tombolnya disembunyikan `canManageCatalog`. **Dikoreksi v1.16b** — versi sebelumnya keliru menyatakan korlas boleh mengelola katalog                                                                                                         |
 | AC27  | Korlas **tidak** dapat mengubah hari libur, akun orang tua, atau statistik                                             | ✅ Done — `requireRole("admin")` tetap di `/holidays`, `/parents`, `/stats`; diuji `403` di section 19                                                                                                        |
 | AC28  | Pengguna dengan akses > 1 kelas dapat berpindah kelas dari UI, dan pilihannya bertahan                                 | ✅ Done — `ClassSwitcher` di header (`GET /classes`), tersimpan di `localStorage.psp_class`; muncul hanya bila `classes.length > 1`; diverifikasi di browser (admin: 1–6, `dewi`: 2/3, `sari`: tanpa pemilih) |
 | AC29  | Admin/korlas dapat menetapkan siswa piket per kelas per hari                                                           | ✅ Done — bukan lewat `piket_assignments`, melainkan kolom `petugas_name`/`petugas_parent_name` di `schedules`                                                                                                |
@@ -1492,12 +1627,17 @@ bunx wrangler secret put JWT_SECRET
 | AC62  | **Petugas** dapat diisi pada jadwal yang sudah `locked`/`published`                                   | ✅ Done — patch `petugasStudentId`-murni diterapkan; dropdown Petugas tidak mengikuti `dayLocked` (diuji section 6 `test-api.mjs` & `outputs/check-petugas-terkunci.mjs` 9/9)                                                |
 | AC63  | Pengecualian petugas **tidak** menjadi celah untuk mengubah menu/catatan pada jadwal terbit           | ✅ Done — patch campuran tetap `409 not_editable`; baris `isHoliday=1` juga `409`; korlas kelas lain tetap `403` (diuji section 6)                                                                                          |
 | AC64  | Admin dapat mengunduh **rekap akun orang tua** sebagai Excel                                           | ✅ Done — `GET /parents/export?active=` (admin only); nama ortu, peran, kelas, anak, aktif, terkunci, login terakhir                                                                                                        |
-
 | AC65  | Admin dapat **mengunggah kembali** berkas hasil ekspor akun orang tua sebagai impor                   | ✅ Done — `POST /parents/import` (admin only); layout impor = layout ekspor (diuji `outputs/check-import-akun.mjs` 33/33 + `check-import-akun-ui.mjs` 17/17)                                                                  |
 | AC66  | Impor **menimpa** akun yang sudah ada dan **membuat baris baru** untuk yang belum ada                  | ✅ Done — upsert per **username** (unik di skema), bukan nama; hasil dilaporkan `{created, updated, skipped}`                                                                                                                 |
 | AC67  | Mengunggah ulang berkas ekspor **tidak menghapus** password, status aktif, atau daftar anak            | ✅ Done — sel kosong = "jangan sentuh"; id anak dipertahankan lewat pencocokan nama (`mergeStudentIds`); diuji khusus untuk akun tanpa anak                                                                                   |
 | AC68  | Impor selalu melewati **pratinjau** sebelum menulis, dan alasannya dilaporkan per baris                | ✅ Done — `dryRun: true` tidak menulis apa pun; `rows[].reason` memuat alasan tiap baris yang dilewati                                                                                                                        |
 | AC69  | Impor akun tertutup bagi selain admin                                                                  | ✅ Done — `requireRole("admin")`; korlas & orang tua dijawab `403` (diuji di `check-import-akun.mjs`)                                                                                                                         |
+| AC70  | Kategori dapat menyimpan **gambar** yang tampil sebagai thumbnail di daftar dan pratinjau di formulir | ✅ Done — kolom `categories.image` (data URI base64) + migrasi `0008`; halaman `/kategori` jadi daftar ber-thumbnail; diperiksa di peramban nyata (`outputs/check-kategori-icons-ui.mjs`, 10 assertion) |
+| AC71  | Gambar yang terlalu besar atau bertipe salah **ditolak**, di klien maupun di server                | ✅ Done — `readImageAsDataUrl()` menolak sebelum berkas dikirim; `validateCategoryImage()` memeriksa panjang **sebelum** regex; 10 uji unit di `src/api/catalog/image.test.ts` |
+| AC72  | Gambar kategori **tidak** ikut ke payload menu & jadwal                                            | ✅ Done — `CategorySummaryDto` tanpa `image`, repository menu tidak menyeleksi kolomnya; dibuktikan lewat `GET /api/menus` di `outputs/check-kategori-icons-api.mjs` |
+| AC73  | Korlas & admin melihat **keterangan bulan berjalan** (jumlah snack yang diambil) di `/pilih-jadwal`; orang tua tidak | ✅ Done — `MonthSnapshot` dirender bila `isAdmin \|\| isKorlas`; angkanya dari `summarizeMonth()` yang sama dengan yang dipakai grid; 6 uji unit di `src/components/pilih-jadwal/summary.test.ts` |
+| AC74  | Delapan kategori bawaan punya **ikon asli**, dan penyemaiannya aman dijalankan di D1 lokal maupun produksi | ✅ Done — `scripts/sql/kategori-icons.sql` mencocokkan **per `slug`** (bukan `id`); 8 payload di D1 produksi dibandingkan byte-per-byte dengan berkas lokal |
+| AC75  | Migrasi yang gagal di produksi **terdeteksi sebelum** dijalankan, bukan setelah menjawab `7500` | ✅ Done — `scripts/check-migrations.mjs` menolak titik-koma di dalam komentar migrasi, dipasang di depan `db:migrate` & `db:migrate:local`; diuji dua arah — berkas bersih lolos, berkas dengan `;` di dalam komentar ditolak |
 
 ---
 

@@ -10,7 +10,7 @@
   baru dipublikasikan, (2) tanggal yang petugasnya dibiarkan kosong akan direbut orang tua,
   (3) jadwal yang sudah terbit tidak bisa diedit sendiri — minta admin membuka kunci; dan
   **melakukan** — mencoba menempel jadwal dari teks sekolah pada kesempatan pertama.
-- **Deck length:** 17 halaman → kuota hero 3–4 halaman (realisasi **5**: 01 / 10 / 13 / 15 / 17 — lihat
+- **Deck length:** 18 halaman → kuota hero 3–4 halaman (realisasi **5**: 01 / 10 / 13 / 16 / 18 — lihat
   catatan penyimpangan di *Self-check*).
 - **Visual tone:** hangat · jelas · tidak menakutkan · warna brand sekolah. Sama dengan dek
   orang tua (satu keluarga desain), tetapi nadanya lebih "pegangan kerja" daripada "ajakan".
@@ -18,7 +18,8 @@
   - **Must cover:** apa tugas korlas; beda wewenang admin vs korlas; tiga cara mengisi jadwal
     (pilih menu per hari · Salin Sepekan · tempel teks dari sekolah); menentukan petugas atau
     membiarkannya kosong; **memperbarui banyak akun orang tua sekaligus lewat berkas Excel**;
-    urutan kunci → publikasi; aksi massal; **membaca laporan piket**; empat hal yang perlu diingat.
+    urutan kunci → publikasi; aksi massal; **memantau keterisian bulan berjalan**; **membaca laporan
+    piket**; empat hal yang perlu diingat.
   - **Do not cover:** arsitektur teknis, endpoint, nama tabel, migrasi, `dryRun`, JSON, kode HTTP.
     Istilah internal diterjemahkan ke bahasa kerja sehari-hari (`draft` → "masih bisa diubah",
     `locked` → "sudah dikunci", `published` → "sudah terbit ke orang tua").
@@ -27,31 +28,33 @@
 
 ## 2. Skeleton
 
-**Total 17 halaman · 4 bagian**
+**Total 18 halaman · 4 bagian**
 
 | Bagian | Judul | Halaman isi | Halaman pembuka |
 | :----- | :---- | :---------- | :-------------- |
 | 01 | Peran Anda | 04 | **hlm 3** |
 | 02 | Akun & wewenang | 06, 07 | **hlm 5** |
 | 03 | Menyusun jadwal | 09, 10, 11 | **hlm 8** |
-| 04 | Kunci, publikasi & laporan | 13, 14, 15, 16 | **hlm 12** |
+| 04 | Kunci, publikasi & laporan | 13, 14, 15, 16, 17 | **hlm 12** |
 
 **Kontrak daftar isi ↔ halaman pembuka:** daftar isi (hlm 2) menyatakan 4 bagian → seluruh dek
 tepat 4 halaman pembuka `type: section`, bernomor 01..04 berurutan, judul dan rentang halaman
 sama persis.
 
-**Penempatan hero:** 01 (sampul) / 10 (tempel teks) / 13 (terkunci lalu terbit) / **15 (laporan
-piket)** / 17 (penutup) = 5/17 ≈ 29%. Di antara dua hero selalu ada ≥ 1 halaman Supporting
-(13→15 dipisah 14; 15→17 dipisah 16).
+**Penempatan hero:** 01 (sampul) / 10 (tempel teks) / 13 (terkunci lalu terbit) / **16 (laporan
+piket)** / 18 (penutup) = 5/18 ≈ 28%. Di antara dua hero selalu ada ≥ 1 halaman Supporting
+(13→16 dipisah 14 dan 15; 16→18 dipisah 17).
 
 **Kurva rhythm:**
-`peak · valley · transition · valley · transition · valley · valley · transition · valley · peak · valley · transition · peak · valley · peak · valley · peak`
-Tidak ada ≥3 valley berurutan — hlm 06 dan 07 bersebelahan, jadi tepat dua valley, masih di batas.
+`peak · valley · transition · valley · transition · valley · valley · transition · valley · peak · valley · transition · peak · valley · valley · peak · valley · peak`
+Tidak ada ≥3 valley berurutan — ada **dua** pasang valley bersebelahan (hlm 06–07 dan hlm 14–15),
+keduanya masih di batas.
 
-**Anggaran layout:** asimetris 8/17 ≈ 47% (≥40% ✓); `N kartu sebaris` hanya 1 kali (hlm 16);
-`gambar besar kiri + teks kanan` + `dua kolom asimetris` total 4/17 ≈ 24% (≤40% ✓); tidak ada dua
-halaman berturut-turut berlayout sama (15 *teks raksasa* sama dengan 13, tetapi tidak
-berturutan — dipisah 14).
+**Anggaran layout:** asimetris 8/18 ≈ 44% (≥40% ✓); `N kartu sebaris` **sebagai layout halaman**
+tetap 1 kali (hlm 17) — hlm 15 memang memuat empat kotak angka sebaris, tetapi itu isi **tiruan
+panel aplikasi**, bukan layout halamannya, jadi tidak dihitung; `gambar besar kiri + teks kanan`
++ `dua kolom asimetris` total 4/18 ≈ 22% (≤40% ✓); tidak ada dua halaman berturut-turut
+berlayout sama (16 *teks raksasa* sama dengan 13, tetapi tidak berturutan — dipisah 14 dan 15).
 
 ## 3. Page outline
 
@@ -71,9 +74,10 @@ berturutan — dipisah 14).
 | 12 | 04 · Kunci & publikasi | section | transition | transition | Visual penuh + judul besar | L1: geometri SVG abstrak (gembok + pengeras suara) | atmosphere | ~30 kata / 1 gambar / ~45% ruang kosong | Jangan isi dengan paragraf | Halaman pembuka 04 |
 | 13 | Terkunci, lalu terbit | content | hero | peak | Teks raksasa + insight | L1: frasa raksasa "Kunci dulu, baru terbit" ≥60px + SVG tiga status | anchor | ~140 kata / 1 gambar / ~40% ruang kosong | Jangan menaruh frasa inti di pojok dengan huruf kecil | Puncak emosi kedua seluruh dek: urutan yang tidak bisa dibalik |
 | 14 | Aksi massal | content | supporting | valley | Gambar besar kiri + teks kanan | L1: SVG tabel + kotak centang (kiri 55%) | anchor | ~190 kata / 1 gambar / ~22% ruang kosong | Jangan bagi rata 50:50 | Centang hari atau kelas, lalu satu klik |
-| 15 | Laporan piket: sudah merata? | content | hero | peak | Teks raksasa + insight | L1: frasa raksasa "Merata, bukan sekadar penuh." ≥60px + SVG rekap batang per orang tua (kanan 45%) | anchor | ~120 kata / 1 gambar / ~40% ruang kosong | Jangan menaruh frasa inti di pojok dengan huruf kecil; jangan memakai angka karangan | **Fitur terbaru:** rekap berapa kali tiap orang tua ambil piket + daftar yang belum pernah ambil |
-| 16 | Empat hal yang perlu diingat | content | supporting | valley | N kartu sebaris (satu-satunya di dek ini) | L3: satu ikon per kartu (32px, seragam) | evidence | ~230 kata (≥ 55 per kartu) / 0 gambar / ~22% ruang kosong | Jangan kartu yang hanya berisi judul; jangan ukuran ikon tidak seragam | Penutup: empat jebakan yang paling sering terjadi — **diperbaiki v1.13:** petugas masih bisa diisi setelah terbit, yang terkunci menu & catatannya |
-| 17 | Terima kasih | ending | hero | peak | Visual penuh + judul besar | L1: app_logo.png (tengah 200×200) + SVG pendar cahaya | anchor | ~45 kata / 1 gambar / ~45% ruang kosong | Jangan menaruh placeholder kontak | Penutup: ajakan mencoba impor teks minggu ini, lalu memeriksa Laporannya |
+| 15 | Keterangan bulan: sudah berapa yang terisi? | content | supporting | valley | Kartu putih lebar (tiruan panel) + jalur bawah | L1: empat kotak angka + bilah kemajuan di dalam tiruan panel Keterangan | evidence | ~150 kata / 1 gambar / ~22% ruang kosong | Jangan menjadikan empat kartu sebaris sebagai layout halaman; jangan menyiratkan panel ini untuk orang tua | **Fitur terbaru:** panel Keterangan bulan di halaman Pilih Jadwal — hanya korlas & admin |
+| 16 | Laporan piket: sudah merata? | content | hero | peak | Teks raksasa + insight | L1: frasa raksasa "Merata, bukan sekadar penuh." ≥60px + SVG rekap batang per orang tua (kanan 45%) | anchor | ~120 kata / 1 gambar / ~40% ruang kosong | Jangan menaruh frasa inti di pojok dengan huruf kecil; jangan memakai angka karangan | **Fitur terbaru:** rekap berapa kali tiap orang tua ambil piket + daftar yang belum pernah ambil |
+| 17 | Empat hal yang perlu diingat | content | supporting | valley | N kartu sebaris (satu-satunya di dek ini) | L3: satu ikon per kartu (32px, seragam) | evidence | ~230 kata (≥ 55 per kartu) / 0 gambar / ~22% ruang kosong | Jangan kartu yang hanya berisi judul; jangan ukuran ikon tidak seragam | Penutup: empat jebakan yang paling sering terjadi — **diperbaiki v1.13:** petugas masih bisa diisi setelah terbit, yang terkunci menu & catatannya |
+| 18 | Terima kasih | ending | hero | peak | Visual penuh + judul besar | L1: app_logo.png (tengah 200×200) + SVG pendar cahaya | anchor | ~45 kata / 1 gambar / ~45% ruang kosong | Jangan menaruh placeholder kontak | Penutup: ajakan mencoba impor teks minggu ini, lalu memeriksa Laporannya |
 
 ### Di mana angka mendarat
 
@@ -85,29 +89,34 @@ angka" berasal dari fakta produk:
   kecepatan.
 - Hlm 13: frasa raksasa alih-alih angka. **Penilaian:** urutan tiga status tidak bisa dibalik, dan
   justru itu yang paling sering membuat korlas bingung.
-- Hlm 15: **angka yang ditampilkan adalah contoh, bukan data nyata** — 4/3/2/1/0 pada ilustrasi
+- Hlm 16: **angka yang ditampilkan adalah contoh, bukan data nyata** — 4/3/2/1/0 pada ilustrasi
   rekap. Sengaja tidak dikarang dalam bentuk "78% orang tua sudah merata", karena dek ini tidak
   memuat data KPI. **Penilaian:** korlas hanya perlu melihat *bentuk* laporannya; angkanya akan
   terisi sendiri begitu ia membuka menunya.
 - Hlm 07: **angka pada ilustrasi pratinjau (Dibuat 2 · Diperbarui 34 · Dilewati 1) juga contoh,
   bukan data sekolah.** **Penilaian:** yang perlu ditangkap admin adalah *bentuk* pratinjaunya —
   ada tiga angka yang muncul sebelum apa pun tersimpan.
+- Hlm 15: **angka pada tiruan panel (12 · 5 · 3 · 20 → 85%) juga contoh, bukan data
+  sekolah.** **Penilaian:** yang perlu ditangkap korlas adalah *bentuk* panelnya — empat angka yang
+  langsung menjawab "sudah berapa yang terisi", lalu satu bilah kemajuan yang menutupnya.
 
 ### Self-check
 
-- ⚠️ Hero = **5/17 ≈ 29%** — tepat di ambang atas rentang 20–30%. **Penyimpangan yang disengaja
-  dan dicatat:** halaman 15 memperkenalkan fitur baru (Laporan piket) yang menjadi alasan dek ini
-  diperbarui, sehingga diberi perlakuan hero. Menjadikannya Supporting akan melahirkan tiga
-  valley berurutan (14·15·16), yang lebih merusak ritme daripada kelebihan satu hero.
-- ⚠️ Dua valley bersebelahan di hlm **06–07** (halaman baru masuk ke bagian 02, yang sebelumnya
-  hanya punya satu halaman isi). **Penyimpangan yang dicatat:** menaikkan hlm 07 jadi hero akan
-  melewati kuota hero yang sudah di ambang, dan menandainya `transition` tidak jujur — halaman ini
-  memuat isi, bukan membuka bagian. Dua valley masih di dalam batas (larangan hanya ≥3).
+- ⚠️ Hero = **5/18 ≈ 28%** — masih di dalam rentang 20–30%, dan justru **membaik** setelah halaman
+  baru masuk. **Catatan lama tetap berlaku:** halaman **16** (Laporan piket) diberi perlakuan hero
+  karena ia memperkenalkan fitur baru; menjadikannya Supporting akan melahirkan tiga valley
+  berurutan, yang lebih merusak ritme daripada kelebihan satu hero.
+- ⚠️ Dua pasang valley bersebelahan: hlm **06–07** (halaman baru masuk ke bagian 02, yang
+  sebelumnya hanya punya satu halaman isi) dan hlm **14–15** (hlm 15 baru masuk ke bagian 04, tepat
+  di antara "Aksi massal" dan hero "Laporan piket"). **Penyimpangan yang dicatat:** menaikkan hlm 07
+  atau hlm 15 menjadi hero akan melewati kuota hero yang sudah di ambang, dan menandainya
+  `transition` tidak jujur — keduanya memuat isi, bukan membuka bagian. Dua valley masih di dalam
+  batas (larangan hanya ≥3).
 - ✅ Tidak ada ≥3 valley berurutan
-- ✅ `N kartu sebaris` hanya 1 kali
-- ✅ Layout asimetris 8/17 ≈ 47% ≥ 40%
+- ✅ `N kartu sebaris` sebagai layout halaman hanya 1 kali (hlm 17)
+- ✅ Layout asimetris 8/18 ≈ 44% ≥ 40%
 - ✅ Tidak ada dua halaman berturut-turut berlayout sama
-- ✅ `gambar besar kiri + teks kanan` + `dua kolom asimetris` total 4/17 ≈ 24% ≤ 40%
+- ✅ `gambar besar kiri + teks kanan` + `dua kolom asimetris` total 4/18 ≈ 22% ≤ 40%
 - ✅ Setiap halaman punya role / rhythm / visual_role / anti_pattern
 - ✅ 4 bagian ↔ 4 halaman pembuka, nomor 01..04 berurutan
 
@@ -119,9 +128,11 @@ angka" berasal dari fakta produk:
 | 2026-09-30 | v1.13 | **Dek diperluas ke 16 halaman.** **Hlm 14 baru — "Laporan piket: sudah merata?"** (hero): rekap jumlah ambil per orang tua + daftar *belum pernah ambil*. Bagian 04 diganti namanya menjadi "Kunci, publikasi & laporan" (hlm 12–15) dan daftar isi hlm 02 diperbarui. **Hlm 15** dikoreksi: kartu 1 sebelumnya menyatakan petugas "tidak bisa diubah lagi" setelah terbit — sejak v1.13 **petugas justru masih bisa diisi** pada jadwal terbit; yang terkunci tetap menu & catatan. **Hlm 16** ajakan penutup kini menyebut Laporan. Seluruh nomor halaman di bilah kaki menjadi `NN / 16`. |
 | 2026-10-01 | v1.14 | **Dek diperluas ke 17 halaman.** **Hlm 07 baru — "Kelola akun orang tua sekaligus"** (supporting): cara admin memperbarui banyak akun sekaligus dari berkas Excel — unduh daftar lewat Ekspor, sunting, unggah kembali; yang usernamenya sudah ada **ditimpa**, yang belum **ditambah**; sel kosong tidak mengubah data; selalu ada pratinjau sebelum apa pun tersimpan. Halaman ini masuk ke **bagian 02 (Akun & wewenang)**, yang sebelumnya hanya punya satu halaman isi. Halaman 07–16 lama bergeser menjadi 08–17 dan seluruh nomor di bilah kaki menjadi `NN / 17`. Daftar isi hlm 02, tabel *Page outline*, kurva ritme, dan anggaran layout di dokumen ini ikut disesuaikan. |
 
+| 2026-10-12 | v1.16 | **Dek diperluas ke 18 halaman.** **Hlm 15 baru — "Keterangan bulan: sudah berapa yang terisi?"** (supporting): panel **Keterangan <bulan>** di halaman Pilih Jadwal yang hanya dirender untuk **korlas & admin** — empat angka (sudah diambil · ditetapkan korlas · masih kosong · total tanggal) plus bilah kemajuan "x dari y tanggal sudah ada petugas". Halaman 15–17 lama bergeser menjadi 16–18 dan seluruh nomor di bilah kaki menjadi `NN / 18`. **Hlm 06** dikoreksi: kartu "Tetap wewenang admin" kini menyebut katalog menu, kategori, **dan gambarnya**. Daftar isi hlm 02 menyebut rentang bagian 04 sebagai `13–17` dengan ringkasan "Kunci–terbit, aksi massal, pantauan, lalu rekap piket". |
+
 ## 4. Sumber fakta
 
-Semua klaim di dek ini diambil dari kondisi aplikasi **v1.14** (1 Oktober 2026):
+Semua klaim di dek ini diambil dari kondisi aplikasi **v1.16** (12 Oktober 2026):
 
 - `README.md` § Fitur & § Catatan Teknis — wewenang role, siklus `draft → locked → published`.
 - `src/api/schedules/route.ts` — `POST /schedules/lock` & `/publish` memakai `scheduleWriters`
@@ -152,3 +163,16 @@ Semua klaim di dek ini diambil dari kondisi aplikasi **v1.14** (1 Oktober 2026):
   `dryRun: true` tidak menulis apa pun. Dasar klaim kartu 3 hlm 07.
 - `src/components/ImportButton.tsx` & `src/routes/_app/orang-tua.tsx` — tombol **Impor** ada di
   header halaman Akun Orang Tua; alurnya pilih berkas → pratinjau → **Terapkan**.
+- `src/routes/_app/pilih-jadwal.tsx` — `showSnapshot = isAdmin || isKorlas`: panel Keterangan
+  hanya dirender untuk korlas & admin, dan admin melihatnya **tanpa** papan tanggal karena ia tidak
+  ikut mengambil. Dasar hlm 15.
+- `src/components/pilih-jadwal/MonthSnapshot.tsx` — judul `Keterangan {bulan} {tahun}`, empat kotak
+  angka (Sudah diambil · Ditetapkan korlas · Masih kosong · Total tanggal), lalu bilah kemajuan
+  "x dari y tanggal sudah ada petugas". Dasar tata letak tiruan panel di hlm 15.
+- `src/components/pilih-jadwal/summary.ts` — `isClaimableDay()` (hanya `published`, bukan libur,
+  punya entri jadwal) dan `summarizeMonth()` yang menghitung `taken`/`assigned`/`empty`/
+  `filledPercent`. Angka contoh di hlm 15 (12 · 5 · 3 · 20 → 85%) mengikuti rumus itu.
+- `src/api/catalog/route.ts` — `catalogWriters = requireRole("admin")`: katalog menu & kategori
+  hanya dapat **diubah** admin; korlas membacanya. Dasar kartu "Tetap wewenang admin" di hlm 06.
+- `src/components/kategori/CategoryThumb.tsx` — gambar kategori dipakai bila ada, kalau belum jatuh
+  ke kotak warna. Dasar kata "dan gambarnya" pada kartu yang sama.

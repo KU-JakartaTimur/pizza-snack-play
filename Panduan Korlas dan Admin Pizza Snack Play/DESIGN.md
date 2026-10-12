@@ -28,7 +28,7 @@ family. The only difference is register: orang tua → "ajakan"; korlas/admin �
 | :--- | :---------------- | :----- | :------ |
 | **A · Title block** | 20 – 130px | 110px | Main title 34px bold; a 6px-high, 72px-wide purple rule below it (`secondary` lime on section pages) |
 | **B · Content area** | 130 – 660px | 530px | Body / cards / illustration / giant type |
-| **C · Footer bar** | 660 – 700px | 40px | Left: project watermark `Pizza Snack Play · Panduan Korlas & Admin` (14px `#6B6478`) · Right: page number `NN / 16` (14px `#6B6478`) |
+| **C · Footer bar** | 660 – 700px | 40px | Left: project watermark `Pizza Snack Play · Panduan Korlas & Admin` (14px `#6B6478`) · Right: page number `NN / 18` (14px `#6B6478`) |
 
 **Height check:** 20 + 110 + 530 + 40 + 20 = 720 ✓ (the sum of all card heights + gaps inside
 zone B must be ≤ 530)
@@ -66,16 +66,18 @@ zone B must be ≤ 530)
 | 04 Tiga tugas | 30% | 22% | 8% | Illustration-led |
 | 05 Section | 60% | 15% | 5% | Purple ground, reversed-out |
 | 06 Beda wewenang | 28% | 22% | 5% | Two-column comparison, purple/grey clearly separated |
-| 07 Section | 60% | 15% | 5% | Purple ground, reversed-out |
-| 08 Isi menu | 25% | 20% | 8% | The table illustration is the evidence |
-| 09 Tempel teks | 50% | 15% | 18% | **Hero**, accent peaks on the CTA |
-| 10 Petugas | 25% | 20% | 5% | Restrained |
-| 11 Section | 60% | 15% | 5% | Purple ground, reversed-out |
-| 12 Terkunci lalu terbit | 45% | 15% | 20% | **Hero**, giant phrase + orange status bar |
-| 13 Aksi massal | 30% | 20% | 10% | Accent lands on the checkboxes |
-| 14 Laporan piket | 42% | 18% | 18% | **Hero** (v1.13), giant phrase + accent on the "0" bar |
-| 15 Four cards | 25% | 25% | 5% | Card top rules in secondary |
-| 16 Ending | 55% | 15% | 12% | Hero |
+| 07 Akun massal | 30% | 22% | 8% | Illustration-led, spreadsheet → preview → list |
+| 08 Section | 60% | 15% | 5% | Purple ground, reversed-out |
+| 09 Isi menu | 25% | 20% | 8% | The table illustration is the evidence |
+| 10 Tempel teks | 50% | 15% | 18% | **Hero**, accent peaks on the CTA |
+| 11 Petugas | 25% | 20% | 5% | Restrained |
+| 12 Section | 60% | 15% | 5% | Purple ground, reversed-out |
+| 13 Terkunci lalu terbit | 45% | 15% | 20% | **Hero**, giant phrase + orange status bar |
+| 14 Aksi massal | 30% | 20% | 10% | Accent lands on the checkboxes |
+| 15 Keterangan bulan | 25% | 25% | 5% | Restrained; the accent is the progress bar, never the four tiles |
+| 16 Laporan piket | 42% | 18% | 18% | **Hero** (v1.13), giant phrase + accent on the "0" bar |
+| 17 Four cards | 25% | 25% | 5% | Card top rules in secondary |
+| 18 Ending | 55% | 15% | 12% | Hero |
 
 ---
 
@@ -88,11 +90,11 @@ delivery):
 | :---- | :--- | :----- | :---------- | :----- |
 | Cover title | 66px | bold | 1.2 | `Trebuchet MS` |
 | Section type | 60px | bold | 1.1 | `Trebuchet MS` |
-| Giant type anchor (page 12) | **64px** | bold | 1.05 | `Trebuchet MS` |
+| Giant type anchor (page 13) | **64px** | bold | 1.05 | `Trebuchet MS` |
 | Page title (zone A) | 34px | bold | 1.3 | `Trebuchet MS` |
 | Subtitle / card heading | 24–26px | bold | 1.4 | `Trebuchet MS` |
 | Body | 20–22px | regular | 1.55 | `Verdana` |
-| Card body (page 14) | 17–18px | regular | 1.5 | `Verdana` |
+| Card body (page 17) | 17–18px | regular | 1.5 | `Verdana` |
 | Notes / annotations | 17–18px | regular | 1.5 | `Verdana` |
 | Footer / page number | 14px | regular | 1.4 | `Verdana` |
 
@@ -103,7 +105,7 @@ delivery):
 
 ## 4. Density gates
 
-- Whitespace on regular content pages **≤ 35%**; hero pages may reach 40–45% (pages 01/09/12/14/16).
+- Whitespace on regular content pages **≤ 35%**; hero pages may reach 40–45% (pages 01/10/13/16/18).
 - **Container fill rate ≥ 85%:** text + icon inside a card must occupy ≥ 85% of the container height.
 - **Footer anchoring:** the last element in a card (tag rule / highlighted sentence) uses
   `marginTop: 'auto'` to pin to the bottom.
@@ -127,7 +129,7 @@ elements and **never impersonates photography or a group of people**.
 
 | File | Source | Actual content | Size | Used on | Verified |
 | :--- | :----- | :------------- | :--- | :------ | :------- |
-| `assets/app_logo.png` | P0 material (copied from `public/logo.png`) | The app's official logo: pizza + calendar + "PIZZA SNACK PLAY", on teal | 690×670 | 01, 16 | ✅ Read and confirmed |
+| `assets/app_logo.png` | P0 material (copied from `public/logo.png`) | The app's official logo: pizza + calendar + "PIZZA SNACK PLAY", on teal | 690×670 | 01, 18 | ✅ Read and confirmed |
 
 ### SVG plan (per page)
 
@@ -139,18 +141,20 @@ elements and **never impersonates photography or a group of people**.
 | 04 | Three-step flow bar: Susun → Petugas → Umumkan | Left column, approx. 560×440 | L1 |
 | 05 | Translucent purple circle + key + badge | Full-bleed background, opacity 0.14 | L1 (atmosphere) |
 | 06 | Two-column comparison: centang (boleh) vs silang (tidak boleh) | Right column, approx. 380×360 | L2 |
-| 07 | Translucent purple circle + calendar grid + pencil | Full-bleed background, opacity 0.14 | L1 (atmosphere) |
-| 08 | Jadwal table: date rows + menu columns | Top, approx. 1100×300 | L1 |
-| 09 | Text dialogue box → arrow → preview table | Right, approx. 560×470 | L1 |
-| 10 | Dropdown holding student names + an auto-filled "orang tua" row | Top right, approx. 300×220 | L2 |
-| 11 | Translucent purple circle + padlock + megaphone | Full-bleed background, opacity 0.14 | L1 (atmosphere) |
-| 12 | Three-stage status bar: bisa diubah → dikunci → terbit | Right, approx. 420×360 | L1 |
-| 13 | Table + three filled checkboxes | Left column, approx. 560×440 | L1 |
-| 14 | Bar recap per orang tua (4/3/2/1) + satu bar "0" accent | Right, approx. 430×430 | L1 |
-| 15 | — (one inline `<svg>` per card, 32px, uniform solid) | Top of each card | L3 |
-| 16 | Glow circle + logo | Centred | L1 |
+| 07 | Spreadsheet → preview table → account list | Left column, approx. 560×440 | L1 |
+| 08 | Translucent purple circle + calendar grid + pencil | Full-bleed background, opacity 0.14 | L1 (atmosphere) |
+| 09 | Jadwal table: date rows + menu columns | Top, approx. 1100×300 | L1 |
+| 10 | Text dialogue box → arrow → preview table | Right, approx. 560×470 | L1 |
+| 11 | Dropdown holding student names + an auto-filled "orang tua" row | Top right, approx. 300×220 | L2 |
+| 12 | Translucent purple circle + padlock + megaphone | Full-bleed background, opacity 0.14 | L1 (atmosphere) |
+| 13 | Three-stage status bar: bisa diubah → dikunci → terbit | Right, approx. 420×360 | L1 |
+| 14 | Table + three filled checkboxes | Left column, approx. 560×440 | L1 |
+| 15 | Four number tiles + a progress bar inside a mock Keterangan panel | Wide white card spanning zone B, track pinned to the bottom | L1 |
+| 16 | Bar recap per orang tua (4/3/2/1) + satu bar "0" accent | Right, approx. 430×430 | L1 |
+| 17 | — (one inline `<svg>` per card, 32px, uniform solid) | Top of each card | L3 |
+| 18 | Glow circle + logo | Centred | L1 |
 
-**L3 placement consistency:** the L3 badges on pages 02/15 sit at the **top-left** of their card /
+**L3 placement consistency:** the L3 badges on pages 02/17 sit at the **top-left** of their card /
 row, consistently across the deck.
 
 **Icons must be inline `<svg>`, not `<FAIcon>`:** `icon://fa/...` never resolves on this machine —
@@ -172,16 +176,18 @@ therefore written as `<svg viewBox="..."><path fill="..." d="..."/></svg>` with 
 | 04 | `slides/04.slide` | content | supporting | Large image left + text right | SVG three-step flow | 200 | 22% | 30/22/8 | Illustration occupies the left 55%, three points on the right |
 | 05 | `slides/05.slide` | section | transition | Full-bleed visual + large title | SVG key + badge | 30 | 45% | 60/15/5 | Purple ground, reversed-out, chapter number 02 |
 | 06 | `slides/06.slide` | content | supporting | Asymmetric two-column 60:40 | SVG comparison columns | 210 | 22% | 28/22/5 | Two cards left (60%), illustration right (40%) |
-| 07 | `slides/07.slide` | section | transition | Full-bleed visual + large title | SVG calendar + pencil | 30 | 45% | 60/15/5 | Purple ground, reversed-out, chapter number 03 |
-| 08 | `slides/08.slide` | content | supporting | Large image on top + cards below | SVG jadwal table | 200 | 20% | 25/20/8 | Illustration occupies the top 58%, two cards 60:40 below |
-| 09 | `slides/09.slide` | content | hero | Full-width visual + text over the rule | SVG dialogue → preview | 110 | 40% | 50/15/18 | Giant phrase 44px + accent CTA |
-| 10 | `slides/10.slide` | content | supporting | Title left + content right | SVG dropdown | 190 | 24% | 25/20/5 | Narrow purple column 30% left, three points + use case right |
-| 11 | `slides/11.slide` | section | transition | Full-bleed visual + large title | SVG padlock + megaphone | 30 | 45% | 60/15/5 | Purple ground, reversed-out, chapter number 04 |
-| 12 | `slides/12.slide` | content | hero | Giant type + insight | SVG three-stage status bar | 140 | 40% | 45/15/20 | Giant phrase **64px**, never tucked into a corner |
-| 13 | `slides/13.slide` | content | supporting | Large image left + text right | SVG table + check marks | 190 | 22% | 30/20/10 | Illustration occupies the left 55%, three points on the right |
-| 14 | `slides/14.slide` | content | hero | Giant type + insight | SVG recap bars | 120 | 40% | 42/18/18 | Giant phrase **62px**; the numbers on the bars are **worked examples**, not measured data |
-| 15 | `slides/15.slide` | content | supporting | N cards in a row (the only one) | L3 icons ×4 | 230 | 22% | 25/25/5 | 4 cards, ≥ 55 words each, footer rule pinned to the bottom |
-| 16 | `slides/16.slide` | ending | hero | Full-bleed visual + large title | app_logo.png | 45 | 45% | 55/15/12 | Logo centred 200×200 + a one-line sign-off |
+| 07 | `slides/07.slide` | content | supporting | Large image left + text right | SVG spreadsheet → preview | 190 | 22% | 30/22/8 | Illustration occupies the left 55%, three points on the right; never name a spreadsheet column or a machine term |
+| 08 | `slides/08.slide` | section | transition | Full-bleed visual + large title | SVG calendar + pencil | 30 | 45% | 60/15/5 | Purple ground, reversed-out, chapter number 03 |
+| 09 | `slides/09.slide` | content | supporting | Large image on top + cards below | SVG jadwal table | 200 | 20% | 25/20/8 | Illustration occupies the top 58%, two cards 60:40 below |
+| 10 | `slides/10.slide` | content | hero | Full-width visual + text over the rule | SVG dialogue → preview | 110 | 40% | 50/15/18 | Giant phrase 44px + accent CTA |
+| 11 | `slides/11.slide` | content | supporting | Title left + content right | SVG dropdown | 190 | 24% | 25/20/5 | Narrow purple column 30% left, three points + use case right |
+| 12 | `slides/12.slide` | section | transition | Full-bleed visual + large title | SVG padlock + megaphone | 30 | 45% | 60/15/5 | Purple ground, reversed-out, chapter number 04 |
+| 13 | `slides/13.slide` | content | hero | Giant type + insight | SVG three-stage status bar | 140 | 40% | 45/15/20 | Giant phrase **64px**, never tucked into a corner |
+| 14 | `slides/14.slide` | content | supporting | Large image left + text right | SVG table + check marks | 190 | 22% | 30/20/10 | Illustration occupies the left 55%, three points on the right |
+| 15 | `slides/15.slide` | content | supporting | Wide mock panel + a track underneath | SVG number tiles + progress bar | 150 | 22% | 25/25/5 | The mock panel is **one** object, not a row of cards; never imply this panel is visible to parents |
+| 16 | `slides/16.slide` | content | hero | Giant type + insight | SVG recap bars | 120 | 40% | 42/18/18 | Giant phrase **62px**; the numbers on the bars are **worked examples**, not measured data |
+| 17 | `slides/17.slide` | content | supporting | N cards in a row (the only one) | L3 icons ×4 | 230 | 22% | 25/25/5 | 4 cards, ≥ 55 words each, footer rule pinned to the bottom |
+| 18 | `slides/18.slide` | ending | hero | Full-bleed visual + large title | app_logo.png | 45 | 45% | 55/15/12 | Logo centred 200×200 + a one-line sign-off |
 
 ---
 

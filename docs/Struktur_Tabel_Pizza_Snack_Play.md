@@ -97,6 +97,7 @@ export default app;
 │ name         │   │   │ name             │   │  │ menu_id (FK)     │
 │ slug         │   │   │ description     │   │  │ name             │
 │ color        │   │   │ is_active        │   │  │ item_type        │
+│ image        │   │   │                  │   │  │                  │
 │ created_at   │   │   │ created_at       │   │  │ category_id (FK) │
 └──────────────┘   │   └──────────────────┘   │  │ created_at       │
                    │                           │  └──────────────────┘
@@ -212,12 +213,24 @@ CREATE TABLE IF NOT EXISTS categories (
     name        TEXT NOT NULL UNIQUE,
     slug        TEXT NOT NULL UNIQUE,
     color       TEXT DEFAULT '#CCCCCC',   -- untuk UI badge
+    image       TEXT,                     -- data URI base64 ikon kategori (migrasi 0008); NULL = belum ada
     created_at  TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_categories_slug ON categories(slug);
 ```
+
+> **`image` ditambahkan belakangan**, bukan bagian dari `0000_*.sql`: migrasi
+> `0008_heavy_human_robot.sql` menjalankan `ALTER TABLE categories ADD image text`. Isinya **data URI
+> base64** (`data:image/png;base64,…`), bukan URL berkas — jumlah kategori sedikit dan gambarnya cuma
+> ikon penanda, jadi satu kolom menghapus seluruh urutan unggah/unduh berkas (tidak ada bucket, tidak ada
+> URL yang bisa basi, tidak ada berkas yatim saat kategori dihapus). Awalan `data:…;base64,` ikut
+> tersimpan sehingga nilainya siap dipakai `<img src>` dan tipe berkasnya tidak perlu ditebak. Batas
+> panjangnya ditegakkan aplikasi (`CATEGORY_IMAGE_MAX_LENGTH` = 1.000.000 karakter ≈ 1 MB, jauh di bawah
+> batas 2 MB per baris D1). Kolomnya **nullable**: kategori lama tetap sah tanpa gambar dan jatuh kembali
+> ke `color`. Bentuk ringkas `CategorySummaryDto` — yang menempel pada menu & jadwal — **tidak** membawa
+> kolom ini, supaya satu bulan jadwal tidak menggandakan data URI berkali-kali.
 
 ### 2.2 Tabel: `menus`
 
@@ -1039,6 +1052,8 @@ export const categories = sqliteTable("categories", {
   name: text("name").notNull().unique(),
   slug: text("slug").notNull().unique(),
   color: text("color").default("#CCCCCC"),
+  /** Data URI base64 (`data:image/png;base64,…`), atau `null` bila belum diunggah. */
+  image: text("image"),
   createdAt: text("created_at")
     .notNull()
     .default(sql`(datetime('now'))`),

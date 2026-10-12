@@ -87,9 +87,9 @@ angka" berasal dari fakta produk, bukan karangan:
 | 2026-09-27 | v1.10 | Dek dibuat: 15 halaman, 4 bagian, hero 4/15 |
 | 2026-09-28 | v1.12 | **Hlm 10** — teks kartu "Hari ini & minggu ini" kini menyebut **nama anak yang piket** ikut tampil (kolom *Petugas* memang terlihat orang tua). **Hlm 14** — kartu 3 diperjelas: tanggal yang **sudah ditentukan korlas tidak ikut direbutkan** (badge "Ditetapkan korlas"). Ukuran teks isi kartu 18 → 17px agar keempat kartu tetap muat. |
 | 2026-09-30 | v1.13 | **Diperiksa, sengaja tidak diubah.** Laporan jadwal, ekspor Excel akun, dan pengecualian petugas pada jadwal terbit semuanya wewenang admin & korlas — tidak ada satu pun layar orang tua yang berubah. Satu-satunya efek tidak langsung: bila korlas mengisi petugas **setelah** jadwal terbit, nama itu muncul di halaman orang tua tanpa perlu membuka kunci — itulah justru maksud perbaikannya, jadi tidak perlu halaman baru. |
-
 | 2026-10-01 | v1.14 | **Diperiksa, sengaja tidak diubah.** Impor akun orang tua adalah wewenang admin saja dan tidak menyentuh satu pun layar orang tua — orang tua hanya merasakan efeknya bila admin memperbarui datanya. Dek ini tetap tentang empat hal: pasang, masuk, lihat jadwal, ambil tanggal. |
+| 2026-10-12 | v1.16 | **Diperiksa, sengaja tidak diubah — dek tetap 15 halaman.** Gambar kategori (kolom `categories.image`) hanya tampil di halaman **Kategori**, yang tidak pernah dibuka orang tua, dan panel **Keterangan bulan** di `/pilih-jadwal` sengaja hanya untuk korlas & admin. Orang tua tetap melihat halaman `pilih-jadwal` yang sama: grid tanggal plus tombol **Ambil** — justru panel itulah yang menyembunyikan angka rekap supaya orang tua tidak melihat siapa sudah mengambil apa. Tidak ada satu pun kalimat, kartu, atau tangkapan layar di dek ini yang menyebut Kategori, gambar, atau Keterangan bulan. |
 
-> Hal yang **sengaja tidak diubah**: fitur v1.11 (aksi massal), v1.12 (impor jadwal), dan v1.14
-> (impor akun) adalah wewenang admin & korlas, bukan orang tua — tidak ada satu pun alur orang
-> tua yang berubah. Dek ini tetap tentang empat hal: pasang, masuk, lihat jadwal, ambil tanggal.
+> Hal yang **sengaja tidak diubah**: fitur v1.11 (aksi massal), v1.12 (impor jadwal), v1.14
+> (impor akun), dan v1.16 (gambar kategori + panel Keterangan bulan) adalah wewenang admin &
+> korlas, bukan orang tua — tidak ada satu pun alur orang tua yang berubah. Dek ini tetap tentang empat hal: pasang, masuk, lihat jadwal, ambil tanggal.

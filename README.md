@@ -34,12 +34,13 @@ Jadwal piket snack sekolah sebelumnya disusun dalam dokumen teks manual — suli
 | **Jadwal Sepekan**           | Senin–Jumat dengan navigasi Sepekan                                                                                                    | Semua          | ✅         |
 | **Jadwal Bulanan**           | Rekap per minggu dengan statistik hari sekolah/libur                                                                                   | Semua          | ✅         |
 | **Manajemen Menu**           | CRUD menu (makanan utama + buah pendamping) + kategori                                                                                 | Admin          | ✅         |
+| **Gambar Kategori**          | Setiap kategori boleh punya gambar (data URI base64 di kolom `categories.image`) yang tampil sebagai thumbnail di daftar dan pratinjau di formulir; 8 kategori bawaan sudah berisi ikon aslinya | Admin          | ✅         |
 | **Kelola Jadwal**            | Tetapkan menu per tanggal, tandai libur kelas, tambah catatan                                                                          | Admin, Korlas  | ✅         |
 | **Salin Jadwal Sepekan**     | Duplikasi jadwal Senin–Jumat ke minggu lain, opsional timpa                                                                            | Admin, Korlas  | ✅         |
 | **Kunci & Publikasi Jadwal** | `draft` → `locked` → `published`. Admin & korlas mengunci (korlas terbatas kelasnya); **hanya admin** yang boleh membuka kunci. Setelah `locked`/`published` jadwal tidak dapat diubah lagi | Admin, Korlas  | ✅         |
 | **Aksi Massal (Checkbox)**   | Centang hari di tabel jadwal — atau kelas di kartu status — lalu kunci/publikasi/buka kunci sekaligus, tanpa satu baris satu klik | Admin, Korlas  | ✅         |
 | **Impor Jadwal dari Teks**   | Tempel jadwal apa adanya dari sekolah (blok rentang tanggal + baris `Hari : menu`) → dipratinjau lebih dulu, lalu masuk sebagai `draft`. Tanggal yang sudah punya jadwal **dilewati**, jadi teks yang sama boleh ditempel berulang | Admin, Korlas  | ✅         |
-| **Pilih Jadwal**             | Orang tua berebut tanggal snack yang dibiarkan kosong korlas — siapa cepat dia dapat                                                   | Parent, Korlas | ✅         |
+| **Pilih Jadwal**             | Orang tua berebut tanggal snack yang dibiarkan kosong korlas — siapa cepat dia dapat. **Korlas & admin** melihat panel *Keterangan bulan*: berapa snack sudah diambil, berapa masih kosong | Parent, Korlas, Admin | ✅         |
 | **PWA**                      | Pasang ke layar utama + service worker (cache offline)                                                                                 | Semua          | ✅         |
 | **Kelola Hari Libur**        | Tambah/hapus hari libur bernama (berlaku semua kelas)                                                                                  | Admin          | ✅         |
 | **Pencarian Riwayat Menu**   | "Kapan jeruk pernah disajikan?" — cari menu/komponen lintas bulan                                                                      | Semua          | ✅         |
@@ -159,9 +160,12 @@ pizza-snack-play/
 │   │   │                         # BulkActionBar, MonthToolbar, selection.ts, messages.ts
 │   │   ├── parents/              # Bagian akun orang tua: ParentTable, ParentFormModal,
 │   │   │                         # ParentBulkBar, selection.ts, form.ts
+│   │   ├── kategori/             # CategoryThumb + CategoryPreview (penanda gambar kategori)
+│   │   ├── pilih-jadwal/         # MonthSnapshot, ClaimAction, ConflictDialog, PickToolbar,
+│   │   │                         # summary.ts (+ uji unit)
 │   │   └── ui.tsx                # Button, Card, Input, Modal, Badge, Checkbox, dll.
-│   ├── hooks/
-│   │   └── usePWA.ts             # State installability + update service worker
+│   ├── hooks/                    # useClaimActions, useClassRoster, useClasses,
+│   │                             # useMonthNavigator, usePWA
 │   ├── routes/                   # TanStack Router — halaman frontend
 │   │   ├── __root.tsx            # Root + AuthProvider
 │   │   ├── login.tsx             # Halaman masuk
@@ -171,7 +175,7 @@ pizza-snack-play/
 │   │       ├── hari-ini.tsx      # Jadwal hari ini
 │   │       ├── minggu-ini.tsx    # Jadwal Sepekan
 │   │       ├── bulan.tsx         # Jadwal bulanan
-│   │       ├── pilih-jadwal.tsx  # Ambil tanggal snack (orang tua, korlas)
+│   │       ├── pilih-jadwal.tsx  # Ambil tanggal snack (orang tua, korlas) + panel Keterangan (korlas, admin)
 │   │       ├── pencarian.tsx     # Cari riwayat menu (semua role)
 │   │       ├── menu.tsx          # Katalog menu — baca untuk semua, ubah hanya admin
 │   │       ├── kategori.tsx      # CRUD kategori (admin)
@@ -209,6 +213,10 @@ pizza-snack-play/
 ├── scripts/
 │   ├── seed.ts                   # Parser jadwal -> drizzle/seed.sql
 │   ├── generate-pwa-icons.py     # Bangkitkan ikon PWA + favicon dari logo.png
+│   ├── category-icons.html       # Sumber SVG ikon 8 kategori bawaan
+│   ├── generate-category-icons.mjs  # Raster ikon (Edge headless) -> scripts/sql/kategori-icons.sql
+│   ├── check-migrations.mjs      # Tolak titik-koma di komentar migrasi sebelum `db:migrate`
+│   ├── sql/                      # Semai ikon kategori & patch jadwal bulanan
 │   ├── test-auth.mjs             # 33 uji end-to-end auth
 │   ├── test-api.mjs              # 366 uji end-to-end API
 │   ├── test-status.mjs           # 22 uji status jadwal bulanan
@@ -261,7 +269,7 @@ Middleware dipasang berurutan: `requireAuth` (401 bila tanpa token) lalu
 
 | Tabel             | Peran                                                                                                               |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `categories`      | Kategori menu (gorengan, kukusan, buah segar, roti, dll.)                                                           |
+| `categories`      | Kategori menu (gorengan, kukusan, buah segar, roti, dll.) + **gambar** (data URI base64, `NULL` = belum ada)        |
 | `menus`           | Definisi menu (kombinasi main + fruit), dapat dipakai ulang                                                         |
 | `menu_items`      | Komponen individual dalam menu (makanan utama / buah)                                                               |
 | `menu_categories` | Relasi many-to-many menu ↔ kategori                                                                                 |
@@ -690,8 +698,8 @@ bun run lint       # ESLint
 | `lint`             | `eslint .`                                                  | Cek kualitas kode                              |
 | `cf-typegen`       | `wrangler types`                                            | Generate tipe dari binding                     |
 | `db:generate`      | `drizzle-kit generate`                                      | Generate migrasi                               |
-| `db:migrate`       | `drizzle-kit migrate`                                       | Terapkan migrasi ke D1 remote                  |
-| `db:migrate:local` | `wrangler d1 migrations apply pizza-snack-play --local`     | Terapkan migrasi ke D1 lokal                   |
+| `db:migrate`       | `check-migrations.mjs && wrangler d1 migrations apply … --remote` | Periksa komentar migrasi, lalu terapkan ke D1 remote |
+| `db:migrate:local` | `check-migrations.mjs && wrangler d1 migrations apply … --local`  | Sama, untuk D1 lokal                           |
 | `db:seed`          | `bun run scripts/seed.ts`                                   | Regenerate `drizzle/seed.sql` dari file jadwal |
 | `db:seed:local`    | `wrangler d1 execute ... --local --file=./drizzle/seed.sql` | Seed D1 lokal                                  |
 | `db:push`          | `drizzle-kit push`                                          | Push schema **langsung ke D1 remote**, tanpa catatan migrasi |
@@ -702,6 +710,7 @@ bun run lint       # ESLint
 | `test:api`         | `bun run scripts/test-api.mjs`                              | Test API (366 skenario)                        |
 | `test:status`      | `bun run scripts/test-status.mjs`                           | Test status jadwal bulanan (22 skenario)       |
 | `test:profile`     | `bun run scripts/test-profile-students.mjs`                 | Test layanan mandiri anak (33 skenario)        |
+| `test:unit`        | `bun test src/`                                             | Uji unit murni (tanpa jaringan & tanpa D1)     |
 
 ---
 
@@ -789,6 +798,8 @@ jadwal maupun memakai Pilih Jadwal sampai `students`-nya diisi.
 - **Soft delete:** Menghapus menu yang masih dipakai jadwal akan mengarsipkannya (bukan menghapus), agar jadwal lama tidak kehilangan referensi. Akun orang tua dinonaktifkan secara default; hapus permanen butuh `?hard=true`.
 - **Utilitas class:** `cn()` di `src/lib/cn.ts` hanya menggabung string — **tidak** melakukan dedupe seperti `tailwind-merge`. Bila dua utility menyentuh properti sama (mis. `w-full` bawaan kontrol form vs `w-28` dari pemanggil), pemenangnya ditentukan urutan di stylesheet dan `w-full` selalu menang. Karena itu `Input`/`Select`/`Textarea` memakai **`cnControl(base, className)`**, yang membuang `w-full` ketika pemanggil memberi utility lebar (`w-*`, `min-w-*`, `basis-*`). Gunakan `cnControl` untuk kontrol form baru, bukan `cn`.
 - **Folder migrasi terpisah dari seed:** `seed.sql` diletakkan di `drizzle/seed.sql`, **bukan** di `drizzle/migrations/`. Wrangler mengeksekusi setiap file `.sql` di dalam `migrations_dir` sebagai migrasi — menaruh seed di sana membuat seed dijalankan dua kali dan gagal dengan `table parents has no column named ...`.
+- **Gambar kategori disimpan sebagai data URI di dalam baris, bukan berkas terpisah:** `categories.image` memuat teks `data:image/png;base64,…` apa adanya, jadi nilainya siap dipakai `<img src>` tanpa urusan unggah/unduh, bucket, atau URL yang bisa basi. Batas panjangnya dijaga `CATEGORY_IMAGE_MAX_LENGTH` (`src/types/catalog.ts`, 1.000.000 karakter ≈ 1 MB — di bawah batas 2 MB per baris D1) dan `validateCategoryImage()` memeriksa panjang **sebelum** menjalankan regex, supaya teks raksasa tidak pernah masuk ke mesin pencocokan. Dua DTO sengaja dipisah: `CategorySummaryDto` (**tanpa** `image`) menempel pada menu & jadwal, `CategoryDto` (dengan `image`) hanya dipakai halaman Kategori — repository menu memang tidak menyeleksi kolomnya, sebab satu bulan jadwal memuat puluhan menu dan menyalin data URI di situ akan menggandakan ukuran jawaban berkali-kali tanpa ada yang menampilkannya. Ikon bawaan 8 kategori dihasilkan `scripts/generate-category-icons.mjs` (Edge headless, tanpa dependency) dari `scripts/category-icons.html`, lalu disemai `scripts/sql/kategori-icons.sql` yang mencocokkan **per `slug`**, bukan `id`, agar aman dijalankan di D1 lokal maupun produksi.
+- **Titik-koma di dalam komentar berkas migrasi dilarang:** `wrangler d1 migrations apply` tidak menjalankan berkas migrasi sebagai berkas — isinya dibaca, disambung dengan `INSERT INTO d1_migrations …`, lalu dikirim sebagai **satu string perintah**. Di jalur itu D1 memotong string pada setiap `;` **sebelum** komentar dibuang, sehingga potongan pertama (yang isinya hanya pembuka komentar) menjadi kosong dan dijawab `X [ERROR] SQL code did not contain a statement. [code: 7500]`. Berkas yang sama **berhasil** lewat `d1 execute --file`, jadi jebakan ini hanya muncul saat migrasi menyentuh production — tepat saat kegagalannya menghalangi deploy. Karena itu `scripts/check-migrations.mjs` menolak komentar bertitik-koma dan dipasang di depan `db:migrate` serta `db:migrate:local`.
 - **Transaksi D1:** Tidak ada transaksi interaktif panjang — gunakan `db.batch([...])`.
 - **Secrets:** `JWT_SECRET` dan token Cloudflare disimpan sebagai Worker Secret, bukan di repo.
 - **Local vs Remote D1:** `wrangler dev` memakai D1 lokal (miniflare) di `.wrangler/state/` — datanya terpisah dari remote, tapi dipakai bersama oleh `wrangler d1 execute --local` dan dev server.
@@ -812,11 +823,11 @@ jadwal maupun memakai Pilih Jadwal sampai `students`-nya diisi.
 
 ## Dokumentasi
 
-- [PRD — Product Requirements Document v1.13](docs/PRD_Pizza_Snack_Play.md)
+- [PRD — Product Requirements Document v1.16](docs/PRD_Pizza_Snack_Play.md)
 - [Struktur Tabel — DDL + Drizzle + Seed + Queries](docs/Struktur_Tabel_Pizza_Snack_Play.md)
 - [UAT Result](docs/UAT_Result.md)
 - [Panduan Orang Tua — dek sosialisasi 15 halaman](Panduan%20Orang%20Tua%20Pizza%20Snack%20Play/STORY.md) (`.pptx` + sumber `slides/*.slide`)
-- [Panduan Korlas & Admin — dek pembekalan 17 halaman](Panduan%20Korlas%20dan%20Admin%20Pizza%20Snack%20Play/STORY.md) (`.pptx` + sumber `slides/*.slide`)
+- [Panduan Korlas & Admin — dek pembekalan 18 halaman](Panduan%20Korlas%20dan%20Admin%20Pizza%20Snack%20Play/STORY.md) (`.pptx` + sumber `slides/*.slide`)
 
 ## Testing
 

@@ -5,6 +5,7 @@ import {
   importLogs,
   menuItems,
   menus,
+  scheduleClaims,
   schedules,
   weeks,
 } from "../../database/schema";
@@ -27,6 +28,22 @@ export interface MenuHistoryRow {
 export interface MonthStatusRow {
   status: string;
   count: number;
+}
+
+/**
+ * Petugas piket satu kelas pada satu tanggal.
+ *
+ * Sengaja hanya kolom yang benar-benar ditampilkan panel "kelas lain":
+ * menu, catatan, dan status internal tidak ikut diangkut, karena seluruh
+ * baris sebulan × semua kelas bisa terambil sekaligus.
+ */
+export interface PetugasRow {
+  scheduleDate: string;
+  className: string;
+  petugasName: string | null;
+  petugasParentName: string | null;
+  /** Id klaim — `null` berarti petugasnya ditunjuk korlas, bukan diambil orang tua. */
+  claimId: number | null;
 }
 
 /**
@@ -117,6 +134,46 @@ class ScheduleRepository {
       .from(schedules)
       .where(eq(schedules.scheduleDate, date))
       .orderBy(asc(schedules.className));
+  }
+
+  /**
+   * Petugas piket **semua kelas** pada satu rentang tanggal — hanya baris
+   * yang sudah `published` dan bukan hari libur.
+   *
+   * Dipakai panel "kelas lain" di halaman Pilih Jadwal: menu snack sama untuk
+   * semua kelas pada tanggal yang sama, jadi yang perlu diketahui orang tua
+   * dari kelas lain adalah siapa yang piket hari itu. Filter `published`
+   * ditegakkan di sini, bukan diserahkan ke pemanggil, supaya jadwal yang
+   * masih draft/terkunci tidak pernah bocor lewat jalur ini.
+   *
+   * Urutan `className` dari SQL sengaja tidak diandalkan: SQLite mengurutkan
+   * teks, jadi "10" mendahului "2". Pemanggil (`groupPetugasByDate`) yang
+   * mengurutkan ulang secara alami.
+   */
+  async findPublishedPetugasBetween(
+    db: Db,
+    from: string,
+    to: string,
+  ): Promise<PetugasRow[]> {
+    return db
+      .select({
+        scheduleDate: schedules.scheduleDate,
+        className: schedules.className,
+        petugasName: schedules.petugasName,
+        petugasParentName: schedules.petugasParentName,
+        claimId: scheduleClaims.id,
+      })
+      .from(schedules)
+      .leftJoin(scheduleClaims, eq(scheduleClaims.scheduleId, schedules.id))
+      .where(
+        and(
+          eq(schedules.status, "published"),
+          eq(schedules.isHoliday, 0),
+          gte(schedules.scheduleDate, from),
+          lte(schedules.scheduleDate, to),
+        ),
+      )
+      .orderBy(asc(schedules.scheduleDate), asc(schedules.className));
   }
 
   async findScheduleById(db: Db, id: number): Promise<Schedule | undefined> {

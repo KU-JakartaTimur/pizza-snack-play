@@ -25,12 +25,19 @@ export function ScheduleDayCard({
   day,
   compact = false,
   footer,
+  extra,
   highlight = false,
 }: {
   day: ScheduleDayDto;
   compact?: boolean;
   /** Aksi tambahan di bawah kartu, mis. tombol memilih tanggal. */
   footer?: ReactNode;
+  /**
+   * Isi tambahan di dalam badan kartu, setelah catatan — mis. daftar petugas
+   * kelas lain di halaman pemilihan. Sengaja berupa slot bebas, bukan prop
+   * khusus satu fitur, supaya kartu ini tidak terikat pada satu pemakaian.
+   */
+  extra?: ReactNode;
   /** Sorot kartu — dipakai halaman pemilihan untuk menandai pilihan sendiri. */
   highlight?: boolean;
 }) {
@@ -50,6 +57,7 @@ export function ScheduleDayCard({
         <DayBody day={day} compact={compact} />
         <PetugasLine day={day} />
         <NotesLine notes={day.notes} />
+        {extra}
       </div>
 
       {footer && (

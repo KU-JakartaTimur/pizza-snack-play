@@ -94,6 +94,49 @@ export interface TodayAllClassesDto {
   week: WeekScheduleDto;
 }
 
+// ─────────────────────────────────────────────────────────────
+// Petugas piket kelas lain pada tanggal yang sama
+//
+// Menu snack bersifat sekolah-wide: satu menu dipakai semua kelas pada tanggal
+// yang sama, sehingga yang membedakan kelas 1, 2, 3 … hanyalah **siapa yang
+// piket** hari itu. Orang tua perlu tahu itu — mis. untuk menitipkan snack ke
+// kelas lain — jadi setiap tanggal pada halaman Pilih Jadwal menyertakan
+// daftar petugas kelas lain.
+//
+// Hanya jadwal `published` yang ikut: jadwal yang masih draft/terkunci bukan
+// urusan orang tua, dan menampilkan petugasnya akan membocorkan jadwal yang
+// belum disetujui sekolah.
+// ─────────────────────────────────────────────────────────────
+
+/** Petugas piket satu kelas pada satu tanggal. */
+export interface ClassPetugasDto {
+  className: string;
+  /** Nama siswa yang piket; `null` bila belum ada yang ditunjuk. */
+  petugasName: string | null;
+  /** Nama orang tua/wali petugas; `null` bila tidak diketahui. */
+  petugasParentName: string | null;
+  /**
+   * `true` bila petugasnya muncul dari **pengambilan orang tua** (klaim),
+   * bukan penunjukan korlas — dua hal yang berbeda maknanya bagi orang tua.
+   */
+  claimed: boolean;
+}
+
+/** Semua kelas yang punya jadwal terbit pada satu tanggal. */
+export interface DatePetugasDto {
+  date: string;
+  /** Urut alami kelas ("1", "2", …, "10"), bukan urut abjad. */
+  classes: ClassPetugasDto[];
+}
+
+/** Jawaban endpoint `/schedules/petugas`. */
+export interface ClassPetugasListDto {
+  from: string;
+  to: string;
+  /** Hanya tanggal yang punya setidaknya satu kelas terbit. */
+  dates: DatePetugasDto[];
+}
+
 /** Satu hari libur global (tabel `holidays`) — berlaku untuk semua kelas. */
 export interface HolidayDto {
   id: number;

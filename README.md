@@ -41,6 +41,7 @@ Jadwal piket snack sekolah sebelumnya disusun dalam dokumen teks manual — suli
 | **Aksi Massal (Checkbox)**   | Centang hari di tabel jadwal — atau kelas di kartu status — lalu kunci/publikasi/buka kunci sekaligus, tanpa satu baris satu klik | Admin, Korlas  | ✅         |
 | **Impor Jadwal dari Teks**   | Tempel jadwal apa adanya dari sekolah (blok rentang tanggal + baris `Hari : menu`) → dipratinjau lebih dulu, lalu masuk sebagai `draft`. Tanggal yang sudah punya jadwal **dilewati**, jadi teks yang sama boleh ditempel berulang | Admin, Korlas  | ✅         |
 | **Pilih Jadwal**             | Orang tua berebut tanggal snack yang dibiarkan kosong korlas — siapa cepat dia dapat. **Korlas & admin** melihat panel *Keterangan bulan*: berapa snack sudah diambil, berapa masih kosong | Parent, Korlas, Admin | ✅         |
+| **Petugas Kelas Lain**       | Di `/pilih-jadwal`, setiap kartu tanggal bisa dibuka untuk melihat siapa petugas piket di **kelas lain pada tanggal yang sama** — menunya memang sama untuk semua kelas, yang berbeda hanya petugasnya | Parent, Korlas | ✅         |
 | **PWA**                      | Pasang ke layar utama + service worker (cache offline)                                                                                 | Semua          | ✅         |
 | **Kelola Hari Libur**        | Tambah/hapus hari libur bernama (berlaku semua kelas)                                                                                  | Admin          | ✅         |
 | **Pencarian Riwayat Menu**   | "Kapan jeruk pernah disajikan?" — cari menu/komponen lintas bulan                                                                      | Semua          | ✅         |
@@ -333,6 +334,7 @@ Meminta kelas di luar cakupan dijawab **403**.
 | `GET`    | `/schedules/export?scope=&class=`       | Admin, Korlas | Unduh jadwal sebagai `.xlsx` — `scope=week` (+`date`) atau `scope=month` (+`year`,`month`)       |
 | `GET`    | `/schedules/range?from=&to=&class=`     | Auth          | Rentang bebas (maks. 92 hari)                                                                     |
 | `GET`    | `/schedules/search?q=&from=&to=&class=` | Auth          | Cari tanggal di mana menu/komponen pernah dijadwalkan (maks. 400 hari)                            |
+| `GET`    | `/schedules/petugas?from=&to=`          | Auth          | Petugas piket **semua kelas** pada rentang tanggal (maks. 92 hari) — bahan panel "kelas lain" di `/pilih-jadwal`; hanya jadwal `published` |
 | `GET`    | `/schedules/:id`                        | Auth          | Detail satu entri jadwal                                                                          |
 | `POST`   | `/schedules`                            | Admin, Korlas | Buat entri jadwal — `className` **wajib** untuk admin, otomatis untuk korlas                      |
 | `POST`   | `/schedules/copy`                       | Admin, Korlas | Salin jadwal Senin–Jumat Sepekan, untuk satu kelas                                                |
@@ -517,6 +519,10 @@ curl "http://localhost:5173/api/schedules/month?year=2026&month=9" \
 
 # Kapan "jeruk" pernah disajikan di kelas 1? (6 bulan terakhir)
 curl "http://localhost:5173/api/schedules/search?q=jeruk&from=2026-03-21&to=2026-09-17&class=1" \
+  -H "Authorization: Bearer <token>"
+
+# Petugas piket semua kelas pada 21-25 September 2026 (lintas kelas; hanya jadwal terbit)
+curl "http://localhost:5173/api/schedules/petugas?from=2026-09-21&to=2026-09-25" \
   -H "Authorization: Bearer <token>"
 
 # Unduh jadwal September 2026 kelas 1 sebagai Excel (admin/korlas)
@@ -705,10 +711,11 @@ bun run lint       # ESLint
 | `db:push`          | `drizzle-kit push`                                          | Push schema **langsung ke D1 remote**, tanpa catatan migrasi |
 | `db:studio`        | `drizzle-kit studio`                                        | GUI inspeksi database                          |
 | `dev:prod`         | `tsc -b && vite build && wrangler dev --remote`             | Dev server memakai D1 **remote**               |
-| `test`             | `test:auth && test:api && test:status && test:profile`      | Semua test end-to-end                          |
+| `test`             | `test:auth && test:api && test:status && test:petugas && test:profile` | Semua test end-to-end                |
 | `test:auth`        | `bun run scripts/test-auth.mjs`                             | Test auth (33 skenario)                        |
 | `test:api`         | `bun run scripts/test-api.mjs`                              | Test API (366 skenario)                        |
 | `test:status`      | `bun run scripts/test-status.mjs`                           | Test status jadwal bulanan (22 skenario)       |
+| `test:petugas`     | `bun run scripts/test-petugas.mjs`                          | Test petugas lintas kelas (23 skenario)        |
 | `test:profile`     | `bun run scripts/test-profile-students.mjs`                 | Test layanan mandiri anak (33 skenario)        |
 | `test:unit`        | `bun test src/`                                             | Uji unit murni (tanpa jaringan & tanpa D1)     |
 
@@ -823,7 +830,7 @@ jadwal maupun memakai Pilih Jadwal sampai `students`-nya diisi.
 
 ## Dokumentasi
 
-- [PRD — Product Requirements Document v1.16](docs/PRD_Pizza_Snack_Play.md)
+- [PRD — Product Requirements Document v1.17](docs/PRD_Pizza_Snack_Play.md)
 - [Struktur Tabel — DDL + Drizzle + Seed + Queries](docs/Struktur_Tabel_Pizza_Snack_Play.md)
 - [UAT Result](docs/UAT_Result.md)
 - [Panduan Orang Tua — dek sosialisasi 15 halaman](Panduan%20Orang%20Tua%20Pizza%20Snack%20Play/STORY.md) (`.pptx` + sumber `slides/*.slide`)
@@ -835,10 +842,11 @@ Uji end-to-end memakai dev server yang hidup dan D1 lokal ter-seed
 (`bun run dev` + `bun run db:migrate:local` + `bun run db:seed:local`).
 
 ```bash
-bun run test              # keempat suite di bawah, berurutan
+bun run test              # kelima suite di bawah, berurutan
 bun run test:auth         # 33 skenario  — login, JWT, role, ubah password
 bun run test:api          # 366 skenario — jadwal, klaim, katalog, akun, ekspor Excel, impor teks, batas masuk
 bun run test:status       # 22 skenario  — status jadwal bulanan
+bun run test:petugas      # 23 skenario  — petugas lintas kelas (jadwal draft tidak bocor)
 bun run test:profile      # 33 skenario  — layanan mandiri anak (idempoten)
 ```
 

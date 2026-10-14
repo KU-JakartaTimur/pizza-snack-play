@@ -6,6 +6,7 @@ import type { ScheduleClaimSummaryDto } from "../../types/claim";
 import type {
   BulkRowAction,
   BulkRowScheduleResultDto,
+  ClassPetugasListDto,
   CopyWeekInput,
   CopyWeekResultDto,
   ImportDayOutcomeDto,
@@ -34,6 +35,8 @@ import { catalogRepository } from "../catalog/repository";
 import { classRepository } from "../classes/repository";
 import { claimService } from "../claims/service";
 import { menuKey, parseScheduleText } from "./importParser";
+import { groupPetugasByDate } from "./petugas";
+import { sortClassNames } from "../utils/classNames";
 import {
   addDays,
   dayOfWeek,
@@ -79,17 +82,6 @@ function toWeekDto(week: Week): WeekDto {
     year: week.year,
     label: week.label,
   };
-}
-
-/**
- * Urutkan nama kelas secara alami — "1", "2", …, "10" — bukan abjad
- * ("1", "10", "2"). Duplikat dibuang, karena yang dilaporkan selalu
- * "kelas mana saja yang tersentuh", bukan berapa barisnya.
- */
-function sortClassNames(names: Iterable<string>): string[] {
-  return [...new Set(names)].sort((a, b) =>
-    a.localeCompare(b, "id", { numeric: true }),
-  );
 }
 
 /**
@@ -371,6 +363,35 @@ class ScheduleService {
       classes,
       week: this.buildWeek(weekStart, baseCtx),
     };
+  }
+
+  /**
+   * Petugas piket semua kelas pada satu rentang tanggal — bahan panel
+   * "kelas lain" di halaman Pilih Jadwal.
+   *
+   * Menu snack bersifat sekolah-wide, sehingga kelas 1, 2, 3 … menyantap
+   * menu yang sama pada satu tanggal; yang membedakan mereka cuma **siapa
+   * yang piket**. Orang tua perlu tahu itu, mis. untuk menitipkan snack.
+   *
+   * Cakupannya sengaja **lintas kelas** dan karena itu tidak lewat
+   * `resolveReadClass` — fungsi itu selalu mempersempit bacaan ke satu kelas.
+   * Yang dibatasi justru isinya, bukan kelasnya: repository hanya
+   * mengembalikan baris `published` yang bukan hari libur, dan DTO-nya tidak
+   * memuat menu, catatan, maupun status internal. Jadi jadwal yang belum
+   * terbit tidak pernah bocor lewat jalur ini, untuk role apa pun.
+   */
+  async getClassPetugas(
+    db: Db,
+    from: string,
+    to: string,
+  ): Promise<ClassPetugasListDto> {
+    const rows = await scheduleRepository.findPublishedPetugasBetween(
+      db,
+      from,
+      to,
+    );
+
+    return { from, to, dates: groupPetugasByDate(rows) };
   }
 
   /** Jadwal Sepekan. `date` opsional — default hari ini (WIB). */

@@ -8,6 +8,7 @@ import { ScheduleDayCard } from "@/components/ScheduleDayCard";
 import { ClaimAction } from "@/components/pilih-jadwal/ClaimAction";
 import { ConflictDialog } from "@/components/pilih-jadwal/ConflictDialog";
 import { MonthSnapshot } from "@/components/pilih-jadwal/MonthSnapshot";
+import { PetugasKelasLain } from "@/components/pilih-jadwal/PetugasKelasLain";
 import { PickToolbar } from "@/components/pilih-jadwal/PickToolbar";
 import { isClaimableDay, summarizeMonth } from "@/components/pilih-jadwal/summary";
 import { ListReveal, RevealItem } from "@/components/motion/ListReveal";
@@ -20,6 +21,7 @@ import { useMonthNavigator } from "@/hooks/useMonthNavigator";
 import {
   formatIndonesianDate,
   indonesianMonthName,
+  monthRange,
   todayInWib,
 } from "@/lib/date";
 import type { ScheduleDayDto } from "@/types/schedule";
@@ -55,6 +57,30 @@ function PickSchedulePage() {
   });
 
   const shownClass = monthQuery.data?.className ?? activeClass;
+
+  // Petugas kelas lain pada tanggal yang sama. Menu snack sama untuk semua
+  // kelas, jadi yang membedakan kelas 1, 2, 3 … cuma siapa yang piket — dan
+  // itulah yang ditanyakan panel di setiap kartu tanggal.
+  //
+  // Satu query untuk sebulan, bukan satu per tanggal: rentangnya sama dengan
+  // yang sedang dilihat, dan jawabannya dipakai ulang oleh semua kartu.
+  // Admin tidak melihat kartu tanggal sama sekali, jadi query-nya tidak
+  // dijalankan untuknya.
+  const petugasQuery = useQuery({
+    queryKey: ["schedules", "petugas", year, month],
+    queryFn: () => {
+      const { from, to } = monthRange(year, month);
+      return api.schedules.petugas(from, to);
+    },
+    enabled: !isAdmin,
+  });
+
+  const petugasByDate = new Map(
+    (petugasQuery.data?.dates ?? []).map((entry) => [
+      entry.date,
+      entry.classes,
+    ]),
+  );
 
   // Anak di kelas lain tidak relevan untuk jadwal kelas ini, jadi pilihannya
   // dipersempit — dan pilihan yang tidak lagi cocok jatuh ke anak pertama.
@@ -155,6 +181,12 @@ function PickSchedulePage() {
                     day={day}
                     compact
                     highlight={day.claim?.parentId === user?.parentId}
+                    extra={
+                      <PetugasKelasLain
+                        classes={petugasByDate.get(day.date) ?? []}
+                        ownClass={day.className}
+                      />
+                    }
                     footer={
                       <ClaimAction
                         day={day}

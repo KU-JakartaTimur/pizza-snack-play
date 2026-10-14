@@ -350,6 +350,35 @@ class ScheduleController {
   };
 
   /**
+   * Petugas piket **semua kelas** pada satu rentang tanggal.
+   * `GET /schedules/petugas?from=…&to=…`
+   *
+   * Melayani panel "kelas lain" di halaman Pilih Jadwal: menu snack sama
+   * untuk semua kelas pada satu tanggal, jadi yang dicari orang tua dari
+   * kelas lain adalah **siapa yang piket** hari itu.
+   *
+   * Sengaja **tidak** memakai `resolveReadClass` — cakupannya memang lintas
+   * kelas, sedangkan fungsi itu selalu mempersempit bacaan ke satu kelas.
+   * Yang dibatasi adalah isinya: hanya baris `published` bukan libur yang
+   * ikut, dan hanya nama petugas yang dikirim — tanpa menu, catatan, atau
+   * status internal (lihat `getClassPetugas`).
+   */
+  classPetugas = async (c: ScheduleContext) => {
+    const from = c.req.query("from");
+    const to = c.req.query("to");
+
+    const error = validateRange(from, to);
+    if (error) return responseBadRequest(c, error);
+
+    const data = await scheduleService.getClassPetugas(
+      getDb(c.env),
+      from!,
+      to!,
+    );
+    return responseOK(c, "Petugas kelas lain", data);
+  };
+
+  /**
    * Unduh jadwal sebagai berkas Excel.
    * `GET /schedules/export?scope=week|month&date=…|year=…&month=…&class=…`
    *

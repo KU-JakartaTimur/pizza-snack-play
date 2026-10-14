@@ -19,6 +19,7 @@ import type { LaporanJadwalDto } from "@/types/laporan";
 import type {
   BulkRowScheduleInput,
   BulkRowScheduleResultDto,
+  ClassPetugasListDto,
   CopyWeekInput,
   CopyWeekResultDto,
   HolidayDto,
@@ -260,6 +261,20 @@ export const api = {
         http.get(
           `schedules/search${query({ q, from, to, class: className ?? undefined })}`,
         ),
+      ),
+
+    /**
+     * Petugas piket **semua kelas** pada rentang tanggal.
+     *
+     * Bahan panel "kelas lain" di halaman Pilih Jadwal: menu snack sama untuk
+     * semua kelas pada satu tanggal, jadi yang membedakan kelas 1, 2, 3 …
+     * cuma siapa yang piket. Server hanya mengirim baris yang sudah
+     * dipublikasi, dan `className` sengaja tidak ada di sini — cakupannya
+     * memang lintas kelas.
+     */
+    petugas: (from: string, to: string) =>
+      unwrap<ClassPetugasListDto>(
+        http.get(`schedules/petugas${query({ from, to })}`),
       ),
 
     detail: (id: number) =>

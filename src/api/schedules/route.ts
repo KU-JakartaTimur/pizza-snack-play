@@ -25,8 +25,8 @@ const scheduleWriters = requireRole("admin", "korlas");
  * sesuai role (lihat `resolveReadClass`).
  *
  * Rute statis (`/today`, `/week`, `/month`, `/status`, `/range`, `/search`,
- * `/export`, `/lock`, `/publish`, `/bulk/*`) didaftarkan sebelum `/:id` agar
- * tidak tertangkap sebagai parameter ID.
+ * `/petugas`, `/export`, `/lock`, `/publish`, `/bulk/*`) didaftarkan sebelum
+ * `/:id` agar tidak tertangkap sebagai parameter ID.
  *
  * Kunci (`/lock`) dan publikasi (`/publish`):
  * - Admin dapat mengosongkan `className` (atau kirim `"*"`) untuk menerapkan
@@ -43,6 +43,18 @@ export const schedulesRoute = new Hono<AuthEnv>()
   .get("/status", requireAuth, scheduleController.status)
   .get("/range", requireAuth, scheduleController.range)
   .get("/search", requireAuth, scheduleController.search)
+  /**
+   * Petugas piket semua kelas pada satu rentang tanggal.
+   *
+   * Berbeda dari rute baca lain yang selalu dipersempit ke satu kelas
+   * (`resolveReadClass`), rute ini memang **lintas kelas**: menu snack sama
+   * untuk semua kelas pada satu tanggal, jadi orang tua perlu tahu siapa yang
+   * piket di kelas 2, 3, dan seterusnya. Yang dibatasi bukan kelasnya,
+   * melainkan isinya — hanya baris `published` bukan libur, dan hanya nama
+   * petugas. Karena itu tidak ada middleware peran tambahan: admin pun tidak
+   * melihat apa pun yang tidak boleh dilihat orang tua di sini.
+   */
+  .get("/petugas", requireAuth, scheduleController.classPetugas)
   /**
    * Unduh jadwal sebagai berkas Excel (`.xlsx`) — **admin & korlas saja**.
    * Orang tua tidak butuh: jadwalnya sudah tampil di layar, dan berkasnya

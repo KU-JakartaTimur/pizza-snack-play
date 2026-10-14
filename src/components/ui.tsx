@@ -8,6 +8,7 @@ import {
   type TextareaHTMLAttributes,
 } from "react";
 import { createPortal } from "react-dom";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   AlertCircle,
   AlertTriangle,
@@ -17,6 +18,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn, cnControl } from "@/lib/cn";
+import { modalBackdrop, modalContent, modalPanel } from "@/lib/motion";
 
 // ── Button ────────────────────────────────────────────────────
 
@@ -331,6 +333,24 @@ export function EmptyState({
 // ── Modal ─────────────────────────────────────────────────────
 
 /**
+ * Tutup dialog dengan tombol `Esc`.
+ *
+ * Hanya menempelkan pendengar selama dialognya terbuka, bukan seumur komponen:
+ * halaman seperti `/jadwal` memasang belasan dialog sekaligus, dan tanpa syarat
+ * `open` semuanya ikut mendengarkan tombol yang sama.
+ */
+function useEscapeToClose(open: boolean, onClose: () => void) {
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open, onClose]);
+}
+
+/**
  * Cangkang dialog: latar gelap + kotak putih berjudul dengan tombol tutup.
  *
  * Digambar lewat portal ke `document.body`, bukan di tempat ia ditulis. Ini
@@ -338,8 +358,15 @@ export function EmptyState({
  * menjadi acuan posisi untuk keturunan `fixed` — dialog yang dideklarasikan di
  * dalam header akan terkurung dan terpotong olehnya.
  *
+ * Muncul dan hilang dengan memudar (`modalBackdrop` + `modalPanel` dari
+ * `@/lib/motion`) supaya tidak berkedip seperti elemen yang ditempel begitu
+ * saja. Saat tertutup tidak ada yang digambar sama sekali; `AnimatePresence`
+ * yang menahan elemennya sebentar di DOM selama animasi keluarnya berjalan,
+ * lalu melepasnya.
+ *
  * `Esc` menutup dialog. Klik pada latar sengaja **tidak** menutup, agar isian
- * formulir tidak hilang karena salah sentuh.
+ * formulir tidak hilang karena salah sentuh. Saat pengguna meminta gerak
+ * dikurangi, seluruh animasi dilewati — bukan sekadar dipercepat.
  */
 export function Modal({
   open,
@@ -354,45 +381,80 @@ export function Modal({
   children: ReactNode;
   footer?: ReactNode;
 }) {
-  useEffect(() => {
-    if (!open) return;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [open, onClose]);
-
-  if (!open) return null;
+  useEscapeToClose(open, onClose);
+  const reduced = useReducedMotion();
 
   return createPortal(
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={title}
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-brand-950/45 p-4 sm:p-8"
-    >
-      <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl border border-slate-200 my-auto">
-        <div className="brand-stripe rounded-t-2xl" />
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
-          <h3 className="font-semibold text-slate-900">{title}</h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-slate-400 hover:text-brand-700 text-xl leading-none px-1"
-            aria-label="Tutup"
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          key="modal"
+          role="dialog"
+          aria-modal="true"
+          aria-label={title}
+          variants={modalBackdrop}
+          initial={reduced ? false : "hidden"}
+          animate="visible"
+          exit="hidden"
+          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-brand-950/45 p-4 sm:p-8"
+        >
+          {/*
+            Setiap elemen menyebut fasenya sendiri (`initial`/`animate`/`exit`)
+            — bukan mengandalkan varian yang diwarisi dari induknya.
+
+            Alasannya sudah diperiksa sampai ke dalam framer-motion, bukan
+            diduga-duga: `AnimatePresence` menurunkan `initial` lewat
+            `PresenceContext`, dan pada render pertama nilainya `undefined`
+            bukan nama fase. `use-visual-state` lalu mengambil nilai itu apa
+            adanya (`initial = context.initial`), sehingga tidak ada fase awal
+            yang bisa dijalankan — `variantToSet` menjadi `undefined` dan
+            pembungkus gayanya tidak menulis apa pun. Akibatnya elemen menempel
+            di DOM sudah pada keadaan akhir: kedipan, bukan gerak. Varian yang
+            ditulis di sini membuat tiap elemen menjalankan fasenya sendiri.
+          */}
+          <motion.div
+            variants={modalPanel}
+            initial={reduced ? false : "hidden"}
+            animate="visible"
+            exit="hidden"
+            className="w-full max-w-lg rounded-2xl bg-white shadow-xl border border-slate-200 my-auto"
           >
-            ×
-          </button>
-        </div>
-        <div className="px-5 py-4 space-y-4">{children}</div>
-        {footer && (
-          <div className="flex justify-end gap-2 px-5 py-4 border-t border-slate-200 bg-brand-50/50 rounded-b-2xl">
-            {footer}
-          </div>
-        )}
-      </div>
-    </div>,
+            <div className="brand-stripe rounded-t-2xl" />
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+              <h3 className="font-semibold text-slate-900">{title}</h3>
+              <button
+                type="button"
+                onClick={onClose}
+                className="text-slate-400 hover:text-brand-700 text-xl leading-none px-1"
+                aria-label="Tutup"
+              >
+                ×
+              </button>
+            </div>
+            <motion.div
+              variants={modalContent}
+              initial={reduced ? false : "hidden"}
+              animate="visible"
+              exit="hidden"
+              className="px-5 py-4 space-y-4"
+            >
+              {children}
+            </motion.div>
+            {footer && (
+              <motion.div
+                variants={modalContent}
+                initial={reduced ? false : "hidden"}
+                animate="visible"
+                exit="hidden"
+                className="flex justify-end gap-2 px-5 py-4 border-t border-slate-200 bg-brand-50/50 rounded-b-2xl"
+              >
+                {footer}
+              </motion.div>
+            )}
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>,
     document.body,
   );
 }

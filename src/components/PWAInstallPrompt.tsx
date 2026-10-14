@@ -1,7 +1,41 @@
 import { useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Download, X, RefreshCw, Smartphone } from "lucide-react";
 import { usePWA } from "@/hooks/usePWA";
 import { Button } from "@/components/ui";
+import { SPRING } from "@/lib/motion";
+
+/**
+ * Notifikasi yang naik dari tepi bawah layar.
+ *
+ * Dipakai untuk semua keadaan banner di bawah ini supaya kemunculannya selalu
+ * sama — memudar sambil terangkat sedikit, dan menghilang dengan cepat saat
+ * ditutup. `bottomOffset` ikut beranimasi karena sifatnya bawaan animasi
+ * `bottom`, bukan `transition` CSS terpisah.
+ */
+function Banner({
+  offset,
+  children,
+}: {
+  offset: string;
+  children: React.ReactNode;
+}) {
+  const reduced = useReducedMotion();
+
+  return (
+    <motion.div
+      initial={reduced ? false : { opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0, bottom: undefined }}
+      exit={reduced ? undefined : { opacity: 0, y: 12 }}
+      transition={SPRING}
+      className={`fixed left-0 right-0 z-50 border-t border-brand-200 bg-brand-50 px-4 py-3 shadow-lg ${offset}`}
+    >
+      <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
+        {children}
+      </div>
+    </motion.div>
+  );
+}
 
 /**
  * Banner instalasi PWA + notifikasi update Service Worker.
@@ -28,13 +62,33 @@ export function PWAInstallPrompt() {
     /iPad|iPhone|iPod/.test(navigator.userAgent) &&
     !(window as unknown as Record<string, boolean>).MSStream;
 
-  if (dismissed) return null;
+  /** Keadaan banner saat ini — satu nilai, jadi hanya satu yang bisa tampil. */
+  const banner = resolveBanner();
 
-  // Service Worker update available
-  if (pwa.updateAvailable) {
-    return (
-      <div className={`fixed left-0 right-0 z-50 border-t border-brand-200 bg-brand-50 px-4 py-3 shadow-lg ${bottomOffset}`}>
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
+  return (
+    <AnimatePresence>
+      {banner && <Banner key={banner} offset={bottomOffset}>{content()}</Banner>}
+    </AnimatePresence>
+  );
+
+  /**
+   * Banner mana yang harus tampil. Urutannya penting: pembaruan versi
+   * mengalahkan ajakan memasang, dan ajakan memasang tidak muncul sama sekali
+   * bila aplikasinya sudah terpasang.
+   */
+  function resolveBanner(): string | null {
+    if (dismissed) return null;
+    if (pwa.updateAvailable) return "update";
+    if (pwa.isInstalled) return null;
+    if (isIOS) return showIOSHint ? "ios-hint" : "ios-install";
+    if (pwa.canInstall) return "install";
+    return null;
+  }
+
+  function content() {
+    if (banner === "update") {
+      return (
+        <>
           <div className="flex items-center gap-3">
             <RefreshCw className="h-5 w-5 shrink-0 text-brand-600" />
             <p className="text-sm text-brand-900">
@@ -49,28 +103,28 @@ export function PWAInstallPrompt() {
               Muat Ulang
             </Button>
           </div>
-        </div>
-      </div>
-    );
-  }
+        </>
+      );
+    }
 
-  // Already installed
-  if (pwa.isInstalled) return null;
-
-  // iOS manual install hint
-  if (isIOS && showIOSHint) {
-    return (
-      <div className={`fixed left-0 right-0 z-50 border-t border-brand-200 bg-brand-50 px-4 py-4 shadow-lg ${bottomOffset}`}>
-        <div className="mx-auto max-w-md">
+    if (banner === "ios-hint") {
+      return (
+        <div className="w-full">
           <div className="flex items-start justify-between gap-3">
             <div className="space-y-2">
               <p className="text-sm font-medium text-brand-900">
                 Tambahkan ke Layar Utama
               </p>
               <ol className="list-decimal pl-4 text-xs text-brand-700">
-                <li>Ketuk tombol <strong>Share</strong> di bawah Safari</li>
-                <li>Gulir ke bawah dan pilih <strong>Add to Home Screen</strong></li>
-                <li>Ketuk <strong>Add</strong></li>
+                <li>
+                  Ketuk tombol <strong>Share</strong> di bawah Safari
+                </li>
+                <li>
+                  Gulir ke bawah dan pilih <strong>Add to Home Screen</strong>
+                </li>
+                <li>
+                  Ketuk <strong>Add</strong>
+                </li>
               </ol>
             </div>
             <button
@@ -82,61 +136,41 @@ export function PWAInstallPrompt() {
             </button>
           </div>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  // iOS: show "how to install" button
-  if (isIOS) {
+    /** Ajakan memasang terakhir — teksnya beda di iOS yang tak punya prompt. */
+    const installing = banner === "install";
+
     return (
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-brand-200 bg-brand-50 px-4 py-3 shadow-lg">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+      <>
+        <div className="flex items-center gap-3">
+          {installing ? (
+            <Download className="h-5 w-5 shrink-0 text-brand-600" />
+          ) : (
             <Smartphone className="h-5 w-5 shrink-0 text-brand-600" />
-            <p className="text-sm text-brand-900">
-              Pasang Pizza Snack Play untuk akses lebih cepat.
-            </p>
-          </div>
-          <div className="flex shrink-0 gap-2">
-            <Button variant="ghost" size="sm" onClick={() => setDismissed(true)}>
-              <X className="h-4 w-4" />
+          )}
+          <p className="text-sm text-brand-900">
+            {installing
+              ? "Pasang Pizza Snack Play ke layar utama untuk akses lebih cepat."
+              : "Pasang Pizza Snack Play untuk akses lebih cepat."}
+          </p>
+        </div>
+        <div className="flex shrink-0 gap-2">
+          <Button variant="ghost" size="sm" onClick={() => setDismissed(true)}>
+            {installing ? "Nanti" : <X className="h-4 w-4" />}
+          </Button>
+          {installing ? (
+            <Button size="sm" onClick={pwa.promptInstall} loading={pwa.isInstalling}>
+              Pasang
             </Button>
+          ) : (
             <Button size="sm" onClick={() => setShowIOSHint(true)}>
               Cara Pasang
             </Button>
-          </div>
+          )}
         </div>
-      </div>
+      </>
     );
   }
-
-  // Android/Chrome: native install prompt
-  if (pwa.canInstall) {
-    return (
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-brand-200 bg-brand-50 px-4 py-3 shadow-lg">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <Download className="h-5 w-5 shrink-0 text-brand-600" />
-            <p className="text-sm text-brand-900">
-              Pasang Pizza Snack Play ke layar utama untuk akses lebih cepat.
-            </p>
-          </div>
-          <div className="flex shrink-0 gap-2">
-            <Button variant="ghost" size="sm" onClick={() => setDismissed(true)}>
-              Nanti
-            </Button>
-            <Button
-              size="sm"
-              onClick={pwa.promptInstall}
-              loading={pwa.isInstalling}
-            >
-              Pasang
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return null;
 }

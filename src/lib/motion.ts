@@ -56,3 +56,42 @@ export const backdrop: Variants = {
   hidden: { opacity: 0 },
   visible: { opacity: 1, transition: { duration: QUICK } },
 };
+
+/**
+ * Latar belakang dialog (`Modal`, `ConfirmDialog`, `SuccessDialog`).
+ *
+ * Keluar lebih cepat daripada masuk: begitu pengguna menutup dialog, tidak ada
+ * yang perlu ditunggu — menahan latarnya hanya membuat tindakan terasa lambat.
+ */
+export const modalBackdrop: Variants = {
+  hidden: { opacity: 0, transition: { duration: QUICK, ease: "easeIn" } },
+  visible: { opacity: 1, transition: { duration: QUICK, ease: "easeOut" } },
+};
+
+/**
+ * Kotak dialog: naik sedikit sambil memudar masuk.
+ *
+ * Sengaja **tidak** memakai `scale` dari 0 — kartu yang menyusut dari titik
+ * kosong terasa seperti efek, bukan dialog yang menghampiri pengguna. Jarak
+ * angkatnya kecil (12px) supaya di layar ponsel tidak terlihat melompat.
+ *
+ * `exit` ditulis eksplisit agar durasinya sama dengan masuk; tanpa itu
+ * framer-motion membalik varian `visible`, termasuk pegasnya, dan dialog
+ * memantul saat ditutup.
+ */
+export const modalPanel: Variants = {
+  hidden: { opacity: 0, y: 12, scale: 0.98 },
+  visible: { opacity: 1, y: 0, scale: 1, transition: SPRING },
+  exit: {
+    opacity: 0,
+    y: 8,
+    scale: 0.98,
+    transition: { duration: QUICK, ease: "easeIn" },
+  },
+};
+
+/** Isi dialog yang menyusul panelnya — mis. baris tombol di kaki dialog. */
+export const modalContent: Variants = {
+  hidden: { opacity: 0, y: -4 },
+  visible: { opacity: 1, y: 0, transition: { duration: QUICK, ease: "easeOut" } },
+};

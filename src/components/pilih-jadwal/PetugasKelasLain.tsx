@@ -1,6 +1,8 @@
 import { useId, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ChevronDown, HandHeart, User, Users } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { QUICK } from "@/lib/motion";
 import type { ClassPetugasDto } from "@/types/schedule";
 
 /**
@@ -27,6 +29,7 @@ export function PetugasKelasLain({
   ownClass: string | null;
 }) {
   const [open, setOpen] = useState(false);
+  const reduced = useReducedMotion();
   const panelId = useId();
 
   const others = classes.filter((row) => row.className !== ownClass);
@@ -71,13 +74,23 @@ export function PetugasKelasLain({
         />
       </button>
 
-      {open && (
-        <ul id={panelId} className="mt-2 space-y-1">
-          {others.map((row) => (
-            <PetugasKelasRow key={row.className} row={row} />
-          ))}
-        </ul>
-      )}
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.ul
+            id={panelId}
+            key="panel"
+            initial={reduced ? false : { opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: QUICK, ease: "easeOut" }}
+            className="mt-2 space-y-1 overflow-hidden"
+          >
+            {others.map((row) => (
+              <PetugasKelasRow key={row.className} row={row} />
+            ))}
+          </motion.ul>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

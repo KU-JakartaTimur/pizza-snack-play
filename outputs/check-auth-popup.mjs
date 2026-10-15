@@ -18,6 +18,18 @@ const { launchEdge } = await import(cdpPath);
 const BASE = "http://localhost:5173";
 const SHOTS = "D:\\REACT-DEV\\pizza-snack-play\\outputs\\screenshots";
 
+/**
+ * Password akun uji. Dibaca dari lingkungan supaya nilainya tidak perlu
+ * digandakan di setiap skrip verifikasi; isinya sama dengan akun seed lokal
+ * (`bun run db:seed:local`).
+ */
+const PASSWORD = process.env.PSP_TEST_PASSWORD;
+if (!PASSWORD) {
+  throw new Error(
+    "PSP_TEST_PASSWORD belum di-set — jalankan: PSP_TEST_PASSWORD=<password> bun run outputs/check-auth-popup.mjs",
+  );
+}
+
 if (!fs.existsSync(SHOTS)) fs.mkdirSync(SHOTS, { recursive: true });
 
 let pass = 0;
@@ -97,7 +109,7 @@ try {
 
   // ── 3. Login berhasil: popup sambutan ───────────────────────
   console.log("\n=== 3. Login berhasil ===");
-  await submitLogin(page, "sari", "snack123");
+  await submitLogin(page, "sari", PASSWORD);
   await page.waitFor(
     `document.querySelector('[role="dialog"]')?.innerText.includes('Login berhasil')`,
     "popup login berhasil",
@@ -105,7 +117,8 @@ try {
   const welcome = await dialogText(page);
   log("3. isi popup", JSON.stringify(welcome));
   check("judul popup dari server", welcome.includes("Login berhasil"));
-  check("menyapa nama pengguna", welcome.includes("Selamat datang, Sari Sari") || welcome.includes("Selamat datang,"));
+  // Yang disapa adalah nama **anak**, bukan pemilik akun ("Ibu Sari").
+  check("menyapa nama anak", welcome.includes("Selamat datang, Aisyah Sari"));
   check(
     "pengalihan ditahan selama popup terbuka",
     (await page.evaluate("location.pathname")) === "/login",
@@ -194,6 +207,48 @@ try {
   await page.goto("/profil", { baseUrl: BASE });
   await page.waitFor("location.pathname === '/login'", "dipaksa kembali ke /login");
   check("halaman terproteksi mengembalikan ke /login", true);
+
+  // ── 10. Dua anak: yang disapa anak di kelas tertinggi ───────
+  console.log("\n=== 10. Dua anak (dewi: kelas 2 & 3) ===");
+  await page.goto("/login", { baseUrl: BASE });
+  await page.waitFor(
+    `document.querySelector('input[placeholder="mis. sari"]')`,
+    "form masuk siap",
+  );
+  await submitLogin(page, "dewi", PASSWORD);
+  await page.waitFor(
+    `document.querySelector('[role="dialog"]')?.innerText.includes('Login berhasil')`,
+    "popup login berhasil dewi",
+  );
+  const dewiWelcome = await dialogText(page);
+  log("10. isi popup", JSON.stringify(dewiWelcome));
+  check(
+    "menyapa anak di kelas tertinggi",
+    dewiWelcome.includes("Selamat datang, Raka Dewi"),
+  );
+  check("anak di kelas rendah tidak disebut", !dewiWelcome.includes("Citra Dewi"));
+  await page.screenshot(`${SHOTS}/auth-06-dua-anak.png`);
+
+  // ── 11. Akun tanpa anak (admin) disapa namanya sendiri ──────
+  console.log("\n=== 11. Akun tanpa anak (admin) ===");
+  await page.evaluate("localStorage.clear()");
+  await page.goto("/login", { baseUrl: BASE });
+  await page.waitFor(
+    `document.querySelector('input[placeholder="mis. sari"]')`,
+    "form masuk siap",
+  );
+  await submitLogin(page, "admin", PASSWORD);
+  await page.waitFor(
+    `document.querySelector('[role="dialog"]')?.innerText.includes('Login berhasil')`,
+    "popup login berhasil admin",
+  );
+  const adminWelcome = await dialogText(page);
+  log("11. isi popup", JSON.stringify(adminWelcome));
+  check(
+    "menyapa nama pemilik akun",
+    adminWelcome.includes("Selamat datang, Bu Guru Sari"),
+  );
+  await page.screenshot(`${SHOTS}/auth-07-admin.png`);
 
   console.log(
     `\nerror halaman: ${page.errors.length === 0 ? "tidak ada" : JSON.stringify(page.errors)}`,

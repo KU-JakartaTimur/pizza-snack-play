@@ -4,6 +4,8 @@ import { Button, Card, Field, Input, SuccessDialog } from "@/components/ui";
 import { errorMessage } from "@/lib/api";
 import { useAuth, type LoginResult } from "@/lib/auth-context";
 import { cn } from "@/lib/cn";
+import { primaryStudent } from "@/lib/students";
+import type { AuthUser } from "@/types/auth";
 import logo from "@/assets/logo.png";
 
 export const Route = createFileRoute("/login")({
@@ -20,6 +22,7 @@ export const Route = createFileRoute("/login")({
  * 2. Sesudah berhasil masuk, popup sambutan tampil lebih dulu. Selama popup
  *    itu terbuka, pengalihan otomatis pada aturan 1 **ditahan** (lewat
  *    `welcome`) supaya pengguna sempat membaca bahwa loginnya berhasil.
+ *    Isi popup-nya sendiri dijelaskan di `welcomeMessage`.
  */
 function LoginPage() {
   const { user, isReady } = useAuth();
@@ -36,20 +39,48 @@ function LoginPage() {
   return (
     <LoginLayout>
       <LoginForm onSuccess={setWelcome} />
-
-      <SuccessDialog
-        open={welcome !== null}
-        title={welcome?.message ?? "Login berhasil"}
-        description={
-          welcome
-            ? `Selamat datang, ${welcome.user.fullName ?? welcome.user.username}.`
-            : ""
-        }
-        actionLabel="Mulai"
-        onClose={enterApp}
-      />
+      <WelcomeDialog result={welcome} onClose={enterApp} />
     </LoginLayout>
   );
+}
+
+/**
+ * Sambutan sesudah berhasil masuk.
+ *
+ * Seluruh isinya diturunkan dari `result`, jadi komponen ini tidak menyimpan
+ * keadaan sendiri: `null` cukup berarti "belum ada yang perlu disambut", dan
+ * dialognya tertutup.
+ */
+function WelcomeDialog({
+  result,
+  onClose,
+}: {
+  result: LoginResult | null;
+  onClose: () => void;
+}) {
+  return (
+    <SuccessDialog
+      open={result !== null}
+      title={result?.message ?? "Login berhasil"}
+      description={result ? welcomeMessage(result.user) : ""}
+      actionLabel="Mulai"
+      onClose={onClose}
+    />
+  );
+}
+
+/**
+ * Kalimat sambutan untuk pemakai yang baru masuk.
+ *
+ * Yang disebut lebih dulu adalah nama **anak**, bukan nama pemilik akun: akun
+ * ini dipakai orang tua untuk mengurus snack anaknya, dan satu nama orang tua
+ * bisa muncul di beberapa akun sekaligus. Bila anaknya lebih dari satu, yang
+ * dipakai anak di kelas tertinggi — lihat `primaryStudent`. Akun tanpa anak
+ * (admin) disapa dengan namanya sendiri.
+ */
+function welcomeMessage(user: AuthUser): string {
+  const child = primaryStudent(user.students);
+  return `Selamat datang, ${child?.name ?? user.fullName ?? user.username}.`;
 }
 
 /**

@@ -143,7 +143,7 @@ pizza-snack-play/
 │   │   ├── schedules/            # Jadwal per kelas, minggu, hari libur, kunci & publikasi,
 │   │   │                         # ekspor Excel, impor teks, aksi massal
 │   │   ├── parents/              # CRUD akun orang tua (angkat korlas, buka kunci, ekspor/impor Excel)
-│   │   ├── profile/              # Layanan mandiri: orang tua kelola anaknya sendiri
+│   │   ├── profile/              # Layanan mandiri: orang tua kelola akun & anaknya sendiri
 │   │   ├── stats/                # Ringkasan dashboard
 │   │   ├── middleware/           # requireAuth, requireRole
 │   │   └── utils/                # response, password, date, slug, params, classScope, sql, xlsx, xlsxRead, base64
@@ -226,6 +226,7 @@ pizza-snack-play/
 │   ├── test-api.mjs              # 366 uji end-to-end API
 │   ├── test-status.mjs           # 22 uji status jadwal bulanan
 │   ├── test-profile-students.mjs # 33 uji layanan mandiri anak (idempoten)
+│   ├── test-profile-account.mjs  # 38 uji layanan mandiri akun (idempoten)
 │   ├── test-claim-cross-class.mjs# Uji klaim tanggal lintas kelas
 │   └── run-uat.mjs               # Skenario UAT
 ├── docs/
@@ -303,7 +304,7 @@ Semua endpoint berada di bawah `basePath /api`. Kecuali `POST /api/auth/login`, 
 | `GET`  | `/health`        | Publik | Cek Worker + binding D1                  |
 | `POST` | `/auth/login`    | Publik | Terbitkan JWT + profil user              |
 | `POST` | `/auth/logout`   | Auth   | Titik keluar eksplisit (JWT stateless)   |
-| `GET`  | `/auth/me`       | Auth   | Profil user + data siswa (bila `parent`) |
+| `GET`  | `/auth/me`       | Auth   | Profil user + data siswa & nomor WhatsApp (bila `parent`) |
 | `PUT`  | `/auth/password` | Auth   | Ubah password sendiri                    |
 | `POST` | `/auth/impersonate` | Admin | **Mode tiru** — masuk sebagai orang tua tertentu tanpa password, untuk membantu dari layar yang sama |
 
@@ -457,18 +458,26 @@ di tangan admin. Korlas hanya membaca katalog — wewenang tulisnya ada di jadwa
 
 ### Profil (layanan mandiri)
 
-Modul ini dipakai **orang tua & korlas untuk mengurus anaknya sendiri** dari menu Profil — terpisah
-dari `/api/parents` yang khusus admin. `parentId` selalu diambil dari **token**, bukan dari request,
-sehingga satu orang tua tidak mungkin menyentuh anak milik orang tua lain: anak orang lain dijawab
-**404** (bukan 403) agar keberadaannya tidak terbocorkan.
+Modul ini dipakai **orang tua & korlas untuk mengurus akun & anaknya sendiri** dari menu Profil —
+terpisah dari `/api/parents` yang khusus admin. `parentId` selalu diambil dari **token**, bukan dari
+request, sehingga satu orang tua tidak mungkin menyentuh data orang tua lain: anak orang lain
+dijawab **404** (bukan 403) agar keberadaannya tidak terbocorkan.
 
-| Method   | Endpoint                  | Role           | Keterangan                                                       |
-| -------- | ------------------------- | -------------- | ---------------------------------------------------------------- |
-| `GET`    | `/profile/students`       | Parent, Korlas | Daftar anak sendiri                                              |
-| `POST`   | `/profile/students`       | Parent, Korlas | Tambah anak — nama & kelas **wajib**                             |
-| `PUT`    | `/profile/students/:id`   | Parent, Korlas | Ubah nama/kelas; kelas dikosongkan dengan `className: null`      |
-| `DELETE` | `/profile/students/:id`   | Parent, Korlas | Hapus anak — **anak terakhir tidak boleh dihapus** (`400`)       |
-| `GET`    | `/profile/classes`        | Parent, Korlas | Saran kelas untuk `datalist` di form (bukan pembatas)            |
+Yang boleh diubah sendiri hanyalah **data kontaknya**: nama sapaan, hubungan dengan siswa, dan nomor
+WhatsApp. `username`, `peran`, dan kelas korlas tetap wewenang admin — membiarkannya diubah dari sini
+berarti satu orang tua bisa menaikkan wewenangnya sendiri, jadi `role`/`username` yang dikirim ke
+`/profile/account` **diabaikan**, bukan diterapkan. Nama ditulis ke `users.full_name` **dan**
+`parents.parent_name` sekaligus, karena kartu Profil membaca yang pertama sedangkan daftar akun admin
+dan nama orang tua petugas membaca yang kedua.
+
+| Method   | Endpoint                | Role           | Keterangan                                                          |
+| -------- | ----------------------- | -------------- | ------------------------------------------------------------------- |
+| `PUT`    | `/profile/account`      | Parent, Korlas | Ubah data kontak sendiri — nama, hubungan, nomor WhatsApp (`phone`) |
+| `GET`    | `/profile/students`     | Parent, Korlas | Daftar anak sendiri                                                 |
+| `POST`   | `/profile/students`     | Parent, Korlas | Tambah anak — nama & kelas **wajib**                                |
+| `PUT`    | `/profile/students/:id` | Parent, Korlas | Ubah nama/kelas; kelas dikosongkan dengan `className: null`         |
+| `DELETE` | `/profile/students/:id` | Parent, Korlas | Hapus anak — **anak terakhir tidak boleh dihapus** (`400`)          |
+| `GET`    | `/profile/classes`      | Parent, Korlas | Saran kelas untuk `datalist` di form (bukan pembatas)               |
 
 ### Batas percobaan masuk
 
@@ -715,12 +724,13 @@ bun run lint       # ESLint
 | `db:push`          | `drizzle-kit push`                                          | Push schema **langsung ke D1 remote**, tanpa catatan migrasi |
 | `db:studio`        | `drizzle-kit studio`                                        | GUI inspeksi database                          |
 | `dev:prod`         | `tsc -b && vite build && wrangler dev --remote`             | Dev server memakai D1 **remote**               |
-| `test`             | `test:auth && test:api && test:status && test:petugas && test:profile` | Semua test end-to-end                |
+| `test`             | `test:auth && test:api && test:status && test:petugas && test:profile && test:profile:account` | Semua test end-to-end   |
 | `test:auth`        | `bun run scripts/test-auth.mjs`                             | Test auth (33 skenario)                        |
 | `test:api`         | `bun run scripts/test-api.mjs`                              | Test API (366 skenario)                        |
 | `test:status`      | `bun run scripts/test-status.mjs`                           | Test status jadwal bulanan (22 skenario)       |
 | `test:petugas`     | `bun run scripts/test-petugas.mjs`                          | Test petugas lintas kelas (23 skenario)        |
 | `test:profile`     | `bun run scripts/test-profile-students.mjs`                 | Test layanan mandiri anak (33 skenario)        |
+| `test:profile:account` | `bun run scripts/test-profile-account.mjs`              | Test layanan mandiri akun (38 skenario)        |
 | `test:unit`        | `bun test src/`                                             | Uji unit murni (tanpa jaringan & tanpa D1)     |
 
 ---
@@ -846,12 +856,13 @@ Uji end-to-end memakai dev server yang hidup dan D1 lokal ter-seed
 (`bun run dev` + `bun run db:migrate:local` + `bun run db:seed:local`).
 
 ```bash
-bun run test              # kelima suite di bawah, berurutan
+bun run test              # keenam suite di bawah, berurutan
 bun run test:auth         # 33 skenario  — login, JWT, role, ubah password
 bun run test:api          # 366 skenario — jadwal, klaim, katalog, akun, ekspor Excel, impor teks, batas masuk
 bun run test:status       # 22 skenario  — status jadwal bulanan
 bun run test:petugas      # 23 skenario  — petugas lintas kelas (jadwal draft tidak bocor)
 bun run test:profile      # 33 skenario  — layanan mandiri anak (idempoten)
+bun run test:profile:account # 38 skenario — layanan mandiri akun (idempoten)
 ```
 
 Semua suite idempoten: aman dijalankan berulang, dan membersihkan data buatan

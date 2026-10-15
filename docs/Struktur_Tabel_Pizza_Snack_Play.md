@@ -439,7 +439,7 @@ CREATE TABLE IF NOT EXISTS parents (
     user_id       INTEGER NOT NULL,                  -- FK ke users
     parent_name   TEXT NOT NULL,                     -- nama orang tua
     relationship  TEXT NOT NULL DEFAULT 'ibu',       -- 'ibu' | 'ayah' | 'wali'
-    phone         TEXT,
+    phone         TEXT,                              -- nomor WhatsApp, jadi tautan wa.me di menu Profil
     address       TEXT,
     is_active     INTEGER NOT NULL DEFAULT 1,
     created_at    TEXT NOT NULL DEFAULT (datetime('now')),
@@ -451,6 +451,13 @@ CREATE TABLE IF NOT EXISTS parents (
 CREATE INDEX IF NOT EXISTS idx_parents_user_id ON parents(user_id);
 CREATE INDEX IF NOT EXISTS idx_parents_active  ON parents(is_active);
 ```
+
+> **Nomor WhatsApp:** `parents.phone` diisi admin **dan** boleh diubah sendiri oleh pemiliknya dari
+> menu Profil (`PUT /api/profile/account`). Nilainya disimpan sebagai digit murni tanpa tanda pemisah
+> (`0812-3456-7890` → `081234567890`) supaya bisa langsung dipakai tautan `wa.me/<digit>`, dengan nol
+> di depan diganti kode negara `62`. Perubahan dari Profil ikut menulis `users.full_name` **dan**
+> `parents.parent_name` sekaligus — kartu Profil membaca yang pertama, daftar akun admin dan nama orang
+> tua petugas membaca yang kedua, jadi menulis salah satu saja membuat keduanya bertentangan.
 
 ### 2.10 Tabel: `students` (Anak dari Orang Tua)
 

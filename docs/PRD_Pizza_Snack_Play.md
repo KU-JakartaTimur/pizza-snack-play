@@ -167,7 +167,9 @@ Saat ini jadwal piket snack disusun dalam format teks manual (lihat lampiran), d
 - **Akun pribadi** — setiap orang tua memiliki akun yang diberikan oleh admin sekolah.
 - **Satu akun, banyak anak** — seorang orang tua boleh memiliki lebih dari satu anak; setiap anak punya nama dan kelas sendiri. Profil menampilkan seluruh anak, dan daftar akun di halaman admin menampilkan semua anak dalam satu baris.
 - **Manajemen akun (Admin)** — admin dapat membuat, edit, dan nonaktifkan akun orang tua beserta daftar anaknya (tambah/hapus anak di dalam satu formulir).
-- **Profil** — orang tua dapat melihat profil (termasuk daftar anak) dan ubah password sendiri.
+- **Profil** — orang tua dapat melihat profil (termasuk daftar anak), **mengubah data kontaknya
+  sendiri** (nama sapaan, hubungan, nomor WhatsApp — nomornya otomatis menjadi tautan `wa.me`), dan
+  ubah password sendiri. `username` & peran tetap wewenang admin, dan pembatasan itu ditegakkan server.
 - **Session/Token** — login menghasilkan JWT token dengan masa berlaku tertentu, disimpan di cookie/localStorage.
 - **Role-based access** — tiga role: `parent` (read-only), `korlas` (menyusun & mempublikasi jadwal kelasnya), `admin` (CRUD penuh). Pembatasan dilakukan **dua lapis**: API menolak dengan `403` (`requireRole(...)`), dan UI menyembunyikan tombol tambah/ubah/hapus lewat `<RoleGate need="...">` — `admin` untuk katalog/kategori/hari libur/akun/dashboard, `schedule` untuk halaman Kelola Jadwal (admin + korlas). Di dalam halaman jadwal, tombol **Kunci bulan** hanya dirender untuk admin karena `POST /schedules/lock` memang admin-only. API adalah penegak yang sebenarnya; UI hanya menyembunyikan kontrol.
 - **Pengangkatan korlas** — korlas **tidak dibuat lewat halaman terpisah**, melainkan dengan mengubah `role` sebuah akun lewat `PUT /parents/:id` (`{"role":"korlas","className":"1"}`). Saat role dijadikan `korlas`, `className` **wajib** diisi; saat dikembalikan ke `parent`, `className` otomatis dikosongkan. Form di halaman "Kelola Akun" menampilkan pilihan **Peran** dan input **Kelas yang dikoordinasikan** (muncul hanya bila peran = korlas), dan daftar akun menampilkan badge `Korlas <kelas>`.
@@ -573,7 +575,7 @@ pizza-snack-play/
 │   │   ├── classes/              # Daftar kelas + roster siswa per kelas (dropdown petugas)
 │   │   ├── laporan/              # Laporan jadwal — rekap ambil per orang tua (admin & korlas)
 │   │   ├── parents/              # CRUD akun orang tua + anak + korlas + ekspor/impor Excel
-│   │   ├── profile/              # Layanan mandiri: orang tua mengelola anaknya sendiri
+│   │   ├── profile/              # Layanan mandiri: orang tua mengelola akun & anaknya sendiri
 │   │   ├── schedules/            # Jadwal per kelas, minggu, hari libur, kunci & publikasi
 │   │   ├── stats/                # Ringkasan dashboard (admin)
 │   │   ├── middleware/           # requireAuth, requireRole
@@ -601,7 +603,7 @@ pizza-snack-play/
 │   │       ├── kategori.tsx      # Katalog kategori + gambar (admin)
 │   │       ├── jadwal.tsx        # Kelola jadwal kelas (admin & korlas) + hari libur (admin)
 │   │       ├── orang-tua.tsx     # CRUD akun orang tua + anak + role/kelas (admin)
-│   │       └── profil.tsx        # Profil + daftar anak + ubah password
+│   │       └── profil.tsx        # Profil: info akun + daftar anak + ubah password
 │   ├── lib/                      # api.ts, auth.tsx, auth-context.ts, active-class.ts, date.ts, ...
 │   ├── types/                    # auth.ts, catalog.ts, schedule.ts, account.ts, class.ts
 │   ├── index.css                 # Global styles (Tailwind)
@@ -681,12 +683,13 @@ JWT_SECRET=              # (BARU) untuk signing JWT
 
 ### 7.1 Auth Endpoints
 
-| Method | Path                 | Deskripsi                                                   | Role          |
-| ------ | -------------------- | ----------------------------------------------------------- | ------------- |
-| POST   | `/api/auth/login`    | Login (username + password) → JWT token + profil user       | Public        |
-| POST   | `/api/auth/logout`   | Logout (titik keluar eksplisit; JWT stateless)              | Authenticated |
-| GET    | `/api/auth/me`       | Profil user yang sedang login + daftar anak (bila `parent`) | Authenticated |
-| PUT    | `/api/auth/password` | Ubah password sendiri                                       | Authenticated |
+| Method | Path                   | Deskripsi                                                                              | Role           |
+| ------ | ---------------------- | -------------------------------------------------------------------------------------- | -------------- |
+| POST   | `/api/auth/login`      | Login (username + password) → JWT token + profil user                                  | Public         |
+| POST   | `/api/auth/logout`     | Logout (titik keluar eksplisit; JWT stateless)                                         | Authenticated  |
+| GET    | `/api/auth/me`         | Profil user yang sedang login + daftar anak & nomor WhatsApp (bila `parent`)           | Authenticated  |
+| PUT    | `/api/auth/password`   | Ubah password sendiri                                                                  | Authenticated  |
+| PUT    | `/api/profile/account` | Ubah data kontak sendiri: nama, hubungan, nomor WhatsApp (`role`/`username` diabaikan) | Parent, Korlas |
 
 ### 7.2 Parent (Orang Tua) Endpoints — Admin Only
 

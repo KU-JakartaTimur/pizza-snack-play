@@ -20,4 +20,16 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src/"),
     },
   },
+  server: {
+    watch: {
+      /**
+       * `outputs/` adalah folder kerja — tangkapan layar, skrip sekali pakai,
+       * dan profil browser sisa verifikasi — bukan bagian aplikasi. Memantau
+       * folder ini pernah mematikan dev server seketika: satu entri profil
+       * Edge yang rusak membuat chokidar melempar `UNKNOWN: lstat` dan proses
+       * Vite keluar sebelum sempat melayani permintaan.
+       */
+      ignored: ["**/outputs/**"],
+    },
+  },
 });

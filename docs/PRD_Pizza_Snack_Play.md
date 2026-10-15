@@ -8,7 +8,7 @@
 | Field               | Value                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Nama Produk**     | Pizza Snack Play                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| **Versi Dokumen**   | 1.20                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **Versi Dokumen**   | 1.21                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | **Tanggal**         | 15 Oktober 2026                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | **Stack Teknologi** | BHVR — Bun + Hono + Vite + React (Cloudflare Workers + D1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | **Status**          | Draft for Review                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
@@ -35,6 +35,7 @@
 | **Perubahan v1.19**  | **Kartu "Petugas Piket" pindah ke kolom utama halaman Hari Ini.** Sejak v1.18 kartu itu duduk di kolom samping — selebar sepertiga layar, di bawah "Minggu Berjalan" — padahal isinya satu baris per kelas (enam baris) dan justru itulah yang dicari pembaca. Kini ia berada di kolom utama (`lg:col-span-2`), tepat di bawah kartu hari, selebar kartu itu: daftar petugas terbaca sebagai lanjutan hari yang sedang dibuka, bukan sebagai keterangan tambahan. **(a) Tidak ada perubahan data atau endpoint** — murni tata letak; isi kartu, peran yang melihatnya, dan jaminan "hanya baris `published` bukan libur" tidak disentuh. **(b) `hari-ini.tsx` dirapikan** sebagai bagian dari pemindahan itu: empat kartu kolom samping yang sebelumnya berupa JSX sebaris di dalam `TodayContent` (`Data Siswa`, `Akun`, `Minggu Berjalan`, `Profil siswa`) kini masing-masing berupa komponen bernama di berkas yang sama — syarat tampilnya (anak tertaut, peran, jumlah siswa) terbaca di satu tempat dan tidak lagi tercampur dengan tata letaknya. **(c) Uji tata letak baru** `outputs/check-hari-ini-layout.mjs` (39 assertion di peramban nyata untuk admin, korlas, dan orang tua): bukan sekadar "kartu ada", melainkan **di kolom mana** ia berada — keanggotaan DOM, urutan terhadap kartu hari, dan geometrinya (rata kiri, selebar kartu hari, lebih lebar daripada kolom samping). Token sesinya dirakit dari `JWT_SECRET` lokal dengan `sub` pengguna sungguhan, jadi skrip ini tidak memerlukan password.                                                                                                                                                                                                                                                                                       |
 
 | **Perubahan v1.20**  | **Nomor WhatsApp wali petugas jadi tautan di daftar petugas.** Setiap baris petugas pada kartu "Petugas Piket" (`/hari-ini`) dan panel "Petugas kelas lain" (`/pilih-jadwal`) kini mencetak nomor WhatsApp walinya sebagai tautan `wa.me`, karena alasan orang membuka daftar itu justru untuk menghubungi petugasnya — mis. menitipkan snack ke kelas lain. **(a) Satu left join, tanpa endpoint baru:** field `petugasPhone` pada `ClassPetugasDto` diisi `parents.phone` lewat `parents.id = schedules.petugas_parent_id` di `findPublishedPetugasBetween()`; kolom itu sudah terisi untuk **kedua** asal petugas (klaim orang tua di `claims/service.ts` dan penunjukan korlas lewat `resolvePetugas`), jadi jalur klaim tidak perlu disentuh. Kedua join tetap bertemu paling banyak satu baris (`parents.id` primary key, `idx_schedule_claims_schedule` unik), sehingga jumlah barisnya tidak berlipat. **(b) "Tidak ada nomor" dibedakan dari "tidak ada petugas":** wali yang belum mengisi nomornya mendapat baris "Nomor handphone belum di update" — justru keterangan itulah yang memberi tahu bahwa nomornya masih bisa dilengkapi dari menu Profil — sedangkan kelas yang belum punya petugas tetap "Belum ada petugas" saja, sebab tidak ada orang yang nomornya bisa dilengkapi. **(c) Nomor tampil apa adanya** seperti yang disimpan (wali mengetiknya bebas — `0812-3456-7890` pun boleh); hanya `href`-nya yang dinormalisasi `whatsAppLink()` menjadi bentuk yang diterima `wa.me` (`62812…`), supaya wali tetap mengenali nomornya sendiri — bentuk `62812…` di layar tampak seperti salah ketik. **(d) Refactor:** `PetugasRow` dipecah menjadi `PetugasSourceIcon` + `PetugasNames` + `PetugasPhone`, sehingga menambah bagian keempat tidak lagi menuntut menulis ulang seluruh baris; `groupPetugasByDate()` dipecah menjadi `toClassPetugasDto()` + `compareByClass()`. Uji: 2 uji unit baru di `src/api/schedules/petugas.test.ts` (total `bun test src/` 80 lulus), assertion bentuk `petugasPhone` di `scripts/test-petugas.mjs` (23 skenario), dan `outputs/check-petugas-wa.mjs` (10 assertion di peramban nyata untuk ketiga keadaan — fixture D1 dibuat & dihapus oleh skrip itu sendiri) |
+| **Perubahan v1.21**  | **Halaman depan publik (F14).** Sebelumnya `/` hanya melempar pengunjung ke `/hari-ini`, sehingga orang tua yang **belum punya akun** tidak punya cara tahu aplikasi ini untuk apa — satu-satunya halaman yang terbuka (`/login`) hanya meminta username & password. Kini `/` berisi halaman depan: **manfaat**, **fitur per peran** (orang tua, korlas, admin), **alur empat langkah**, dan **tanya jawab**, dengan satu ajakan masuk. **(a) Halamannya tetap tanpa data:** isinya teks statis — tidak ada satu pun permintaan API, tidak ada menu, nama petugas, atau jadwal. **(b) Rute `/` pindah keluar layout `_app`** — `src/routes/_app/index.tsx` (berisi redirect) dihapus, digantikan `src/routes/index.tsx`; pengalihan ke `/hari-ini` dilakukan halaman itu sendiri sesudah sesi terverifikasi, sebab `start_url` di `public/manifest.json` masih `"/"` dan tanpa itu setiap kali PWA dibuka orang tua akan mendarat di halaman promosi. **(c) Teks dipisah dari tampilannya** ke `src/components/landing/content.ts`; `content.test.ts` (5 uji) menjaga butir yang tertinggal kosong, judul kembar, dan — yang paling penting — **contoh kartu di hero memakai menu, komponen, dan nama petugas yang benar-benar ada di `drizzle/seed.sql`**, sebab contoh karangan menjanjikan sesuatu yang tidak pernah muncul di aplikasi. **(d) `buttonClasses()` pindah ke `src/components/buttonStyles.ts`** supaya tautan "Masuk" tampak seperti tombol tanpa menyalin kelasnya, sekaligus memenuhi aturan fast-refresh (berkas `ui.tsx` hanya boleh mengekspor komponen); varian baru `inverse` ditambahkan untuk tombol di atas permukaan gelap. **(e) Koreksi dokumen:** §10.2, AC3, dan §8.2 masih menyatakan bahwa sebelum login pengguna "hanya melihat halaman login" — tidak lagi benar sejak v1.21. Intinya tetap berlaku: **jadwal dan data anak tidak pernah terbuka sebelum login**. **(f) Judul hero memakai util baru `.brand-text-gradient-strong`**, sebab ujung persik gradien lama hanya berkontras ±2,4:1 di atas latar kanvas sedangkan judul besar pun perlu 3:1. Uji: 5 uji unit (`bun test src/`) + `outputs/check-landing.mjs` (17 assertion di peramban nyata, termasuk tamu yang ditolak di `/hari-ini` dan pengguna yang sudah masuk yang tetap diantar ke jadwal) |
 
 ---
 
@@ -476,6 +477,28 @@ adalah membuka kelas lain satu per satu, dan orang tua memang hanya melihat kela
 - **Nomor WhatsApp wali ikut dicetak** di bawah namanya sebagai tautan `wa.me`, karena alasan orang membuka daftar ini justru untuk menghubungi petugasnya (mis. menitipkan snack). Sumbernya `parents.phone` lewat `schedules.petugas_parent_id`, jadi petugas hasil klaim orang tua maupun penunjukan korlas sama-sama terlayani. Nomornya ditampilkan **apa adanya** seperti yang disimpan; hanya `href`-nya yang dinormalisasi (`0812…` → `62812…`) supaya wali mengenali nomornya sendiri.
 - **Wali yang belum mengisi nomor tetap mendapat barisnya** — "Nomor handphone belum di update" — bukan baris yang dihilangkan: justru keterangan itulah yang memberi tahu bahwa nomornya masih bisa dilengkapi dari menu Profil. Kelas yang **belum punya petugas** tidak ikut diberi keterangan itu, karena tidak ada orang yang nomornya bisa dilengkapi.
 
+### F14: Halaman Depan / Landing Page (Tanpa Login) — ✅ Terimplementasi
+
+Orang tua yang **belum punya akun** tidak punya jalan masuk selain bertanya. Halaman depan
+menjawab "aplikasi ini untuk apa dan apa untungnya bagi saya" sebelum akun diminta.
+
+- **Satu-satunya halaman terbuka.** `/` dapat dibaca tanpa sesi; seluruh halaman lain tetap
+  dijaga layout `_app` dan endpoint tetap menolak tanpa token.
+- **Isinya teks statis — tanpa satu pun permintaan API.** Tidak ada menu, nama petugas, atau
+  jadwal yang ikut, jadi membukanya tidak membocorkan apa pun.
+- **Pengguna yang sudah masuk langsung diantar ke `/hari-ini`.** `start_url` di
+  `public/manifest.json` masih `"/"`, jadi tanpa pengalihan ini setiap kali PWA dibuka orang
+  tua akan mendarat di halaman promosi, bukan di jadwal anaknya.
+- **Enam bagian:** hero (dengan contoh kartu "Hari Ini"), manfaat, fitur per peran, alur,
+  tanya jawab, dan ajakan terakhir.
+- **Contoh di hero memakai data katalog yang nyata** — menu, komponen, dan nama petugas diambil
+  dari `drizzle/seed.sql`, dan itu dijaga uji unit; contoh karangan akan menjanjikan sesuatu
+  yang tidak pernah muncul di aplikasi.
+- **Ajakan masuk berupa tautan**, bukan tombol: bisa dibuka di tab baru dan dibacakan pembaca
+  layar sebagai tujuan, dengan bentuk visual dari `buttonClasses()` yang sama dengan tombol di
+  dalam aplikasi.
+- **Hormat pada `prefers-reduced-motion`** lewat `ListReveal`/`RevealItem` yang sudah ada.
+
 ## 5. Struktur Data dari File Sumber
 
 Berdasarkan analisis file `data/output_jadwal_piket.txt`, data dapat dimodelkan sebagai:
@@ -589,16 +612,19 @@ pizza-snack-play/
 │   │   ├── db.ts                 # Inisialisasi Drizzle + D1 binding + tipe Db
 │   │   └── schema.ts             # Drizzle schema (13 tabel)
 │   ├── components/               # AppShell, ScheduleDayCard, ClassSwitcher, ui.tsx
+│   │   ├── buttonStyles.ts       # Bentuk visual tombol (dipakai Button & tautan bergaya tombol)
 │   │   ├── jadwal/               # Bagian jadwal: MonthToolbar, ImportDialog, BulkActionBar, selection.ts
 │   │   ├── kategori/             # CategoryThumb + CategoryPreview (penanda gambar kategori)
+│   │   ├── landing/              # Halaman depan: Hero, Benefits, Features, HowItWorks, Faq,
+│   │   │                         # Closing, MasukLink, Section.tsx, content.ts (+ uji unit)
 │   │   ├── parents/              # Bagian akun orang tua: ParentTable, ParentFormModal, ParentBulkBar
 │   │   └── pilih-jadwal/         # MonthSnapshot, ClaimAction, ConflictDialog, PickToolbar, summary.ts
 │   ├── hooks/                    # useClaimActions, useClassRoster, useClasses, useMonthNavigator, usePWA
 │   ├── routes/                   # TanStack Router — halaman frontend
 │   │   ├── __root.tsx            # Root + AuthProvider
+│   │   ├── index.tsx             # Halaman depan publik (fitur & manfaat) — tanpa login
 │   │   ├── login.tsx             # Halaman login
 │   │   └── _app/                 # Layout terproteksi
-│   │       ├── index.tsx         # / → redirect ke /hari-ini
 │   │       ├── dashboard.tsx     # Ringkasan (admin)
 │   │       ├── hari-ini.tsx      # Jadwal hari ini (per kelas aktif)
 │   │       ├── minggu-ini.tsx    # Jadwal Sepekan (per kelas aktif)
@@ -945,7 +971,7 @@ Semua pembacaan menerima query **`?class=`** opsional seperti endpoint jadwal. P
 
 ### 8.2 Orang Tua: Lihat Jadwal Hari Ini
 
-1. Buka aplikasi → halaman login
+1. Buka aplikasi → halaman depan (fitur & manfaat) → tekan "Masuk"
 2. Masukkan username & password (diberikan admin sekolah)
 3. Login berhasil → redirect ke halaman utama "Menu Hari Ini"
 4. Card menampilkan: hari, tanggal, makanan utama, buah pendamping
@@ -1149,6 +1175,45 @@ keduanya menghapus keharusan mengulang satu baris satu klik.
 
 ## 9. Tampilan / UI Screenshots (Wireframe Konsep)
 
+### 9.0 Halaman Depan — Tanpa Login (F14)
+
+Halaman yang dibaca pengunjung sebelum punya akun. Isinya teks statis: tidak ada satu pun
+permintaan API, sehingga membukanya tidak membocorkan jadwal maupun nama petugas.
+
+```
+┌──────────────────────────────────────────┐
+│ [logo] Pizza Snack Play         [ Masuk ]│
+├──────────────────────────────────────────┤
+│ TERBUKA TANPA LOGIN                      │
+│                                          │
+│ MANFAAT                                  │
+│  [*] Menu hari ini tanpa perlu bertanya  │
+│  [*] Riwayat menu bisa dicari            │
+│  [*] Giliran piket dibagi tanpa bentrok  │
+│  [*] Wewenang jelas di setiap peran      │
+│  [*] Siap dibagikan dan dicetak          │
+│  [*] Bisa dipasang di HP                 │
+├──────────────────────────────────────────┤
+│ FITUR — sesuai peran                     │
+│  [ Orang Tua ] [ Korlas ] [ Admin ]      │
+├──────────────────────────────────────────┤
+│ ALUR                                     │
+│  1 Admin siapkan akun                    │
+│  2 Korlas susun jadwal kelasnya          │
+│  3 Jadwal dikunci lalu diterbitkan       │
+│  4 Orang tua ambil giliran piket         │
+├──────────────────────────────────────────┤
+│ TANYA JAWAB                              │
+│  - Perlu akun untuk lihat jadwal?        │
+│  - Menunya beda tiap kelas?              │
+│  - Kalau tanggalnya sudah diambil?       │
+│  - Kalau lupa password?                  │
+│  - Bisa dipasang di HP?                  │
+├──────────────────────────────────────────┤
+│ Sudah punya akun?               [ Masuk ]│
+└──────────────────────────────────────────┘
+```
+
 ### 9.1 Halaman Login (Orang Tua & Admin)
 
 ```
@@ -1334,7 +1399,7 @@ Formulir tambah/ubah kategori:
 - **Semua endpoint dilindungi autentikasi JWT** — tidak ada endpoint publik selain `POST /api/auth/login`.
 - **Role-based access control (RBAC)** — tiga role: `admin` (CRUD penuh), `korlas` (kelola katalog menu/kategori + jadwal **kelasnya sendiri**), dan `parent` (read-only jadwal + ubah password sendiri). Ditegakkan di API lewat `requireRole(...)` → `403`.
 - **Pembatasan cakupan kelas** — korlas dan orang tua hanya dapat membaca kelasnya/anaknya; percobaan membaca atau menulis kelas lain dijawab `403`. Untuk `PUT`/`DELETE`, kelas diambil dari **baris database** (bukan dari body) sehingga tidak bisa dipalsukan dari klien. Detail: `src/api/utils/classScope.ts`.
-- **Orang tua wajib login** — sebelum login, hanya melihat halaman login. Setelah login, dapat melihat jadwal kelas anaknya.
+- **Orang tua wajib login** — sebelum login, yang terbuka hanya halaman depan (fitur & manfaat, teks statis) dan halaman masuk. Setelah login, dapat melihat jadwal kelas anaknya.
 - **Admin mengelola akun orang tua & mengangkat korlas** — admin membuat, edit, dan nonaktifkan akun orang tua, sekaligus menetapkan role `korlas` beserta kelasnya. Tidak ada registrasi mandiri.
 - **Password hashing** — **PBKDF2-SHA256, 100.000 iterasi** via Web Crypto API (`crypto.subtle`) yang edge-native, tanpa dependency native. Format tersimpan: `pbkdf2$<iterations>$<salt>$<hash>`. Perbandingan hash memakai constant-time compare. Implementasi: `src/api/utils/password.ts`.
 - **JWT token** — signing **HS256** via `hono/jwt` dengan `JWT_SECRET` dari environment variable. Masa berlaku default 7 hari (`JWT_EXPIRES_IN`, dalam detik). Catatan: pada Hono 4.12+, `verify()` mewajibkan argumen algoritma ketiga.
@@ -1641,6 +1706,19 @@ bunx wrangler secret put JWT_SECRET
 - [x] Uji peramban: `outputs/check-petugas-wa.mjs` — 10 assertion untuk ketiga keadaan, di kartu
       "Petugas Piket" **dan** di panel "Petugas kelas lain"; fixture D1 dibuat & dihapus oleh skrip itu sendiri.
 
+### Phase 4l: Halaman Depan (v1.21) — ✅ SELESAI
+
+- [x] Rute publik `/` di luar layout `_app` (`src/routes/index.tsx`); redirect lama
+      `src/routes/_app/index.tsx` dihapus.
+- [x] Enam bagian: hero + contoh kartu, manfaat, fitur per peran, alur, tanya jawab, ajakan penutup.
+- [x] Teks dipisah ke `src/components/landing/content.ts` + 5 uji unit invariannya
+      (termasuk contoh hero yang harus ada di `drizzle/seed.sql`).
+- [x] Pengguna yang sudah masuk dialihkan ke `/hari-ini` — menjaga `start_url` PWA.
+- [x] `buttonClasses()` + varian `inverse` di `src/components/buttonStyles.ts`.
+- [x] Util `.brand-text-gradient-strong` untuk judul hero (kontras ≥ 3:1).
+- [x] Uji peramban: `outputs/check-landing.mjs` — 17 assertion, termasuk tamu yang ditolak di
+      `/hari-ini` dan sesi yang sudah masuk yang tetap diantar ke jadwal.
+
 ### Phase 5: Ekspor, Impor & Cetak — 🔶 SEBAGIAN
 
 - [ ] Ekspor PDF jadwal Sepekan/bulanan (termasuk daftar siswa piket)
@@ -1666,7 +1744,7 @@ bunx wrangler secret put JWT_SECRET
 | ----- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | AC1   | Admin dapat input jadwal snack untuk satu minggu (5 hari kerja) dalam < 2 menit                                        | ✅ Done — dropdown menu per hari di `/jadwal`                                                                                                                                                                 |
 | AC2   | Orang tua dapat login dengan username & password yang diberikan admin                                                  | ✅ Done — API + halaman login                                                                                                                                                                                 |
-| AC3   | Orang tua yang belum login TIDAK dapat melihat jadwal — hanya melihat halaman login                                    | ✅ Done — halaman `/login` + guard route; endpoint 401 tanpa token                                                                                                                                            |
+| AC3   | Orang tua yang belum login TIDAK dapat melihat jadwal — hanya melihat halaman depan (fitur & manfaat) dan halaman login                                    | ✅ Done — halaman `/login` + guard route; endpoint 401 tanpa token                                                                                                                                            |
 | AC4   | Admin dapat membuat, edit, dan menonaktifkan akun orang tua                                                            | ✅ Done — `/orang-tua` + API `/parents`                                                                                                                                                                       |
 | AC5   | Orang tua dapat mengubah password sendiri dari halaman profil                                                          | ✅ Done — `/profil` + `PUT /auth/password`                                                                                                                                                                    |
 | AC6   | Sistem dapat menyimpan jadwal untuk minimal 12 bulan ke depan                                                          | ✅ Done — tanpa batas periode; query rentang maks 92 hari                                                                                                                                                     |
@@ -1745,6 +1823,10 @@ bunx wrangler secret put JWT_SECRET
 | AC78  | Petugas piket **setiap kelas** terlihat di halaman Hari Ini, untuk **semua role** (termasuk admin) | ✅ Done — kartu "Petugas Piket" (`src/components/PetugasHariIni.tsx`) memakai `GET /schedules/petugas` yang sudah ada; diperiksa di peramban nyata untuk admin, korlas, dan orang tua (`outputs/check-petugas-hari-ini.mjs`, 24 assertion) |
 | AC79  | Tiap hari pada kartu "Minggu Berjalan" menyebut nama petugasnya, tanpa permintaan API tambahan | ✅ Done — `WeekPetugas` membaca `petugasName`/`petugasParentName` dari `GET /schedules/today`; nama orang tua dipakai sebagai cadangan bila siswanya tidak tertaut |
 | AC80  | Nomor WhatsApp wali petugas tampil sebagai tautan `wa.me` pada daftar petugas, dan wali yang belum mengisi nomor tetap diberi keterangan | ✅ Done — `ClassPetugasDto.petugasPhone` dari `parents.phone` (left join di `findPublishedPetugasBetween()`); `PetugasRow` dipecah jadi `PetugasSourceIcon`/`PetugasNames`/`PetugasPhone`; nomor tampil apa adanya, `href` dinormalisasi `whatsAppLink()`; diperiksa di peramban nyata (`outputs/check-petugas-wa.mjs`, 10 assertion) |
+| AC81  | Halaman depan dapat dibaca **tanpa login** dan menjelaskan fitur serta manfaatnya | ✅ Done — `src/routes/index.tsx` di luar layout `_app`; enam bagian (hero, manfaat, fitur per peran, alur, tanya jawab, ajakan); diperiksa di peramban nyata (`outputs/check-landing.mjs`, 17 assertion) |
+| AC82  | Membuka halaman depan **tidak membocorkan data** jadwal maupun nama petugas sekolah | ✅ Done — isinya teks statis tanpa satu pun permintaan API; contoh kartu di hero memakai menu/komponen/petugas dari `drizzle/seed.sql`, bukan data sekolah sungguhan, dan itu dijaga `content.test.ts` |
+| AC83  | Pengguna yang **sudah masuk** tidak mendarat di halaman promosi saat membuka `/` (PWA `start_url`) | ✅ Done — dialihkan ke `/hari-ini` dengan `replace`; diperiksa di peramban nyata untuk sesi orang tua |
+| AC84  | Setelah `/` dibuka untuk publik, halaman berisi data tetap tertutup bagi tamu | ✅ Done — `/hari-ini` melempar tamu ke `/login` (guard layout `_app`), endpoint tetap `401` tanpa token; diuji ulang di peramban nyata |
 
 ---
 
@@ -1756,7 +1838,8 @@ bunx wrangler secret put JWT_SECRET
 2. **Libur nasional** — jadwal otomatis skip hari libur. Mitigasi: tabel `holidays` atau flag `is_holiday` pada schedule.
 3. **Menu duplikat** — menu yang sama disajikan terlalu sering. Mitigasi: warning di UI admin.
 4. **Manajemen akun orang tua** — admin harus membuat akun untuk setiap orang tua. Jika banyak siswa, pembuatan akun bisa jadi beban. Mitigasi: bulk import via CSV/Excel.
-5. **Lupa password** — orang tua mungkin lupa password. Mitigasi: fitur reset password oleh admin, atau email/SMS reset (phase 2).
+5. **Halaman depan disalahpahami sebagai pendaftaran** — halaman `/` menjelaskan fitur, tetapi **tidak ada registrasi mandiri**; satu-satunya jalannya adalah akun yang dibuat admin. Mitigasi: catatan "setiap orang tua punya akun sendiri yang dibuat admin sekolah" dicetak di hero, di penutup, dan di tanya jawab pertama.
+6. **Lupa password** — orang tua mungkin lupa password. Mitigasi: fitur reset password oleh admin, atau email/SMS reset (phase 2).
 
 ### Asumsi
 

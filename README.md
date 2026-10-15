@@ -18,7 +18,7 @@ Setiap orang tua memiliki akun login pribadi untuk melihat jadwal menu snack har
 
 ## Tentang Aplikasi
 
-Jadwal piket snack sekolah sebelumnya disusun dalam dokumen teks manual — sulit dicari, tidak ada riwayat, dan orang tua harus bertanya untuk tahu menu hari ini. **Pizza Snack Play** mendigitalkan seluruh proses tersebut: admin mengelola menu & jadwal, orang tua login untuk memilih menu, melihat jadwal harian, Sepekan, dan bulanan, sedangkan admin & korlas dapat mengunduh jadwal itu sebagai berkas Excel untuk dibagikan atau dicetak.
+Jadwal piket snack sekolah sebelumnya disusun dalam dokumen teks manual — sulit dicari, tidak ada riwayat, dan orang tua harus bertanya untuk tahu menu hari ini. **Pizza Snack Play** mendigitalkan seluruh proses tersebut: admin mengelola menu & jadwal, orang tua login untuk memilih menu, melihat jadwal harian, Sepekan, dan bulanan, sedangkan admin & korlas dapat mengunduh jadwal itu sebagai berkas Excel untuk dibagikan atau dicetak. Sebelum masuk, halaman depan (`/`) menjelaskan fitur dan manfaatnya kepada orang tua yang belum punya akun — dan pengguna yang sudah masuk langsung diantar ke jadwal hari ini.
 
 ---
 
@@ -26,6 +26,7 @@ Jadwal piket snack sekolah sebelumnya disusun dalam dokumen teks manual — suli
 
 | Fitur                        | Deskripsi                                                                                                                              | Role           | Status     |
 | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------------- | ---------- |
+| **Halaman Depan (Landing)** | Satu-satunya halaman yang terbuka tanpa login: manfaat, fitur per peran, alur, dan tanya jawab — supaya orang tua yang belum punya akun paham dulu sebelum meminta akun ke admin | Semua          | ✅         |
 | **Autentikasi Wajib**        | Setiap orang tua login dengan akun pribadi yang dibuat admin                                                                           | Semua          | ✅         |
 | **Role-Based Access**        | `admin` (penuh), `korlas` (koordinator kelas — susun & publikasi jadwal kelasnya), `parent` (read-only)                                 | Semua          | ✅         |
 | **Jadwal Per Kelas**         | Menu bersifat sekolah-wide (sama untuk semua kelas); yang berbeda tiap kelas adalah **petugas piket** (siapa yang ambil snack)         | Semua          | ✅         |
@@ -103,7 +104,7 @@ masing-masing punya skala lengkap 50–950:
 Warna semantik **merah tetap merah** untuk aksi destruktif dan pesan error.
 Warna kategori menu (`categories.color`) adalah **data**, bukan bagian tema.
 
-Kelas util kustom: `.brand-stripe`, `.brand-canvas`, `.brand-text-gradient`.
+Kelas util kustom: `.brand-stripe`, `.brand-canvas`, `.brand-text-gradient`, `.brand-text-gradient-strong` (versi gelap untuk judul sebesar hero — ujung persik gradien biasa hanya berkontras ±2,4:1 di atas latar kanvas).
 
 ### Sudut
 
@@ -165,16 +166,19 @@ pizza-snack-play/
 │   │   ├── parents/              # Bagian akun orang tua: ParentTable, ParentFormModal,
 │   │   │                         # ParentBulkBar, selection.ts, form.ts
 │   │   ├── kategori/             # CategoryThumb + CategoryPreview (penanda gambar kategori)
+│   │   ├── landing/              # Halaman depan: Hero, Benefits, Features, HowItWorks, Faq,
+│   │   │                         # Closing, MasukLink, Section.tsx, content.ts (+ uji unit)
 │   │   ├── pilih-jadwal/         # MonthSnapshot, ClaimAction, ConflictDialog, PickToolbar,
 │   │   │                         # summary.ts (+ uji unit)
+│   │   ├── buttonStyles.ts       # Bentuk visual tombol (dipakai Button & tautan bergaya tombol)
 │   │   └── ui.tsx                # Button, Card, Input, Modal, Badge, Checkbox, dll.
 │   ├── hooks/                    # useClaimActions, useClassRoster, useClasses,
 │   │                             # useMonthNavigator, usePWA
 │   ├── routes/                   # TanStack Router — halaman frontend
 │   │   ├── __root.tsx            # Root + AuthProvider
+│   │   ├── index.tsx             # Halaman depan publik — fitur & manfaat, tanpa login
 │   │   ├── login.tsx             # Halaman masuk
 │   │   └── _app/                 # Layout terproteksi (butuh login)
-│   │       ├── index.tsx         # / → redirect ke /hari-ini
 │   │       ├── dashboard.tsx     # Ringkasan (admin)
 │   │       ├── hari-ini.tsx      # Jadwal hari ini
 │   │       ├── minggu-ini.tsx    # Jadwal Sepekan
@@ -838,13 +842,14 @@ jadwal maupun memakai Pilih Jadwal sampai `students`-nya diisi.
 - **Migrasi gagal = Worker lama tetap melayani, dan itu tidak kelihatan:** `bun run deploy` menjalankan `bun run build` → `bun run db:migrate` sebelum `wrangler deploy --env production`. Kalau `db:migrate` keluar dengan kode ≠ 0, `wrangler deploy` **tidak pernah dijalankan** — jadi produksi tetap melayani bundel terakhir yang pernah terunggah, tanpa tanda apa pun di UI bahwa yang berjalan adalah versi lama. Akibatnya sebuah fitur bisa "sudah diperbaiki" di `main` tapi masih hidup sebagai bug di produksi. Bila ada perubahan yang tidak muncul padahal commit-nya sudah di-`push`, periksa dulu **apakah migrasi terakhir berhasil** — jangan mencari bug di kode frontend.
 - **Jangan menyimpulkan dari keluaran wrangler yang dipotong pipe:** keluaran JSON `wrangler d1 execute --json` harus diurai **utuh**. Memipenya ke `head` / `paste - - -` / `tr` memotong baris terakhir secara senyap, dan sisa yang tampil terlihat seperti fakta yang sah. Pernah terjadi: `pragma_table_info('schedules')` disimpulkan tidak memuat `petugas_name`/`petugas_parent_name`, padahal kolom itu ada (total 17 kolom) — yang hilang hanya baris terakhir. Selalu tulis keluaran ke berkas lebih dulu, baru urai dengan parser JSON.
 - **Bundel Worker dibangun oleh `vite build`, bukan oleh `wrangler`:** plugin Cloudflare menulis `dist/pizza_snack_play/index.js` beserta `wrangler.json`-nya, plus `.wrangler/deploy/config.json` yang mengarahkan `wrangler deploy` ke berkas itu (`main: index.js`, `no_bundle: true`). Mengunggah berkas itu memang benar — asalkan `bun run build` sudah jalan, karena di situlah berkas tersebut **dibangun ulang dari `src/`**. Konsekuensinya satu hal yang perlu diingat: `wrangler deploy` **tanpa** `bun run build` lebih dulu akan mengunggah bundel terakhir yang ada di `dist/`, bukan kode terkini. Selalu lewat `bun run deploy`.
+- **`/` adalah satu-satunya halaman terbuka, dan tetap mengantar pengguna yang sudah masuk:** halaman depan itu publik supaya orang tua yang belum punya akun bisa membaca fitur & manfaatnya; sesi yang masih hidup langsung dialihkan ke `/hari-ini`. Pengalihan itu bukan hiasan — `start_url` di `public/manifest.json` masih `"/"`, jadi tanpa pengalihan setiap kali PWA dibuka orang tua akan mendarat di halaman promosi, bukan di jadwal anaknya.
 - **Satu mekanisme migrasi untuk lokal dan remote:** pencatatannya di tabel `d1_migrations` lewat `wrangler d1 migrations apply` (`db:migrate:local` / `db:migrate`), sesuai `migrations_dir` di `wrangler.json`. Sebelumnya remote memakai `drizzle-kit migrate` (`__drizzle_migrations`) sedangkan lokal memakai wrangler, sehingga migrasi 0006 hanya tercatat di sisi lokal — akar bug "akun terkunci" di atas. `drizzle-kit push` menembak langsung ke D1 remote tanpa mencatat apa pun, jadi perubahan skema produksi tidak boleh lewat situ. `bun run deploy` kini menjalankan `db:migrate` sebelum mengunggah Worker.
 
 ---
 
 ## Dokumentasi
 
-- [PRD — Product Requirements Document v1.17](docs/PRD_Pizza_Snack_Play.md)
+- [PRD — Product Requirements Document v1.21](docs/PRD_Pizza_Snack_Play.md)
 - [Struktur Tabel — DDL + Drizzle + Seed + Queries](docs/Struktur_Tabel_Pizza_Snack_Play.md)
 - [UAT Result](docs/UAT_Result.md)
 - [Panduan Orang Tua — dek sosialisasi 15 halaman](Panduan%20Orang%20Tua%20Pizza%20Snack%20Play/STORY.md) (`.pptx` + sumber `slides/*.slide`)

@@ -19,26 +19,13 @@ import {
 } from "lucide-react";
 import { cn, cnControl } from "@/lib/cn";
 import { modalBackdrop, modalContent, modalPanel } from "@/lib/motion";
+import {
+  buttonClasses,
+  type ButtonSize,
+  type ButtonVariant,
+} from "./buttonStyles";
 
 // ── Button ────────────────────────────────────────────────────
-
-type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
-type ButtonSize = "sm" | "md";
-
-const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
-  primary:
-    "bg-brand-600 text-white hover:bg-brand-700 focus-visible:outline-brand-600 shadow-sm",
-  secondary:
-    "bg-white text-slate-700 border border-slate-300 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 focus-visible:outline-brand-400",
-  ghost: "text-slate-600 hover:bg-slate-100 hover:text-brand-700 focus-visible:outline-brand-400",
-  danger:
-    "bg-red-600 text-white hover:bg-red-700 focus-visible:outline-red-600",
-};
-
-const BUTTON_SIZES: Record<ButtonSize, string> = {
-  sm: "px-3 py-1.5 text-sm gap-1.5",
-  md: "px-4 py-2.5 text-sm gap-2",
-};
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
@@ -59,14 +46,7 @@ export function Button({
     <button
       {...props}
       disabled={disabled || loading}
-      className={cn(
-        "inline-flex items-center justify-center rounded-lg font-semibold transition-colors",
-        "focus-visible:outline-2 focus-visible:outline-offset-2",
-        "disabled:opacity-50 disabled:cursor-not-allowed",
-        BUTTON_VARIANTS[variant],
-        BUTTON_SIZES[size],
-        className,
-      )}
+      className={buttonClasses(variant, size, className)}
     >
       {loading && <Loader2 className="w-4 h-4 animate-spin" />}
       {children}

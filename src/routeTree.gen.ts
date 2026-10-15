@@ -11,7 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
-import { Route as AppIndexRouteImport } from './routes/_app/index'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppProfilRouteImport } from './routes/_app/profil'
 import { Route as AppPilihJadwalRouteImport } from './routes/_app/pilih-jadwal'
 import { Route as AppPencarianRouteImport } from './routes/_app/pencarian'
@@ -34,10 +34,10 @@ const AppRoute = AppRouteImport.update({
   id: '/_app',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppIndexRoute = AppIndexRouteImport.update({
+const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AppRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AppProfilRoute = AppProfilRouteImport.update({
   id: '/profil',
@@ -101,7 +101,7 @@ const AppBulanRoute = AppBulanRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof AppIndexRoute
+  '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/bulan': typeof AppBulanRoute
   '/dashboard': typeof AppDashboardRoute
@@ -117,6 +117,7 @@ export interface FileRoutesByFullPath {
   '/profil': typeof AppProfilRoute
 }
 export interface FileRoutesByTo {
+  '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/bulan': typeof AppBulanRoute
   '/dashboard': typeof AppDashboardRoute
@@ -130,10 +131,10 @@ export interface FileRoutesByTo {
   '/pencarian': typeof AppPencarianRoute
   '/pilih-jadwal': typeof AppPilihJadwalRoute
   '/profil': typeof AppProfilRoute
-  '/': typeof AppIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/_app/bulan': typeof AppBulanRoute
@@ -148,7 +149,6 @@ export interface FileRoutesById {
   '/_app/pencarian': typeof AppPencarianRoute
   '/_app/pilih-jadwal': typeof AppPilihJadwalRoute
   '/_app/profil': typeof AppProfilRoute
-  '/_app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -169,6 +169,7 @@ export interface FileRouteTypes {
     | '/profil'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/'
     | '/login'
     | '/bulan'
     | '/dashboard'
@@ -182,9 +183,9 @@ export interface FileRouteTypes {
     | '/pencarian'
     | '/pilih-jadwal'
     | '/profil'
-    | '/'
   id:
     | '__root__'
+    | '/'
     | '/_app'
     | '/login'
     | '/_app/bulan'
@@ -199,10 +200,10 @@ export interface FileRouteTypes {
     | '/_app/pencarian'
     | '/_app/pilih-jadwal'
     | '/_app/profil'
-    | '/_app/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
 }
@@ -223,12 +224,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_app/': {
-      id: '/_app/'
+    '/': {
+      id: '/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof AppIndexRouteImport
-      parentRoute: typeof AppRoute
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_app/profil': {
       id: '/_app/profil'
@@ -330,7 +331,6 @@ interface AppRouteChildren {
   AppPencarianRoute: typeof AppPencarianRoute
   AppPilihJadwalRoute: typeof AppPilihJadwalRoute
   AppProfilRoute: typeof AppProfilRoute
-  AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -346,12 +346,12 @@ const AppRouteChildren: AppRouteChildren = {
   AppPencarianRoute: AppPencarianRoute,
   AppPilihJadwalRoute: AppPilihJadwalRoute,
   AppProfilRoute: AppProfilRoute,
-  AppIndexRoute: AppIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
 }

@@ -1,8 +1,9 @@
 import { useId, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ChevronDown, HandHeart, User, Users } from "lucide-react";
+import { ChevronDown, Users } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { QUICK } from "@/lib/motion";
+import { PetugasRow } from "@/components/PetugasRow";
 import type { ClassPetugasDto } from "@/types/schedule";
 
 /**
@@ -86,54 +87,11 @@ export function PetugasKelasLain({
             className="mt-2 space-y-1 overflow-hidden"
           >
             {others.map((row) => (
-              <PetugasKelasRow key={row.className} row={row} />
+              <PetugasRow key={row.className} row={row} />
             ))}
           </motion.ul>
         )}
       </AnimatePresence>
     </div>
-  );
-}
-
-/**
- * Satu baris kelas.
- *
- * Ikonnya mengikuti makna yang sama dengan badan kartu: hati untuk tanggal
- * yang **diambil orang tua**, orang untuk yang **ditunjuk korlas**.
- */
-function PetugasKelasRow({ row }: { row: ClassPetugasDto }) {
-  const hasPetugas = Boolean(row.petugasName || row.petugasParentName);
-
-  return (
-    <li className="flex items-start gap-2 text-xs">
-      <span className="w-14 shrink-0 pt-px font-medium text-slate-500">
-        Kelas {row.className}
-      </span>
-
-      {hasPetugas ? (
-        <>
-          {row.claimed ? (
-            <HandHeart className="mt-px h-3.5 w-3.5 shrink-0 text-accent-600" />
-          ) : (
-            <User className="mt-px h-3.5 w-3.5 shrink-0 text-slate-400" />
-          )}
-          <span className="min-w-0">
-            {row.petugasName && (
-              <span className="font-medium text-slate-800">
-                {row.petugasName}
-              </span>
-            )}
-            {row.petugasName && row.petugasParentName && (
-              <span className="text-slate-400"> · </span>
-            )}
-            {row.petugasParentName && (
-              <span className="text-slate-500">{row.petugasParentName}</span>
-            )}
-          </span>
-        </>
-      ) : (
-        <span className="text-slate-400">Belum ada petugas</span>
-      )}
-    </li>
   );
 }

@@ -22,26 +22,36 @@ import type { PetugasRow } from "./repository";
  *     urutan teks, sehingga "10" akan mendahului "2" bila dibiarkan.
  */
 export function groupPetugasByDate(rows: PetugasRow[]): DatePetugasDto[] {
-  const byDate = new Map<string, ClassPetugasDto[]>();
+  const classesByDate = new Map<string, ClassPetugasDto[]>();
 
   for (const row of rows) {
-    const classes = byDate.get(row.scheduleDate) ?? [];
+    const classes = classesByDate.get(row.scheduleDate) ?? [];
 
-    classes.push({
-      className: row.className,
-      petugasName: row.petugasName,
-      petugasParentName: row.petugasParentName,
-      // Adanya klaim = tanggal ini diambil orang tua, bukan ditunjuk korlas.
-      claimed: row.claimId !== null,
-    });
-
-    byDate.set(row.scheduleDate, classes);
+    classes.push(toClassPetugasDto(row));
+    classesByDate.set(row.scheduleDate, classes);
   }
 
-  return [...byDate.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
+  return [...classesByDate.entries()]
+    .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
     .map(([date, classes]) => ({
       date,
-      classes: classes.sort((a, b) => compareClassNames(a.className, b.className)),
+      classes: classes.sort(compareByClass),
     }));
+}
+
+/** Satu baris database → satu baris DTO. Satu-satunya tempat pemetaannya. */
+function toClassPetugasDto(row: PetugasRow): ClassPetugasDto {
+  return {
+    className: row.className,
+    petugasName: row.petugasName,
+    petugasParentName: row.petugasParentName,
+    petugasPhone: row.petugasPhone,
+    // Adanya klaim = tanggal ini diambil orang tua, bukan ditunjuk korlas.
+    claimed: row.claimId !== null,
+  };
+}
+
+/** Kelas diurutkan alami ("1", "2", … "10"), bukan urut teks. */
+function compareByClass(a: ClassPetugasDto, b: ClassPetugasDto): number {
+  return compareClassNames(a.className, b.className);
 }

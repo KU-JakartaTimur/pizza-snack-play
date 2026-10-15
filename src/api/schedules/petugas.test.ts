@@ -9,6 +9,7 @@ function row(
   return {
     petugasName: null,
     petugasParentName: null,
+    petugasPhone: null,
     claimId: null,
     ...overrides,
   };
@@ -68,6 +69,7 @@ describe("groupPetugasByDate — pengelompokan", () => {
       className: "2",
       petugasName: null,
       petugasParentName: null,
+      petugasPhone: null,
       claimed: false,
     });
   });
@@ -103,7 +105,39 @@ describe("groupPetugasByDate — asal petugas", () => {
       className: "1",
       petugasName: "Budi",
       petugasParentName: "Ibu Sari",
+      petugasPhone: null,
       claimed: false,
     });
+  });
+});
+
+describe("groupPetugasByDate — nomor wali petugas", () => {
+  test("nomor wali diteruskan apa adanya, tanpa dirapikan", () => {
+    const result = groupPetugasByDate([
+      row({
+        scheduleDate: "2026-10-01",
+        className: "1",
+        petugasName: "Budi",
+        petugasParentName: "Ibu Sari",
+        petugasPhone: "0812-3456-7890",
+      }),
+    ]);
+
+    expect(result[0].classes[0].petugasPhone).toBe("0812-3456-7890");
+  });
+
+  test("wali yang belum mengisi nomor tetap diwakili, nomornya null", () => {
+    const result = groupPetugasByDate([
+      row({
+        scheduleDate: "2026-10-01",
+        className: "1",
+        petugasName: "Budi",
+        petugasParentName: "Ibu Sari",
+        petugasPhone: null,
+      }),
+    ]);
+
+    expect(result[0].classes[0].petugasParentName).toBe("Ibu Sari");
+    expect(result[0].classes[0].petugasPhone).toBeNull();
   });
 });

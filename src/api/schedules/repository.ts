@@ -5,6 +5,7 @@ import {
   importLogs,
   menuItems,
   menus,
+  parents,
   scheduleClaims,
   schedules,
   weeks,
@@ -42,6 +43,12 @@ export interface PetugasRow {
   className: string;
   petugasName: string | null;
   petugasParentName: string | null;
+  /**
+   * Nomor WhatsApp wali petugas (`parents.phone`) — bahan tautan `wa.me`
+   * supaya wali bisa saling menghubungi soal piket. `null` bila petugasnya
+   * ditunjuk tanpa wali tertaut, atau walinya belum mengisi nomornya.
+   */
+  petugasPhone: string | null;
   /** Id klaim — `null` berarti petugasnya ditunjuk korlas, bukan diambil orang tua. */
   claimId: number | null;
 }
@@ -146,6 +153,15 @@ class ScheduleRepository {
    * ditegakkan di sini, bukan diserahkan ke pemanggil, supaya jadwal yang
    * masih draft/terkunci tidak pernah bocor lewat jalur ini.
    *
+   * Nomor WhatsApp wali ikut diambil supaya wali bisa menghubungi petugas
+   * kelas lain soal titip-menitip snack. Sumbernya `parents` — dijangkau lewat
+   * `schedules.petugas_parent_id`, yang terisi baik untuk petugas hasil klaim
+   * orang tua maupun penunjukan korlas (lihat `resolvePetugas`). Kedua join di
+   * sini **left join**, karena baris lama boleh punya petugas tanpa id wali
+   * maupun tanpa klaim; keduanya juga bertemu paling banyak satu baris
+   * (`parents.id` primary key, `idx_schedule_claims_schedule` unik), jadi
+   * jumlah barisnya tidak berlipat.
+   *
    * Urutan `className` dari SQL sengaja tidak diandalkan: SQLite mengurutkan
    * teks, jadi "10" mendahului "2". Pemanggil (`groupPetugasByDate`) yang
    * mengurutkan ulang secara alami.
@@ -161,10 +177,12 @@ class ScheduleRepository {
         className: schedules.className,
         petugasName: schedules.petugasName,
         petugasParentName: schedules.petugasParentName,
+        petugasPhone: parents.phone,
         claimId: scheduleClaims.id,
       })
       .from(schedules)
       .leftJoin(scheduleClaims, eq(scheduleClaims.scheduleId, schedules.id))
+      .leftJoin(parents, eq(parents.id, schedules.petugasParentId))
       .where(
         and(
           eq(schedules.status, "published"),

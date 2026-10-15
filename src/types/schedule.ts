@@ -116,6 +116,13 @@ export interface ClassPetugasDto {
   /** Nama orang tua/wali petugas; `null` bila tidak diketahui. */
   petugasParentName: string | null;
   /**
+   * Nomor WhatsApp wali petugas (`parents.phone`) — apa adanya seperti yang
+   * diketik wali, jadi bentuknya belum tentu rapi. Klien merapikannya sendiri
+   * lewat `whatsAppLink()` sebelum dijadikan tautan. `null` bila wali petugas
+   * belum mengisi nomornya, atau bila petugasnya tidak punya wali tertaut.
+   */
+  petugasPhone: string | null;
+  /**
    * `true` bila petugasnya muncul dari **pengambilan orang tua** (klaim),
    * bukan penunjukan korlas — dua hal yang berbeda maknanya bagi orang tua.
    */

@@ -195,7 +195,7 @@ check(
 );
 
 check(
-  "setiap tanggal memuat kelas dengan nama teks & penanda klaim",
+  "setiap tanggal memuat kelas dengan nama teks, penanda klaim, dan nomor wali",
   dates.length > 0 &&
     dates.every(
       (entry) =>
@@ -205,7 +205,10 @@ check(
           (row) =>
             typeof row.className === "string" &&
             row.className.length > 0 &&
-            typeof row.claimed === "boolean",
+            typeof row.claimed === "boolean" &&
+            // Nomor wali boleh kosong, tapi harus ada sebagai field — UI
+            // membedakan "belum diisi" dari "field-nya tidak dikirim".
+            (row.petugasPhone === null || typeof row.petugasPhone === "string"),
         ),
     ),
 );

@@ -30,7 +30,7 @@ Jadwal piket snack sekolah sebelumnya disusun dalam dokumen teks manual — suli
 | **Role-Based Access**        | `admin` (penuh), `korlas` (koordinator kelas — susun & publikasi jadwal kelasnya), `parent` (read-only)                                 | Semua          | ✅         |
 | **Jadwal Per Kelas**         | Menu bersifat sekolah-wide (sama untuk semua kelas); yang berbeda tiap kelas adalah **petugas piket** (siapa yang ambil snack)         | Semua          | ✅         |
 | **Pemilih Kelas**            | Admin & orang tua multi-kelas memilih kelas yang ditampilkan                                                                           | Admin, Parent  | ✅         |
-| **Jadwal Hari Ini**          | Menu snack hari ini + ringkasan minggu berjalan                                                                                        | Semua          | ✅         |
+| **Jadwal Hari Ini**          | Menu snack hari ini + ringkasan minggu berjalan + **daftar petugas piket semua kelas**                                             | Semua          | ✅         |
 | **Jadwal Sepekan**           | Senin–Jumat dengan navigasi Sepekan                                                                                                    | Semua          | ✅         |
 | **Jadwal Bulanan**           | Rekap per minggu dengan statistik hari sekolah/libur                                                                                   | Semua          | ✅         |
 | **Manajemen Menu**           | CRUD menu (makanan utama + buah pendamping) + kategori                                                                                 | Admin          | ✅         |
@@ -42,6 +42,7 @@ Jadwal piket snack sekolah sebelumnya disusun dalam dokumen teks manual — suli
 | **Impor Jadwal dari Teks**   | Tempel jadwal apa adanya dari sekolah (blok rentang tanggal + baris `Hari : menu`) → dipratinjau lebih dulu, lalu masuk sebagai `draft`. Tanggal yang sudah punya jadwal **dilewati**, jadi teks yang sama boleh ditempel berulang | Admin, Korlas  | ✅         |
 | **Pilih Jadwal**             | Orang tua berebut tanggal snack yang dibiarkan kosong korlas — siapa cepat dia dapat. **Korlas & admin** melihat panel *Keterangan bulan*: berapa snack sudah diambil, berapa masih kosong | Parent, Korlas, Admin | ✅         |
 | **Petugas Kelas Lain**       | Di `/pilih-jadwal`, setiap kartu tanggal bisa dibuka untuk melihat siapa petugas piket di **kelas lain pada tanggal yang sama** — menunya memang sama untuk semua kelas, yang berbeda hanya petugasnya | Parent, Korlas | ✅         |
+| **Petugas Piket (Hari Ini)** | Kartu di `/hari-ini`: siapa petugas piket di **setiap kelas** pada tanggal itu. Memakai endpoint lintas kelas yang sama dengan baris di atas, tetapi tampil untuk **semua peran** — sebelumnya daftar ini hanya ada di `/pilih-jadwal`, yang tertutup bagi admin | Semua          | ✅         |
 | **PWA**                      | Pasang ke layar utama + service worker (cache offline)                                                                                 | Semua          | ✅         |
 | **Kelola Hari Libur**        | Tambah/hapus hari libur bernama (berlaku semua kelas)                                                                                  | Admin          | ✅         |
 | **Pencarian Riwayat Menu**   | "Kapan jeruk pernah disajikan?" — cari menu/komponen lintas bulan                                                                      | Semua          | ✅         |
@@ -157,6 +158,8 @@ pizza-snack-play/
 │   │   ├── ClassSwitcher.tsx     # Pemilih kelas di header
 │   │   ├── PWAInstallPrompt.tsx  # Banner pasang PWA + notifikasi update SW
 │   │   ├── ScheduleDayCard.tsx   # Kartu satu hari jadwal
+│   │   ├── PetugasHariIni.tsx    # Kartu "Petugas Piket" (semua kelas, hari ini)
+│   │   ├── PetugasRow.tsx        # Satu baris kelas pada semua daftar petugas
 │   │   ├── jadwal/               # Bagian jadwal: ExportButton, CopyWeekModal, ImportDialog,
 │   │   │                         # BulkActionBar, MonthToolbar, selection.ts, messages.ts
 │   │   ├── parents/              # Bagian akun orang tua: ParentTable, ParentFormModal,
@@ -190,6 +193,7 @@ pizza-snack-play/
 │   │   ├── auth-context.ts       # Context + hook useAuth
 │   │   ├── active-class.ts       # Kelas aktif (store + localStorage)
 │   │   ├── date.ts               # Utilitas tanggal WIB (sisi klien)
+│   │   ├── students.ts           # primaryStudent(): anak di kelas tertinggi (sisi klien)
 │   │   ├── item-types.ts         # Label & urutan jenis komponen menu
 │   │   ├── cn.ts                 # Penggabung class Tailwind
 │   │   ├── download.ts           # Simpan blob hasil unduhan ke berkas

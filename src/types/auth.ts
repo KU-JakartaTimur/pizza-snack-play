@@ -50,10 +50,35 @@ export interface AuthUser {
   /** Hubungan dengan siswa (`ibu` | `ayah` | `wali`). Null untuk admin. */
   relationship: string | null;
   /**
+   * Nomor WhatsApp orang tua (`parents.phone`) — dipakai menu Profil untuk
+   * membuat tautan `wa.me`, sehingga sesama wali bisa saling menghubungi
+   * soal piket. Null bila belum diisi atau untuk admin.
+   */
+  phone: string | null;
+  /**
    * Anak dari orang tua ini. Kosong untuk admin.
    * Satu orang tua dapat memiliki lebih dari satu anak.
    */
   students: StudentProfile[];
+}
+
+/**
+ * Perubahan data akun yang boleh dilakukan pemiliknya sendiri dari menu Profil.
+ *
+ * `username` dan `role` **sengaja tidak ada di sini**. Keduanya menentukan
+ * identitas login dan wewenang akun, jadi tetap wewenang admin lewat
+ * `ParentInput` (`types/account.ts`) — membiarkan pemiliknya mengubahnya
+ * berarti satu orang tua bisa memberi dirinya sendiri akses korlas.
+ * Yang tersisa hanyalah data kontak: nama sapaan, hubungan dengan siswa, dan
+ * nomor WhatsApp.
+ */
+export interface AccountUpdateInput {
+  /** Nama tampilan orang tua, mis. "Sari Wulandari". */
+  fullName?: string;
+  /** `ibu` | `ayah` | `wali` — divalidasi server terhadap daftar yang sah. */
+  relationship?: string;
+  /** Nomor WhatsApp. String kosong (atau `null`) mengosongkan nomornya. */
+  phone?: string | null;
 }
 
 export interface StudentProfile {

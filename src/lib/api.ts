@@ -1,6 +1,7 @@
 import { HTTPError } from "ky";
 import type { ApiResponse } from "@/types/apiResponse";
 import type {
+  AccountUpdateInput,
   LoginResponse,
   ProfileResponse,
   AuthUser,
@@ -177,10 +178,22 @@ export const api = {
   },
 
   /**
-   * Layanan mandiri orang tua (menu Profil): mengelola daftar anaknya sendiri.
-   * Cakupannya dikunci di server dari token — tidak ada `parentId` di request.
+   * Layanan mandiri orang tua (menu Profil): mengelola data akun & daftar
+   * anaknya sendiri. Cakupannya dikunci di server dari token — tidak ada
+   * `parentId` di request.
    */
   profile: {
+    /**
+     * Ubah data akun sendiri: nama sapaan, hubungan dengan siswa, dan nomor
+     * WhatsApp. Hanya field yang dikirim yang berubah.
+     *
+     * `username` dan `peran` tidak bisa diubah lewat jalur ini — keduanya
+     * wewenang admin. Jawabannya berbentuk sama dengan `/auth/me`, sehingga
+     * profil terbarunya bisa langsung dipakai.
+     */
+    updateAccount: (body: AccountUpdateInput) =>
+      unwrapFull<ProfileResponse>(http.put("profile/account", { json: body })),
+
     students: () => unwrap<StudentProfile[]>(http.get("profile/students")),
 
     addStudent: (body: { name: string; className: string }) =>

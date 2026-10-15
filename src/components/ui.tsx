@@ -264,6 +264,58 @@ export function Badge({
   );
 }
 
+// ── Pesan hasil aksi ──────────────────────────────────────────
+
+/**
+ * Pesan hasil sebuah aksi, siap ditampilkan.
+ *
+ * Bentuknya dipakai bersama `InlineAlert`, supaya seluruh halaman memakai
+ * istilah yang sama: `tone` menentukan warnanya, `text` isinya. Sebelumnya
+ * tiap kartu menuliskan tipe ini sendiri-sendiri dengan nama field yang
+ * berbeda-beda (`kind`), padahal maksudnya sama.
+ */
+export interface ActionMessage {
+  tone: "ok" | "error";
+  text: string;
+}
+
+/**
+ * Pesan hasil aksi di dalam halaman — bukan popup.
+ *
+ * Dipakai untuk umpan balik seperti "Data anak berhasil diperbarui" atau
+ * alasan penolakan dari server. Sebelumnya blok kelas Tailwind-nya disalin di
+ * tiga tempat, sehingga warna dan jaraknya gampang berbeda antar kartu;
+ * sekarang bentuknya satu, dengan `className` untuk mengatur jarak dari luar
+ * (mis. `mx-5 mt-4` di dalam kartu berpadding).
+ *
+ * `role="alert"` dipasang khusus untuk kegagalan, agar pembaca layar
+ * mengumumkannya tanpa menunggu pengguna memindahkan fokus.
+ */
+export function InlineAlert({
+  tone,
+  children,
+  className,
+}: {
+  tone: ActionMessage["tone"];
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <p
+      role={tone === "error" ? "alert" : "status"}
+      className={cn(
+        "rounded-lg border px-3 py-2 text-sm",
+        tone === "ok"
+          ? "border-brand-200 bg-brand-50 text-brand-700"
+          : "border-red-200 bg-red-50 text-red-700",
+        className,
+      )}
+    >
+      {children}
+    </p>
+  );
+}
+
 // ── States ────────────────────────────────────────────────────
 
 export function Spinner({ label = "Memuat…" }: { label?: string }) {

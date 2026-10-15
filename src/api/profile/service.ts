@@ -3,13 +3,17 @@ import type { JwtPayload, StudentProfile } from "../../types/auth";
 import type { ClassListDto } from "../../types/class";
 import { classRepository } from "../classes/repository";
 import { parentRepository } from "../parents/repository";
+import { RELATIONSHIPS } from "../parents/service";
+import { normalizePhone } from "../utils/phone";
 
 export type ProfileError =
   | "not_parent"
   | "not_found"
   | "last_student"
   | "invalid_name"
-  | "invalid_class";
+  | "invalid_class"
+  | "invalid_relationship"
+  | "invalid_phone";
 
 /** Batas panjang teks yang diterima dari orang tua. */
 export const MAX_NAME_LENGTH = 80;
@@ -19,6 +23,19 @@ export const MAX_CLASS_LENGTH = 32;
 export interface StudentForm {
   name?: string;
   className?: string | null;
+}
+
+/**
+ * Data akun yang boleh diubah pemiliknya sendiri.
+ *
+ * Bentuknya sengaja **partial**: field yang tidak dikirim tidak disentuh sama
+ * sekali, sehingga orang tua yang hanya ingin mengganti nomor WhatsApp-nya
+ * tidak ikut menulis ulang nama atau hubungannya.
+ */
+export interface AccountForm {
+  fullName?: string;
+  relationship?: string;
+  phone?: string | null;
 }
 
 /** Rapikan spasi berlebih di tengah & tepi teks. */
@@ -145,6 +162,67 @@ class ProfileService {
     if (active.length <= 1) return "last_student";
 
     await parentRepository.deleteStudent(db, studentId);
+    return true;
+  }
+
+  /**
+   * Ubah data akun sendiri: nama sapaan, hubungan dengan siswa, nomor WhatsApp.
+   *
+   * Nama ditulis ke **dua tempat** — `users.full_name` **dan**
+   * `parents.parent_name`. Keduanya dibaca tampilan yang berbeda: kartu Profil
+   * dan header membaca `users`, sedangkan daftar akun di menu admin serta nama
+   * orang tua petugas pada jadwal diturunkan dari `parents`. Menulis ke salah
+   * satu saja membuat keduanya saling bertentangan; pola yang sama dipakai
+   * `parentService.update` saat admin menyunting akun.
+   *
+   * Yang **tidak** bisa diubah dari sini: `username`, `role`, dan `className`
+   * korlas — ketiganya wewenang admin (lihat `AccountUpdateInput` di
+   * `src/types/auth.ts`). Cakupan pemiliknya tetap diambil dari token, jadi
+   * satu orang tua mustahil menyentuh akun orang lain.
+   */
+  async updateAccount(
+    db: Db,
+    user: JwtPayload,
+    input: AccountForm,
+  ): Promise<true | ProfileError> {
+    const parentId = await this.ownParentId(db, user.sub);
+    if (parentId === null) return "not_parent";
+
+    let fullName: string | undefined;
+    if (input.fullName !== undefined) {
+      const name = tidy(input.fullName);
+      if (!name || name.length > MAX_NAME_LENGTH) return "invalid_name";
+      fullName = name;
+    }
+
+    if (
+      input.relationship !== undefined &&
+      !RELATIONSHIPS.includes(input.relationship as (typeof RELATIONSHIPS)[number])
+    ) {
+      return "invalid_relationship";
+    }
+
+    let phone: string | null | undefined;
+    if (input.phone !== undefined) {
+      // `null` dan teks kosong sama-sama berarti "kosongkan nomornya".
+      const normalized = normalizePhone(input.phone ?? "");
+      if (normalized === "invalid") return "invalid_phone";
+      phone = normalized;
+    }
+
+    // Nama hidup di dua tabel, jadi hanya ditulis bila memang dikirim.
+    if (fullName !== undefined) {
+      await parentRepository.updateUser(db, user.sub, { fullName });
+    }
+
+    await parentRepository.updateParent(db, parentId, {
+      ...(fullName !== undefined ? { parentName: fullName } : {}),
+      ...(input.relationship !== undefined
+        ? { relationship: input.relationship }
+        : {}),
+      ...(phone !== undefined ? { phone } : {}),
+    });
+
     return true;
   }
 

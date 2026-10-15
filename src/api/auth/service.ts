@@ -91,12 +91,15 @@ export function resolveExpiresIn(raw: string | undefined): number {
 interface ParentProfile {
   parentId: number | null;
   relationship: string | null;
+  /** Nomor WhatsApp orang tua — bahan tautan `wa.me` di menu Profil. */
+  phone: string | null;
   students: StudentProfile[];
 }
 
 const EMPTY_PROFILE: ParentProfile = {
   parentId: null,
   relationship: null,
+  phone: null,
   students: [],
 };
 
@@ -118,6 +121,7 @@ function toPublicUser(
     className: user.className,
     parentId: profile.parentId,
     relationship: profile.relationship,
+    phone: profile.phone,
     students: profile.students,
   };
 }
@@ -304,6 +308,7 @@ class AuthService {
     return {
       parentId: found.parent.id,
       relationship: found.parent.relationship,
+      phone: found.parent.phone,
       students: found.students.map((student) => ({
         id: student.id,
         name: student.name,

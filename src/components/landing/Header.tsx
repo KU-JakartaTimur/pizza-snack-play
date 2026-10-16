@@ -3,8 +3,16 @@ import logo from "@/assets/logo.png";
 import { QUICK } from "@/lib/motion";
 import { MasukLink } from "./MasukLink";
 
+const NAV = [
+  { label: "Manfaat", href: "#manfaat" },
+  { label: "Fitur", href: "#fitur" },
+  { label: "Alur", href: "#alur" },
+  { label: "Tanya jawab", href: "#tanya-jawab" },
+];
+
 /**
- * Bilah atas halaman depan: identitas aplikasi di kiri, ajakan masuk di kanan.
+ * Bilah atas halaman depan: identitas aplikasi di kiri, menu tengah, ajakan
+ * masuk di kanan.
  *
  * Terpisah dari `routes/index.tsx` supaya berkas rute itu hanya berisi hal yang
  * memang urusan rute — pengalihan sesi dan urutan bagian. Semua yang terlihat
@@ -48,7 +56,24 @@ export function LandingHeader() {
           </span>
         </div>
 
-        <MasukLink size="sm" />
+        <div className="flex items-center gap-2">
+          <nav
+            aria-label="Navigasi halaman depan"
+            className="hidden items-center gap-1 md:flex"
+          >
+            {NAV.map(({ label, href }) => (
+              <a
+                key={href}
+                href={href}
+                className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
+              >
+                {label}
+              </a>
+            ))}
+          </nav>
+
+          <MasukLink size="sm" />
+        </div>
       </div>
     </motion.header>
   );

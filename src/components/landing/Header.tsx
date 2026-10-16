@@ -1,4 +1,6 @@
-import { motion, useReducedMotion } from "framer-motion";
+import { useState } from "react";
+import { motion, useReducedMotion, AnimatePresence } from "framer-motion";
+import { Menu, X } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { QUICK } from "@/lib/motion";
 import { MasukLink } from "./MasukLink";
@@ -24,6 +26,7 @@ const NAV = [
  */
 export function LandingHeader() {
   const reduced = useReducedMotion();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
     <motion.header
@@ -73,8 +76,50 @@ export function LandingHeader() {
           </nav>
 
           <MasukLink size="sm" />
+
+          <button
+            type="button"
+            aria-label={mobileOpen ? "Tutup menu" : "Buka menu"}
+            aria-expanded={mobileOpen}
+            aria-controls="mobile-nav"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 md:hidden"
+            onClick={() => setMobileOpen((v) => !v)}
+          >
+            {mobileOpen ? (
+              <X className="h-5 w-5" aria-hidden="true" />
+            ) : (
+              <Menu className="h-5 w-5" aria-hidden="true" />
+            )}
+          </button>
         </div>
       </div>
+
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.nav
+            id="mobile-nav"
+            aria-label="Navigasi halaman depan"
+            initial={reduced ? false : { height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={reduced ? false : { height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
+            className="overflow-hidden border-t border-slate-200 bg-white md:hidden"
+          >
+            <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6">
+              {NAV.map(({ label, href }) => (
+                <a
+                  key={href}
+                  href={href}
+                  className="block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  {label}
+                </a>
+              ))}
+            </div>
+          </motion.nav>
+        )}
+      </AnimatePresence>
     </motion.header>
   );
 }

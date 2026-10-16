@@ -39,6 +39,38 @@ export const listItem: Variants = {
   visible: { opacity: 1, y: 0, transition: SPRING },
 };
 
+/**
+ * Pandangan yang memicu animasi **sekali saja**.
+ *
+ * Dipakai bersama `whileInView`. `amount` sengaja dibiarkan pada bawaannya
+ * ("some" — sebagian kecil saja terlihat): menuntut sebagian besar elemen
+ * terlihat akan membuat daftar yang lebih tinggi daripada layar ponsel tidak
+ * pernah terpicu, dan isinya tinggal tak terlihat.
+ */
+export const viewportOnce = { once: true } as const;
+
+/** Satu bagian halaman depan: memudar masuk saat tergulir ke layar. */
+export const sectionReveal: Variants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: 0.45, ease: "easeOut" } },
+};
+
+/**
+ * Wadah hero: anak-anaknya masuk berurutan, lebih longgar daripada daftar.
+ *
+ * Jarak 0,07 detik terasa seperti satu kalimat yang dibaca, bukan kedipan.
+ */
+export const heroContainer: Variants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.07, delayChildren: 0.05 } },
+};
+
+/** Satu baris hero: naik sedikit sambil memudar masuk. */
+export const heroItem: Variants = {
+  hidden: { opacity: 0, y: 14 },
+  visible: { opacity: 1, y: 0, transition: SPRING },
+};
+
 /** Elemen tunggal yang muncul tanpa perlu dijadwalkan berurutan. */
 export const fadeIn: Variants = {
   hidden: { opacity: 0, y: -6 },

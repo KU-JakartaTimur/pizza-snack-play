@@ -349,3 +349,17 @@ export const LANDING_CLOSING = {
   title: "Sudah punya akun?",
   lead: "Masuk untuk melihat menu hari ini dan jadwal piket anak Anda.",
 } as const;
+
+/**
+ * Kalimat yang menemani hiasan di tengah halaman.
+ *
+ * Hiasannya sendiri (bulan sabit, lentera, masjid, dua anak) hanya dekorasi
+ * dan tidak diucapkan pembaca layar. Kalimat inilah satu-satunya bagian yang
+ * terbaca — karena itu isinya tetap soal aplikasinya, bukan soal hiasannya:
+ * yang dijanjikan ke orang tua tetap jadwal snack, bukan gambar.
+ */
+export const LANDING_ART = {
+  eyebrow: "Kebiasaan baik",
+  title: "Belajar berbagi giliran sejak dini",
+  lead: "Jadwal snack bukan sekadar daftar tanggal. Di dalamnya anak belajar bahwa giliran itu ada — dan menjaganya adalah kebiasaan yang baik.",
+} as const;

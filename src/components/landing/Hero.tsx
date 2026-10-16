@@ -1,6 +1,9 @@
+import { motion, useReducedMotion } from "framer-motion";
 import { User, UtensilsCrossed } from "lucide-react";
 import { Badge } from "@/components/ui";
+import { heroContainer, heroItem } from "@/lib/motion";
 import { LANDING_FACTS, LANDING_HERO, LANDING_PREVIEW } from "./content";
+import { CrescentStar, StarMotif } from "./IslamicArt";
 import { MasukLink } from "./MasukLink";
 
 /**
@@ -12,38 +15,71 @@ import { MasukLink } from "./MasukLink";
  * memakai menu, komponen, dan nama petugas yang benar-benar ada di katalog
  * sekolah (dijaga `content.test.ts`), supaya contohnya tidak menjanjikan
  * sesuatu yang tidak pernah muncul di aplikasi.
+ *
+ * Baris-barisnya masuk berurutan seperti kalimat yang dibaca, bukan sekaligus
+ * — itulah sebabnya tiap baris dibungkus `motion` dengan varian `heroItem`,
+ * sementara urutannya diatur `heroContainer` di induknya.
+ *
+ * Hiasan bulan sabit dan bintang diletakkan di **ruang kosong** di luar kolom
+ * isi (`lg:` ke atas, tempat tepi halaman menyisakan ruang). Di layar sempit
+ * keduanya disembunyikan: menaruhnya di belakang teks membuat judul besarnya
+ * sulit dibaca, dan judul itulah yang harus paling jelas di halaman ini.
  */
 export function Hero() {
+  const reduced = useReducedMotion();
+
   return (
-    <section className="brand-canvas border-b border-slate-200">
-      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-center lg:gap-14">
+    <section className="brand-canvas relative isolate overflow-hidden border-b border-slate-200">
+      <CrescentStar className="pointer-events-none absolute right-6 top-2 hidden h-16 w-16 text-highlight-500/35 lg:block" />
+      <StarMotif className="pointer-events-none absolute bottom-3 left-8 hidden h-16 w-16 text-accent-600/25 lg:block" />
+
+      <motion.div
+        className="relative z-10 mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-center lg:gap-14"
+        variants={heroContainer}
+        initial={reduced ? false : "hidden"}
+        animate="visible"
+      >
         <div>
-          <p className="label-muted">{LANDING_HERO.eyebrow}</p>
+          <motion.p variants={heroItem} className="label-muted">
+            {LANDING_HERO.eyebrow}
+          </motion.p>
 
-          <h1 className="brand-text-gradient-strong mt-2 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
+          <motion.h1
+            variants={heroItem}
+            className="brand-text-gradient-strong mt-2 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl"
+          >
             {LANDING_HERO.title}
-          </h1>
+          </motion.h1>
 
-          <p className="mt-4 max-w-xl text-slate-600 sm:text-lg">
+          <motion.p
+            variants={heroItem}
+            className="mt-4 max-w-xl text-slate-600 sm:text-lg"
+          >
             {LANDING_HERO.lead}
-          </p>
+          </motion.p>
 
-          <div className="mt-7 flex flex-wrap items-center gap-4">
+          <motion.div
+            variants={heroItem}
+            className="mt-7 flex flex-wrap items-center gap-4"
+          >
             <MasukLink />
             <p className="text-xs text-slate-500">{LANDING_HERO.note}</p>
-          </div>
+          </motion.div>
 
-          <ul className="mt-8 flex flex-wrap gap-2 border-t border-slate-200 pt-6">
+          <motion.ul
+            variants={heroItem}
+            className="mt-8 flex flex-wrap gap-2 border-t border-slate-200 pt-6"
+          >
             {LANDING_FACTS.map((fact) => (
               <li key={fact}>
                 <Badge tone="neutral">{fact}</Badge>
               </li>
             ))}
-          </ul>
+          </motion.ul>
         </div>
 
         <HeroPreview />
-      </div>
+      </motion.div>
     </section>
   );
 }
@@ -54,7 +90,10 @@ function HeroPreview() {
     LANDING_PREVIEW;
 
   return (
-    <figure className="w-full max-w-sm justify-self-start lg:justify-self-end">
+    <motion.figure
+      variants={heroItem}
+      className="w-full max-w-sm justify-self-start lg:justify-self-end"
+    >
       <div className="card overflow-hidden">
         <div className="flex items-center justify-between gap-3 border-b border-highlight-200 bg-highlight-50 px-4 py-3">
           <p className="font-semibold text-slate-900">
@@ -104,6 +143,6 @@ function HeroPreview() {
       <figcaption className="mt-2 text-center text-xs text-slate-400">
         {caption}
       </figcaption>
-    </figure>
+    </motion.figure>
   );
 }

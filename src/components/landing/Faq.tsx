@@ -10,6 +10,10 @@ import { LandingSection, SectionHeading } from "./Section";
  * bekerja bila skripnya gagal dimuat. Pertanyaannya pun sengaja berupa
  * pertanyaan yang benar-benar menghalangi orang untuk memakai aplikasi —
  * soal akun, menu, dan tanggal yang sudah diambil orang lain.
+ *
+ * Jawabannya muncul dengan gerak pendek lewat `group-open:` — bukan state di
+ * React. Menambahkan `useState` di sini akan membatalkan alasan memakai
+ * `<details>` tadi.
  */
 export function Faq() {
   return (
@@ -23,14 +27,14 @@ export function Faq() {
       <div className="mt-8 max-w-3xl space-y-3">
         {LANDING_FAQ.map(({ question, answer }) => (
           <details key={question} className="card group overflow-hidden">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 font-medium text-slate-900 hover:text-brand-700 [&::-webkit-details-marker]:hidden">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 font-medium text-slate-900 transition-colors hover:text-brand-700 [&::-webkit-details-marker]:hidden">
               {question}
               <ChevronDown
-                className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-open:rotate-180"
+                className="h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 group-open:rotate-180"
                 aria-hidden="true"
               />
             </summary>
-            <p className="border-t border-slate-200 px-5 py-4 text-sm text-slate-600">
+            <p className="faq-answer border-t border-slate-200 px-5 py-4 text-sm text-slate-600 group-open:animate-faq-answer">
               {answer}
             </p>
           </details>

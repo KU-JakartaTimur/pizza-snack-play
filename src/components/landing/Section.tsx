@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Reveal } from "@/components/motion/Reveal";
 import { cn } from "@/lib/cn";
 
 /**
@@ -10,6 +11,9 @@ import { cn } from "@/lib/cn";
  *
  * `tone` hanya membedakan latar putih dan latar kanvas, dipakai bergantian
  * supaya batas antar bagian terbaca tanpa perlu garis pemisah yang ramai.
+ *
+ * Animasi masuk bagian juga dipasang di sini, bukan di tiap seksi — satu
+ * tempat, satu durasi. Lihat `Reveal`.
  */
 export function LandingSection({
   id,
@@ -28,11 +32,15 @@ export function LandingSection({
       id={id}
       // Header menempel di atas layar, jadi jangkar perlu ruang agar judulnya
       // tidak tertutup saat halaman melompat.
-      className={cn("scroll-mt-24 border-t border-slate-200", tone === "tint" && "bg-white", className)}
+      className={cn(
+        "scroll-mt-24 border-t border-slate-200",
+        tone === "tint" && "bg-white",
+        className,
+      )}
     >
-      <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
+      <Reveal className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
         {children}
-      </div>
+      </Reveal>
     </section>
   );
 }

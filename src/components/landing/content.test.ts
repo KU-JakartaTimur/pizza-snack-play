@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
+  LANDING_ART,
   LANDING_BENEFITS,
   LANDING_FACTS,
   LANDING_FAQ,
@@ -22,6 +23,7 @@ const titled = [
   ...LANDING_BENEFITS.map((item) => item.title),
   ...LANDING_ROLES.flatMap((role) => role.features.map((item) => item.title)),
   ...LANDING_STEPS.map((item) => item.title),
+  LANDING_ART.title,
 ];
 
 describe("teks halaman depan", () => {
@@ -34,6 +36,7 @@ describe("teks halaman depan", () => {
       ]),
       ...LANDING_STEPS.map((item) => [item.title, item.description] as const),
       ...LANDING_FAQ.map((item) => [item.question, item.answer] as const),
+      [LANDING_ART.title, LANDING_ART.lead] as const,
     ];
 
     // `length > 0` di-AND supaya daftar kosong tidak lulus tanpa membuktikan apa pun.

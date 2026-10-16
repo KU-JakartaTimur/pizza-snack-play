@@ -4,12 +4,13 @@ import { Benefits } from "@/components/landing/Benefits";
 import { Closing } from "@/components/landing/Closing";
 import { Faq } from "@/components/landing/Faq";
 import { Features } from "@/components/landing/Features";
+import { LandingFooter } from "@/components/landing/Footer";
+import { LandingHeader } from "@/components/landing/Header";
 import { Hero } from "@/components/landing/Hero";
 import { HowItWorks } from "@/components/landing/HowItWorks";
-import { MasukLink } from "@/components/landing/MasukLink";
+import { IslamicBand } from "@/components/landing/IslamicBand";
 import { FullPageSpinner } from "@/components/ui";
 import { useAuth } from "@/lib/auth-context";
-import logo from "@/assets/logo.png";
 
 export const Route = createFileRoute("/")({
   component: LandingPage,
@@ -32,6 +33,11 @@ export const Route = createFileRoute("/")({
  * adalah indikator memuat — bukan halaman ini. Sebaliknya, pengunjung tanpa
  * sesi tidak menunggu apa pun: `AuthProvider` menandai sesi kosong sebagai
  * sudah siap, sehingga halamannya langsung terbaca.
+ *
+ * Berkas ini sengaja hanya berisi urusan rute: siapa yang boleh melihat, dan
+ * bagian mana yang tampil dalam urutan apa. Seluruh isi dan tampilannya ada di
+ * `components/landing/` — termasuk bilah atas dan kaki halaman, supaya tidak
+ * ada bagian halaman depan yang tersembunyi di dalam berkas rute.
  */
 function LandingPage() {
   const { user, isReady } = useAuth();
@@ -54,60 +60,12 @@ function LandingPage() {
         <Benefits />
         <Features />
         <HowItWorks />
+        <IslamicBand />
         <Faq />
         <Closing />
       </main>
 
       <LandingFooter />
     </div>
-  );
-}
-
-/** Bilah atas: identitas aplikasi di kiri, ajakan masuk di kanan. */
-function LandingHeader() {
-  return (
-    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
-      <div className="brand-stripe" />
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-        {/*
-          Bukan tautan: pengunjung sudah berada di halaman ini, dan tautan ke
-          diri sendiri hanya menambah satu tujuan tanpa isi bagi pembaca layar.
-        */}
-        <div className="flex shrink-0 items-center gap-2.5">
-          <span className="relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl shadow-sm">
-            <img
-              src={logo}
-              alt="Pizza Snack Play"
-              className="h-full w-full object-cover"
-            />
-          </span>
-          <span className="hidden sm:block">
-            <span className="block font-bold leading-tight text-slate-900">
-              Pizza Snack Play
-            </span>
-            <span className="block text-xs text-slate-500">
-              Pilih Jadwal Snack Anak Itu Menyenangkan!
-            </span>
-          </span>
-        </div>
-
-        <MasukLink size="sm" />
-      </div>
-    </header>
-  );
-}
-
-function LandingFooter() {
-  return (
-    <footer className="border-t border-slate-200 bg-white">
-      <div className="mx-auto flex max-w-6xl flex-col gap-1.5 px-4 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <p className="text-xs text-slate-400">
-          Pizza Snack Play · Bun + Hono + Vite + React + Cloudflare D1
-        </p>
-        <p className="text-xs text-slate-400">
-          Setiap orang tua punya akun sendiri yang dibuat admin sekolah.
-        </p>
-      </div>
-    </footer>
   );
 }

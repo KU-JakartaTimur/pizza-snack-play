@@ -71,6 +71,10 @@ html {
   --radius-xl: 0.3125rem; /* 5px */
   --radius-2xl: 0.375rem; /* 6px  — kartu & modal */
   --radius-3xl: 0.5rem; /* 8px */
+
+  /* Jawaban tanya-jawab yang terbuka. Dipakai lewat `group-open:` pada
+     <details>, jadi harus berupa utility Tailwind — bukan kelas biasa. */
+  --animate-faq-answer: faq-answer 0.22s ease-out;
 }
 
 body {
@@ -108,4 +112,155 @@ body {
    tetap dari palet yang sama, hanya berhenti di brand-500 (#8659b9, ±4,7:1). */
 .brand-text-gradient-strong {
   @apply bg-linear-to-r from-brand-800 via-brand-600 to-brand-500 bg-clip-text text-transparent;
+}
+
+/* ── Gerak hiasan halaman depan ──────────────────────────────────
+   Hiasan bernuansa Islami (`components/landing/IslamicArt.tsx`) dan jawaban
+   tanya-jawab dianimasikan lewat CSS, bukan framer-motion. Dua alasannya:
+   hiasan latar tidak boleh ikut menentukan kapan React merender ulang, dan
+   `group-open:` pada `<details>` memang hanya bisa dijangkau CSS.
+
+   Setiap elemen yang bergerak memakai `transform-box: fill-box` (dipasang
+   sebaris di komponennya) supaya titik putarnya dihitung dari bentuknya
+   sendiri. Bawaannya kotak viewBox, dan lentera yang berputar pada titik itu
+   akan mengayun di sekitar tengah gambar, bukan pada tali gantungnya. */
+
+@keyframes art-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes art-blink {
+  0%,
+  90%,
+  100% {
+    transform: scaleY(1);
+  }
+  94% {
+    transform: scaleY(0.08);
+  }
+}
+
+@keyframes art-wave {
+  0%,
+  100% {
+    transform: rotate(-8deg);
+  }
+  50% {
+    transform: rotate(10deg);
+  }
+}
+
+@keyframes art-swing {
+  0%,
+  100% {
+    transform: rotate(-5deg);
+  }
+  50% {
+    transform: rotate(5deg);
+  }
+}
+
+@keyframes art-twinkle {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+@keyframes art-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes art-glow {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.65;
+  }
+}
+
+@keyframes faq-answer {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes stripe-sweep {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: -200% 50%;
+  }
+}
+
+/* Kedipan mata sengaja jarang (4,5 detik sekali) — mata yang berkedip lebih
+   sering terbaca sebagai animasi yang diputar, bukan sebagai karakter diam. */
+.art-float {
+  animation: art-float 3.6s ease-in-out infinite;
+}
+.art-blink {
+  animation: art-blink 4.5s ease-in-out infinite;
+}
+.art-wave {
+  animation: art-wave 2.4s ease-in-out infinite;
+}
+.art-swing {
+  animation: art-swing 4.2s ease-in-out infinite;
+}
+.art-twinkle {
+  animation: art-twinkle 2.6s ease-in-out infinite;
+}
+.art-spin {
+  animation: art-spin 42s linear infinite;
+}
+.art-glow {
+  animation: art-glow 3.2s ease-in-out infinite;
+}
+
+/* Garis aksen yang warnanya bergeser pelan. Gradiennya digandakan
+   (`background-size: 200%`), lalu digeser satu lebar penuh — pada jarak itu
+   gambar ubinnya kembali ke titik awal, jadi tidak ada lompatan saat gelungnya
+   berulang. */
+.brand-stripe-anim {
+  background-size: 200% 100%;
+  animation: stripe-sweep 6s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Gerak yang diminta dikurangi dimatikan seluruhnya — bukan dipercepat.
+     Ini berlaku untuk hiasan, garis aksen, dan jawaban tanya-jawab; animasi
+     yang lewat framer-motion sudah dijaga `useReducedMotion()` di komponennya. */
+  .art-anim,
+  .art-anim *,
+  .brand-stripe-anim,
+  .faq-answer {
+    animation: none !important;
+  }
+
+  /* Meluncur mulus ke jangkar termasuk gerak; pembaca yang memintanya
+     dikurangi justru terganggu olehnya. */
+  html {
+    scroll-behavior: auto;
+  }
 }

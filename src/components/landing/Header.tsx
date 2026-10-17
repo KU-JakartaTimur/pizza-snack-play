@@ -101,7 +101,7 @@ export function LandingHeader() {
             aria-label="Navigasi halaman depan"
             initial={reduced ? false : { height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
-            exit={reduced ? false : { height: 0, opacity: 0 }}
+            exit={reduced ? undefined : { height: 0, opacity: 0 }}
             transition={{ duration: 0.2, ease: "easeInOut" }}
             className="overflow-hidden border-t border-slate-200 bg-white md:hidden"
           >

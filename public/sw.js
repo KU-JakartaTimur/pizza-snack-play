@@ -78,6 +78,13 @@ self.addEventListener("fetch", (event) => {
   // Hanya handle GET requests
   if (request.method !== "GET") return;
 
+  // Hanya http(s). Cache API menolak skema lain (`cache.put` melempar
+  // TypeError: "Request scheme 'chrome-extension' is unsupported"), dan
+  // permintaan seperti itu memang bukan milik aplikasi ini — biasanya berasal
+  // dari content script ekstensi peramban yang berjalan di halaman. Jangan
+  // respondWith sama sekali supaya peramban menanganinya sendiri.
+  if (url.protocol !== "http:" && url.protocol !== "https:") return;
+
   // API calls: Network-First dengan stale-while-revalidate
   if (url.pathname.startsWith(API_PREFIX)) {
     event.respondWith(networkFirst(request, API_CACHE, 24 * 60 * 60 * 1000));
@@ -116,7 +123,21 @@ function isStaticAsset(pathname) {
 
 function isImage(request) {
   const dest = request.destination;
-  return dest === "image" || /^\.(png|jpg|jpeg|gif|webp|avif|bmp)$/i.test(new URL(request.url).pathname);
+  return (
+    dest === "image" ||
+    /\.(png|jpe?g|gif|webp|avif|bmp)$/i.test(new URL(request.url).pathname)
+  );
+}
+
+/**
+ * `cache.put` melempar untuk respons yang tidak boleh disimpan: skema selain
+ * http(s), status 206 Partial Content, atau `Vary: *`. Semua penulisan cache
+ * lewat sini supaya kegagalan menyimpan berhenti di sini dan tidak menjadi
+ * unhandled rejection di konsol — cache adalah optimisasi, bukan syarat agar
+ * halaman jalan.
+ */
+function safePut(cache, request, response) {
+  return cache.put(request, response).catch(() => {});
 }
 
 /** Cache-First: ambil dari cache, bila miss baru fetch. */
@@ -128,7 +149,7 @@ async function cacheFirst(request, cacheName) {
   try {
     const networkResponse = await fetch(request);
     if (networkResponse.ok) {
-      cache.put(request, networkResponse.clone());
+      safePut(cache, request, networkResponse.clone());
     }
     return networkResponse;
   } catch {
@@ -144,7 +165,7 @@ async function cacheFirstWithRevalidate(request, cacheName) {
   const networkFetch = fetch(request)
     .then((response) => {
       if (response.ok) {
-        cache.put(request, response.clone());
+        safePut(cache, request, response.clone());
       }
       return response;
     })
@@ -177,7 +198,7 @@ async function networkFirst(request, cacheName, maxAgeMs) {
         statusText: clone.statusText,
         headers,
       });
-      cache.put(request, cachedResponse);
+      safePut(cache, request, cachedResponse);
     }
     return networkResponse;
   } catch {
@@ -205,7 +226,7 @@ async function networkFirstWithFallback(request, cacheName) {
   try {
     const networkResponse = await fetch(request);
     if (networkResponse.ok) {
-      cache.put(request, networkResponse.clone());
+      safePut(cache, request, networkResponse.clone());
     }
     return networkResponse;
   } catch {
@@ -237,7 +258,7 @@ async function networkWithCacheFallback(request, cacheName) {
   try {
     const networkResponse = await fetch(request);
     if (networkResponse.ok) {
-      cache.put(request, networkResponse.clone());
+      safePut(cache, request, networkResponse.clone());
     }
     return networkResponse;
   } catch {

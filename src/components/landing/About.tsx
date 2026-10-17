@@ -57,7 +57,7 @@ export function About() {
           <div className="flex items-center gap-2 border-b border-slate-200 bg-slate-50 px-5 py-3">
             <Code2 className="h-4 w-4 text-brand-600" aria-hidden="true" />
             <h3 className="text-sm font-semibold text-slate-900">
-              Tumpukan teknologi
+              Teknologi yang Digunakan
             </h3>
           </div>
 
@@ -78,7 +78,7 @@ export function About() {
           <div className="flex items-center gap-2 border-b border-slate-200 bg-slate-50 px-5 py-3">
             <Boxes className="h-4 w-4 text-brand-600" aria-hidden="true" />
             <h3 className="text-sm font-semibold text-slate-900">
-              Isi aplikasinya
+              Isi aplikasi
             </h3>
           </div>
 

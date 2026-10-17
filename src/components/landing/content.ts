@@ -384,7 +384,7 @@ export const LANDING_ART = {
 export const LANDING_ABOUT = {
   eyebrow: "Tentang",
   title: "Dibangun tanpa anggaran perangkat lunak",
-  lead: "Pizza Snack Play dikerjakan lewat WorkBuddy AI: kebutuhan sekolah ditulis sebagai percakapan, lalu menjadi kode, migrasi basis data, uji, dan dokumen. Seluruhnya berjalan di tingkat gratis Cloudflare — tidak ada server sewaan, lisensi basis data, atau langganan bulanan.",
+  lead: "Pizza Snack Play dengan Prompt WorkBuddy AI: kebutuhan sekolah ditulis dari percakapan whatsapp, lalu menjadi kode, migrasi basis data, uji, dan dokumen. Seluruhnya berjalan gratis di Cloudflare — tidak ada server sewaan, lisensi basis data, atau langganan bulanan.",
 } as const;
 
 /** Satu alasan di bagian "Tentang". */
@@ -397,7 +397,7 @@ export interface LandingAboutPoint {
 export const LANDING_ABOUT_POINTS: LandingAboutPoint[] = [
   {
     icon: Bot,
-    title: "Dibangun lewat WorkBuddy",
+    title: "Dengan Prompt di WorkBuddy",
     description:
       "Setiap perubahan dimulai dari satu permintaan tertulis, lalu diperiksa dengan tsc, eslint, build, dan uji API sebelum masuk. 119 commit dalam 31 hari, dan setiap keputusan desainnya tercatat di PRD.",
   },
@@ -409,13 +409,13 @@ export const LANDING_ABOUT_POINTS: LandingAboutPoint[] = [
   },
   {
     icon: Layers,
-    title: "Satu bahasa, ujung ke ujung",
+    title: "Satu bahasa, Typescript",
     description:
       "React 19 dan TanStack di sisi klien, Hono di API, Drizzle di atas D1 — semuanya TypeScript, sehingga bentuk data yang dikirim Worker sama dengan yang dibaca antarmuka.",
   },
   {
     icon: FlaskConical,
-    title: "Diuji, bukan sekadar tampak jalan",
+    title: "Diuji oleh AI",
     description:
       "85 uji unit dan 540 pemeriksaan API, ditambah 21 kasus UAT serta pemeriksaan tata letak di peramban sungguhan — termasuk lebar kartu, bukan hanya ada atau tidaknya elemen.",
   },
@@ -429,24 +429,24 @@ export interface LandingTechLayer {
 
 export const LANDING_TECH: LandingTechLayer[] = [
   {
-    layer: "Klien",
-    items: "React 19 · TanStack Router · TanStack Query · Tailwind CSS 4",
+    layer: "Frontend",
+    items: "React 19 · TanStack Router · TanStack Query · Tailwind 4",
   },
   {
-    layer: "API",
+    layer: "Backend",
     items: "Hono · TypeScript · JWT HS256 · PBKDF2-SHA256",
   },
   {
-    layer: "Data",
-    items: "Cloudflare D1 · Drizzle ORM · drizzle-kit",
+    layer: "Database",
+    items: "Cloudflare D1 · Drizzle ORM",
   },
   {
-    layer: "Bangun & kirim",
-    items: "Vite 6 · Bun · Wrangler · Cloudflare Workers",
+    layer: "Tools",
+    items: "Vite · Bun · Wrangler · Cloudflare Workers",
   },
   {
-    layer: "Pelengkap",
-    items: "ky · Lucide · PWA (manifest + service worker)",
+    layer: "Fiture Lainnya",
+    items: "PWA (manifest + service worker)",
   },
 ];
 

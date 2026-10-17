@@ -26,7 +26,7 @@ Jadwal piket snack sekolah sebelumnya disusun dalam dokumen teks manual — suli
 
 | Fitur                        | Deskripsi                                                                                                                              | Role           | Status     |
 | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------------- | ---------- |
-| **Halaman Depan (Landing)** | Satu-satunya halaman yang terbuka tanpa login: manfaat, fitur per peran, alur, dan tanya jawab — supaya orang tua yang belum punya akun paham dulu sebelum meminta akun ke admin | Semua          | ✅         |
+| **Halaman Depan (Landing)** | Satu-satunya halaman yang terbuka tanpa login: manfaat, fitur per peran, alur, tanya jawab, dan **tentang** (tumpukan teknologi, cara dibangun lewat WorkBuddy, biaya operasional nol) — supaya orang tua yang belum punya akun paham dulu sebelum meminta akun ke admin | Semua          | ✅         |
 | **Autentikasi Wajib**        | Setiap orang tua login dengan akun pribadi yang dibuat admin                                                                           | Semua          | ✅         |
 | **Role-Based Access**        | `admin` (penuh), `korlas` (koordinator kelas — susun & publikasi jadwal kelasnya), `parent` (read-only)                                 | Semua          | ✅         |
 | **Jadwal Per Kelas**         | Menu bersifat sekolah-wide (sama untuk semua kelas); yang berbeda tiap kelas adalah **petugas piket** (siapa yang ambil snack)         | Semua          | ✅         |
@@ -167,7 +167,7 @@ pizza-snack-play/
 │   │   │                         # ParentBulkBar, selection.ts, form.ts
 │   │   ├── kategori/             # CategoryThumb + CategoryPreview (penanda gambar kategori)
 │   │   ├── landing/              # Halaman depan: Hero, Benefits, Features, HowItWorks, Faq,
-│   │   │                         # Closing, MasukLink, Section.tsx, content.ts (+ uji unit)
+│   │   │                         # About, Closing, MasukLink, Section.tsx, content.ts (+ uji unit)
 │   │   ├── pilih-jadwal/         # MonthSnapshot, ClaimAction, ConflictDialog, PickToolbar,
 │   │   │                         # summary.ts (+ uji unit)
 │   │   ├── buttonStyles.ts       # Bentuk visual tombol (dipakai Button & tautan bergaya tombol)

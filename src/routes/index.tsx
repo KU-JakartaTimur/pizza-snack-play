@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { About } from "@/components/landing/About";
 import { Benefits } from "@/components/landing/Benefits";
 import { Closing } from "@/components/landing/Closing";
 import { Faq } from "@/components/landing/Faq";
@@ -62,6 +63,7 @@ function LandingPage() {
         <HowItWorks />
         <IslamicBand />
         <Faq />
+        <About />
         <Closing />
       </main>
 

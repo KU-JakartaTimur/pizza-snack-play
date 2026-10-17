@@ -10,12 +10,15 @@
 
 import {
   BadgeCheck,
+  Bot,
   CalendarCheck,
   CalendarDays,
   CalendarRange,
   ClipboardList,
   FileSpreadsheet,
+  FlaskConical,
   HandHeart,
+  Layers,
   LayoutDashboard,
   ListChecks,
   Lock,
@@ -29,6 +32,7 @@ import {
   Upload,
   UserPlus,
   Users,
+  Wallet,
   Wand2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -243,25 +247,25 @@ export const LANDING_STEPS: LandingStep[] = [
     icon: UserPlus,
     title: "Admin menyiapkan akun & menu",
     description:
-      "Setiap orang tua mendapat akun pribadi — satu akun boleh menampung lebih dari satu anak. Menu snack dan kategorinya disusun sekali untuk seluruh sekolah.",
+      "Tiap orang tua punya akun sendiri, bisa untuk beberapa anak. Menu snack cukup disusun sekali untuk seluruh sekolah.",
   },
   {
     icon: SquarePen,
     title: "Korlas menyusun jadwal kelasnya",
     description:
-      "Menu ditetapkan per tanggal, hari libur ditandai, catatan ditambahkan. Bisa juga menempel jadwal dari sekolah lalu memeriksa pratinjaunya lebih dulu.",
+      "Menu diisi per tanggal, lengkap dengan hari libur dan catatan. Jadwal dari sekolah bisa ditempel, lalu dicek dulu sebelum disimpan.",
   },
   {
     icon: Lock,
     title: "Jadwal dikunci lalu diterbitkan",
     description:
-      "Setelah selesai, jadwal dikunci agar tidak berubah lagi — barulah orang tua dapat membacanya.",
+      "Jadwal dikunci setelah selesai, supaya tidak berubah lagi. Sesudah itu orang tua bisa membacanya.",
   },
   {
     icon: HandHeart,
     title: "Orang tua melihat & mengambil giliran",
     description:
-      "Menu harian terbaca dari HP, dan tanggal piket yang masih kosong bisa langsung diambil. Admin atau korlas mengunduh Excel bila perlu dibagikan atau dicetak.",
+      "Menu harian bisa dibuka dari HP. Tanggal piket yang masih kosong bisa langsung diambil. Admin atau korlas bisa mengunduh Excel untuk dibagikan atau dicetak.",
   },
 ];
 
@@ -357,9 +361,122 @@ export const LANDING_CLOSING = {
  * dan tidak diucapkan pembaca layar. Kalimat inilah satu-satunya bagian yang
  * terbaca — karena itu isinya tetap soal aplikasinya, bukan soal hiasannya:
  * yang dijanjikan ke orang tua tetap jadwal snack, bukan gambar.
+ *
+ * Nadanya sengaja tidak menggurui. Kalimat lama ("belajar berbagi giliran
+ * sejak dini") terdengar seperti nasihat sekolah dan menjanjikan pembentukan
+ * karakter, padahal yang benar-benar diberikan aplikasi cuma satu hal:
+ * giliran yang terlihat oleh semua. Jadi bagian ini bicara soal itu saja.
  */
 export const LANDING_ART = {
-  eyebrow: "Kebiasaan baik",
-  title: "Belajar berbagi giliran sejak dini",
-  lead: "Jadwal snack bukan sekadar daftar tanggal. Di dalamnya anak belajar bahwa giliran itu ada — dan menjaganya adalah kebiasaan yang baik.",
+  eyebrow: "Satu tanggal, satu orang",
+  title: "Semua tahu giliran siapa",
+  lead: "Jadwal yang terbuka membuat urusan piket selesai sebelum dimulai: tidak ada yang perlu diingatkan, karena tanggalnya sudah terlihat oleh seluruh kelas.",
 } as const;
+
+/**
+ * Bagian "Tentang" — bagaimana aplikasi ini dibuat dan apa yang menjalankannya.
+ *
+ * Ditulis untuk dua pembaca sekaligus: orang tua yang penasaran siapa yang
+ * membuat aplikasi ini, dan guru atau kepala sekolah yang perlu tahu bahwa
+ * memakainya tidak menambah anggaran. Karena itu angkanya disebut apa adanya,
+ * bukan dibulatkan menjadi "puluhan" atau "ratusan".
+ */
+export const LANDING_ABOUT = {
+  eyebrow: "Tentang",
+  title: "Dibangun tanpa anggaran perangkat lunak",
+  lead: "Pizza Snack Play dikerjakan lewat WorkBuddy AI: kebutuhan sekolah ditulis sebagai percakapan, lalu menjadi kode, migrasi basis data, uji, dan dokumen. Seluruhnya berjalan di tingkat gratis Cloudflare — tidak ada server sewaan, lisensi basis data, atau langganan bulanan.",
+} as const;
+
+/** Satu alasan di bagian "Tentang". */
+export interface LandingAboutPoint {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+}
+
+export const LANDING_ABOUT_POINTS: LandingAboutPoint[] = [
+  {
+    icon: Bot,
+    title: "Dibangun lewat WorkBuddy",
+    description:
+      "Setiap perubahan dimulai dari satu permintaan tertulis, lalu diperiksa dengan tsc, eslint, build, dan uji API sebelum masuk. 119 commit dalam 31 hari, dan setiap keputusan desainnya tercatat di PRD.",
+  },
+  {
+    icon: Wallet,
+    title: "Biaya operasional nol",
+    description:
+      "Cloudflare Workers dan D1 pada tingkat gratis: tanpa server yang disewa, tanpa lisensi basis data, tanpa biaya unggah ke toko aplikasi. Kuota gratisnya masih jauh di atas kebutuhan satu sekolah.",
+  },
+  {
+    icon: Layers,
+    title: "Satu bahasa, ujung ke ujung",
+    description:
+      "React 19 dan TanStack di sisi klien, Hono di API, Drizzle di atas D1 — semuanya TypeScript, sehingga bentuk data yang dikirim Worker sama dengan yang dibaca antarmuka.",
+  },
+  {
+    icon: FlaskConical,
+    title: "Diuji, bukan sekadar tampak jalan",
+    description:
+      "85 uji unit dan 540 pemeriksaan API, ditambah 21 kasus UAT serta pemeriksaan tata letak di peramban sungguhan — termasuk lebar kartu, bukan hanya ada atau tidaknya elemen.",
+  },
+];
+
+/** Satu lapisan teknologi, ditampilkan sebagai baris tabel di bagian "Tentang". */
+export interface LandingTechLayer {
+  layer: string;
+  items: string;
+}
+
+export const LANDING_TECH: LandingTechLayer[] = [
+  {
+    layer: "Klien",
+    items: "React 19 · TanStack Router · TanStack Query · Tailwind CSS 4",
+  },
+  {
+    layer: "API",
+    items: "Hono · TypeScript · JWT HS256 · PBKDF2-SHA256",
+  },
+  {
+    layer: "Data",
+    items: "Cloudflare D1 · Drizzle ORM · drizzle-kit",
+  },
+  {
+    layer: "Bangun & kirim",
+    items: "Vite 6 · Bun · Wrangler · Cloudflare Workers",
+  },
+  {
+    layer: "Pelengkap",
+    items: "ky · Lucide · PWA (manifest + service worker)",
+  },
+];
+
+/** Angka isi aplikasi — dihitung dari route API dan migrasi Drizzle. */
+export const LANDING_ABOUT_STATS = [
+  { value: "9", label: "modul API" },
+  { value: "65", label: "endpoint" },
+  { value: "13", label: "tabel D1" },
+  { value: "3", label: "peran pengguna" },
+] as const;
+
+/**
+ * Modul API yang benar-benar ada, dengan nama yang bisa dibaca orang tua.
+ *
+ * Nama teknisnya (`auth`, `claims`, …) tetap ditampilkan kecil di bawah label
+ * karena itulah yang dicari orang yang membaca kode; label Indonesianya yang
+ * dibaca orang lain.
+ */
+export const LANDING_ABOUT_MODULES = [
+  { name: "auth", label: "Masuk & sesi" },
+  { name: "catalog", label: "Menu & kategori" },
+  { name: "schedules", label: "Jadwal & kunci" },
+  { name: "claims", label: "Pilih jadwal" },
+  { name: "classes", label: "Kelas & petugas" },
+  { name: "parents", label: "Akun orang tua" },
+  { name: "profile", label: "Profil & anak" },
+  { name: "laporan", label: "Laporan piket" },
+  { name: "stats", label: "Statistik" },
+] as const;
+
+/** Satu kalimat penutup: apa yang **tidak** ada di aplikasi ini. */
+export const LANDING_ABOUT_NOTE =
+  "Tanpa iklan, tanpa pelacakan pihak ketiga, dan tanpa langganan. Data sekolah tersimpan di basis data D1 pada akun Cloudflare pemilik aplikasi, bukan di layanan lain.";

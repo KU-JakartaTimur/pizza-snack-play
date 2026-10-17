@@ -5,11 +5,20 @@ import logo from "@/assets/logo.png";
 import { QUICK } from "@/lib/motion";
 import { MasukLink } from "./MasukLink";
 
+/**
+ * Jangkar yang tampil di bilah atas.
+ *
+ * "Tentang" ikut ditautkan karena isinya yang menjawab pertanyaan biaya. Karena
+ * itu bilah tengahnya baru muncul di `lg`: dengan lima butir, barisnya meluap
+ * 10px pada 768px (diukur, bukan diperkirakan), dan menu lipat yang bekerja
+ * lebih baik daripada tautan yang berdesakan.
+ */
 const NAV = [
   { label: "Manfaat", href: "#manfaat" },
   { label: "Fitur", href: "#fitur" },
   { label: "Alur", href: "#alur" },
   { label: "Tanya jawab", href: "#tanya-jawab" },
+  { label: "Tentang", href: "#tentang" },
 ];
 
 /**
@@ -62,7 +71,7 @@ export function LandingHeader() {
         <div className="flex items-center gap-2">
           <nav
             aria-label="Navigasi halaman depan"
-            className="hidden items-center gap-1 md:flex"
+            className="hidden items-center gap-1 lg:flex"
           >
             {NAV.map(({ label, href }) => (
               <a
@@ -82,7 +91,7 @@ export function LandingHeader() {
             aria-label={mobileOpen ? "Tutup menu" : "Buka menu"}
             aria-expanded={mobileOpen}
             aria-controls="mobile-nav"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 md:hidden"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 lg:hidden"
             onClick={() => setMobileOpen((v) => !v)}
           >
             {mobileOpen ? (
@@ -103,7 +112,7 @@ export function LandingHeader() {
             animate={{ height: "auto", opacity: 1 }}
             exit={reduced ? undefined : { height: 0, opacity: 0 }}
             transition={{ duration: 0.2, ease: "easeInOut" }}
-            className="overflow-hidden border-t border-slate-200 bg-white md:hidden"
+            className="overflow-hidden border-t border-slate-200 bg-white lg:hidden"
           >
             <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6">
               {NAV.map(({ label, href }) => (

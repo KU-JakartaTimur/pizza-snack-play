@@ -430,7 +430,7 @@ export interface LandingTechLayer {
 export const LANDING_TECH: LandingTechLayer[] = [
   {
     layer: "Frontend",
-    items: "React 19 · TanStack Router · TanStack Query · Tailwind 4",
+    items: "React 19 · Router & Query TanStack · Tailwind 4",
   },
   {
     layer: "Backend",

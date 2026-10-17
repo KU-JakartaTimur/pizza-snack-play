@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Visualization Project Description — Pizza Snack Play</title>
+<style>
+  :root{
+    --bg:#FAF7F2;
+    --surface:#FFFFFF;
+    --brand:#51277C;
+    --brand-2:#7A45A8;
+    --brand-soft:rgba(81,39,124,.06);
+    --brand-line:rgba(81,39,124,.16);
+    --accent:#AFC440;
+    --highlight:#F3B26C;
+    --ink:#2A2333;
+    --muted:#6B6478;
+    --radius:10px;
+    --shadow:0 4px 20px rgba(0,0,0,.08);
+    --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,"Cascadia Mono",Consolas,"Liberation Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--sans);font-size:16px;line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:0 28px}
+
+  /* ---------- hero ---------- */
+  .hero{
+    position:relative;overflow:hidden;
+    background:linear-gradient(135deg,#51277C 0%,#7A45A8 100%);
+    color:#fff;padding:64px 0 56px;
+  }
+  .hero::after{
+    content:"";position:absolute;right:-120px;bottom:-160px;
+    width:420px;height:420px;border-radius:50%;
+    background:linear-gradient(135deg,#AFC440 0%,#F3B26C 100%);opacity:.22;
+  }
+  .hero-inner{position:relative;z-index:1;display:flex;gap:36px;align-items:center}
+  .hero-logo{
+    width:150px;height:150px;flex:0 0 auto;border-radius:16px;
+    background:rgba(255,255,255,.12);padding:10px;object-fit:contain;
+  }
+  .badge{
+    display:inline-block;font-size:12px;letter-spacing:.09em;text-transform:uppercase;
+    font-weight:600;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);
+    padding:5px 12px;border-radius:999px;margin-bottom:16px;
+  }
+  .hero h1{margin:0 0 6px;font-size:44px;line-height:1.15;letter-spacing:-.02em}
+  .hero .sub{margin:0;font-size:19px;color:rgba(255,255,255,.86);max-width:620px}
+  .hero .url{margin-top:16px;font-family:var(--mono);font-size:13px;color:rgba(255,255,255,.7)}
+
+  /* ---------- meta strip ---------- */
+  .meta{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+    background:var(--brand-line);border:1px solid var(--brand-line);
+    border-radius:var(--radius);overflow:hidden;margin:-28px 0 0;position:relative;z-index:2;
+    box-shadow:var(--shadow);
+  }
+  .meta div{background:var(--surface);padding:16px 18px}
+  .meta dt{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 4px;font-weight:600}
+  .meta dd{margin:0;font-size:17px;font-weight:700;color:var(--brand)}
+
+  /* ---------- toc ---------- */
+  nav.toc{
+    position:sticky;top:0;z-index:20;background:rgba(250,247,242,.94);
+    backdrop-filter:blur(8px);border-bottom:1px solid var(--brand-line);margin-top:40px;
+  }
+  nav.toc ul{display:flex;gap:8px;list-style:none;margin:0;padding:10px 0;overflow-x:auto}
+  nav.toc a{
+    color:var(--muted);text-decoration:none;font-size:14px;font-weight:600;
+    padding:6px 12px;border-radius:999px;white-space:nowrap;
+  }
+  nav.toc a:hover{background:var(--brand-soft);color:var(--brand)}
+
+  /* ---------- sections ---------- */
+  section{padding:56px 0 8px}
+  h2{
+    font-size:14px;letter-spacing:.1em;text-transform:uppercase;color:var(--brand);
+    margin:0 0 6px;font-weight:700;
+  }
+  h2 .num{color:var(--highlight)}
+  .lede{font-size:26px;font-weight:700;line-height:1.3;margin:0 0 28px;letter-spacing:-.01em;max-width:820px}
+  h3{font-size:20px;margin:40px 0 14px;letter-spacing:-.01em}
+  h4{font-size:15px;margin:26px 0 10px;color:var(--brand);letter-spacing:.01em}
+  p{margin:0 0 14px}
+  .muted{color:var(--muted)}
+  small{font-size:13px;color:var(--muted);line-height:1.55;display:block}
+  code{font-family:var(--mono);font-size:.87em;background:var(--brand-soft);padding:1px 5px;border-radius:4px;color:var(--brand)}
+
+  /* ---------- cards ---------- */
+  .grid{display:grid;gap:14px}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g4{grid-template-columns:repeat(4,1fr)}
+  .card{
+    background:var(--surface);border:1px solid var(--brand-line);border-radius:var(--radius);
+    padding:18px 20px;box-shadow:var(--shadow);border-top:3px solid var(--accent);
+  }
+  .card.brand{border-top-color:var(--brand)}
+  .card.hot{border-top-color:var(--highlight)}
+  .card h4{margin:0 0 8px;font-size:15px;color:var(--ink)}
+  .card .idx{font-family:var(--mono);font-size:11px;color:var(--muted);display:block;margin-bottom:6px}
+  .card p{margin:0;font-size:14px;color:var(--muted);line-height:1.6}
+
+  /* ---------- tables ---------- */
+  .tbl-wrap{overflow-x:auto;border:1px solid var(--brand-line);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow)}
+  table{border-collapse:collapse;width:100%;font-size:14px}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--brand-line);vertical-align:top}
+  thead th{background:var(--brand-soft);color:var(--brand);font-size:12px;letter-spacing:.05em;text-transform:uppercase;font-weight:700}
+  tbody tr:last-child td{border-bottom:none}
+  td strong{color:var(--brand)}
+  .yes{color:#4d7a10;font-weight:600}
+  .no{color:#a8341f;font-weight:600}
+
+  /* ---------- callout ---------- */
+  .callout{
+    background:var(--surface);border-left:4px solid var(--brand);border-radius:0 var(--radius) var(--radius) 0;
+    padding:20px 24px;margin:24px 0;box-shadow:var(--shadow);
+  }
+  .callout .q{font-size:20px;font-weight:700;line-height:1.4;margin:0}
+  .callout p{margin:10px 0 0;font-size:14px;color:var(--muted)}
+  .callout.warn{border-left-color:var(--highlight)}
+
+  /* ---------- stats ---------- */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:24px 0}
+  .stat{background:var(--surface);border:1px solid var(--brand-line);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow)}
+  .stat .v{font-size:32px;font-weight:700;color:var(--brand);line-height:1.1;letter-spacing:-.02em}
+  .stat .k{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.4}
+  .stat.hot .v{color:#c4762a}
+  .stat.green .v{color:#6e7e28}
+
+  /* ---------- charts ---------- */
+  .chart{background:var(--surface);border:1px solid var(--brand-line);border-radius:var(--radius);padding:22px 24px;box-shadow:var(--shadow);margin:20px 0}
+  .chart h4{margin:0 0 4px;color:var(--ink);font-size:15px}
+  .chart .cap{font-size:12px;color:var(--muted);margin-bottom:18px}
+
+  .stack{display:flex;height:44px;border-radius:6px;overflow:hidden;border:1px solid var(--brand-line)}
+  .stack span{display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff}
+  .legend{display:flex;flex-wrap:wrap;gap:18px;margin-top:14px;font-size:13px;color:var(--muted)}
+  .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:7px;vertical-align:-1px}
+
+  .bars{display:grid;gap:9px}
+  .bar-row{display:grid;grid-template-columns:210px 1fr 62px;align-items:center;gap:12px;font-size:13px}
+  .bar-row .lbl{color:var(--ink);text-align:right}
+  .bar-row .track{background:var(--brand-soft);border-radius:4px;height:20px;overflow:hidden}
+  .bar-row .fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#51277C 0%,#7A45A8 100%)}
+  .bar-row .fill.g{background:linear-gradient(90deg,#8fa332 0%,#AFC440 100%)}
+  .bar-row .val{font-family:var(--mono);font-size:12px;color:var(--muted);text-align:right}
+
+  /* ---------- pipeline ---------- */
+  .pipe{display:flex;align-items:stretch;gap:0;margin:22px 0;flex-wrap:wrap}
+  .pipe .step{
+    flex:1 1 0;min-width:150px;background:var(--surface);border:1px solid var(--brand-line);
+    border-radius:var(--radius);padding:14px 14px;position:relative;box-shadow:var(--shadow);
+  }
+  .pipe .arrow{flex:0 0 26px;display:flex;align-items:center;justify-content:center;color:var(--brand);font-size:18px}
+  .pipe .n{font-family:var(--mono);font-size:11px;color:var(--highlight);font-weight:700;display:block;margin-bottom:5px}
+  .pipe .t{font-size:13px;font-weight:700;line-height:1.35;display:block;margin-bottom:5px}
+  .pipe .d{font-size:11.5px;color:var(--muted);line-height:1.45;display:block}
+  .feedback{
+    display:flex;align-items:center;gap:12px;background:var(--brand-soft);border:1px dashed var(--brand-line);
+    border-radius:var(--radius);padding:12px 18px;font-size:13px;color:var(--brand);margin-bottom:8px;
+  }
+  .feedback b{font-weight:700}
+
+  /* ---------- diagram ---------- */
+  .diagram{background:var(--surface);border:1px solid var(--brand-line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);margin:20px 0;overflow-x:auto}
+  .diagram svg{display:block;width:100%;height:auto;min-width:640px}
+
+  /* ---------- limits ---------- */
+  ul.plain{margin:0 0 14px;padding-left:20px}
+  ul.plain li{margin-bottom:9px;font-size:15px}
+
+  footer{margin-top:64px;padding:36px 0 56px;border-top:1px solid var(--brand-line);color:var(--muted);font-size:13px}
+  footer .row{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap}
+
+  @media (max-width:860px){
+    .hero-inner{flex-direction:column;align-items:flex-start}
+    .hero h1{font-size:34px}
+    .meta,.stats{grid-template-columns:repeat(2,1fr)}
+    .g3,.g4{grid-template-columns:repeat(2,1fr)}
+    .bar-row{grid-template-columns:120px 1fr 54px}
+    .bar-row .lbl{font-size:11.5px}
+  }
+  @media (max-width:560px){
+    .g2,.g3,.g4{grid-template-columns:1fr}
+    .meta,.stats{grid-template-columns:1fr}
+    .lede{font-size:21px}
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap hero-inner">
+    <img class="hero-logo" src="assets/app_logo.png" alt="Pizza Snack Play logo">
+    <div>
+      <span class="badge">Visualization Project Description</span>
+      <h1>Pizza Snack Play</h1>
+      <p class="sub">A school snack duty &amp; menu scheduling platform — generated by prompt,
+        verified by tests, and running in production for a real school.</p>
+      <p class="url">pizza-snack-play.topidesta.workers.dev &nbsp;·&nbsp; 113 commits &nbsp;·&nbsp; 31 days &nbsp;·&nbsp; 0 infrastructure cost</p>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <dl class="meta">
+    <div><dt>Category</dt><dd>Prompt-driven AI generation</dd></div>
+    <div><dt>Stack</dt><dd>BHVR on Cloudflare</dd></div>
+    <div><dt>Data store</dt><dd>D1 · 13 tables · 9 migrations</dd></div>
+    <div><dt>Users</dt><dd>3 roles · 4 audiences</dd></div>
+  </dl>
+</div>
+
+<nav class="toc">
+  <div class="wrap">
+    <ul>
+      <li><a href="#overview">1 · Project Overview</a></li>
+      <li><a href="#scenarios">Scenarios</a></li>
+      <li><a href="#users">Users</a></li>
+      <li><a href="#insights">Real-World Insights</a></li>
+      <li><a href="#design">2 · Solution Design</a></li>
+      <li><a href="#prompts">Prompt-Driven Generation</a></li>
+      <li><a href="#value">3 · Business Value</a></li>
+      <li><a href="#limits">Limits</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="wrap">
+
+<!-- ══════════════════ 1 ══════════════════ -->
+<section id="overview">
+  <h2><span class="num">01</span> — Project Overview</h2>
+  <p class="lede">Pizza Snack Play replaces a single plain-text file that a school used to run its
+    daily snack duty roster — and turns it into a system that can be asked questions.</p>
+
+  <p>The source artefact is preserved in the repository and is the whole data model the school was
+    working with: <strong>136 lines</strong>, <strong>5 weekly blocks</strong>,
+    <strong>21 menu lines</strong>, <strong>86 duty assignments</strong>,
+    <strong>38 unique student names</strong>, covering classes 1–5. Every requirement in this
+    project traces back to a property of that format — not to a survey.</p>
+
+  <div class="chart">
+    <h4>What the source artefact actually contains</h4>
+    <p class="cap">Measured from <code>data/output_jadwal_piket.txt</code> — 136 lines total</p>
+    <div class="stack">
+      <span style="width:63.2%;background:#51277C">86 duty assignments</span>
+      <span style="width:15.4%;background:#7A45A8">21 menus</span>
+      <span style="width:3.7%;background:#F3B26C"></span>
+      <span style="width:17.7%;background:#D9D2E3;color:#6B6478">blank / other</span>
+    </div>
+    <div class="legend">
+      <span><i style="background:#51277C"></i>86 duty assignment lines — a name beside a class, with no identity</span>
+      <span><i style="background:#7A45A8"></i>21 menu lines — free text, Mon–Fri</span>
+      <span><i style="background:#F3B26C"></i>5 hand-written week headers</span>
+    </div>
+  </div>
+
+  <h3 id="scenarios">1.1 &nbsp;Target Scenarios</h3>
+  <p class="muted">Eight recurring events in the school week. Each one is a real moment, not a
+    hypothetical use case.</p>
+  <div class="grid g2">
+    <div class="card brand"><span class="idx">S1 · every school morning</span>
+      <h4>“What is today’s snack?”</h4>
+      <p>A parent opens a forwarded text file and scrolls to find the date. The app answers in one
+        screen — with the duty guardian’s WhatsApp link beside the menu.</p></div>
+    <div class="card brand"><span class="idx">S2 · Sunday evening</span>
+      <h4>Weekly planning</h4>
+      <p>The same file is read twice: once for the menu, once for the duty roster. One view now
+        shows Mon–Fri per class.</p></div>
+    <div class="card brand"><span class="idx">S3 · when a class is on duty</span>
+      <h4>Duty rotation</h4>
+      <p>Nobody can tell whose turn it is without reading the whole file. Duty is now a typed
+        relationship, chosen from that class’s roster.</p></div>
+    <div class="card hot"><span class="idx">S4 · whenever a date is left open</span>
+      <h4>Filling an unassigned slot</h4>
+      <p>Previously the first reply in a group chat won, untracked. Parents now claim the date
+        themselves, race-safe at the database level.</p></div>
+    <div class="card hot"><span class="idx">S5 · once a month</span>
+      <h4>Lock-and-publish cycle</h4>
+      <p>There was no concept of “ready”. A three-state machine now makes a half-announced class
+        structurally impossible.</p></div>
+    <div class="card hot"><span class="idx">S6 · monthly coordination meeting</span>
+      <h4>“Is the duty load fair?”</h4>
+      <p>Unanswerable from the file, which records who is <em>on</em> duty but never who
+        <em>took</em> duty. The report ranks every parent and names those who took none.</p></div>
+    <div class="card"><span class="idx">S7 · when planning next month</span>
+      <h4>Menu reuse &amp; history</h4>
+      <p>Past menus were re-typed by hand. A searchable catalog of 43 menus and 85 menu items is
+        shared across all classes.</p></div>
+    <div class="card"><span class="idx">S8 · each school year</span>
+      <h4>Parent account lifecycle</h4>
+      <p>Accounts were created one at a time. Now an Excel round-trip: export → edit → import,
+        always through a dry-run preview.</p></div>
+  </div>
+
+  <div class="callout">
+    <p class="q">The scenario that shaped the architecture is S4 + S5 together.</p>
+    <p>Claiming writes back into a schedule row; publishing freezes rows. If both could write
+      freely, a parent could claim a slot in a month the school had already announced. The status
+      machine exists so that is impossible — not merely discouraged.</p>
+  </div>
+
+  <h3 id="users">1.2 &nbsp;Target Users</h3>
+  <p class="muted">Four audiences, three of them with real authority. The role model is deliberately
+    small — every extra role is a new way for the school to get its own process wrong.</p>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Role</th><th>Who they are</th><th>Primary goal</th><th>Authority</th><th>Explicitly denied</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Admin</strong></td>
+          <td>Teacher or staff running the snack programme</td>
+          <td>Keep the whole school’s schedule correct and published</td>
+          <td>Full CRUD on all classes, catalog, categories, holidays, parent accounts, statistics; lock <em>and</em> unlock</td>
+          <td class="muted">—</td>
+        </tr>
+        <tr>
+          <td><strong>Korlas</strong><br><small>class coordinator</small></td>
+          <td>A parent nominated per class</td>
+          <td>Run <em>their own class</em> without waiting for admin</td>
+          <td>Create / edit / delete their class’s schedule while <code>draft</code>; lock and publish their own class; claim open dates (still a parent)</td>
+          <td><span class="no">✕</span> cannot unlock · cannot touch other classes · cannot edit the shared catalog · cannot manage accounts</td>
+        </tr>
+        <tr>
+          <td><strong>Parent</strong><br><small>guardian</small></td>
+          <td>Parent of an enrolled student</td>
+          <td>Know today’s snack and whether it is their turn</td>
+          <td>Read their child’s class schedule; claim open duty dates; edit their own contact details and password</td>
+          <td><span class="no">✕</span> no write access to schedules or catalog</td>
+        </tr>
+        <tr>
+          <td><strong>Cooperative</strong><br><small>canteen</small></td>
+          <td>School food provider</td>
+          <td>Know what to prepare</td>
+          <td>Read-only, via Excel export</td>
+          <td><span class="no">✕</span> no login-level write path</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout warn">
+    <p class="q">Why korlas exists — and why it is powerful inside one class, powerless outside it.</p>
+    <p>The first version had only admin and parent. In practice one admin could not keep six classes
+      current, and parents could not edit anything. Promoting six parents to admin would have given
+      each of them the power to rewrite the whole school’s catalog and every other class. So a third
+      role was introduced with a hard boundary — enforced by <code>requireRole()</code> in the API,
+      and merely <em>reflected</em> by <code>&lt;RoleGate&gt;</code> in the UI.</p>
+  </div>
+
+  <h3>1.3 &nbsp;Value Proposition</h3>
+  <div class="callout">
+    <p class="q">Turns a document that could only be read into a system that can be asked
+      questions — without adding an administrator.</p>
+  </div>
+  <div class="grid g4">
+    <div class="card brand"><span class="idx">pillar 01</span><h4>Answer, not archive</h4>
+      <p>Answers the three questions people actually ask: today’s snack, my child’s duty turn, has
+        my class been published.</p></div>
+    <div class="card brand"><span class="idx">pillar 02</span><h4>Authority at the edge</h4>
+      <p>Moves the monthly workload from one admin to six coordinators while keeping the
+        school-wide catalog under single ownership.</p></div>
+    <div class="card brand"><span class="idx">pillar 03</span><h4>Fairness becomes measurable</h4>
+      <p>Because claims are stored separately, the system can name the parents who took no duty —
+        a question the source document could not answer at all.</p></div>
+    <div class="card hot"><span class="idx">pillar 04</span><h4>Zero marginal cost</h4>
+      <p>Workers + D1 on the free tier. No server, no licence, no app store. A snack programme has
+        no budget line for software.</p></div>
+  </div>
+
+  <h3 id="insights">1.4 &nbsp;Real-World Scenario Insights</h3>
+
+  <h4>1.4.1 &nbsp;Where the pain points came from</h4>
+  <p>The pain points were not gathered from a survey. They were extracted from the artefact the
+    school actually used:</p>
+  <div class="tbl-wrap" style="margin-bottom:20px">
+    <table>
+      <thead><tr><th>Pain point</th><th>Root cause visible in the source format</th></tr></thead>
+      <tbody>
+        <tr><td><strong>No search</strong></td><td>Menu names are free text inside day lines — “when was jeruk served?” means reading all 21 lines</td></tr>
+        <tr><td><strong>No notification</strong></td><td>The file is a snapshot; nothing tells anyone it changed</td></tr>
+        <tr><td><strong>Hard to edit safely</strong></td><td>Week headers are written by hand and were already wrong — one block was labelled <code>14 - 18 Oktober 2026</code> (Mon–Fri) although 14 October 2026 is a Wednesday</td></tr>
+        <tr><td><strong>No history</strong></td><td>The file is overwritten month to month; only two months survive in the repository</td></tr>
+        <tr><td><strong>No reusable catalog</strong></td><td>Nothing links “Puding Roti” in September to “Puding Roti” in October</td></tr>
+        <tr><td><strong>No duty tracking</strong></td><td>Duty is a name beside a class, with no identity — no parent record is referenced anywhere</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>Two of these are <strong>data-integrity</strong> defects, not convenience problems:</p>
+  <ul class="plain">
+    <li>The <strong>mis-labelled week header</strong> is a real error found in the school’s own
+      document. The importer now matches each day label against the real calendar, shifts a
+      mis-labelled week to the correct Mon–Fri, and warns the user. A manual spreadsheet cannot do
+      this.</li>
+    <li><strong>Duty names had no identity.</strong> The fix was to make the duty officer a
+      <em>relationship</em> (<code>petugas_student_id</code> + <code>petugas_parent_id</code>), with
+      the printed name kept only as a denormalised display copy. The API refuses duty names supplied
+      by the client and resolves them against the class roster server-side.</li>
+  </ul>
+
+  <h4>1.4.2 &nbsp;Target audience and the core problem solved</h4>
+  <div class="callout">
+    <p class="q">The snack schedule is a shared obligation — every family takes a turn — but it is
+      recorded in a private document that no family can query, and that only one person can safely
+      edit.</p>
+  </div>
+  <div class="grid g3">
+    <div class="card brand"><h4>The read half</h4>
+      <p>Parents had no reliable way to know their turn. Closing it means authentication — each
+        family sees only its own child’s class — and a per-class data model.</p></div>
+    <div class="card brand"><h4>The write half</h4>
+      <p>One admin could not maintain six classes. Closing it means a delegated role with a hard
+        boundary, plus a lock/publish gate so “announced” and “still being edited” can never be
+        confused.</p></div>
+    <div class="card hot"><h4>Who it is <em>not</em> for</h4>
+      <p>No student accounts — duty is a family obligation and the guardian holds the phone. No
+        attendance, grades or messaging. Every feature must trace back to the snack roster.</p></div>
+  </div>
+  <p style="margin-top:18px"><strong>Why the obvious fix fails.</strong> “Put the file in a shared
+    spreadsheet” solves the read half for people who already know the sheet exists, and makes the
+    write half worse: a shared sheet has no notion of who may edit which class, no published state,
+    and no way to answer “who has never taken a turn” — because the sheet records duty, not claims.
+    The claim table only exists because the system is an application.</p>
+</section>
+
+<!-- ══════════════════ 2 ══════════════════ -->
+<section id="design">
+  <h2><span class="num">02</span> — Comprehensive Solution Design</h2>
+  <p class="lede">A three-state schedule machine, a two-layer authority model, and a nine-domain API —
+    each chosen to make a specific failure impossible rather than merely unlikely.</p>
+
+  <h3>2.1 &nbsp;Business Architecture</h3>
+
+  <h4>Authority is enforced twice, and the two layers do different jobs</h4>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Layer</th><th>Mechanism</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><strong>API — authority</strong></td><td><code>requireRole()</code> on every write route</td><td>The actual boundary. Returns <code>403</code> regardless of what the client sends.</td></tr>
+        <tr><td><strong>API — data scope</strong></td><td><code>classScope</code> · <code>canWriteClass(user, row.className)</code></td><td>On <code>PUT</code>/<code>DELETE</code> the class is read from the <em>database row</em>, never from client input — so a korlas cannot hijack another class by changing a parameter.</td></tr>
+        <tr><td><strong>UI</strong></td><td><code>&lt;RoleGate need="admin" | "schedule" | "catalog"&gt;</code></td><td>Hides controls the user cannot use. Documented explicitly as <em>cosmetic</em> — it avoids offering impossible actions; it enforces nothing.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>The schedule lifecycle</h4>
+  <div class="diagram">
+    <svg viewBox="0 0 960 210" role="img" aria-label="Schedule lifecycle: draft, locked, published, with admin unlock returning to draft">
+      <defs>
+        <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="#51277C"/>
+        </marker>
+        <marker id="aho" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="#F3B26C"/>
+        </marker>
+      </defs>
+
+      <rect x="40" y="44" width="230" height="68" rx="8" fill="#FFFFFF" stroke="#51277C" stroke-width="1.5"/>
+      <text x="155" y="74" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="20" font-weight="700" fill="#51277C">draft</text>
+      <text x="155" y="96" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="12" fill="#6B6478">fully editable</text>
+
+      <line x1="276" y1="78" x2="357" y2="78" stroke="#51277C" stroke-width="1.5" marker-end="url(#ah)"/>
+      <text x="316" y="68" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" font-weight="700" fill="#6B6478">lock</text>
+
+      <rect x="365" y="44" width="230" height="68" rx="8" fill="#FFFFFF" stroke="#51277C" stroke-width="1.5"/>
+      <text x="480" y="74" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="20" font-weight="700" fill="#51277C">locked</text>
+      <text x="480" y="96" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="12" fill="#6B6478">frozen · duty officer only</text>
+
+      <line x1="601" y1="78" x2="682" y2="78" stroke="#51277C" stroke-width="1.5" marker-end="url(#ah)"/>
+      <text x="641" y="68" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" font-weight="700" fill="#6B6478">publish</text>
+
+      <rect x="690" y="44" width="230" height="68" rx="8" fill="#F3B26C" stroke="#d97f2f" stroke-width="1.5"/>
+      <text x="805" y="74" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="20" font-weight="700" fill="#3c1e0c">published</text>
+      <text x="805" y="96" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="12" fill="#6f3c1c">visible to parents</text>
+
+      <text x="155" y="138" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11.5" fill="#6B6478">every new row starts here</text>
+      <text x="480" y="138" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11.5" fill="#6B6478">publication refuses with 409 while any row is draft</text>
+      <text x="805" y="138" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11.5" fill="#6B6478">read-only from here on</text>
+
+      <path d="M805,120 L805,168 L155,168 L155,120" fill="none" stroke="#F3B26C" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#aho)"/>
+      <text x="480" y="186" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11.5" font-weight="700" fill="#c4762a">unlock — admin only</text>
+    </svg>
+  </div>
+
+  <div class="grid g2">
+    <div class="card hot"><h4>The rule that matters most</h4>
+      <p><code>POST /schedules/publish</code> refuses with <code>409 drafts_remaining</code> when any
+        row is still <code>draft</code> — and names the offending classes. This is what makes a
+        half-published class structurally impossible.</p></div>
+    <div class="card hot"><h4>The one deliberate exception</h4>
+      <p>On a locked or published row, the <strong>duty officer alone</strong> may be set — duty is
+        often filled after announcement. A <em>mixed</em> patch (duty plus menu, notes or holiday)
+        is still rejected with <code>409 not_editable</code>.</p></div>
+  </div>
+
+  <h4>Two bulk-action semantics, kept deliberately different</h4>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th></th><th>Range / class based</th><th>Selected-rows based</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Endpoints</strong></td><td><code>POST /schedules/lock</code> · <code>/schedules/publish</code></td><td><code>POST /schedules/bulk/{lock,publish,unlock}</code></td></tr>
+        <tr><td><strong>Mismatched status</strong></td><td><span class="no">409 drafts_remaining</span> — the whole request is refused</td><td>Counted as <code>skipped</code>, returns <span class="yes">200</span></td></tr>
+        <tr><td><strong>Class scope</strong></td><td>Resolved from the request via <code>resolveBulkClasses</code></td><td>Taken from each row — never from the client</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="margin-top:12px" class="muted">The asymmetry is intentional. A month-level operation
+    that silently skipped a class would produce exactly the half-published state the status machine
+    exists to prevent, so it fails loudly. A hand-ticked set of rows is an explicit choice, so the
+    correct behaviour is to act on the qualifying rows and report the rest.</p>
+
+  <h4>The claim mechanism — first come, first served</h4>
+  <div class="grid g4">
+    <div class="card brand"><h4>Race safety</h4><p><code>UNIQUE(schedule_id)</code> on
+      <code>schedule_claims</code> — the database, not the application, decides the winner.</p></div>
+    <div class="card brand"><h4>One source of truth</h4><p>A successful claim writes back into
+      <code>schedules.petugas_*</code>, so a claim can never disagree with the schedule.</p></div>
+    <div class="card brand"><h4>Per class</h4><p>The same date in two classes is two rows — class 1
+      claiming does not block class 2.</p></div>
+    <div class="card hot"><h4>Fairness reporting</h4><p>Because claims are their own table, the
+      report can rank parents by duties taken and name those who took none.</p></div>
+  </div>
+
+  <h3>2.2 &nbsp;Technical Architecture</h3>
+
+  <div class="diagram">
+    <svg viewBox="0 0 960 440" role="img" aria-label="Architecture: browser, Cloudflare Worker with four layers, and D1">
+      <defs>
+        <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="#51277C"/>
+        </marker>
+      </defs>
+
+      <rect x="200" y="16" width="560" height="64" rx="8" fill="#FFFFFF" stroke="#51277C" stroke-width="1.5"/>
+      <text x="480" y="42" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="16" font-weight="700" fill="#51277C">Browser</text>
+      <text x="480" y="62" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="12" fill="#6B6478">React 19 SPA · TanStack Router + Query · installable PWA</text>
+
+      <line x1="480" y1="80" x2="480" y2="116" stroke="#51277C" stroke-width="1.5" marker-end="url(#ah2)"/>
+      <text x="496" y="104" font-family="ui-monospace,monospace" font-size="11" fill="#6B6478">HTTPS · JWT Bearer · basePath /api</text>
+
+      <rect x="60" y="118" width="840" height="196" rx="10" fill="rgba(81,39,124,.06)" stroke="rgba(81,39,124,.24)" stroke-width="1.2"/>
+      <text x="84" y="142" font-family="ui-sans-serif,system-ui,sans-serif" font-size="14" font-weight="700" fill="#51277C">Cloudflare Worker · Hono router</text>
+
+      <rect x="84" y="158" width="180" height="96" rx="6" fill="#FFFFFF" stroke="rgba(81,39,124,.24)"/>
+      <text x="98" y="182" font-family="ui-monospace,monospace" font-size="12.5" font-weight="700" fill="#2A2333">middleware/</text>
+      <text x="98" y="204" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#6B6478">JWT verification</text>
+      <text x="98" y="220" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#6B6478">role guard</text>
+      <text x="98" y="236" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#6B6478">class scope</text>
+
+      <rect x="288" y="158" width="180" height="96" rx="6" fill="#FFFFFF" stroke="#51277C" stroke-width="1.6"/>
+      <text x="302" y="182" font-family="ui-monospace,monospace" font-size="12.5" font-weight="700" fill="#2A2333">route.ts</text>
+      <text x="302" y="204" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#6B6478">HTTP verbs</text>
+      <text x="302" y="220" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#6B6478">requireRole()</text>
+      <text x="302" y="236" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" font-weight="700" fill="#c4762a">← the real boundary</text>
+
+      <rect x="492" y="158" width="180" height="96" rx="6" fill="#FFFFFF" stroke="rgba(81,39,124,.24)"/>
+      <text x="506" y="182" font-family="ui-monospace,monospace" font-size="12.5" font-weight="700" fill="#2A2333">controller + service</text>
+      <text x="506" y="204" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#6B6478">DTO shaping</text>
+      <text x="506" y="220" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#6B6478">business rules</text>
+      <text x="506" y="236" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#6B6478">publish gate</text>
+
+      <rect x="696" y="158" width="180" height="96" rx="6" fill="#FFFFFF" stroke="rgba(81,39,124,.24)"/>
+      <text x="710" y="182" font-family="ui-monospace,monospace" font-size="12.5" font-weight="700" fill="#2A2333">repository.ts</text>
+      <text x="710" y="204" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#6B6478">SQL only</text>
+      <text x="710" y="220" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#6B6478">status predicate</text>
+      <text x="710" y="236" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#6B6478">lives in the WHERE</text>
+
+      <text x="84" y="286" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11.5" fill="#6B6478">9 API domains · 65 endpoints · 29 GET · 22 POST · 7 PUT · 7 DELETE</text>
+
+      <line x1="480" y1="314" x2="480" y2="350" stroke="#51277C" stroke-width="1.5" marker-end="url(#ah2)"/>
+      <text x="496" y="338" font-family="ui-monospace,monospace" font-size="11" fill="#6B6478">Drizzle ORM · typed queries</text>
+
+      <rect x="200" y="352" width="560" height="64" rx="8" fill="#FFFFFF" stroke="#AFC440" stroke-width="1.6"/>
+      <text x="480" y="378" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="16" font-weight="700" fill="#576420">Cloudflare D1 · SQLite</text>
+      <text x="480" y="398" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="12" fill="#6B6478">13 tables · 9 migrations · drizzle/migrations/</text>
+    </svg>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Layer</th><th>Technology</th><th>Why this one</th></tr></thead>
+      <tbody>
+        <tr><td>Runtime</td><td>Cloudflare Workers</td><td>Free tier, global, no server to patch — the whole school fits in the free allowance</td></tr>
+        <tr><td>API framework</td><td>Hono (<code>basePath("/api")</code>)</td><td>Edge-native and tiny; middleware for JWT auth</td></tr>
+        <tr><td>Database</td><td>Cloudflare D1 (SQLite)</td><td>Serverless SQL on the free tier, with a checked-in migration history</td></tr>
+        <tr><td>ORM / migrations</td><td>Drizzle ORM + drizzle-kit</td><td>Typed queries plus reviewable SQL migrations</td></tr>
+        <tr><td>Client</td><td>React 19 · TanStack Router · TanStack Query</td><td>File-based routing and per-page cache invalidation</td></tr>
+        <tr><td>Styling</td><td>Tailwind CSS 4 with an <code>@theme</code> token block</td><td>Three brand colours declared once and consumed everywhere</td></tr>
+        <tr><td>Build</td><td>Vite 6 + <code>@cloudflare/vite-plugin</code></td><td>Client and Worker built together</td></tr>
+        <tr><td>Language</td><td>TypeScript throughout</td><td>The API contract is shared between Worker and client</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>Data model — 13 tables</h4>
+  <div class="grid g4">
+    <div class="card brand"><h4>People &amp; access</h4><p><code>users</code><br><code>parents</code><br><code>students</code></p></div>
+    <div class="card brand"><h4>Schedule</h4><p><code>schedules</code><br><code>schedule_claims</code><br><code>holidays</code></p></div>
+    <div class="card brand"><h4>Catalog</h4><p><code>menus</code> · <code>menu_items</code><br><code>categories</code><br><code>menu_categories</code></p></div>
+    <div class="card hot"><h4>Operations</h4><p><code>import_logs</code><br><code>settings</code> · <code>weeks</code></p></div>
+  </div>
+
+  <p style="margin-top:20px">Two schema decisions were <strong>reversals</strong>, and reversals are
+    the most reliable evidence that a design was tested against reality:</p>
+  <div class="grid g2">
+    <div class="card hot"><h4>No composite foreign key on the duty officer</h4>
+      <p>A composite FK needs an exactly matching unique index, which forces a table rebuild. A
+        rebuild needs <code>PRAGMA foreign_keys=OFF</code> — and that pragma is a <em>silent
+        no-op inside a transaction</em>, while <code>wrangler d1 migrations apply</code> wraps
+        migrations in one. The migration passed locally, failed in production with
+        <code>FOREIGN KEY constraint failed</code>, and the “successful” path left 292
+        <code>foreign_key_check</code> violations. Migration <code>0007</code> is now a plain
+        <code>ALTER TABLE ADD COLUMN</code>; consistency is enforced in the service layer.</p></div>
+    <div class="card hot"><h4>Category images live in the database</h4>
+      <p>Stored as base64 data URIs and validated on both client and server. The catalog DTO was
+        split in two — <code>CategorySummaryDto</code> (no image; used by menus and schedules) and
+        <code>CategoryDto</code> (with image; only on the category page) — so a month of schedules
+        containing dozens of menus does not duplicate image payloads that nothing displays.</p></div>
+  </div>
+
+  <h4>Test architecture</h4>
+  <div class="chart">
+    <h4>Verification volume by suite</h4>
+    <p class="cap">540 API-integration assertions across 8 scripts, plus 85 unit tests — measured with <code>grep -c 'check('</code> and <code>grep -c 'it(|test('</code></p>
+    <div class="bars">
+      <div class="bar-row"><span class="lbl">test-api.mjs · 27 sections</span><span class="track"><span class="fill" style="width:100%"></span></span><span class="val">367</span></div>
+      <div class="bar-row"><span class="lbl">unit tests · src/</span><span class="track"><span class="fill g" style="width:23.2%"></span></span><span class="val">85</span></div>
+      <div class="bar-row"><span class="lbl">profile-account.mjs</span><span class="track"><span class="fill" style="width:10.4%"></span></span><span class="val">38</span></div>
+      <div class="bar-row"><span class="lbl">test-auth.mjs</span><span class="track"><span class="fill" style="width:9.0%"></span></span><span class="val">33</span></div>
+      <div class="bar-row"><span class="lbl">profile-students.mjs</span><span class="track"><span class="fill" style="width:9.0%"></span></span><span class="val">33</span></div>
+      <div class="bar-row"><span class="lbl">test-petugas.mjs</span><span class="track"><span class="fill" style="width:6.3%"></span></span><span class="val">23</span></div>
+      <div class="bar-row"><span class="lbl">test-status.mjs</span><span class="track"><span class="fill" style="width:6.0%"></span></span><span class="val">22</span></div>
+      <div class="bar-row"><span class="lbl">test-roster-petugas.mjs</span><span class="track"><span class="fill" style="width:4.1%"></span></span><span class="val">15</span></div>
+      <div class="bar-row"><span class="lbl">test-claim-cross-class.mjs</span><span class="track"><span class="fill" style="width:2.5%"></span></span><span class="val">9</span></div>
+    </div>
+    <div class="legend" style="margin-top:18px">
+      <span>Plus <strong>20 browser check scripts</strong> (<code>outputs/check-*.mjs</code>) and
+        <strong>21 documented UAT cases</strong>. Browser checks go beyond “the element exists” — the
+        <code>/hari-ini</code> layout check asserts <em>which column</em> the duty card sits in and
+        that it is geometrically as wide as the day card, because a card in the wrong column passes
+        every existence test.</span>
+    </div>
+  </div>
+
+  <h3 id="prompts">2.3 &nbsp;How Prompts Drive the AI Generation</h3>
+  <p class="lede" style="font-size:21px">This project was generated by prompt over 113 commits in
+    31 days. The mechanism is not “ask an AI for an app” — it is a
+    <strong>specification-first loop in which the prompt is the specification, the repository is the
+    record, and a verifier is named before any code is written.</strong></p>
+
+  <div class="pipe">
+    <div class="step"><span class="n">01</span><span class="t">Domain truth</span>
+      <span class="d">A human supplies what the AI cannot know: the school’s real schedule, roles, and authority boundaries.</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><span class="n">02</span><span class="t">Prompt</span>
+      <span class="d">Carries five slots: intent · constraint · evidence · acceptance · artefacts.</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><span class="n">03</span><span class="t">AI generates</span>
+      <span class="d">Migration · API · UI · documentation · and the test that will judge it.</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><span class="n">04</span><span class="t">Verifier runs</span>
+      <span class="d"><code>tsc</code> · <code>eslint</code> · <code>vite build</code> · the named test suite.</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><span class="n">05</span><span class="t">Commit &amp; record</span>
+      <span class="d">Code, PRD changelog entry, and project memory committed together.</span></div>
+  </div>
+  <div class="feedback">
+    <span>↺</span>
+    <span><b>On failure:</b> the prompt is corrected and re-run — and the constraint is written into
+      persistent memory so the same mistake cannot recur in a later session.</span>
+  </div>
+
+  <h4>Prompt anatomy used in this project</h4>
+  <p class="muted">Every substantive prompt carries five slots. The pattern is visible in the PRD
+    changelog, where each version records the same five things.</p>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Slot</th><th>Question it answers</th><th>Example from this project</th></tr></thead>
+      <tbody>
+        <tr><td><strong>1 · Intent</strong></td><td>What changes for the user?</td><td>“Admin must be able to publish all six classes in one action”</td></tr>
+        <tr><td><strong>2 · Constraint</strong></td><td>What must not break, and what is forbidden?</td><td>“Korlas may lock their own class, not others. Do not add a class table.”</td></tr>
+        <tr><td><strong>3 · Evidence</strong></td><td>What in the existing code decides the design?</td><td>“Check <code>resolveBulkClasses</code> before choosing where class scope is resolved.”</td></tr>
+        <tr><td><strong>4 · Acceptance</strong></td><td>How will we know it worked?</td><td>“<code>409 drafts_remaining</code> names the offending class; <code>test-api.mjs</code> section 23 covers it.”</td></tr>
+        <tr><td><strong>5 · Artefacts</strong></td><td>What else must be updated?</td><td>“PRD, README, UAT_Result, test-api.mjs.”</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="margin-top:12px"><strong>Slot 4 is what makes the loop converge.</strong> A prompt that
+    does not name its verifier produces code that passes nothing in particular; a prompt that names
+    <code>409 drafts_remaining</code> produces a test that will still be running a year later.</p>
+
+  <h4>Prompt intent → generated artefact → verifier</h4>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Prompt intent</th><th>Generated artefact</th><th>Verifier named in the prompt</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>“Store the schedule per class and add a class-coordinator role”</td>
+          <td><code>schedules.class_name</code>, <code>UNIQUE(schedule_date, class_name)</code>, role <code>korlas</code>, <code>GET /classes</code>, <code>?class=</code> on all reads</td>
+          <td><code>test-api.mjs</code>; PRD §3.3 rewritten</td>
+        </tr>
+        <tr>
+          <td>“Parents must not be able to edit each other’s duty dates”</td>
+          <td><code>schedule_claims</code> with <code>UNIQUE(schedule_id)</code>; a claim writes back to the schedule row</td>
+          <td><code>test-claim-cross-class.mjs</code> — 9 assertions</td>
+        </tr>
+        <tr>
+          <td>“Publication must be impossible while any row is still a draft”</td>
+          <td><code>409 drafts_remaining</code> naming classes; <code>setStatusByIds</code> puts the status predicate in the <code>WHERE</code></td>
+          <td><code>test-status.mjs</code> — 22 assertions</td>
+        </tr>
+        <tr>
+          <td>“The school sends the schedule as pasted text — import it in-app”</td>
+          <td><code>importParser.ts</code> (pure: no DB, no clock, no throw), idempotent import, <code>dryRun</code> preview, audit trail in <code>import_logs</code></td>
+          <td><code>test-api.mjs</code> section 24 — 38 assertions</td>
+        </tr>
+        <tr>
+          <td>“The coordination meeting needs a duty-fairness report”</td>
+          <td>New <code>src/api/laporan/</code> domain; claims-based ranking plus a “never took duty” list derived from <code>students</code></td>
+          <td><code>test-api.mjs</code> section 25</td>
+        </tr>
+        <tr>
+          <td>“Add a composite foreign key on the duty officer”</td>
+          <td><span class="no">Rejected.</span> The constraint slot required the migration to succeed in production, and a table rebuild cannot.</td>
+          <td>Local D1 + production <code>d1 migrations apply</code>, plus <code>PRAGMA foreign_key_check</code></td>
+        </tr>
+        <tr>
+          <td>“The duty card is in the wrong column”</td>
+          <td>Card moved to <code>lg:col-span-2</code>; <code>hari-ini.tsx</code> split into named components</td>
+          <td><code>check-hari-ini-layout.mjs</code> — 39 geometry assertions</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout warn">
+    <p class="q">Note the sixth row: a prompt was refused by its own constraint.</p>
+    <p>The refusal is recorded in the PRD as a correction (v1.10). That is the loop working as
+      intended — the constraint slot exists precisely so that a plausible-sounding request can be
+      rejected <em>before</em> it corrupts production data.</p>
+  </div>
+
+  <h4>Guardrails carried inside the prompts</h4>
+  <p class="muted">Hard-won constraints are written into the project’s persistent memory and
+    re-stated in prompts, so a later session cannot silently undo them.</p>
+  <div class="grid g3">
+    <div class="card hot"><h4>Never trust a duty name from the client</h4><p>Duty is a relationship, not a string — a client-supplied name would let a typo create a new “student”.</p></div>
+    <div class="card hot"><h4>Never rebuild a table in a D1 migration</h4><p><code>PRAGMA foreign_keys=OFF</code> is a no-op inside a transaction, and <code>d1 migrations apply</code> uses one.</p></div>
+    <div class="card hot"><h4>Never let <code>409</code> become <code>skipped</code></h4><p>Silent skipping is how a class gets published half-done.</p></div>
+    <div class="card hot"><h4>Never let the UI be the only enforcement</h4><p><code>&lt;RoleGate&gt;</code> hides; <code>requireRole()</code> enforces.</p></div>
+    <div class="card hot"><h4>Always build before deploy</h4><p><code>wrangler deploy</code> uploads <code>dist/</code> as-is — it does not compile.</p></div>
+    <div class="card hot"><h4>Never trust piped wrangler output</h4><p>Truncated output has produced wrong conclusions; write to a file and parse the whole JSON.</p></div>
+  </div>
+
+  <h4>Why the generation is auditable</h4>
+  <div class="grid g3">
+    <div class="card brand"><h4>PRD changelog v1.1 → v1.21</h4>
+      <p>Every entry records the prompt’s intent, the design decision, and any correction to an
+        earlier claim. Several entries explicitly retract earlier statements, so the document shows
+        its own errors.</p></div>
+    <div class="card brand"><h4>113 commits</h4>
+      <p>Each traceable to a single increment, with the documentation update committed alongside the
+        code (<code>docs: selaraskan PRD ke v1.21</code>).</p></div>
+    <div class="card brand"><h4>Project memory</h4>
+      <p>Daily logs plus a curated conventions file, so a session that starts fresh does not repeat a
+        solved problem.</p></div>
+  </div>
+</section>
+
+<!-- ══════════════════ 3 ══════════════════ -->
+<section id="value">
+  <h2><span class="num">03</span> — Business Value</h2>
+  <p class="lede">Quantified from the repository, not estimated — and the impact stated as
+    before/after pairs that a reviewer can verify.</p>
+
+  <h3>3.1 &nbsp;Quantified Metrics</h3>
+
+  <div class="stats">
+    <div class="stat"><div class="v">113</div><div class="k">commits in 31 days (17 Sep – 17 Oct 2026)</div></div>
+    <div class="stat"><div class="v">27,881</div><div class="k">lines of TypeScript / TSX across 181 source files</div></div>
+    <div class="stat"><div class="v">65</div><div class="k">API endpoints across 9 domains</div></div>
+    <div class="stat"><div class="v">13</div><div class="k">database tables · 9 migrations</div></div>
+    <div class="stat green"><div class="v">540</div><div class="k">API integration assertions across 8 scripts</div></div>
+    <div class="stat green"><div class="v">85</div><div class="k">unit tests in 10 files / 23 suites</div></div>
+    <div class="stat green"><div class="v">21</div><div class="k">documented UAT cases</div></div>
+    <div class="stat hot"><div class="v">0</div><div class="k">marginal infrastructure cost (Workers + D1 free tier)</div></div>
+  </div>
+
+  <div class="grid g2">
+    <div class="chart">
+      <h4>System surface, before and after</h4>
+      <p class="cap">The source artefact versus the system that replaced it</p>
+      <div class="bars">
+        <div class="bar-row"><span class="lbl">Menu records</span><span class="track"><span class="fill" style="width:100%"></span></span><span class="val">43</span></div>
+        <div class="bar-row"><span class="lbl">Menu items</span><span class="track"><span class="fill" style="width:100%"></span></span><span class="val">85</span></div>
+        <div class="bar-row"><span class="lbl">Duty assignments (typed)</span><span class="track"><span class="fill" style="width:100%"></span></span><span class="val">86</span></div>
+        <div class="bar-row"><span class="lbl">Students (linked to a parent)</span><span class="track"><span class="fill" style="width:44%"></span></span><span class="val">38</span></div>
+        <div class="bar-row"><span class="lbl">Weeks modelled</span><span class="track"><span class="fill" style="width:13%"></span></span><span class="val">11</span></div>
+        <div class="bar-row"><span class="lbl">Queryable endpoints</span><span class="track"><span class="fill g" style="width:100%"></span></span><span class="val">65</span></div>
+        <div class="bar-row"><span class="lbl">Navigable views</span><span class="track"><span class="fill g" style="width:17%"></span></span><span class="val">11</span></div>
+      </div>
+    </div>
+
+    <div class="chart">
+      <h4>Delivery profile</h4>
+      <p class="cap">What 31 days of prompt-driven increments produced</p>
+      <div class="bars">
+        <div class="bar-row"><span class="lbl">Commits</span><span class="track"><span class="fill" style="width:100%"></span></span><span class="val">113</span></div>
+        <div class="bar-row"><span class="lbl">Source files</span><span class="track"><span class="fill" style="width:100%"></span></span><span class="val">181</span></div>
+        <div class="bar-row"><span class="lbl">Components</span><span class="track"><span class="fill" style="width:36%"></span></span><span class="val">65</span></div>
+        <div class="bar-row"><span class="lbl">User-facing pages</span><span class="track"><span class="fill" style="width:8%"></span></span><span class="val">14</span></div>
+        <div class="bar-row"><span class="lbl">Feature labels (F1–F14)</span><span class="track"><span class="fill" style="width:8%"></span></span><span class="val">15</span></div>
+        <div class="bar-row"><span class="lbl">Shipped features</span><span class="track"><span class="fill g" style="width:7%"></span></span><span class="val">12</span></div>
+        <div class="bar-row"><span class="lbl">Browser check scripts</span><span class="track"><span class="fill g" style="width:12%"></span></span><span class="val">20</span></div>
+      </div>
+      <div class="legend" style="margin-top:16px">
+        <span>Of 15 feature labels: <strong>12 shipped</strong>, 1 partial (PDF export pending),
+          1 planned (notifications), 1 abandoned by design.</span>
+      </div>
+    </div>
+  </div>
+
+  <h3>3.2 &nbsp;Clearly Defined Impact</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Impact</th><th>Before</th><th>After</th><th>How it is verified</th></tr></thead>
+      <tbody>
+        <tr><td><strong>I1</strong></td><td>Time to answer “what is today’s snack?”</td><td>Open a text file, locate the date, read a line</td><td>One screen after login</td><td><code>/hari-ini</code> day card; <code>check-hari-ini-layout.mjs</code></td></tr>
+        <tr><td><strong>I2</strong></td><td>Duty visibility</td><td>A name in a document nobody owns</td><td>A typed relationship; the guardian’s phone is a <code>wa.me</code> link, with “not yet updated” distinguished from “no duty officer”</td><td>Unit tests on <code>phone.ts</code> / <code>whatsapp.ts</code>; <code>petugasPhone</code> assertions in <code>test-petugas.mjs</code></td></tr>
+        <tr><td><strong>I3</strong></td><td>Monthly coordination workload</td><td>One admin maintains six classes</td><td>Six korlas each maintain one class; admin keeps school-wide override</td><td>Role tests in <code>test-auth.mjs</code>; <code>403</code> assertions for cross-class writes</td></tr>
+        <tr><td><strong>I4</strong></td><td>Half-published classes</td><td>Not detectable — a file is sent or not</td><td><span class="yes">Impossible.</span> Publication refuses with <code>409 drafts_remaining</code> and names the class</td><td><code>test-status.mjs</code> — 22 assertions</td></tr>
+        <tr><td><strong>I5</strong></td><td>Duty fairness</td><td>A feeling, unverifiable</td><td>A report ranking every parent by duties taken, plus a list of parents who took none</td><td><code>GET /api/laporan</code>; claims-based, so it cannot disagree with what parents see</td></tr>
+        <tr><td><strong>I6</strong></td><td>Claiming an open date</td><td>First reply in a group chat wins, untracked</td><td>Race-safe at the database level via <code>UNIQUE(schedule_id)</code></td><td><code>test-claim-cross-class.mjs</code> — 9 assertions</td></tr>
+        <tr><td><strong>I7</strong></td><td>Bad input from the school</td><td>A mis-labelled week was accepted silently</td><td>The importer matches day labels against the real calendar, shifts a mis-labelled week, warns; <code>dryRun</code> previews before writing</td><td><code>test-api.mjs</code> section 24 — 38 assertions</td></tr>
+        <tr><td><strong>I8</strong></td><td>Account administration</td><td>One account at a time, by hand</td><td>Excel export → edit → import, with dry-run and per-row reasons</td><td><code>test-api.mjs</code>; 34 unit tests on the importer / exporter</td></tr>
+        <tr><td><strong>I9</strong></td><td>Institutional memory</td><td>The file is overwritten; last month is gone</td><td>History is append-only; two months of source data are preserved and queryable</td><td><code>data/</code> plus the <code>weeks</code> and <code>schedules</code> tables</td></tr>
+        <tr><td><strong>I10</strong></td><td>Cost of operation</td><td>—</td><td>Zero marginal infrastructure cost, no new staff</td><td><code>wrangler.json</code>; free-tier deployment</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>3.3 &nbsp;Measurement Plan</h3>
+  <p class="muted">Most impact claims are already instrumented, because the data they need is stored
+    anyway.</p>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Metric to track</th><th>Source that already exists</th><th>What still needs building</th></tr></thead>
+      <tbody>
+        <tr><td>Duty distribution per parent</td><td><code>schedule_claims</code> — already the source of <code>/laporan</code></td><td><span class="yes">none</span> — expose the existing report monthly</td></tr>
+        <tr><td>Share of dates claimed by parents vs assigned by korlas</td><td><code>schedule_claims</code> joined to <code>schedules.petugas_*</code> origin</td><td>a counter on the report page</td></tr>
+        <tr><td>Publication latency (draft → published per class)</td><td><code>schedules.locked_at</code>, <code>published_at</code></td><td>a small aggregate query</td></tr>
+        <tr><td>Import quality (rows skipped, ranges shifted)</td><td><code>import_logs</code> — written but not yet surfaced</td><td>a view in the admin area</td></tr>
+        <tr><td>Parent reach</td><td><code>users.isActive</code>, PWA install events</td><td>a simple counter</td></tr>
+        <tr><td>Duty fairness trend over months</td><td>claims by month</td><td>a monthly comparison on <code>/laporan</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="margin-top:14px"><code>import_logs</code> is the clearest example of a table written but
+    not yet read — the data for I7 exists today; only the presentation is missing.</p>
+
+  <h3 id="limits">3.4 &nbsp;Honest Limits</h3>
+  <p class="muted">Stated deliberately: a description that claims no gaps is not a description of a
+    real system.</p>
+  <ul class="plain">
+    <li><strong>PDF export is not built.</strong> Excel export is (schedules and accounts); the
+      print-oriented PDF is still open (F5 partial).</li>
+    <li><strong>No push notifications.</strong> F6 remains planned; today the app must be opened to
+      be read.</li>
+    <li><strong>No student-facing accounts.</strong> Duty is modelled as a family obligation, so the
+      guardian’s account is the only entry point. A student view would be a new decision, not a
+      setting.</li>
+    <li><strong>No offline data.</strong> The app is installable as a PWA, but schedules are not
+      cached for offline reading — a deliberate choice, since a stale schedule is worse than no
+      schedule.</li>
+    <li><strong>No usage analytics.</strong> Nothing tracks which pages parents actually open, so the
+      adoption claims in §3.3 are measurable but not yet measured.</li>
+    <li><strong><code>import_logs</code> is written, not surfaced.</strong> The audit trail exists;
+      the UI for it does not.</li>
+    <li><strong>Single-school assumption.</strong> The data model has no <code>school_id</code>.
+      Multi-tenancy would be a migration, not a configuration change.</li>
+  </ul>
+
+  <h3>Appendix A — Evidence index</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Claim</th><th>Where to verify</th></tr></thead>
+      <tbody>
+        <tr><td>Feature inventory and rationale</td><td><code>docs/PRD_Pizza_Snack_Play.md</code> §4, changelog v1.1–v1.21</td></tr>
+        <tr><td>Source data volume (136 lines, 38 students, 86 assignments)</td><td><code>data/output_jadwal_piket.txt</code></td></tr>
+        <tr><td>Table and migration inventory</td><td><code>drizzle/migrations/*.sql</code> — 9 files, 13 tables</td></tr>
+        <tr><td>Endpoint inventory (65)</td><td><code>src/api/*/route.ts</code></td></tr>
+        <tr><td>Role boundaries</td><td><code>requireRole</code> in <code>src/api/*/route.ts</code> · <code>src/api/utils/classScope.ts</code> · <code>src/components/AdminOnly.tsx</code></td></tr>
+        <tr><td>Navigation and page inventory</td><td><code>src/components/navItems.ts</code> · <code>src/routes/</code></td></tr>
+        <tr><td>Test volume (85 unit · 540 integration)</td><td><code>src/**/*.test.ts</code> · <code>scripts/test-*.mjs</code></td></tr>
+        <tr><td>UAT cases (21)</td><td><code>docs/UAT_Result.md</code></td></tr>
+        <tr><td>Deployment and cost model</td><td><code>wrangler.json</code> · <code>package.json</code></td></tr>
+        <tr><td>Production incident history</td><td>PRD changelog v1.10 (composite FK) · v1.12 (mis-labelled week)</td></tr>
+        <tr><td>Prompt-to-artefact ledger</td><td><code>git log</code> (113 commits) · PRD changelog · <code>.workbuddy-ai/memory/</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap row">
+    <span><strong style="color:#51277C">Pizza Snack Play</strong> — Visualization Project Description · v1.0 · 17 October 2026</span>
+    <span>Every figure measured from the repository · <span style="font-family:ui-monospace,monospace">pizza-snack-play.topidesta.workers.dev</span></span>
+  </div>
+</footer>
+
+</body>
+</html>

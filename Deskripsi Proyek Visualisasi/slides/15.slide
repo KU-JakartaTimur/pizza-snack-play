@@ -1,0 +1,155 @@
+<Slide
+    style={{
+        width: '1280px',
+        height: '720px',
+        background: '#FAF7F2',
+        flexDirection: 'column',
+        paddingTop: 20,
+        paddingBottom: 20,
+        paddingLeft: 64,
+        paddingRight: 64,
+        position: 'relative',
+    }}
+>
+    {/* ── zona A ── */}
+    <Box style={{ height: 110, justifyContent: 'flex-start' }}>
+        <Text
+            style={{
+                fontSize: 34,
+                fontWeight: 'bold',
+                color: '#2A2333',
+                lineHeight: 1.3,
+                fontFamily: 'Trebuchet MS',
+            }}
+        >Dampak, sebelum dan sesudah</Text>
+        <Box style={{ width: 72, height: 6, background: '#51277C', marginTop: 12 }} />
+    </Box>
+
+    {/* ── zona B ── */}
+    <Box style={{ height: 530, flexDirection: 'row', gap: 24 }}>
+        {/* kiri: pasangan before/after */}
+        <Box style={{ flex: 60, flexDirection: 'column' }}>
+            <Box style={{ flexDirection: 'row', paddingBottom: 10 }}>
+                <Box style={{ width: 150 }}>
+                    <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#6B6478', letterSpacing: 0.8 }}>DAMPAK</Text>
+                </Box>
+                <Box style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#6B6478', letterSpacing: 0.8 }}>SEBELUM</Text>
+                </Box>
+                <Box style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#576420', letterSpacing: 0.8 }}>SESUDAH</Text>
+                </Box>
+            </Box>
+            <Box style={{ height: 1, background: 'rgba(81,39,124,0.22)' }} />
+
+            <Box style={{ flexDirection: 'row', paddingTop: 16, paddingBottom: 16 }}>
+                <Box style={{ width: 150, paddingRight: 12 }}>
+                    <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#51277C' }}>I1</Text>
+                    <Text style={{ fontSize: 14, color: '#2A2333', lineHeight: 1.35, marginTop: 3 }}>Snack hari ini</Text>
+                </Box>
+                <Box style={{ flex: 1, paddingRight: 14 }}>
+                    <Text style={{ fontSize: 14, color: '#6B6478', lineHeight: 1.45 }}>Buka berkas teks, cari tanggalnya, baca satu baris</Text>
+                </Box>
+                <Box style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 14, color: '#576420', lineHeight: 1.45 }}>Satu layar setelah masuk — lengkap dengan tautan WhatsApp wali petugas</Text>
+                    <Text style={{ fontSize: 12, color: '#6B6478', marginTop: 5 }}>
+                        check-hari-ini-layout.mjs
+                    </Text>
+                </Box>
+            </Box>
+            <Box style={{ height: 1, background: 'rgba(81,39,124,0.14)' }} />
+
+            <Box style={{ flexDirection: 'row', paddingTop: 16, paddingBottom: 16 }}>
+                <Box style={{ width: 150, paddingRight: 12 }}>
+                    <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#51277C' }}>I4</Text>
+                    <Text style={{ fontSize: 14, color: '#2A2333', lineHeight: 1.35, marginTop: 3 }}>Kelas terbit separuh</Text>
+                </Box>
+                <Box style={{ flex: 1, paddingRight: 14 }}>
+                    <Text style={{ fontSize: 14, color: '#6B6478', lineHeight: 1.45 }}>Tidak terdeteksi — berkasnya dikirim atau tidak</Text>
+                </Box>
+                <Box style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 14, color: '#576420', lineHeight: 1.45, fontWeight: 'bold' }}>Mustahil. Publikasi menolak dengan 409 dan menyebut kelasnya</Text>
+                    <Text style={{ fontSize: 12, color: '#6B6478', marginTop: 5 }}>test-status.mjs · 22 assertion</Text>
+                </Box>
+            </Box>
+            <Box style={{ height: 1, background: 'rgba(81,39,124,0.14)' }} />
+
+            <Box style={{ flexDirection: 'row', paddingTop: 16, paddingBottom: 16 }}>
+                <Box style={{ width: 150, paddingRight: 12 }}>
+                    <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#51277C' }}>I5</Text>
+                    <Text style={{ fontSize: 14, color: '#2A2333', lineHeight: 1.35, marginTop: 3 }}>Keadilan beban piket</Text>
+                </Box>
+                <Box style={{ flex: 1, paddingRight: 14 }}>
+                    <Text style={{ fontSize: 14, color: '#6B6478', lineHeight: 1.45 }}>Hanya perasaan, tak bisa diverifikasi — berkasnya mencatat piket, bukan klaim</Text>
+                </Box>
+                <Box style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 14, color: '#576420', lineHeight: 1.45 }}>Laporan yang memeringkat setiap orang tua menurut piket yang diambil, plus siapa yang belum pernah</Text>
+                    <Text style={{ fontSize: 12, color: '#6B6478', marginTop: 5 }}>GET /api/laporan · berbasis klaim</Text>
+                </Box>
+            </Box>
+            <Box style={{ height: 1, background: 'rgba(81,39,124,0.14)' }} />
+
+            <Box style={{ flexDirection: 'row', paddingTop: 16, paddingBottom: 16 }}>
+                <Box style={{ width: 150, paddingRight: 12 }}>
+                    <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#51277C' }}>I6</Text>
+                    <Text style={{ fontSize: 14, color: '#2A2333', lineHeight: 1.35, marginTop: 3 }}>Mengambil tanggal</Text>
+                </Box>
+                <Box style={{ flex: 1, paddingRight: 14 }}>
+                    <Text style={{ fontSize: 14, color: '#6B6478', lineHeight: 1.45 }}>Balasan pertama di grup yang menang, tanpa jejak</Text>
+                </Box>
+                <Box style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 14, color: '#576420', lineHeight: 1.45 }}>Aman dari rebutan di level basis data lewat UNIQUE(schedule_id)</Text>
+                    <Text style={{ fontSize: 12, color: '#6B6478', marginTop: 5 }}>test-claim-cross-class.mjs · 9 assertion</Text>
+                </Box>
+            </Box>
+        </Box>
+
+        {/* kanan: batas yang jujur */}
+        <Box
+            style={{
+                flex: 40,
+                background: 'rgba(81,39,124,0.06)',
+                borderRadius: 10,
+                paddingTop: 20,
+                paddingBottom: 20,
+                paddingLeft: 22,
+                paddingRight: 22,
+                borderTop: '3px solid #F3B26C',
+                flexDirection: 'column',
+            }}
+        >
+            <Text
+                style={{
+                    fontSize: 19,
+                    fontWeight: 'bold',
+                    color: '#c4762a',
+                    fontFamily: 'Trebuchet MS',
+                }}
+            >Batasan yang jujur</Text>
+            <Text style={{ fontSize: 14, color: '#6B6478', lineHeight: 1.45, marginTop: 10 }}>Ekspor PDF belum dibuat — Excel sudah; PDF untuk cetak masih terbuka.</Text>
+            <Text style={{ fontSize: 14, color: '#6B6478', lineHeight: 1.45, marginTop: 9 }}>Tanpa notifikasi push. Aplikasi harus dibuka untuk dibaca.</Text>
+            <Text style={{ fontSize: 14, color: '#6B6478', lineHeight: 1.45, marginTop: 9 }}>Tanpa akun siswa — piket dimodelkan sebagai kewajiban keluarga.</Text>
+            <Text style={{ fontSize: 14, color: '#6B6478', lineHeight: 1.45, marginTop: 9 }}>Tanpa data offline: jadwal basi lebih buruk daripada tidak ada jadwal.</Text>
+            <Text style={{ fontSize: 14, color: '#6B6478', lineHeight: 1.45, marginTop: 9 }}>Tanpa analitik pemakaian, jadi adopsi bisa diukur tapi belum diukur.</Text>
+            <Text style={{ fontSize: 14, color: '#6B6478', lineHeight: 1.45, marginTop: 9 }}>import_logs ditulis tapi belum ditampilkan.</Text>
+            <Text style={{ fontSize: 14, color: '#6B6478', lineHeight: 1.45, marginTop: 9 }}>Satu sekolah: tidak ada kolom school_id, jadi multi-tenant berarti migrasi.</Text>
+            <Box style={{ marginTop: 'auto', flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+                <Box style={{ width: 6, height: 22, background: '#F3B26C' }} />
+                <Text style={{ fontSize: 14, color: '#51277C', lineHeight: 1.4, flex: 1 }}>Deskripsi yang mengaku tanpa celah bukan deskripsi sistem sungguhan.</Text>
+            </Box>
+        </Box>
+    </Box>
+
+    {/* ── zona C ── */}
+    <Box
+        style={{
+            height: 40,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+        }}
+    >
+        <Text style={{ fontSize: 14, color: '#6B6478' }}>Pizza Snack Play · Deskripsi Proyek Visualisasi</Text>
+        <Text style={{ fontSize: 14, color: '#6B6478' }}>15 / 16</Text>
+    </Box>
+</Slide>

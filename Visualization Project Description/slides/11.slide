@@ -1,0 +1,168 @@
+<Slide
+    style={{
+        width: '1280px',
+        height: '720px',
+        background: '#FAF7F2',
+        flexDirection: 'column',
+        paddingTop: 20,
+        paddingBottom: 20,
+        paddingLeft: 64,
+        paddingRight: 64,
+        position: 'relative',
+    }}
+>
+    {/* ── zona A ── */}
+    <Box style={{ height: 110, justifyContent: 'flex-start' }}>
+        <Text
+            style={{
+                fontSize: 34,
+                fontWeight: 'bold',
+                color: '#2A2333',
+                lineHeight: 1.3,
+                fontFamily: 'Trebuchet MS',
+            }}
+        >
+            How prompts drive the generation
+        </Text>
+        <Box style={{ width: 72, height: 6, background: '#51277C', marginTop: 12 }} />
+    </Box>
+
+    {/* ── zona B ── */}
+    <Box style={{ height: 530, flexDirection: 'column', gap: 24 }}>
+        {/* diagram loop */}
+        <Box style={{ height: 270 }}>
+            <svg width={1150} height={270} viewBox='0 0 1150 270'>
+                <text x='0' y='16' fontFamily='Trebuchet MS' fontSize='16' fontWeight='bold' fill='#2A2333'>
+                    The loop
+                </text>
+                <text x='0' y='38' fontFamily='Verdana' fontSize='12' fill='#6B6478'>
+                    The prompt is the specification. A verifier is named before any code is written.
+                </text>
+
+                <rect x='20' y='58' width='190' height='126' rx='8' fill='#FFFFFF' stroke='rgba(81,39,124,0.28)' strokeWidth='1.4' />
+                <text x='36' y='84' fontFamily='Verdana' fontSize='12' fontWeight='bold' fill='#c4762a'>01</text>
+                <text x='36' y='110' fontFamily='Trebuchet MS' fontSize='17' fontWeight='bold' fill='#2A2333'>Domain truth</text>
+                <text x='36' y='136' fontFamily='Verdana' fontSize='12.5' fill='#6B6478'>A human supplies what the AI cannot know:</text>
+                <text x='36' y='154' fontFamily='Verdana' fontSize='12.5' fill='#6B6478'>the real schedule, roles, boundaries.</text>
+
+                <rect x='250' y='58' width='190' height='126' rx='8' fill='#FFFFFF' stroke='#51277C' strokeWidth='1.8' />
+                <text x='266' y='84' fontFamily='Verdana' fontSize='12' fontWeight='bold' fill='#c4762a'>02</text>
+                <text x='266' y='110' fontFamily='Trebuchet MS' fontSize='17' fontWeight='bold' fill='#51277C'>Prompt</text>
+                <text x='266' y='136' fontFamily='Verdana' fontSize='12.5' fill='#6B6478'>Five slots: intent, constraint, evidence,</text>
+                <text x='266' y='154' fontFamily='Verdana' fontSize='12.5' fill='#6B6478'>acceptance, artefacts.</text>
+
+                <rect x='480' y='58' width='190' height='126' rx='8' fill='#FFFFFF' stroke='rgba(81,39,124,0.28)' strokeWidth='1.4' />
+                <text x='496' y='84' fontFamily='Verdana' fontSize='12' fontWeight='bold' fill='#c4762a'>03</text>
+                <text x='496' y='110' fontFamily='Trebuchet MS' fontSize='17' fontWeight='bold' fill='#2A2333'>AI generates</text>
+                <text x='496' y='136' fontFamily='Verdana' fontSize='12.5' fill='#6B6478'>Migration, API, UI, documentation —</text>
+                <text x='496' y='154' fontFamily='Verdana' fontSize='12.5' fill='#6B6478'>and the test that will judge it.</text>
+
+                <rect x='710' y='58' width='190' height='126' rx='8' fill='#FFFFFF' stroke='rgba(81,39,124,0.28)' strokeWidth='1.4' />
+                <text x='726' y='84' fontFamily='Verdana' fontSize='12' fontWeight='bold' fill='#c4762a'>04</text>
+                <text x='726' y='110' fontFamily='Trebuchet MS' fontSize='17' fontWeight='bold' fill='#2A2333'>Verifier runs</text>
+                <text x='726' y='136' fontFamily='Verdana' fontSize='12.5' fill='#6B6478'>tsc, eslint, vite build, and the</text>
+                <text x='726' y='154' fontFamily='Verdana' fontSize='12.5' fill='#6B6478'>suite named in slot four.</text>
+
+                <rect x='940' y='58' width='190' height='126' rx='8' fill='#FFFFFF' stroke='rgba(81,39,124,0.28)' strokeWidth='1.4' />
+                <text x='956' y='84' fontFamily='Verdana' fontSize='12' fontWeight='bold' fill='#c4762a'>05</text>
+                <text x='956' y='110' fontFamily='Trebuchet MS' fontSize='17' fontWeight='bold' fill='#2A2333'>Commit &amp; record</text>
+                <text x='956' y='136' fontFamily='Verdana' fontSize='12.5' fill='#6B6478'>Code, PRD changelog entry and</text>
+                <text x='956' y='154' fontFamily='Verdana' fontSize='12.5' fill='#6B6478'>project memory, together.</text>
+
+                <line x1='214' y1='121' x2='246' y2='121' stroke='#51277C' strokeWidth='1.6' />
+                <polygon points='246,121 238,116 238,126' fill='#51277C' />
+                <line x1='444' y1='121' x2='476' y2='121' stroke='#51277C' strokeWidth='1.6' />
+                <polygon points='476,121 468,116 468,126' fill='#51277C' />
+                <line x1='674' y1='121' x2='706' y2='121' stroke='#51277C' strokeWidth='1.6' />
+                <polygon points='706,121 698,116 698,126' fill='#51277C' />
+                <line x1='904' y1='121' x2='936' y2='121' stroke='#51277C' strokeWidth='1.6' />
+                <polygon points='936,121 928,116 928,126' fill='#51277C' />
+
+                <path d='M1035 184 L1035 226 L115 226 L115 184' fill='none' stroke='#F3B26C' strokeWidth='1.8' strokeDasharray='6 4' />
+                <polygon points='115,184 109,194 121,194' fill='#F3B26C' />
+                <text x='575' y='248' textAnchor='middle' fontFamily='Verdana' fontSize='12.5' fontWeight='bold' fill='#c4762a'>
+                    on failure — correct the prompt, and write the constraint into memory so it cannot recur
+                </text>
+            </svg>
+        </Box>
+
+        {/* dua kartu */}
+        <Box style={{ height: 236, flexDirection: 'row', gap: 20 }}>
+            <Box
+                style={{
+                    flex: 60,
+                    background: '#FFFFFF',
+                    borderRadius: 10,
+                    paddingTop: 22,
+                    paddingBottom: 22,
+                    paddingLeft: 24,
+                    paddingRight: 24,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    borderTop: '3px solid #51277C',
+                    flexDirection: 'column',
+                }}
+            >
+                <Text
+                    style={{
+                        fontSize: 20,
+                        fontWeight: 'bold',
+                        color: '#2A2333',
+                        fontFamily: 'Trebuchet MS',
+                    }}
+                >
+                    Slot 4 is what makes the loop converge
+                </Text>
+                <Text style={{ fontSize: 16, color: '#6B6478', lineHeight: 1.55, marginTop: 12 }}>
+                    A prompt that does not name its verifier produces code that passes nothing in
+                    particular. A prompt that names
+                    <span style={{ color: '#51277C', fontWeight: 'bold' }}> 409 drafts_remaining </span>
+                    produces a test that will still be running a year later.
+                </Text>
+            </Box>
+
+            <Box
+                style={{
+                    flex: 40,
+                    background: 'rgba(81,39,124,0.06)',
+                    borderRadius: 10,
+                    paddingTop: 22,
+                    paddingBottom: 22,
+                    paddingLeft: 24,
+                    paddingRight: 24,
+                    borderTop: '3px solid #F3B26C',
+                    flexDirection: 'column',
+                }}
+            >
+                <Text
+                    style={{
+                        fontSize: 20,
+                        fontWeight: 'bold',
+                        color: '#c4762a',
+                        fontFamily: 'Trebuchet MS',
+                    }}
+                >
+                    A prompt refused by its own constraint
+                </Text>
+                <Text style={{ fontSize: 16, color: '#6B6478', lineHeight: 1.55, marginTop: 12 }}>
+                    “Add a composite foreign key on the duty officer” was rejected: the constraint slot
+                    required the migration to succeed in production, and a table rebuild cannot.
+                </Text>
+            </Box>
+        </Box>
+    </Box>
+
+    {/* ── zona C ── */}
+    <Box
+        style={{
+            height: 40,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+        }}
+    >
+        <Text style={{ fontSize: 14, color: '#6B6478' }}>
+            Pizza Snack Play · Visualization Project Description
+        </Text>
+        <Text style={{ fontSize: 14, color: '#6B6478' }}>11 / 16</Text>
+    </Box>
+</Slide>

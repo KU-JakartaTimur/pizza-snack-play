@@ -1,0 +1,272 @@
+<Slide
+    style={{
+        width: '1280px',
+        height: '720px',
+        background: '#FAF7F2',
+        flexDirection: 'column',
+        paddingTop: 20,
+        paddingBottom: 20,
+        paddingLeft: 64,
+        paddingRight: 64,
+        position: 'relative',
+    }}
+>
+    {/* ── zona A ── */}
+    <Box style={{ height: 110, justifyContent: 'flex-start' }}>
+        <Text
+            style={{
+                fontSize: 34,
+                fontWeight: 'bold',
+                color: '#2A2333',
+                lineHeight: 1.3,
+                fontFamily: 'Trebuchet MS',
+            }}
+        >
+            Three roles, one hard boundary
+        </Text>
+        <Box style={{ width: 72, height: 6, background: '#51277C', marginTop: 12 }} />
+    </Box>
+
+    {/* ── zona B ── */}
+    <Box style={{ height: 530, flexDirection: 'row', gap: 24 }}>
+        {/* kiri: diagram */}
+        <Box
+            style={{
+                flex: 55,
+                background: '#FFFFFF',
+                borderRadius: 10,
+                padding: 22,
+                boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                borderTop: '3px solid #AFC440',
+                justifyContent: 'center',
+                alignItems: 'center',
+            }}
+        >
+            <svg width={520} height={440} viewBox='0 0 520 440'>
+                <text
+                    x='0'
+                    y='16'
+                    fontFamily='Trebuchet MS'
+                    fontSize='16'
+                    fontWeight='bold'
+                    fill='#2A2333'
+                >
+                    Authority, drawn as reach
+                </text>
+                <text x='0' y='38' fontFamily='Verdana' fontSize='12' fill='#6B6478'>
+                    Six classes. Two roles that touch exactly one of them.
+                </text>
+
+                <rect x='0' y='58' width='520' height='34' rx='4' fill='#51277C' />
+                <text
+                    x='14'
+                    y='80'
+                    fontFamily='Trebuchet MS'
+                    fontSize='15'
+                    fontWeight='bold'
+                    fill='#FFFFFF'
+                >
+                    Admin
+                </text>
+                <text x='506' y='80' textAnchor='end' fontFamily='Verdana' fontSize='12' fill='#FFFFFF'>
+                    all six classes · lock and unlock
+                </text>
+
+                <text x='40' y='106' textAnchor='middle' fontFamily='Verdana' fontSize='12' fill='#6B6478'>K1</text>
+                <text x='128' y='106' textAnchor='middle' fontFamily='Verdana' fontSize='12' fill='#6B6478'>K2</text>
+                <text x='216' y='106' textAnchor='middle' fontFamily='Verdana' fontSize='12' fill='#6B6478'>K3</text>
+                <text x='304' y='106' textAnchor='middle' fontFamily='Verdana' fontSize='12' fill='#6B6478'>K4</text>
+                <text x='392' y='106' textAnchor='middle' fontFamily='Verdana' fontSize='12' fill='#6B6478'>K5</text>
+                <text x='480' y='106' textAnchor='middle' fontFamily='Verdana' fontSize='12' fill='#6B6478'>K6</text>
+
+                <rect x='0' y='114' width='80' height='170' fill='rgba(81,39,124,0.07)' stroke='rgba(81,39,124,0.22)' />
+                <rect x='88' y='114' width='80' height='170' fill='#7A45A8' />
+                <rect x='176' y='114' width='80' height='170' fill='rgba(81,39,124,0.07)' stroke='rgba(81,39,124,0.22)' />
+                <rect x='264' y='114' width='80' height='170' fill='rgba(175,196,64,0.40)' stroke='#AFC440' strokeWidth='1.5' />
+                <rect x='352' y='114' width='80' height='170' fill='rgba(81,39,124,0.07)' stroke='rgba(81,39,124,0.22)' />
+                <rect x='440' y='114' width='80' height='170' fill='rgba(81,39,124,0.07)' stroke='rgba(81,39,124,0.22)' />
+
+                <text
+                    x='128'
+                    y='205'
+                    textAnchor='middle'
+                    fontFamily='Trebuchet MS'
+                    fontSize='14'
+                    fontWeight='bold'
+                    fill='#FFFFFF'
+                >
+                    Korlas
+                </text>
+                <text
+                    x='304'
+                    y='205'
+                    textAnchor='middle'
+                    fontFamily='Trebuchet MS'
+                    fontSize='14'
+                    fontWeight='bold'
+                    fill='#576420'
+                >
+                    Parent
+                </text>
+
+                <rect
+                    x='80'
+                    y='112'
+                    width='96'
+                    height='174'
+                    fill='none'
+                    stroke='#F3B26C'
+                    strokeWidth='2'
+                    strokeDasharray='6 4'
+                />
+                <text
+                    x='128'
+                    y='304'
+                    textAnchor='middle'
+                    fontFamily='Verdana'
+                    fontSize='12'
+                    fontWeight='bold'
+                    fill='#c4762a'
+                >
+                    the boundary
+                </text>
+
+                <text x='0' y='362' fontFamily='Verdana' fontSize='13' fill='#6B6478'>
+                    Korlas may create, lock and publish inside its own class — nowhere else.
+                </text>
+                <text x='0' y='386' fontFamily='Verdana' fontSize='13' fill='#6B6478'>
+                    A cross-class write is refused with 403 forbidden_class.
+                </text>
+                <text x='0' y='410' fontFamily='Verdana' fontSize='13' fill='#6B6478'>
+                    Unlock is admin-only, even inside a korlas’s own class.
+                </text>
+            </svg>
+        </Box>
+
+        {/* kanan: tiga poin */}
+        <Box style={{ flex: 45, flexDirection: 'column', gap: 12 }}>
+            <Box
+                style={{
+                    background: '#FFFFFF',
+                    borderRadius: 10,
+                    paddingTop: 18,
+                    paddingBottom: 18,
+                    paddingLeft: 20,
+                    paddingRight: 20,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    borderTop: '3px solid #51277C',
+                    flexDirection: 'column',
+                }}
+            >
+                <Text
+                    style={{
+                        fontSize: 17,
+                        fontWeight: 'bold',
+                        color: '#2A2333',
+                        fontFamily: 'Trebuchet MS',
+                    }}
+                >
+                    Enforced twice — two different jobs
+                </Text>
+                <Text style={{ fontSize: 15, color: '#6B6478', lineHeight: 1.5, marginTop: 8 }}>
+                    requireRole() in the API is the boundary. RoleGate in the UI only hides buttons,
+                    and is documented as cosmetic.
+                </Text>
+            </Box>
+
+            <Box
+                style={{
+                    background: '#FFFFFF',
+                    borderRadius: 10,
+                    paddingTop: 18,
+                    paddingBottom: 18,
+                    paddingLeft: 20,
+                    paddingRight: 20,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    borderTop: '3px solid #51277C',
+                    flexDirection: 'column',
+                }}
+            >
+                <Text
+                    style={{
+                        fontSize: 17,
+                        fontWeight: 'bold',
+                        color: '#2A2333',
+                        fontFamily: 'Trebuchet MS',
+                    }}
+                >
+                    Scope comes from the database row
+                </Text>
+                <Text style={{ fontSize: 15, color: '#6B6478', lineHeight: 1.5, marginTop: 8 }}>
+                    On PUT and DELETE the class is read from the row, never from client input — so a
+                    parameter cannot hijack another class.
+                </Text>
+            </Box>
+
+            <Box
+                style={{
+                    background: '#FFFFFF',
+                    borderRadius: 10,
+                    paddingTop: 18,
+                    paddingBottom: 18,
+                    paddingLeft: 20,
+                    paddingRight: 20,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    borderTop: '3px solid #51277C',
+                    flexDirection: 'column',
+                }}
+            >
+                <Text
+                    style={{
+                        fontSize: 17,
+                        fontWeight: 'bold',
+                        color: '#2A2333',
+                        fontFamily: 'Trebuchet MS',
+                    }}
+                >
+                    The class list has no table
+                </Text>
+                <Text style={{ fontSize: 15, color: '#6B6478', lineHeight: 1.5, marginTop: 8 }}>
+                    Classes are derived from students ∪ users ∪ schedules. A table would only add a
+                    way to desynchronise.
+                </Text>
+            </Box>
+
+            <Box
+                style={{
+                    background: 'rgba(81,39,124,0.06)',
+                    borderRadius: 10,
+                    paddingTop: 16,
+                    paddingBottom: 16,
+                    paddingLeft: 20,
+                    paddingRight: 20,
+                    borderTop: '3px solid #F3B26C',
+                    flexDirection: 'row',
+                    gap: 12,
+                    alignItems: 'center',
+                    marginTop: 'auto',
+                }}
+            >
+                <Box style={{ width: 6, height: 22, background: '#F3B26C' }} />
+                <Text style={{ fontSize: 16, color: '#51277C', lineHeight: 1.4, flex: 1 }}>
+                    Powerful inside one class — powerless outside it.
+                </Text>
+            </Box>
+        </Box>
+    </Box>
+
+    {/* ── zona C ── */}
+    <Box
+        style={{
+            height: 40,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+        }}
+    >
+        <Text style={{ fontSize: 14, color: '#6B6478' }}>
+            Pizza Snack Play · Visualization Project Description
+        </Text>
+        <Text style={{ fontSize: 14, color: '#6B6478' }}>06 / 16</Text>
+    </Box>
+</Slide>

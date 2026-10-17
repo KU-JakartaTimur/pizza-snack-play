@@ -1,0 +1,193 @@
+<Slide
+    style={{
+        width: '1280px',
+        height: '720px',
+        background: '#FAF7F2',
+        flexDirection: 'row',
+        padding: 0,
+        position: 'relative',
+        overflow: 'hidden',
+    }}
+>
+    {/* dekorasi latar */}
+    <Box
+        style={{
+            position: 'absolute',
+            top: -140,
+            right: -120,
+            width: 520,
+            height: 520,
+            borderRadius: 260,
+            background: 'linear-gradient(135deg, #51277C 0%, #7A45A8 100%)',
+            opacity: 0.10,
+        }}
+    />
+    <Box
+        style={{
+            position: 'absolute',
+            bottom: -90,
+            left: -80,
+            width: 360,
+            height: 360,
+            borderRadius: 180,
+            background: 'linear-gradient(135deg, #AFC440 0%, #F3B26C 100%)',
+            opacity: 0.14,
+        }}
+    />
+
+    {/* ── kolom kiri ── */}
+    <Box
+        style={{
+            position: 'relative',
+            zIndex: 1,
+            width: '58%',
+            paddingTop: 92,
+            paddingBottom: 92,
+            paddingLeft: 64,
+            paddingRight: 28,
+            justifyContent: 'center',
+        }}
+    >
+        <Box
+            style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                alignSelf: 'flex-start',
+                background: '#51277C',
+                borderRadius: 999,
+                paddingTop: 8,
+                paddingBottom: 8,
+                paddingLeft: 18,
+                paddingRight: 18,
+            }}
+        >
+            <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#FFFFFF', letterSpacing: 1.4 }}>DESKRIPSI PROYEK VISUALISASI</Text>
+        </Box>
+
+        <Text
+            style={{
+                fontSize: 66,
+                fontWeight: 'bold',
+                color: '#2A2333',
+                lineHeight: 1.12,
+                marginTop: 30,
+                fontFamily: 'Trebuchet MS',
+            }}
+        >
+            Pizza Snack Play
+        </Text>
+
+        <Box style={{ width: 72, height: 6, background: '#AFC440', marginTop: 24 }} />
+
+        <Text
+            style={{
+                fontSize: 20,
+                color: '#6B6478',
+                lineHeight: 1.55,
+                marginTop: 24,
+                fontFamily: 'Verdana',
+            }}
+        >Platform jadwal piket & menu snack sekolah — dihasilkan lewat prompt, diverifikasi oleh uji, dan berjalan di produksi untuk sekolah sungguhan.</Text>
+
+        <Box style={{ flexDirection: 'row', gap: 44, marginTop: 46 }}>
+            <Box style={{ flexDirection: 'column' }}>
+                <Text
+                    style={{
+                        fontSize: 30,
+                        fontWeight: 'bold',
+                        color: '#51277C',
+                        fontFamily: 'Trebuchet MS',
+                    }}
+                >
+                    113
+                </Text>
+                <Text style={{ fontSize: 13, color: '#6B6478', marginTop: 4 }}>commit dalam 31 hari</Text>
+            </Box>
+            <Box style={{ flexDirection: 'column' }}>
+                <Text
+                    style={{
+                        fontSize: 30,
+                        fontWeight: 'bold',
+                        color: '#51277C',
+                        fontFamily: 'Trebuchet MS',
+                    }}
+                >
+                    65
+                </Text>
+                <Text style={{ fontSize: 13, color: '#6B6478', marginTop: 4 }}>endpoint API</Text>
+            </Box>
+            <Box style={{ flexDirection: 'column' }}>
+                <Text
+                    style={{
+                        fontSize: 30,
+                        fontWeight: 'bold',
+                        color: '#c4762a',
+                        fontFamily: 'Trebuchet MS',
+                    }}
+                >
+                    0
+                </Text>
+                <Text style={{ fontSize: 13, color: '#6B6478', marginTop: 4 }}>biaya infrastruktur</Text>
+            </Box>
+        </Box>
+    </Box>
+
+    {/* ── kolom kanan: logo ── */}
+    <Box
+        style={{
+            position: 'relative',
+            zIndex: 1,
+            width: '42%',
+            justifyContent: 'center',
+            alignItems: 'center',
+        }}
+    >
+        <Box
+            style={{
+                position: 'relative',
+                width: 480,
+                height: 480,
+                justifyContent: 'center',
+                alignItems: 'center',
+            }}
+        >
+            <Box style={{ position: 'absolute', top: 0, left: 0, width: 480, height: 480 }}>
+                <svg width={480} height={480} viewBox='0 0 480 480'>
+                    <circle
+                        cx='240'
+                        cy='240'
+                        r='232'
+                        fill='none'
+                        stroke='#51277C'
+                        strokeWidth='1'
+                        opacity='0.16'
+                    />
+                    <circle
+                        cx='240'
+                        cy='240'
+                        r='188'
+                        fill='none'
+                        stroke='#AFC440'
+                        strokeWidth='1.5'
+                        opacity='0.30'
+                    />
+                </svg>
+            </Box>
+            <Box
+                style={{
+                    width: 380,
+                    height: 380,
+                    borderRadius: 190,
+                    background: 'linear-gradient(135deg, #51277C 0%, #7A45A8 100%)',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                }}
+            >
+                <Image
+                    src='assets/app_logo.png'
+                    style={{ width: 250, height: 243, objectFit: 'contain' }}
+                />
+            </Box>
+        </Box>
+    </Box>
+</Slide>

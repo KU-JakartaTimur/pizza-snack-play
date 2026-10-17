@@ -1,0 +1,171 @@
+<Slide
+    style={{
+        width: '1280px',
+        height: '720px',
+        background: '#FAF7F2',
+        flexDirection: 'column',
+        paddingTop: 20,
+        paddingBottom: 20,
+        paddingLeft: 64,
+        paddingRight: 64,
+        position: 'relative',
+    }}
+>
+    {/* ── zona A ── */}
+    <Box style={{ height: 110, justifyContent: 'flex-start' }}>
+        <Text
+            style={{
+                fontSize: 34,
+                fontWeight: 'bold',
+                color: '#2A2333',
+                lineHeight: 1.3,
+                fontFamily: 'Trebuchet MS',
+            }}
+        >Anatomi prompt dan pagar pengaman</Text>
+        <Box style={{ width: 72, height: 6, background: '#51277C', marginTop: 12 }} />
+    </Box>
+
+    {/* ── zona B ── */}
+    <Box style={{ height: 530, flexDirection: 'row', gap: 24 }}>
+        {/* kiri: kartu prompt */}
+        <Box
+            style={{
+                flex: 55,
+                background: '#FFFFFF',
+                borderRadius: 10,
+                padding: 22,
+                boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                borderTop: '3px solid #AFC440',
+                justifyContent: 'center',
+                alignItems: 'center',
+            }}
+        >
+            <svg width={520} height={440} viewBox='0 0 520 440'>
+                <rect x='0' y='0' width='520' height='300' rx='10' fill='#FFFFFF' stroke='rgba(81,39,124,0.30)' strokeWidth='1.4' />
+                <text x='18' y='28' fontFamily='Trebuchet MS' fontSize='13' fontWeight='bold' fill='#51277C'>
+                    PROMPT
+                </text>
+                <text x='502' y='28' textAnchor='end' fontFamily='Verdana' fontSize='12' fill='#6B6478'>satu fitur, satu prompt</text>
+                <line x1='0' y1='44' x2='520' y2='44' stroke='rgba(81,39,124,0.20)' />
+
+                <rect x='18' y='56' width='24' height='24' rx='4' fill='#51277C' />
+                <text x='30' y='73' textAnchor='middle' fontFamily='Verdana' fontSize='12' fontWeight='bold' fill='#FFFFFF'>1</text>
+                <text x='54' y='66' fontFamily='Verdana' fontSize='13' fontWeight='bold' fill='#2A2333'>Niat — apa yang berubah bagi pengguna?</text>
+                <text x='54' y='84' fontFamily='Verdana' fontSize='11.5' fill='#6B6478'>“Admin harus bisa menerbitkan keenam kelas dalam satu tindakan.”</text>
+
+                <rect x='18' y='102' width='24' height='24' rx='4' fill='#51277C' />
+                <text x='30' y='119' textAnchor='middle' fontFamily='Verdana' fontSize='12' fontWeight='bold' fill='#FFFFFF'>2</text>
+                <text x='54' y='112' fontFamily='Verdana' fontSize='13' fontWeight='bold' fill='#2A2333'>Batasan — apa yang tidak boleh rusak?</text>
+                <text x='54' y='130' fontFamily='Verdana' fontSize='11.5' fill='#6B6478'>“Korlas boleh mengunci kelasnya sendiri. Jangan tambah tabel kelas.”</text>
+
+                <rect x='18' y='148' width='24' height='24' rx='4' fill='#51277C' />
+                <text x='30' y='165' textAnchor='middle' fontFamily='Verdana' fontSize='12' fontWeight='bold' fill='#FFFFFF'>3</text>
+                <text x='54' y='158' fontFamily='Verdana' fontSize='13' fontWeight='bold' fill='#2A2333'>Bukti — apa yang menentukan desainnya?</text>
+                <text x='54' y='176' fontFamily='Verdana' fontSize='11.5' fill='#6B6478'>“Baca resolveBulkClasses sebelum memilih di mana cakupan diselesaikan.”</text>
+
+                <rect x='18' y='194' width='24' height='24' rx='4' fill='#51277C' />
+                <text x='30' y='211' textAnchor='middle' fontFamily='Verdana' fontSize='12' fontWeight='bold' fill='#FFFFFF'>4</text>
+                <text x='54' y='204' fontFamily='Verdana' fontSize='13' fontWeight='bold' fill='#2A2333'>Kriteria terima — bagaimana kita tahu ini berhasil?</text>
+                <text x='54' y='222' fontFamily='Verdana' fontSize='11.5' fill='#6B6478'>“409 drafts_remaining menyebut kelasnya; seksi 23 uji mencakupnya.”</text>
+
+                <rect x='18' y='240' width='24' height='24' rx='4' fill='#51277C' />
+                <text x='30' y='257' textAnchor='middle' fontFamily='Verdana' fontSize='12' fontWeight='bold' fill='#FFFFFF'>5</text>
+                <text x='54' y='250' fontFamily='Verdana' fontSize='13' fontWeight='bold' fill='#2A2333'>Artefak — apa lagi yang harus diperbarui?</text>
+                <text x='54' y='268' fontFamily='Verdana' fontSize='11.5' fill='#6B6478'>“PRD, README, UAT_Result, test-api.mjs.”</text>
+
+                <rect x='0' y='316' width='520' height='56' rx='8' fill='rgba(243,178,108,0.20)' stroke='#F3B26C' strokeWidth='1.4' />
+                <text x='18' y='340' fontFamily='Verdana' fontSize='12.5' fontWeight='bold' fill='#8a4a1e'>“Tambahkan foreign key komposit pada petugas”</text>
+                <text x='18' y='359' fontFamily='Verdana' fontSize='12' fill='#8a4a1e'>Ditolak oleh slot 2 — batasannya tidak bisa bertahan di produksi.</text>
+
+                <text x='0' y='404' fontFamily='Verdana' fontSize='12.5' fill='#6B6478'>Setiap slot terlihat di changelog PRD, v1.1 → v1.21.</text>
+            </svg>
+        </Box>
+
+        {/* kanan: guardrails */}
+        <Box style={{ flex: 45, flexDirection: 'column', gap: 14 }}>
+            <Box
+                style={{
+                    background: '#FFFFFF',
+                    borderRadius: 10,
+                    paddingTop: 18,
+                    paddingBottom: 18,
+                    paddingLeft: 20,
+                    paddingRight: 20,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    borderTop: '3px solid #F3B26C',
+                    flexDirection: 'column',
+                }}
+            >
+                <Text
+                    style={{
+                        fontSize: 17,
+                        fontWeight: 'bold',
+                        color: '#c4762a',
+                        fontFamily: 'Trebuchet MS',
+                    }}
+                >Enam pagar pengaman di dalam prompt</Text>
+                <Box style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
+                    <Box style={{ width: 5, height: 5, background: '#F3B26C', marginTop: 8 }} />
+                    <Text style={{ fontSize: 14, color: '#6B6478', lineHeight: 1.45, flex: 1 }}>Jangan terima nama petugas dari klien — petugas adalah relasi, bukan string</Text>
+                </Box>
+                <Box style={{ flexDirection: 'row', gap: 10, marginTop: 9 }}>
+                    <Box style={{ width: 5, height: 5, background: '#F3B26C', marginTop: 8 }} />
+                    <Text style={{ fontSize: 14, color: '#6B6478', lineHeight: 1.45, flex: 1 }}>Jangan rebuild tabel di dalam migrasi D1</Text>
+                </Box>
+                <Box style={{ flexDirection: 'row', gap: 10, marginTop: 9 }}>
+                    <Box style={{ width: 5, height: 5, background: '#F3B26C', marginTop: 8 }} />
+                    <Text style={{ fontSize: 14, color: '#6B6478', lineHeight: 1.45, flex: 1 }}>Jangan biarkan 409 menjadi skipped pada operasi rentang</Text>
+                </Box>
+                <Box style={{ flexDirection: 'row', gap: 10, marginTop: 9 }}>
+                    <Box style={{ width: 5, height: 5, background: '#F3B26C', marginTop: 8 }} />
+                    <Text style={{ fontSize: 14, color: '#6B6478', lineHeight: 1.45, flex: 1 }}>Jangan biarkan UI jadi satu-satunya penegak</Text>
+                </Box>
+                <Box style={{ flexDirection: 'row', gap: 10, marginTop: 9 }}>
+                    <Box style={{ width: 5, height: 5, background: '#F3B26C', marginTop: 8 }} />
+                    <Text style={{ fontSize: 14, color: '#6B6478', lineHeight: 1.45, flex: 1 }}>Selalu build sebelum deploy — wrangler mengunggah dist/ apa adanya</Text>
+                </Box>
+                <Box style={{ flexDirection: 'row', gap: 10, marginTop: 9 }}>
+                    <Box style={{ width: 5, height: 5, background: '#F3B26C', marginTop: 8 }} />
+                    <Text style={{ fontSize: 14, color: '#6B6478', lineHeight: 1.45, flex: 1 }}>Jangan percaya keluaran wrangler yang dipotong pipe — parse JSON utuh</Text>
+                </Box>
+            </Box>
+
+            <Box
+                style={{
+                    background: 'rgba(81,39,124,0.06)',
+                    borderRadius: 10,
+                    paddingTop: 18,
+                    paddingBottom: 18,
+                    paddingLeft: 20,
+                    paddingRight: 20,
+                    borderTop: '3px solid #51277C',
+                    flexDirection: 'column',
+                    marginTop: 'auto',
+                }}
+            >
+                <Text
+                    style={{
+                        fontSize: 16,
+                        fontWeight: 'bold',
+                        color: '#51277C',
+                        fontFamily: 'Trebuchet MS',
+                    }}
+                >Kenapa generasinya bisa diaudit</Text>
+                <Text style={{ fontSize: 14, color: '#6B6478', lineHeight: 1.5, marginTop: 8 }}>Changelog PRD v1.1 → v1.21 · 113 commit · memori proyek. Beberapa entri changelog secara eksplisit menarik kembali klaim sebelumnya, jadi catatannya menunjukkan kesalahannya sendiri.</Text>
+            </Box>
+        </Box>
+    </Box>
+
+    {/* ── zona C ── */}
+    <Box
+        style={{
+            height: 40,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+        }}
+    >
+        <Text style={{ fontSize: 14, color: '#6B6478' }}>Pizza Snack Play · Deskripsi Proyek Visualisasi</Text>
+        <Text style={{ fontSize: 14, color: '#6B6478' }}>12 / 16</Text>
+    </Box>
+</Slide>

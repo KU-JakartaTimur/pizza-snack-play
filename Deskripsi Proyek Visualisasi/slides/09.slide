@@ -1,0 +1,222 @@
+<Slide
+    style={{
+        width: '1280px',
+        height: '720px',
+        background: '#FAF7F2',
+        flexDirection: 'column',
+        paddingTop: 20,
+        paddingBottom: 20,
+        paddingLeft: 64,
+        paddingRight: 64,
+        position: 'relative',
+    }}
+>
+    {/* ── zona A ── */}
+    <Box style={{ height: 110, justifyContent: 'flex-start' }}>
+        <Text
+            style={{
+                fontSize: 34,
+                fontWeight: 'bold',
+                color: '#2A2333',
+                lineHeight: 1.3,
+                fontFamily: 'Trebuchet MS',
+            }}
+        >
+            draft → locked → published
+        </Text>
+        <Box style={{ width: 72, height: 6, background: '#51277C', marginTop: 12 }} />
+    </Box>
+
+    {/* ── zona B ── */}
+    <Box style={{ height: 530, flexDirection: 'row', gap: 20 }}>
+        {/* kiri: tiga aturan */}
+        <Box style={{ flex: 40, flexDirection: 'column', gap: 12 }}>
+            <Box
+                style={{
+                    background: '#FFFFFF',
+                    borderRadius: 10,
+                    paddingTop: 18,
+                    paddingBottom: 18,
+                    paddingLeft: 20,
+                    paddingRight: 20,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    borderTop: '3px solid #F3B26C',
+                    flexDirection: 'column',
+                }}
+            >
+                <Text
+                    style={{
+                        fontSize: 17,
+                        fontWeight: 'bold',
+                        color: '#c4762a',
+                        fontFamily: 'Trebuchet MS',
+                    }}
+                >Aturan yang paling penting</Text>
+                <Text style={{ fontSize: 15, color: '#6B6478', lineHeight: 1.5, marginTop: 8 }}>Publikasi menolak dengan 409 drafts_remaining selama masih ada baris draft — dan menyebut kelas penyebabnya. Kelas yang terbit separuh mustahil secara struktural.</Text>
+            </Box>
+
+            <Box
+                style={{
+                    background: '#FFFFFF',
+                    borderRadius: 10,
+                    paddingTop: 18,
+                    paddingBottom: 18,
+                    paddingLeft: 20,
+                    paddingRight: 20,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    borderTop: '3px solid #F3B26C',
+                    flexDirection: 'column',
+                }}
+            >
+                <Text
+                    style={{
+                        fontSize: 17,
+                        fontWeight: 'bold',
+                        color: '#c4762a',
+                        fontFamily: 'Trebuchet MS',
+                    }}
+                >Satu pengecualian yang disengaja</Text>
+                <Text style={{ fontSize: 15, color: '#6B6478', lineHeight: 1.5, marginTop: 8 }}>Pada baris terkunci, hanya petugasnya saja yang masih boleh diisi — piket sering baru terisi setelah pengumuman. Patch campuran tetap ditolak.</Text>
+            </Box>
+
+            <Box
+                style={{
+                    background: '#FFFFFF',
+                    borderRadius: 10,
+                    paddingTop: 18,
+                    paddingBottom: 18,
+                    paddingLeft: 20,
+                    paddingRight: 20,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    borderTop: '3px solid #51277C',
+                    flexDirection: 'column',
+                }}
+            >
+                <Text
+                    style={{
+                        fontSize: 17,
+                        fontWeight: 'bold',
+                        color: '#51277C',
+                        fontFamily: 'Trebuchet MS',
+                    }}
+                >Dua semantik aksi massal, sengaja dibedakan</Text>
+                <Text style={{ fontSize: 15, color: '#6B6478', lineHeight: 1.5, marginTop: 8 }}>Operasi berbasis rentang gagal dengan 409. Operasi baris terpilih melewati lalu melaporkan — karena mencentang baris adalah pilihan eksplisit.</Text>
+            </Box>
+        </Box>
+
+        {/* kanan: mesin status */}
+        <Box
+            style={{
+                flex: 60,
+                background: '#FFFFFF',
+                borderRadius: 10,
+                padding: 22,
+                boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                borderTop: '3px solid #AFC440',
+                justifyContent: 'center',
+                alignItems: 'center',
+            }}
+        >
+            <svg width={620} height={420} viewBox='0 0 620 420'>
+                <text
+                    x='0'
+                    y='18'
+                    fontFamily='Trebuchet MS'
+                    fontSize='16'
+                    fontWeight='bold'
+                    fill='#2A2333'
+                >Siklus hidup jadwal</text>
+                <text x='0' y='40' fontFamily='Verdana' fontSize='12' fill='#6B6478'>Setiap baris mulai dari draft. Publikasi satu-satunya jalan keluar.</text>
+
+                <rect x='0' y='66' width='170' height='80' rx='8' fill='#FFFFFF' stroke='#51277C' strokeWidth='1.6' />
+                <text
+                    x='85'
+                    y='104'
+                    textAnchor='middle'
+                    fontFamily='Trebuchet MS'
+                    fontSize='20'
+                    fontWeight='bold'
+                    fill='#51277C'
+                >
+                    draft
+                </text>
+                <text x='85' y='128' textAnchor='middle' fontFamily='Verdana' fontSize='12' fill='#6B6478'>bisa disunting penuh</text>
+
+                <rect x='225' y='66' width='170' height='80' rx='8' fill='#FFFFFF' stroke='#51277C' strokeWidth='1.6' />
+                <text
+                    x='310'
+                    y='104'
+                    textAnchor='middle'
+                    fontFamily='Trebuchet MS'
+                    fontSize='20'
+                    fontWeight='bold'
+                    fill='#51277C'
+                >
+                    locked
+                </text>
+                <text x='310' y='128' textAnchor='middle' fontFamily='Verdana' fontSize='12' fill='#6B6478'>dibekukan</text>
+
+                <rect x='450' y='66' width='170' height='80' rx='8' fill='#F3B26C' stroke='#d97f2f' strokeWidth='1.6' />
+                <text
+                    x='535'
+                    y='104'
+                    textAnchor='middle'
+                    fontFamily='Trebuchet MS'
+                    fontSize='20'
+                    fontWeight='bold'
+                    fill='#3c1e0c'
+                >
+                    published
+                </text>
+                <text x='535' y='128' textAnchor='middle' fontFamily='Verdana' fontSize='12' fill='#6f3c1c'>terlihat oleh orang tua</text>
+
+                <line x1='174' y1='106' x2='221' y2='106' stroke='#51277C' strokeWidth='1.6' />
+                <polygon points='221,106 213,101 213,111' fill='#51277C' />
+                <text x='197' y='94' textAnchor='middle' fontFamily='Verdana' fontSize='12' fontWeight='bold' fill='#6B6478'>kunci</text>
+
+                <line x1='399' y1='106' x2='446' y2='106' stroke='#51277C' strokeWidth='1.6' />
+                <polygon points='446,106 438,101 438,111' fill='#51277C' />
+                <text x='422' y='94' textAnchor='middle' fontFamily='Verdana' fontSize='12' fontWeight='bold' fill='#6B6478'>terbitkan</text>
+
+                <path
+                    d='M535 150 L535 196 L85 196 L85 150'
+                    fill='none'
+                    stroke='#F3B26C'
+                    strokeWidth='1.6'
+                    strokeDasharray='6 4'
+                />
+                <polygon points='85,150 80,159 90,159' fill='#F3B26C' />
+                <text
+                    x='310'
+                    y='216'
+                    textAnchor='middle'
+                    fontFamily='Verdana'
+                    fontSize='12'
+                    fontWeight='bold'
+                    fill='#c4762a'
+                >buka kunci — hanya admin</text>
+
+                <line x1='0' y1='246' x2='620' y2='246' stroke='rgba(81,39,124,0.18)' />
+
+                <text x='0' y='278' fontFamily='Verdana' fontSize='13' fill='#6B6478'>terbit → 409 drafts_remaining, kelas penyebab disebut</text>
+                <text x='0' y='306' fontFamily='Verdana' fontSize='13' fill='#6B6478'>PUT / DELETE pada baris terkunci → 409 not_editable</text>
+                <text x='0' y='334' fontFamily='Verdana' fontSize='13' fill='#6B6478'>pengecualian: hanya petugasnya yang masih boleh diisi</text>
+                <text x='0' y='362' fontFamily='Verdana' fontSize='13' fill='#6B6478'>syarat status ditulis di klausa WHERE SQL</text>
+                <text x='0' y='396' fontFamily='Verdana' fontSize='13' fontWeight='bold' fill='#51277C'>Ditentukan setStatusByIds() — bukan oleh pemanggil.</text>
+            </svg>
+        </Box>
+    </Box>
+
+    {/* ── zona C ── */}
+    <Box
+        style={{
+            height: 40,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+        }}
+    >
+        <Text style={{ fontSize: 14, color: '#6B6478' }}>Pizza Snack Play · Deskripsi Proyek Visualisasi</Text>
+        <Text style={{ fontSize: 14, color: '#6B6478' }}>09 / 16</Text>
+    </Box>
+</Slide>

@@ -231,3 +231,7 @@ brag-output/
 # Skrip sekali pakai + tangkapan layar di `outputs/`. Berkas yang sudah terlacak
 # tetap terlacak; berkas baru di sini tidak ikut berversi.
 outputs/
+
+# Bytecode Python dari skrip di `scripts/` (generate-cover.py, dll).
+__pycache__/
+*.pyc

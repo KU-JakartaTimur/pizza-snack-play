@@ -1,0 +1,124 @@
+<Slide
+    style={{
+        width: '1280px',
+        height: '720px',
+        background: 'linear-gradient(135deg, #51277C 0%, #7A45A8 100%)',
+        flexDirection: 'column',
+        paddingTop: 20,
+        paddingBottom: 20,
+        paddingLeft: 64,
+        paddingRight: 64,
+        position: 'relative',
+        overflow: 'hidden',
+    }}
+>
+    {/* visual latar */}
+    <Box
+        style={{
+            position: 'absolute',
+            top: -190,
+            right: -140,
+            width: 560,
+            height: 560,
+            borderRadius: 280,
+            background: 'linear-gradient(135deg, #AFC440 0%, #F3B26C 100%)',
+            opacity: 0.16,
+        }}
+    />
+    <Box
+        style={{
+            position: 'absolute',
+            bottom: -230,
+            left: -150,
+            width: 620,
+            height: 620,
+            borderRadius: 310,
+            background: '#FFFFFF',
+            opacity: 0.06,
+        }}
+    />
+
+    {/* isi */}
+    <Box
+        style={{
+            position: 'relative',
+            zIndex: 1,
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+        }}
+    >
+        <Box
+            style={{
+                width: 264,
+                height: 264,
+                borderRadius: 132,
+                background: 'rgba(255,255,255,0.14)',
+                justifyContent: 'center',
+                alignItems: 'center',
+            }}
+        >
+            <Image
+                src='assets/app_logo.png'
+                style={{ width: 196, height: 190, objectFit: 'contain' }}
+            />
+        </Box>
+
+        <Text
+            style={{
+                fontSize: 46,
+                fontWeight: 'bold',
+                color: '#FFFFFF',
+                lineHeight: 1.2,
+                marginTop: 40,
+                textAlign: 'center',
+                fontFamily: 'Trebuchet MS',
+            }}
+        >Kewajiban bersama, akhirnya bisa ditanyakan.</Text>
+
+        <Box style={{ width: 72, height: 6, background: '#AFC440', marginTop: 26 }} />
+
+        <Text
+            style={{
+                fontSize: 18,
+                color: 'rgba(255,255,255,0.84)',
+                lineHeight: 1.6,
+                marginTop: 26,
+                textAlign: 'center',
+                maxWidth: 760,
+                fontFamily: 'Verdana',
+            }}
+        >Berjalan di produksi untuk satu sekolah, dibangun dalam 31 hari lewat prompt — dan setiap angka di dek ini bisa dilacak ke berkas di repositori.</Text>
+
+        <Box
+            style={{
+                marginTop: 34,
+                background: 'rgba(255,255,255,0.12)',
+                borderRadius: 999,
+                paddingTop: 12,
+                paddingBottom: 12,
+                paddingLeft: 26,
+                paddingRight: 26,
+            }}
+        >
+            <Text style={{ fontSize: 15, color: '#FFFFFF', fontFamily: 'Verdana' }}>
+                pizza-snack-play.topidesta.workers.dev
+            </Text>
+        </Box>
+    </Box>
+
+    {/* footer */}
+    <Box
+        style={{
+            position: 'relative',
+            zIndex: 1,
+            height: 40,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+        }}
+    >
+        <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)' }}>Pizza Snack Play · Deskripsi Proyek Visualisasi</Text>
+        <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)' }}>16 / 16</Text>
+    </Box>
+</Slide>

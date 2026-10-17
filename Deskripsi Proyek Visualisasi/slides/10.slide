@@ -1,0 +1,196 @@
+<Slide
+    style={{
+        width: '1280px',
+        height: '720px',
+        background: '#FAF7F2',
+        flexDirection: 'column',
+        paddingTop: 20,
+        paddingBottom: 20,
+        paddingLeft: 64,
+        paddingRight: 64,
+        position: 'relative',
+    }}
+>
+    {/* ── zona A ── */}
+    <Box style={{ height: 110, justifyContent: 'flex-start' }}>
+        <Text
+            style={{
+                fontSize: 34,
+                fontWeight: 'bold',
+                color: '#2A2333',
+                lineHeight: 1.3,
+                fontFamily: 'Trebuchet MS',
+            }}
+        >Sembilan domain, 65 endpoint</Text>
+        <Box style={{ width: 72, height: 6, background: '#51277C', marginTop: 12 }} />
+    </Box>
+
+    {/* ── zona B ── */}
+    <Box style={{ height: 530, flexDirection: 'row', gap: 24 }}>
+        {/* kiri: tumpukan lapisan */}
+        <Box
+            style={{
+                flex: 55,
+                background: '#FFFFFF',
+                borderRadius: 10,
+                padding: 22,
+                boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                borderTop: '3px solid #AFC440',
+                justifyContent: 'center',
+                alignItems: 'center',
+            }}
+        >
+            <svg width={560} height={440} viewBox='0 0 560 440'>
+                <text x='0' y='14' fontFamily='Trebuchet MS' fontSize='14' fontWeight='bold' fill='#2A2333'>
+                    Browser — React 19 SPA
+                </text>
+                <text x='560' y='14' textAnchor='end' fontFamily='Verdana' fontSize='12' fill='#6B6478'>
+                    HTTPS · JWT Bearer · /api
+                </text>
+
+                <rect x='0' y='48' width='560' height='296' rx='10' fill='rgba(81,39,124,0.06)' stroke='rgba(81,39,124,0.30)' strokeWidth='1.4' strokeDasharray='7 5' />
+                <text x='16' y='72' fontFamily='Trebuchet MS' fontSize='13' fontWeight='bold' fill='#51277C'>
+                    Cloudflare Worker · Hono router
+                </text>
+
+                <rect x='16' y='86' width='528' height='48' rx='6' fill='#FFFFFF' stroke='rgba(81,39,124,0.24)' />
+                <text x='32' y='115' fontFamily='Verdana' fontSize='13' fontWeight='bold' fill='#2A2333'>
+                    middleware/
+                </text>
+                <text x='528' y='115' textAnchor='end' fontFamily='Verdana' fontSize='12' fill='#6B6478'>verifikasi JWT · penjaga peran · cakupan kelas</text>
+
+                <rect x='16' y='142' width='528' height='48' rx='6' fill='#FFFFFF' stroke='#51277C' strokeWidth='1.8' />
+                <text x='32' y='171' fontFamily='Verdana' fontSize='13' fontWeight='bold' fill='#2A2333'>
+                    route.ts
+                </text>
+                <text x='528' y='171' textAnchor='end' fontFamily='Verdana' fontSize='12' fontWeight='bold' fill='#c4762a'>requireRole() — batas yang sebenarnya</text>
+
+                <rect x='16' y='198' width='528' height='48' rx='6' fill='#FFFFFF' stroke='rgba(81,39,124,0.24)' />
+                <text x='32' y='227' fontFamily='Verdana' fontSize='13' fontWeight='bold' fill='#2A2333'>
+                    controller + service
+                </text>
+                <text x='528' y='227' textAnchor='end' fontFamily='Verdana' fontSize='12' fill='#6B6478'>penyusunan DTO · aturan bisnis · gerbang terbit</text>
+
+                <rect x='16' y='254' width='528' height='48' rx='6' fill='#FFFFFF' stroke='rgba(81,39,124,0.24)' />
+                <text x='32' y='283' fontFamily='Verdana' fontSize='13' fontWeight='bold' fill='#2A2333'>
+                    repository.ts
+                </text>
+                <text x='528' y='283' textAnchor='end' fontFamily='Verdana' fontSize='12' fill='#6B6478'>hanya SQL · syarat status di WHERE</text>
+
+                <line x1='280' y1='348' x2='280' y2='368' stroke='#51277C' strokeWidth='1.6' />
+                <polygon points='280,372 275,362 285,362' fill='#51277C' />
+
+                <rect x='0' y='376' width='560' height='48' rx='8' fill='#FFFFFF' stroke='#AFC440' strokeWidth='1.8' />
+                <text x='280' y='405' textAnchor='middle' fontFamily='Trebuchet MS' fontSize='14' fontWeight='bold' fill='#576420'>Cloudflare D1 · 13 tabel · 9 migrasi</text>
+            </svg>
+        </Box>
+
+        {/* kanan: angka + alasan */}
+        <Box style={{ flex: 45, flexDirection: 'column', gap: 14 }}>
+            <Box
+                style={{
+                    background: '#FFFFFF',
+                    borderRadius: 10,
+                    paddingTop: 18,
+                    paddingBottom: 18,
+                    paddingLeft: 20,
+                    paddingRight: 20,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    borderTop: '3px solid #51277C',
+                    flexDirection: 'column',
+                }}
+            >
+                <Text
+                    style={{
+                        fontSize: 17,
+                        fontWeight: 'bold',
+                        color: '#2A2333',
+                        fontFamily: 'Trebuchet MS',
+                    }}
+                >65 endpoint, 9 domain</Text>
+                <Box style={{ flexDirection: 'row', gap: 18, marginTop: 14 }}>
+                    <Box style={{ flexDirection: 'column' }}>
+                        <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#51277C', fontFamily: 'Trebuchet MS' }}>
+                            29
+                        </Text>
+                        <Text style={{ fontSize: 12, color: '#6B6478', marginTop: 2 }}>GET</Text>
+                    </Box>
+                    <Box style={{ flexDirection: 'column' }}>
+                        <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#51277C', fontFamily: 'Trebuchet MS' }}>
+                            22
+                        </Text>
+                        <Text style={{ fontSize: 12, color: '#6B6478', marginTop: 2 }}>POST</Text>
+                    </Box>
+                    <Box style={{ flexDirection: 'column' }}>
+                        <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#51277C', fontFamily: 'Trebuchet MS' }}>
+                            7
+                        </Text>
+                        <Text style={{ fontSize: 12, color: '#6B6478', marginTop: 2 }}>PUT</Text>
+                    </Box>
+                    <Box style={{ flexDirection: 'column' }}>
+                        <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#51277C', fontFamily: 'Trebuchet MS' }}>
+                            7
+                        </Text>
+                        <Text style={{ fontSize: 12, color: '#6B6478', marginTop: 2 }}>DELETE</Text>
+                    </Box>
+                </Box>
+                <Text style={{ fontSize: 13, color: '#6B6478', marginTop: 12, lineHeight: 1.45 }}>
+                    auth · catalog · claims · classes · laporan · parents · profile · schedules · stats
+                </Text>
+            </Box>
+
+            <Box
+                style={{
+                    background: '#FFFFFF',
+                    borderRadius: 10,
+                    paddingTop: 18,
+                    paddingBottom: 18,
+                    paddingLeft: 20,
+                    paddingRight: 20,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    borderTop: '3px solid #AFC440',
+                    flexDirection: 'column',
+                }}
+            >
+                <Text
+                    style={{
+                        fontSize: 17,
+                        fontWeight: 'bold',
+                        color: '#2A2333',
+                        fontFamily: 'Trebuchet MS',
+                    }}
+                >Kenapa empat lapisan</Text>
+                <Text style={{ fontSize: 15, color: '#6B6478', lineHeight: 1.5, marginTop: 8 }}>Wewenang di route.ts, cakupan di classScope, aturan di service, syarat status di klausa WHERE. Peninjau yang mencari sebuah aturan tahu berkas mana yang harus dibuka.</Text>
+            </Box>
+
+            <Box
+                style={{
+                    background: 'rgba(81,39,124,0.06)',
+                    borderRadius: 10,
+                    paddingTop: 18,
+                    paddingBottom: 18,
+                    paddingLeft: 20,
+                    paddingRight: 20,
+                    borderTop: '3px solid #F3B26C',
+                    flexDirection: 'column',
+                    marginTop: 'auto',
+                }}
+            >
+                <Text style={{ fontSize: 15, color: '#51277C', lineHeight: 1.5 }}>Seluruh sekolah muat di tier gratis Cloudflare — Workers, D1, dan pemasangan PWA. Tanpa server, tanpa lisensi, tanpa app store.</Text>
+            </Box>
+        </Box>
+    </Box>
+
+    {/* ── zona C ── */}
+    <Box
+        style={{
+            height: 40,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+        }}
+    >
+        <Text style={{ fontSize: 14, color: '#6B6478' }}>Pizza Snack Play · Deskripsi Proyek Visualisasi</Text>
+        <Text style={{ fontSize: 14, color: '#6B6478' }}>10 / 16</Text>
+    </Box>
+</Slide>

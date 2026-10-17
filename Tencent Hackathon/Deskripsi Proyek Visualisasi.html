@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deskripsi Proyek Visualisasi — Pizza Snack Play</title>
+<style>
+  :root{
+    --bg:#FAF7F2;
+    --surface:#FFFFFF;
+    --brand:#51277C;
+    --brand-2:#7A45A8;
+    --brand-soft:rgba(81,39,124,.06);
+    --brand-line:rgba(81,39,124,.16);
+    --accent:#AFC440;
+    --highlight:#F3B26C;
+    --ink:#2A2333;
+    --muted:#6B6478;
+    --radius:10px;
+    --shadow:0 4px 20px rgba(0,0,0,.08);
+    --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,"Cascadia Mono",Consolas,"Liberation Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--sans);font-size:16px;line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:0 28px}
+
+  /* ---------- hero ---------- */
+  .hero{
+    position:relative;overflow:hidden;
+    background:linear-gradient(135deg,#51277C 0%,#7A45A8 100%);
+    color:#fff;padding:64px 0 56px;
+  }
+  .hero::after{
+    content:"";position:absolute;right:-120px;bottom:-160px;
+    width:420px;height:420px;border-radius:50%;
+    background:linear-gradient(135deg,#AFC440 0%,#F3B26C 100%);opacity:.22;
+  }
+  .hero-inner{position:relative;z-index:1;display:flex;gap:36px;align-items:center}
+  .hero-logo{
+    width:150px;height:150px;flex:0 0 auto;border-radius:16px;
+    background:rgba(255,255,255,.12);padding:10px;object-fit:contain;
+  }
+  .badge{
+    display:inline-block;font-size:12px;letter-spacing:.09em;text-transform:uppercase;
+    font-weight:600;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);
+    padding:5px 12px;border-radius:999px;margin-bottom:16px;
+  }
+  .hero h1{margin:0 0 6px;font-size:44px;line-height:1.15;letter-spacing:-.02em}
+  .hero .sub{margin:0;font-size:19px;color:rgba(255,255,255,.86);max-width:620px}
+  .hero .url{margin-top:16px;font-family:var(--mono);font-size:13px;color:rgba(255,255,255,.7)}
+
+  /* ---------- meta strip ---------- */
+  .meta{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+    background:var(--brand-line);border:1px solid var(--brand-line);
+    border-radius:var(--radius);overflow:hidden;margin:-28px 0 0;position:relative;z-index:2;
+    box-shadow:var(--shadow);
+  }
+  .meta div{background:var(--surface);padding:16px 18px}
+  .meta dt{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 4px;font-weight:600}
+  .meta dd{margin:0;font-size:17px;font-weight:700;color:var(--brand)}
+
+  /* ---------- toc ---------- */
+  nav.toc{
+    position:sticky;top:0;z-index:20;background:rgba(250,247,242,.94);
+    backdrop-filter:blur(8px);border-bottom:1px solid var(--brand-line);margin-top:40px;
+  }
+  nav.toc ul{display:flex;gap:8px;list-style:none;margin:0;padding:10px 0;overflow-x:auto}
+  nav.toc a{
+    color:var(--muted);text-decoration:none;font-size:14px;font-weight:600;
+    padding:6px 12px;border-radius:999px;white-space:nowrap;
+  }
+  nav.toc a:hover{background:var(--brand-soft);color:var(--brand)}
+
+  /* ---------- sections ---------- */
+  section{padding:56px 0 8px}
+  h2{
+    font-size:14px;letter-spacing:.1em;text-transform:uppercase;color:var(--brand);
+    margin:0 0 6px;font-weight:700;
+  }
+  h2 .num{color:var(--highlight)}
+  .lede{font-size:26px;font-weight:700;line-height:1.3;margin:0 0 28px;letter-spacing:-.01em;max-width:820px}
+  h3{font-size:20px;margin:40px 0 14px;letter-spacing:-.01em}
+  h4{font-size:15px;margin:26px 0 10px;color:var(--brand);letter-spacing:.01em}
+  p{margin:0 0 14px}
+  .muted{color:var(--muted)}
+  small{font-size:13px;color:var(--muted);line-height:1.55;display:block}
+  code{font-family:var(--mono);font-size:.87em;background:var(--brand-soft);padding:1px 5px;border-radius:4px;color:var(--brand)}
+
+  /* ---------- cards ---------- */
+  .grid{display:grid;gap:14px}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g4{grid-template-columns:repeat(4,1fr)}
+  .card{
+    background:var(--surface);border:1px solid var(--brand-line);border-radius:var(--radius);
+    padding:18px 20px;box-shadow:var(--shadow);border-top:3px solid var(--accent);
+  }
+  .card.brand{border-top-color:var(--brand)}
+  .card.hot{border-top-color:var(--highlight)}
+  .card h4{margin:0 0 8px;font-size:15px;color:var(--ink)}
+  .card .idx{font-family:var(--mono);font-size:11px;color:var(--muted);display:block;margin-bottom:6px}
+  .card p{margin:0;font-size:14px;color:var(--muted);line-height:1.6}
+
+  /* ---------- tables ---------- */
+  .tbl-wrap{overflow-x:auto;border:1px solid var(--brand-line);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow)}
+  table{border-collapse:collapse;width:100%;font-size:14px}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--brand-line);vertical-align:top}
+  thead th{background:var(--brand-soft);color:var(--brand);font-size:12px;letter-spacing:.05em;text-transform:uppercase;font-weight:700}
+  tbody tr:last-child td{border-bottom:none}
+  td strong{color:var(--brand)}
+  .yes{color:#4d7a10;font-weight:600}
+  .no{color:#a8341f;font-weight:600}
+
+  /* ---------- callout ---------- */
+  .callout{
+    background:var(--surface);border-left:4px solid var(--brand);border-radius:0 var(--radius) var(--radius) 0;
+    padding:20px 24px;margin:24px 0;box-shadow:var(--shadow);
+  }
+  .callout .q{font-size:20px;font-weight:700;line-height:1.4;margin:0}
+  .callout p{margin:10px 0 0;font-size:14px;color:var(--muted)}
+  .callout.warn{border-left-color:var(--highlight)}
+
+  /* ---------- stats ---------- */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:24px 0}
+  .stat{background:var(--surface);border:1px solid var(--brand-line);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow)}
+  .stat .v{font-size:32px;font-weight:700;color:var(--brand);line-height:1.1;letter-spacing:-.02em}
+  .stat .k{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.4}
+  .stat.hot .v{color:#c4762a}
+  .stat.green .v{color:#6e7e28}
+
+  /* ---------- charts ---------- */
+  .chart{background:var(--surface);border:1px solid var(--brand-line);border-radius:var(--radius);padding:22px 24px;box-shadow:var(--shadow);margin:20px 0}
+  .chart h4{margin:0 0 4px;color:var(--ink);font-size:15px}
+  .chart .cap{font-size:12px;color:var(--muted);margin-bottom:18px}
+
+  .stack{display:flex;height:44px;border-radius:6px;overflow:hidden;border:1px solid var(--brand-line)}
+  .stack span{display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff}
+  .legend{display:flex;flex-wrap:wrap;gap:18px;margin-top:14px;font-size:13px;color:var(--muted)}
+  .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:7px;vertical-align:-1px}
+
+  .bars{display:grid;gap:9px}
+  .bar-row{display:grid;grid-template-columns:210px 1fr 62px;align-items:center;gap:12px;font-size:13px}
+  .bar-row .lbl{color:var(--ink);text-align:right}
+  .bar-row .track{background:var(--brand-soft);border-radius:4px;height:20px;overflow:hidden}
+  .bar-row .fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#51277C 0%,#7A45A8 100%)}
+  .bar-row .fill.g{background:linear-gradient(90deg,#8fa332 0%,#AFC440 100%)}
+  .bar-row .val{font-family:var(--mono);font-size:12px;color:var(--muted);text-align:right}
+
+  /* ---------- pipeline ---------- */
+  .pipe{display:flex;align-items:stretch;gap:0;margin:22px 0;flex-wrap:wrap}
+  .pipe .step{
+    flex:1 1 0;min-width:150px;background:var(--surface);border:1px solid var(--brand-line);
+    border-radius:var(--radius);padding:14px 14px;position:relative;box-shadow:var(--shadow);
+  }
+  .pipe .arrow{flex:0 0 26px;display:flex;align-items:center;justify-content:center;color:var(--brand);font-size:18px}
+  .pipe .n{font-family:var(--mono);font-size:11px;color:var(--highlight);font-weight:700;display:block;margin-bottom:5px}
+  .pipe .t{font-size:13px;font-weight:700;line-height:1.35;display:block;margin-bottom:5px}
+  .pipe .d{font-size:11.5px;color:var(--muted);line-height:1.45;display:block}
+  .feedback{
+    display:flex;align-items:center;gap:12px;background:var(--brand-soft);border:1px dashed var(--brand-line);
+    border-radius:var(--radius);padding:12px 18px;font-size:13px;color:var(--brand);margin-bottom:8px;
+  }
+  .feedback b{font-weight:700}
+
+  /* ---------- diagram ---------- */
+  .diagram{background:var(--surface);border:1px solid var(--brand-line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);margin:20px 0;overflow-x:auto}
+  .diagram svg{display:block;width:100%;height:auto;min-width:640px}
+
+  /* ---------- limits ---------- */
+  ul.plain{margin:0 0 14px;padding-left:20px}
+  ul.plain li{margin-bottom:9px;font-size:15px}
+
+  footer{margin-top:64px;padding:36px 0 56px;border-top:1px solid var(--brand-line);color:var(--muted);font-size:13px}
+  footer .row{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap}
+
+  @media (max-width:860px){
+    .hero-inner{flex-direction:column;align-items:flex-start}
+    .hero h1{font-size:34px}
+    .meta,.stats{grid-template-columns:repeat(2,1fr)}
+    .g3,.g4{grid-template-columns:repeat(2,1fr)}
+    .bar-row{grid-template-columns:120px 1fr 54px}
+    .bar-row .lbl{font-size:11.5px}
+  }
+  @media (max-width:560px){
+    .g2,.g3,.g4{grid-template-columns:1fr}
+    .meta,.stats{grid-template-columns:1fr}
+    .lede{font-size:21px}
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap hero-inner">
+    <img class="hero-logo" src="assets/app_logo.png" alt="Logo Pizza Snack Play">
+    <div>
+      <span class="badge">Deskripsi Proyek Visualisasi</span>
+      <h1>Pizza Snack Play</h1>
+      <p class="sub">Platform jadwal piket &amp; menu snack sekolah — dihasilkan lewat prompt, diverifikasi oleh tes, dan berjalan di produksi untuk sekolah nyata.</p>
+      <p class="url">pizza-snack-play.topidesta.workers.dev &nbsp;·&nbsp; 113 commit &nbsp;·&nbsp; 31 hari &nbsp;·&nbsp; 0 biaya infrastruktur</p>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <dl class="meta">
+    <div><dt>Kategori</dt><dd>Generasi AI yang digerakkan prompt</dd></div>
+    <div><dt>Stack</dt><dd>BHVR on Cloudflare</dd></div>
+    <div><dt>Penyimpanan data</dt><dd>D1 · 13 tabel · 9 migrasi</dd></div>
+    <div><dt>Pengguna</dt><dd>3 peran · 4 audiens</dd></div>
+  </dl>
+</div>
+
+<nav class="toc">
+  <div class="wrap">
+    <ul>
+      <li><a href="#overview">1 · Ringkasan Proyek</a></li>
+      <li><a href="#scenarios">Skenario</a></li>
+      <li><a href="#users">Pengguna</a></li>
+      <li><a href="#insights">Wawasan Nyata</a></li>
+      <li><a href="#design">2 · Desain Solusi</a></li>
+      <li><a href="#prompts">Generasi yang Digerakkan Prompt</a></li>
+      <li><a href="#value">3 · Nilai Bisnis</a></li>
+      <li><a href="#limits">Batasan</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="wrap">
+
+<!-- ══════════════════ 1 ══════════════════ -->
+<section id="overview">
+  <h2><span class="num">01</span> — Ringkasan Proyek</h2>
+  <p class="lede">Pizza Snack Play menggantikan satu berkas teks polos yang dipakai sekolah untuk menjalankan jadwal piket snack hariannya — dan mengubahnya menjadi sistem yang bisa ditanyai.</p>
+
+  <p>Artefak sumber tersimpan di repositori dan merupakan keseluruhan model data yang dipakai sekolah: <strong>136 baris</strong>, <strong>5 blok pekanan</strong>,
+    <strong>21 baris menu</strong>, <strong>86 penugasan piket</strong>,
+    <strong>38 nama siswa unik</strong>, mencakup kelas 1–5. Setiap kebutuhan di proyek ini bisa dilacak kembali ke suatu sifat format tersebut — bukan ke sebuah survei.</p>
+
+  <div class="chart">
+    <h4>Apa yang sebenarnya ada di artefak sumber</h4>
+    <p class="cap">Diukur dari <code>data/output_jadwal_piket.txt</code> — total 136 baris</p>
+    <div class="stack">
+      <span style="width:63.2%;background:#51277C">86 penugasan piket</span>
+      <span style="width:15.4%;background:#7A45A8">21 menu</span>
+      <span style="width:3.7%;background:#F3B26C"></span>
+      <span style="width:17.7%;background:#D9D2E3;color:#6B6478">kosong / lain</span>
+    </div>
+    <div class="legend">
+      <span><i style="background:#51277C"></i>86 baris penugasan piket — sebuah nama di samping kelas, tanpa identitas</span>
+      <span><i style="background:#7A45A8"></i>21 baris menu — teks bebas, Sen–Jum</span>
+      <span><i style="background:#F3B26C"></i>5 tajuk pekan tulisan tangan</span>
+    </div>
+  </div>
+
+  <h3 id="scenarios">1.1 &nbsp;Skenario Sasaran</h3>
+  <p class="muted">Delapan peristiwa berulang dalam sepekan sekolah. Masing-masing adalah momen nyata, bukan kasus penggunaan hipotetis.</p>
+  <div class="grid g2">
+    <div class="card brand"><span class="idx">S1 · setiap pagi sekolah</span>
+      <h4>“Snack hari ini apa?”</h4>
+      <p>Orang tua membuka berkas teks yang diteruskan lalu menggulir mencari tanggalnya. Aplikasi menjawab dalam satu layar — dengan tautan WhatsApp wali petugas di samping menu.</p></div>
+    <div class="card brand"><span class="idx">S2 · Minggu malam</span>
+      <h4>Rencana sepekan</h4>
+      <p>Berkas yang sama dibaca dua kali: sekali untuk menu, sekali untuk daftar piket. Satu tampilan kini menampilkan Sen–Jum per kelas.</p></div>
+    <div class="card brand"><span class="idx">S3 · saat suatu kelas kena piket</span>
+      <h4>Rotasi piket</h4>
+      <p>Tidak ada yang tahu giliran siapa tanpa membaca seluruh berkas. Penugasan piket kini menjadi relasi bertipe, dipilih dari roster kelas itu.</p></div>
+    <div class="card hot"><span class="idx">S4 · kapan pun tanggal dibiarkan kosong</span>
+      <h4>Mengisi tanggal yang kosong</h4>
+      <p>Dulu balasan pertama di grup yang menang, tanpa jejak. Kini orang tua mengklaim tanggalnya sendiri, aman dari rebutan di level basis data.</p></div>
+    <div class="card hot"><span class="idx">S5 · sebulan sekali</span>
+      <h4>Siklus kunci &amp; terbit bulanan</h4>
+      <p>Tidak ada konsep “siap”. Mesin tiga keadaan kini membuat kelas yang diumumkan separuh mustahil secara struktural.</p></div>
+    <div class="card hot"><span class="idx">S6 · rapat koordinasi bulanan</span>
+      <h4>“Beban piketnya sudah merata?”</h4>
+      <p>Tidak bisa dijawab — berkas mencatat siapa yang <em>piket</em> , tidak pernah siapa yang
+        <em>mengambil</em> piket. Laporan memeringkat setiap orang tua dan menyebut mereka yang tidak mengambil sama sekali.</p></div>
+    <div class="card"><span class="idx">S7 · saat menyusun bulan berikutnya</span>
+      <h4>Pakai ulang menu &amp; riwayat</h4>
+      <p>Menu lama diketik ulang dengan tangan. Katalog 43 menu dan 85 item menu yang bisa dicari dipakai bersama semua kelas.</p></div>
+    <div class="card"><span class="idx">S8 · setiap tahun ajaran</span>
+      <h4>Siklus hidup akun orang tua</h4>
+      <p>Akun dibuat satu per satu dengan tangan. Kini bolak-balik Excel: ekspor → sunting → impor, selalu lewat pratinjau.</p></div>
+  </div>
+
+  <div class="callout">
+    <p class="q">Skenario yang membentuk arsitektur adalah S4 + S5 bersama-sama.</p>
+    <p>Klaim menulis balik ke baris jadwal; publikasi membekukan baris. Kalau keduanya bebas menulis, orang tua bisa mengklaim slot di bulan yang sudah diumumkan sekolah. Mesin status ada supaya hal itu mustahil — bukan sekadar tidak dianjurkan.</p>
+  </div>
+
+  <h3 id="users">1.2 &nbsp;Pengguna Sasaran</h3>
+  <p class="muted">Empat audiens, tiga di antaranya punya wewenang nyata. Model peran sengaja dibuat kecil — setiap peran tambahan adalah cara baru bagi sekolah untuk salah menjalankan prosesnya sendiri.</p>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Peran</th><th>Siapa mereka</th><th>Tujuan utama</th><th>Wewenang</th><th>Secara eksplisit ditolak</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Admin</strong></td>
+          <td>Guru atau staf yang menjalankan program snack</td>
+          <td>Menjaga jadwal seluruh sekolah benar dan terbit</td>
+          <td>CRUD penuh untuk semua kelas, katalog, kategori, hari libur, akun orang tua, statistik; kunci <em>dan</em> buka kunci</td>
+          <td class="muted">—</td>
+        </tr>
+        <tr>
+          <td><strong>Korlas</strong><br><small>koordinator kelas</small></td>
+          <td>Orang tua yang ditunjuk per kelas</td>
+          <td>Jalankan <em>kelasnya sendiri</em> tanpa menunggu admin</td>
+          <td>Membuat / menyunting / menghapus jadwal kelasnya selama <code>draft</code>; mengunci dan menerbitkan kelasnya sendiri; mengklaim tanggal kosong (tetap orang tua)</td>
+          <td><span class="no">✕</span> tidak bisa buka kunci · tidak bisa menyentuh kelas lain · tidak bisa menyunting katalog bersama · tidak bisa mengelola akun</td>
+        </tr>
+        <tr>
+          <td><strong>Orang tua</strong><br><small>wali</small></td>
+          <td>Orang tua dari siswa terdaftar</td>
+          <td>Mengetahui snack hari ini dan apakah gilirannya</td>
+          <td>Membaca jadwal kelas anaknya; mengklaim tanggal piket kosong; menyunting kontak dan kata sandinya sendiri</td>
+          <td><span class="no">✕</span> tidak punya akses tulis ke jadwal atau katalog</td>
+        </tr>
+        <tr>
+          <td><strong>Koperasi</strong><br><small>kantin</small></td>
+          <td>Penyedia makanan sekolah</td>
+          <td>Mengetahui apa yang harus disiapkan</td>
+          <td>Hanya baca, lewat ekspor Excel</td>
+          <td><span class="no">✕</span> tidak ada jalur tulis di level login</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout warn">
+    <p class="q">Kenapa korlas ada — dan kenapa ia berkuasa di dalam satu kelas, tak berdaya di luarnya.</p>
+    <p>Versi pertama hanya punya admin dan orang tua. Dalam praktiknya satu admin tidak bisa menjaga enam kelas tetap mutakhir, dan orang tua tidak bisa menyunting apa pun. Menaikkan enam orang tua menjadi admin akan memberi masing-masing kuasa menulis ulang katalog seluruh sekolah dan setiap kelas lain. Maka peran ketiga diperkenalkan dengan batas tegas — ditegakkan oleh <code>requireRole()</code> di API, dan hanya <em>dicerminkan</em> oleh <code>&lt;RoleGate&gt;</code> di UI.</p>
+  </div>
+
+  <h3>1.3 &nbsp;Nilai Jual</h3>
+  <div class="callout">
+    <p class="q">Mengubah dokumen yang hanya bisa dibaca menjadi sistem yang bisa ditanyai — tanpa menambah administrator.</p>
+  </div>
+  <div class="grid g4">
+    <div class="card brand"><span class="idx">pilar 01</span><h4>Menjawab, bukan mengarsip</h4>
+      <p>Menjawab tiga pertanyaan yang benar-benar ditanyakan orang: snack hari ini, giliran piket anak saya, apakah kelas saya sudah terbit.</p></div>
+    <div class="card brand"><span class="idx">pilar 02</span><h4>Wewenang di ujung</h4>
+      <p>Memindahkan beban bulanan dari satu admin ke enam koordinator sambil menjaga katalog seluruh sekolah tetap dalam satu kepemilikan.</p></div>
+    <div class="card brand"><span class="idx">pilar 03</span><h4>Keadilan menjadi terukur</h4>
+      <p>Karena klaim disimpan terpisah, sistem bisa menyebut orang tua yang tidak mengambil piket — pertanyaan yang sama sekali tidak bisa dijawab dokumen sumber.</p></div>
+    <div class="card hot"><span class="idx">pilar 04</span><h4>Biaya marginal nol</h4>
+      <p>Workers + D1 di tingkat gratis. Tanpa server, tanpa lisensi, tanpa app store. Program snack tidak punya pos anggaran untuk perangkat lunak.</p></div>
+  </div>
+
+  <h3 id="insights">1.4 &nbsp;Wawasan Skenario Nyata</h3>
+
+  <h4>1.4.1 &nbsp;Dari mana titik nyerinya berasal</h4>
+  <p>Titik nyeri tidak dikumpulkan dari survei. Semuanya diekstraksi dari artefak yang benar-benar dipakai sekolah:</p>
+  <div class="tbl-wrap" style="margin-bottom:20px">
+    <table>
+      <thead><tr><th>Titik nyeri</th><th>Akar masalah yang terlihat pada format sumber</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Tanpa pencarian</strong></td><td>Nama menu adalah teks bebas di dalam baris hari — “kapan jeruk disajikan?” berarti membaca semua 21 baris</td></tr>
+        <tr><td><strong>Tanpa notifikasi</strong></td><td>Berkas itu cuplikan sesaat; tidak ada yang memberi tahu siapa pun bahwa isinya berubah</td></tr>
+        <tr><td><strong>Sulit disunting dengan aman</strong></td><td>Tajuk pekan ditulis dengan tangan dan sudah salah — satu blok dilabeli <code>14 - 18 Oktober 2026</code> (Sen–Jum) padahal 14 Oktober 2026 adalah hari Rabu</td></tr>
+        <tr><td><strong>Tanpa riwayat</strong></td><td>Berkas ditimpa dari bulan ke bulan; hanya dua bulan yang bertahan di repositori</td></tr>
+        <tr><td><strong>Tanpa katalog yang bisa dipakai ulang</strong></td><td>Tidak ada yang menghubungkan “Puding Roti” di September dengan “Puding Roti” di Oktober</td></tr>
+        <tr><td><strong>Tanpa pelacakan piket</strong></td><td>Piket hanyalah nama di samping kelas, tanpa identitas — tidak ada catatan orang tua yang dirujuk di mana pun</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>Dua di antaranya adalah cacat <strong>integritas data</strong> , bukan masalah kenyamanan:</p>
+  <ul class="plain">
+    <li> <strong>tajuk pekan yang salah label</strong> adalah kesalahan nyata yang ditemukan di dokumen sekolah sendiri. Pengimpor kini mencocokkan setiap label hari dengan kalender sungguhan, menggeser pekan yang salah label ke Sen–Jum yang benar, dan memperingatkan pengguna. Spreadsheet manual tidak bisa melakukan ini.</li>
+    <li><strong>Nama petugas tidak punya identitas.</strong> Perbaikannya adalah menjadikan petugas piket sebuah
+      <em>relasi</em> (<code>petugas_student_id</code> + <code>petugas_parent_id</code>), dan nama yang tercetak disimpan hanya sebagai salinan tampilan terdenormalisasi. API menolak nama petugas yang dikirim klien dan menyelesaikannya terhadap roster kelas di sisi server.</li>
+  </ul>
+
+  <h4>1.4.2 &nbsp;Audiens sasaran dan masalah inti yang dipecahkan</h4>
+  <div class="callout">
+    <p class="q">Jadwal snack adalah kewajiban bersama — setiap keluarga mendapat giliran — tetapi dicatat dalam dokumen privat yang tidak bisa dikueri keluarga mana pun, dan yang hanya bisa disunting dengan aman oleh satu orang.</p>
+  </div>
+  <div class="grid g3">
+    <div class="card brand"><h4>Sisi baca</h4>
+      <p>Orang tua tidak punya cara andal untuk mengetahui gilirannya. Menutup celah itu berarti autentikasi — setiap keluarga hanya melihat kelas anaknya sendiri — dan model data per kelas.</p></div>
+    <div class="card brand"><h4>Sisi tulis</h4>
+      <p>Satu admin tidak bisa memelihara enam kelas. Menutupnya berarti peran terdelegasi dengan batas tegas, plus gerbang kunci/terbit supaya “sudah diumumkan” dan “masih disunting” tidak pernah tertukar.</p></div>
+    <div class="card hot"><h4>Siapa yang <em>tidak</em> dilayani</h4>
+      <p>Tanpa akun siswa — piket adalah kewajiban keluarga dan wali yang memegang telepon. Tanpa absensi, nilai, atau perpesanan. Setiap fitur harus bisa dilacak kembali ke roster snack.</p></div>
+  </div>
+  <p style="margin-top:18px"><strong>Kenapa solusi yang tampak jelas justru gagal.</strong> “Taruh berkasnya di spreadsheet bersama” menyelesaikan sisi baca bagi orang yang sudah tahu sheet itu ada, dan memperburuk sisi tulis: sheet bersama tidak punya gagasan tentang siapa boleh menyunting kelas mana, tidak punya status terbit, dan tidak punya cara menjawab “siapa yang belum pernah dapat giliran” — karena sheet mencatat piket, bukan klaim. Tabel klaim hanya ada karena sistemnya adalah aplikasi.</p>
+</section>
+
+<!-- ══════════════════ 2 ══════════════════ -->
+<section id="design">
+  <h2><span class="num">02</span> — Desain Solusi Menyeluruh</h2>
+  <p class="lede">Mesin jadwal tiga keadaan, model wewenang dua lapis, dan API sembilan domain — masing-masing dipilih supaya kegagalan tertentu menjadi mustahil, bukan sekadar kecil kemungkinannya.</p>
+
+  <h3>2.1 &nbsp;Arsitektur Bisnis</h3>
+
+  <h4>Wewenang ditegakkan dua kali, dan kedua lapisan menjalankan tugas berbeda</h4>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Lapisan</th><th>Mekanisme</th><th>Tujuan</th></tr></thead>
+      <tbody>
+        <tr><td><strong>API — wewenang</strong></td><td><code>requireRole()</code> di setiap rute tulis</td><td>Batas sesungguhnya. Mengembalikan <code>403</code> terlepas dari apa yang dikirim klien.</td></tr>
+        <tr><td><strong>API — cakupan data</strong></td><td><code>classScope</code> · <code>canWriteClass(user, row.className)</code></td><td>Pada <code>PUT</code>/<code>DELETE</code> kelas dibaca dari <em>baris basis data</em>, tidak pernah dari input klien — sehingga korlas tidak bisa membajak kelas lain dengan mengubah parameter.</td></tr>
+        <tr><td><strong>UI</strong></td><td><code>&lt;RoleGate need="admin" | "schedule" | "catalog"&gt;</code></td><td>Menyembunyikan kontrol yang tidak bisa dipakai pengguna. Didokumentasikan secara eksplisit sebagai <em>kosmetik</em> — ia menghindari menawarkan aksi yang mustahil; ia tidak menegakkan apa pun.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>Siklus hidup jadwal</h4>
+  <div class="diagram">
+    <svg viewBox="0 0 960 210" role="img" aria-label="Siklus hidup jadwal: draft, locked, published, dengan buka kunci oleh admin yang mengembalikan ke draft">
+      <defs>
+        <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="#51277C"/>
+        </marker>
+        <marker id="aho" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="#F3B26C"/>
+        </marker>
+      </defs>
+
+      <rect x="40" y="44" width="230" height="68" rx="8" fill="#FFFFFF" stroke="#51277C" stroke-width="1.5"/>
+      <text x="155" y="74" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="20" font-weight="700" fill="#51277C">draft</text>
+      <text x="155" y="96" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="12" fill="#6B6478">sepenuhnya bisa disunting</text>
+
+      <line x1="276" y1="78" x2="357" y2="78" stroke="#51277C" stroke-width="1.5" marker-end="url(#ah)"/>
+      <text x="316" y="68" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" font-weight="700" fill="#6B6478">lock</text>
+
+      <rect x="365" y="44" width="230" height="68" rx="8" fill="#FFFFFF" stroke="#51277C" stroke-width="1.5"/>
+      <text x="480" y="74" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="20" font-weight="700" fill="#51277C">locked</text>
+      <text x="480" y="96" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="12" fill="#6B6478">dibekukan · hanya petugasnya</text>
+
+      <line x1="601" y1="78" x2="682" y2="78" stroke="#51277C" stroke-width="1.5" marker-end="url(#ah)"/>
+      <text x="641" y="68" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" font-weight="700" fill="#6B6478">publish</text>
+
+      <rect x="690" y="44" width="230" height="68" rx="8" fill="#F3B26C" stroke="#d97f2f" stroke-width="1.5"/>
+      <text x="805" y="74" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="20" font-weight="700" fill="#3c1e0c">published</text>
+      <text x="805" y="96" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="12" fill="#6f3c1c">terlihat oleh orang tua</text>
+
+      <text x="155" y="138" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11.5" fill="#6B6478">setiap baris baru dimulai di sini</text>
+      <text x="480" y="138" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11.5" fill="#6B6478">publikasi menolak dengan 409 selama masih ada baris draft</text>
+      <text x="805" y="138" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11.5" fill="#6B6478">hanya baca setelah ini</text>
+
+      <path d="M805,120 L805,168 L155,168 L155,120" fill="none" stroke="#F3B26C" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#aho)"/>
+      <text x="480" y="186" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11.5" font-weight="700" fill="#c4762a">unlock — hanya admin</text>
+    </svg>
+  </div>
+
+  <div class="grid g2">
+    <div class="card hot"><h4>Aturan yang paling penting</h4>
+      <p><code>POST /schedules/publish</code> menolak dengan <code>409 drafts_remaining</code> ketika masih ada baris yang <code>draft</code> — dan menyebut kelas yang bermasalah. Inilah yang membuat kelas terbit separuh mustahil secara struktural.</p></div>
+    <div class="card hot"><h4>Satu pengecualian yang disengaja</h4>
+      <p>Pada baris yang terkunci atau terbit, <strong>hanya petugasnya</strong> boleh ditetapkan — petugas sering diisi setelah pengumuman. Sebuah <em>campuran</em> patch (petugas plus menu, catatan, atau hari libur) tetap ditolak dengan <code>409 not_editable</code>.</p></div>
+  </div>
+
+  <h4>Dua semantik aksi massal, sengaja dibedakan</h4>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th></th><th>Berbasis rentang / kelas</th><th>Berbasis baris terpilih</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Endpoint</strong></td><td><code>POST /schedules/lock</code> · <code>/schedules/publish</code></td><td><code>POST /schedules/bulk/{lock,publish,unlock}</code></td></tr>
+        <tr><td><strong>Status tidak cocok</strong></td><td><span class="no">409 drafts_remaining</span> — seluruh permintaan ditolak</td><td>Dihitung sebagai <code>skipped</code>, mengembalikan <span class="yes">200</span></td></tr>
+        <tr><td><strong>Cakupan kelas</strong></td><td>Diselesaikan dari permintaan lewat <code>resolveBulkClasses</code></td><td>Diambil dari tiap baris — tidak pernah dari klien</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="margin-top:12px" class="muted">Asimetri ini disengaja. Operasi tingkat bulan yang diam-diam melewati satu kelas akan menghasilkan persis keadaan terbit separuh yang ingin dicegah mesin status, jadi ia gagal dengan berisik. Sekumpulan baris yang dicentang dengan tangan adalah pilihan eksplisit, jadi perilaku yang benar adalah bertindak pada baris yang memenuhi syarat dan melaporkan sisanya.</p>
+
+  <h4>Mekanisme klaim (siapa cepat dia dapat)</h4>
+  <div class="grid g4">
+    <div class="card brand"><h4>Aman dari rebutan</h4><p><code>UNIQUE(schedule_id)</code> pada
+      <code>schedule_claims</code> — basis data, bukan aplikasi, yang menentukan pemenangnya.</p></div>
+    <div class="card brand"><h4>Satu sumber kebenaran</h4><p>Klaim yang berhasil menulis balik ke
+      <code>schedules.petugas_*</code>, sehingga tidak pernah ada klaim yang bertentangan dengan jadwal.</p></div>
+    <div class="card brand"><h4>Per kelas</h4><p>Tanggal yang sama di dua kelas adalah dua baris — klaim di kelas 1 tidak memblokir kelas 2.</p></div>
+    <div class="card hot"><h4>Pelaporan keadilan</h4><p>Karena klaim punya tabel sendiri, laporan bisa memeringkat orang tua menurut piket yang diambil dan menyebut mereka yang tidak mengambil sama sekali.</p></div>
+  </div>
+
+  <h3>2.2 &nbsp;Arsitektur Teknis</h3>
+
+  <div class="diagram">
+    <svg viewBox="0 0 960 440" role="img" aria-label="Arsitektur: peramban, Cloudflare Worker dengan empat lapisan, dan D1">
+      <defs>
+        <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="#51277C"/>
+        </marker>
+      </defs>
+
+      <rect x="200" y="16" width="560" height="64" rx="8" fill="#FFFFFF" stroke="#51277C" stroke-width="1.5"/>
+      <text x="480" y="42" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="16" font-weight="700" fill="#51277C">Peramban</text>
+      <text x="480" y="62" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="12" fill="#6B6478">React 19 SPA · TanStack Router + Query · PWA yang bisa dipasang</text>
+
+      <line x1="480" y1="80" x2="480" y2="116" stroke="#51277C" stroke-width="1.5" marker-end="url(#ah2)"/>
+      <text x="496" y="104" font-family="ui-monospace,monospace" font-size="11" fill="#6B6478">HTTPS · JWT Bearer · basePath /api</text>
+
+      <rect x="60" y="118" width="840" height="196" rx="10" fill="rgba(81,39,124,.06)" stroke="rgba(81,39,124,.24)" stroke-width="1.2"/>
+      <text x="84" y="142" font-family="ui-sans-serif,system-ui,sans-serif" font-size="14" font-weight="700" fill="#51277C">Cloudflare Worker · Hono router</text>
+
+      <rect x="84" y="158" width="180" height="96" rx="6" fill="#FFFFFF" stroke="rgba(81,39,124,.24)"/>
+      <text x="98" y="182" font-family="ui-monospace,monospace" font-size="12.5" font-weight="700" fill="#2A2333">middleware/</text>
+      <text x="98" y="204" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#6B6478">Verifikasi JWT</text>
+      <text x="98" y="220" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#6B6478">penjaga peran</text>
+      <text x="98" y="236" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#6B6478">cakupan kelas</text>
+
+      <rect x="288" y="158" width="180" height="96" rx="6" fill="#FFFFFF" stroke="#51277C" stroke-width="1.6"/>
+      <text x="302" y="182" font-family="ui-monospace,monospace" font-size="12.5" font-weight="700" fill="#2A2333">route.ts</text>
+      <text x="302" y="204" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#6B6478">Kata kerja HTTP</text>
+      <text x="302" y="220" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#6B6478">requireRole()</text>
+      <text x="302" y="236" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" font-weight="700" fill="#c4762a">← batas sesungguhnya</text>
+
+      <rect x="492" y="158" width="180" height="96" rx="6" fill="#FFFFFF" stroke="rgba(81,39,124,.24)"/>
+      <text x="506" y="182" font-family="ui-monospace,monospace" font-size="12.5" font-weight="700" fill="#2A2333">controller + service</text>
+      <text x="506" y="204" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#6B6478">Pembentukan DTO</text>
+      <text x="506" y="220" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#6B6478">aturan bisnis</text>
+      <text x="506" y="236" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#6B6478">gerbang publikasi</text>
+
+      <rect x="696" y="158" width="180" height="96" rx="6" fill="#FFFFFF" stroke="rgba(81,39,124,.24)"/>
+      <text x="710" y="182" font-family="ui-monospace,monospace" font-size="12.5" font-weight="700" fill="#2A2333">repository.ts</text>
+      <text x="710" y="204" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#6B6478">SQL saja</text>
+      <text x="710" y="220" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#6B6478">predikat status</text>
+      <text x="710" y="236" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" fill="#6B6478">berada di dalam WHERE</text>
+
+      <text x="84" y="286" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11.5" fill="#6B6478">9 domain API · 65 endpoint · 29 GET · 22 POST · 7 PUT · 7 DELETE</text>
+
+      <line x1="480" y1="314" x2="480" y2="350" stroke="#51277C" stroke-width="1.5" marker-end="url(#ah2)"/>
+      <text x="496" y="338" font-family="ui-monospace,monospace" font-size="11" fill="#6B6478">Drizzle ORM · kueri bertipe</text>
+
+      <rect x="200" y="352" width="560" height="64" rx="8" fill="#FFFFFF" stroke="#AFC440" stroke-width="1.6"/>
+      <text x="480" y="378" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="16" font-weight="700" fill="#576420">Cloudflare D1 · SQLite</text>
+      <text x="480" y="398" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="12" fill="#6B6478">13 tabel · 9 migrasi · drizzle/migrations/</text>
+    </svg>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Lapisan</th><th>Teknologi</th><th>Kenapa yang ini</th></tr></thead>
+      <tbody>
+        <tr><td>Runtime</td><td>Cloudflare Workers</td><td>Tingkat gratis, global, tanpa server yang perlu ditambal — seluruh sekolah muat dalam kuota gratis</td></tr>
+        <tr><td>Kerangka API</td><td>Hono (<code>basePath("/api")</code>)</td><td>Asli edge dan mungil; middleware untuk autentikasi JWT</td></tr>
+        <tr><td>Basis data</td><td>Cloudflare D1 (SQLite)</td><td>SQL serverless di tingkat gratis, dengan riwayat migrasi yang tercatat di repositori</td></tr>
+        <tr><td>ORM / migrasi</td><td>Drizzle ORM + drizzle-kit</td><td>Kueri bertipe plus migrasi SQL yang bisa ditinjau</td></tr>
+        <tr><td>Klien</td><td>React 19 · TanStack Router · TanStack Query</td><td>Perutean berbasis berkas dan invalidasi cache per halaman</td></tr>
+        <tr><td>Penataan gaya</td><td>Tailwind CSS 4 dengan blok token <code>@theme</code> </td><td>Tiga warna merek dideklarasikan sekali dan dipakai di mana-mana</td></tr>
+        <tr><td>Build</td><td>Vite 6 + <code>@cloudflare/vite-plugin</code></td><td>Klien dan Worker dibangun bersamaan</td></tr>
+        <tr><td>Bahasa</td><td>TypeScript di seluruh bagian</td><td>Kontrak API dipakai bersama oleh Worker dan klien</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>Model data — 13 tabel</h4>
+  <div class="grid g4">
+    <div class="card brand"><h4>Orang &amp; akses</h4><p><code>users</code><br><code>parents</code><br><code>students</code></p></div>
+    <div class="card brand"><h4>Jadwal</h4><p><code>schedules</code><br><code>schedule_claims</code><br><code>holidays</code></p></div>
+    <div class="card brand"><h4>Katalog</h4><p><code>menus</code> · <code>menu_items</code><br><code>categories</code><br><code>menu_categories</code></p></div>
+    <div class="card hot"><h4>Operasional</h4><p><code>import_logs</code><br><code>settings</code> · <code>weeks</code></p></div>
+  </div>
+
+  <p style="margin-top:20px">Dua keputusan skema adalah <strong>pembalikan</strong>, dan pembalikan adalah bukti paling andal bahwa sebuah desain sudah diuji terhadap kenyataan:</p>
+  <div class="grid g2">
+    <div class="card hot"><h4>Tanpa foreign key komposit pada petugas piket</h4>
+      <p>FK komposit memerlukan indeks unik yang benar-benar cocok, yang memaksa pembangunan ulang tabel. Pembangunan ulang memerlukan <code>PRAGMA foreign_keys=OFF</code> — dan pragma itu adalah <em>no-op senyap di dalam transaksi</em>, sementara <code>wrangler d1 migrations apply</code> membungkus migrasi dalam satu transaksi. Migrasinya lolos di lokal, gagal di produksi dengan
+        <code>FOREIGN KEY constraint failed</code>, dan jalur yang “berhasil” meninggalkan 292 pelanggaran
+        <code>foreign_key_check</code>. Migrasi <code>0007</code> kini hanya
+        <code>ALTER TABLE ADD COLUMN</code>; konsistensi ditegakkan di lapisan service.</p></div>
+    <div class="card hot"><h4>Gambar kategori disimpan di dalam basis data</h4>
+      <p>Disimpan sebagai data URI base64 dan divalidasi di klien maupun server. DTO katalog dipecah menjadi dua — <code>CategorySummaryDto</code> (tanpa gambar; dipakai menu dan jadwal) dan
+        <code>CategoryDto</code> (dengan gambar; hanya di halaman kategori) — sehingga jadwal sebulan yang memuat puluhan menu tidak menggandakan muatan gambar yang tidak ditampilkan apa pun.</p></div>
+  </div>
+
+  <h4>Arsitektur pengujian</h4>
+  <div class="chart">
+    <h4>Volume verifikasi per suite</h4>
+    <p class="cap">540 assertion integrasi API di 8 skrip, ditambah 85 tes unit — diukur dengan <code>grep -c 'check('</code> dan <code>grep -c 'it(|test('</code></p>
+    <div class="bars">
+      <div class="bar-row"><span class="lbl">test-api.mjs · 27 seksi</span><span class="track"><span class="fill" style="width:100%"></span></span><span class="val">367</span></div>
+      <div class="bar-row"><span class="lbl">tes unit · src/</span><span class="track"><span class="fill g" style="width:23.2%"></span></span><span class="val">85</span></div>
+      <div class="bar-row"><span class="lbl">profile-account.mjs</span><span class="track"><span class="fill" style="width:10.4%"></span></span><span class="val">38</span></div>
+      <div class="bar-row"><span class="lbl">test-auth.mjs</span><span class="track"><span class="fill" style="width:9.0%"></span></span><span class="val">33</span></div>
+      <div class="bar-row"><span class="lbl">profile-students.mjs</span><span class="track"><span class="fill" style="width:9.0%"></span></span><span class="val">33</span></div>
+      <div class="bar-row"><span class="lbl">test-petugas.mjs</span><span class="track"><span class="fill" style="width:6.3%"></span></span><span class="val">23</span></div>
+      <div class="bar-row"><span class="lbl">test-status.mjs</span><span class="track"><span class="fill" style="width:6.0%"></span></span><span class="val">22</span></div>
+      <div class="bar-row"><span class="lbl">test-roster-petugas.mjs</span><span class="track"><span class="fill" style="width:4.1%"></span></span><span class="val">15</span></div>
+      <div class="bar-row"><span class="lbl">test-claim-cross-class.mjs</span><span class="track"><span class="fill" style="width:2.5%"></span></span><span class="val">9</span></div>
+    </div>
+    <div class="legend" style="margin-top:18px">
+      <span>Ditambah <strong>20 skrip pemeriksa peramban</strong> (<code>outputs/check-*.mjs</code>) dan
+        <strong>21 kasus UAT terdokumentasi</strong>. Pemeriksaan peramban melampaui “elemen itu ada” —
+        <code>/hari-ini</code> pemeriksa tata letak menegaskan <em>di kolom mana</em> kartu piket berada dan bahwa lebarnya secara geometris sama dengan kartu hari, karena kartu di kolom yang salah akan lulus setiap tes keberadaan.</span>
+    </div>
+  </div>
+
+  <h3 id="prompts">2.3 &nbsp;Bagaimana Prompt Menggerakkan Generasi AI</h3>
+  <p class="lede" style="font-size:21px">Proyek ini dihasilkan lewat prompt selama 113 commit dalam 31 hari. Mekanismenya bukan “minta AI membuat aplikasi” — melainkan
+    <strong>loop yang mengutamakan spesifikasi: prompt adalah spesifikasinya, repositori adalah catatannya, dan verifier disebut sebelum kode apa pun ditulis.</strong></p>
+
+  <div class="pipe">
+    <div class="step"><span class="n">01</span><span class="t">Kebenaran domain</span>
+      <span class="d">Manusia memasok apa yang tidak bisa diketahui AI: jadwal nyata sekolah, peran, dan batas wewenang.</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><span class="n">02</span><span class="t">Prompt</span>
+      <span class="d">Membawa lima slot: niat · batasan · bukti · penerimaan · artefak.</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><span class="n">03</span><span class="t">AI menghasilkan</span>
+      <span class="d">Migrasi · API · UI · dokumentasi · dan tes yang akan menilainya.</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><span class="n">04</span><span class="t">Verifier berjalan</span>
+      <span class="d"><code>tsc</code> · <code>eslint</code> · <code>vite build</code> · suite tes yang disebutkan.</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><span class="n">05</span><span class="t">Commit &amp; catat</span>
+      <span class="d">Kode, entri changelog PRD, dan memori proyek di-commit bersama.</span></div>
+  </div>
+  <div class="feedback">
+    <span>↺</span>
+    <span><b>Bila gagal:</b> prompt diperbaiki dan dijalankan ulang — dan batasannya ditulis ke memori persisten supaya kesalahan yang sama tidak terulang di sesi berikutnya.</span>
+  </div>
+
+  <h4>Anatomi prompt yang dipakai di proyek ini</h4>
+  <p class="muted">Setiap prompt substantif membawa lima slot. Polanya terlihat di changelog PRD, tempat setiap versi mencatat lima hal yang sama.</p>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Slot</th><th>Pertanyaan yang dijawab</th><th>Contoh dari proyek ini</th></tr></thead>
+      <tbody>
+        <tr><td><strong>1 · Niat</strong></td><td>Apa yang berubah bagi pengguna?</td><td>“Admin harus bisa menerbitkan keenam kelas dalam satu aksi”</td></tr>
+        <tr><td><strong>2 · Batasan</strong></td><td>Apa yang tidak boleh rusak, dan apa yang dilarang?</td><td>“Korlas boleh mengunci kelasnya sendiri, bukan kelas lain. Jangan tambahkan tabel kelas.”</td></tr>
+        <tr><td><strong>3 · Bukti</strong></td><td>Apa di kode yang ada yang menentukan desain?</td><td>“Periksa <code>resolveBulkClasses</code> sebelum memilih di mana cakupan kelas diselesaikan.”</td></tr>
+        <tr><td><strong>4 · Penerimaan</strong></td><td>Bagaimana kita tahu ini berhasil?</td><td>“<code>409 drafts_remaining</code> menyebut kelas yang bermasalah; <code>test-api.mjs</code> seksi 23 mencakupnya.”</td></tr>
+        <tr><td><strong>5 · Artefak</strong></td><td>Apa lagi yang harus diperbarui?</td><td>“PRD, README, UAT_Result, test-api.mjs.”</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="margin-top:12px"><strong>Slot 4-lah yang membuat loop-nya konvergen.</strong> Prompt yang tidak menyebut verifier-nya menghasilkan kode yang tidak lulus apa pun secara khusus; prompt yang menyebut
+    <code>409 drafts_remaining</code> menghasilkan tes yang masih akan berjalan setahun kemudian.</p>
+
+  <h4>Niat prompt → artefak yang dihasilkan → verifier</h4>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Niat prompt</th><th>Artefak yang dihasilkan</th><th>Verifier yang disebut di prompt</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>“Simpan jadwal per kelas dan tambahkan peran koordinator kelas”</td>
+          <td><code>schedules.class_name</code>, <code>UNIQUE(schedule_date, class_name)</code>, peran <code>korlas</code>, <code>GET /classes</code>, <code>?class=</code> di semua pembacaan</td>
+          <td><code>test-api.mjs</code>; PRD §3.3 ditulis ulang</td>
+        </tr>
+        <tr>
+          <td>“Orang tua tidak boleh bisa menyunting tanggal piket satu sama lain”</td>
+          <td><code>schedule_claims</code> dengan <code>UNIQUE(schedule_id)</code>; klaim menulis balik ke baris jadwal</td>
+          <td><code>test-claim-cross-class.mjs</code> — 9 assertion</td>
+        </tr>
+        <tr>
+          <td>“Publikasi harus mustahil selama masih ada baris yang berstatus draft”</td>
+          <td><code>409 drafts_remaining</code> menyebut kelasnya; <code>setStatusByIds</code> menaruh predikat status di dalam <code>WHERE</code></td>
+          <td><code>test-status.mjs</code> — 22 assertion</td>
+        </tr>
+        <tr>
+          <td>“Sekolah mengirim jadwal sebagai teks yang ditempel — impor di dalam aplikasi”</td>
+          <td><code>importParser.ts</code> (murni: tanpa DB, tanpa jam, tanpa throw), impor idempoten, <code>dryRun</code> untuk pratinjau, jejak audit di <code>import_logs</code></td>
+          <td><code>test-api.mjs</code> seksi 24 — 38 assertion</td>
+        </tr>
+        <tr>
+          <td>“Rapat koordinasi butuh laporan keadilan beban piket”</td>
+          <td>Domain baru <code>src/api/laporan/</code> ; peringkat berbasis klaim plus daftar “tidak pernah piket” yang diturunkan dari <code>students</code></td>
+          <td><code>test-api.mjs</code> seksi 25</td>
+        </tr>
+        <tr>
+          <td>“Tambahkan foreign key komposit pada petugas piket”</td>
+          <td><span class="no">Ditolak.</span> Slot batasan mensyaratkan migrasi berhasil di produksi, dan pembangunan ulang tabel tidak bisa.</td>
+          <td>D1 lokal + produksi <code>d1 migrations apply</code>, ditambah <code>PRAGMA foreign_key_check</code></td>
+        </tr>
+        <tr>
+          <td>“Kartu piket ada di kolom yang salah”</td>
+          <td>Kartu dipindahkan ke <code>lg:col-span-2</code>; <code>hari-ini.tsx</code> dipecah menjadi komponen bernama</td>
+          <td><code>check-hari-ini-layout.mjs</code> — 39 assertion geometri</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout warn">
+    <p class="q">Perhatikan baris keenam: sebuah prompt ditolak oleh batasannya sendiri.</p>
+    <p>Penolakan itu dicatat di PRD sebagai koreksi (v1.10). Itulah loop yang bekerja sebagaimana mestinya — slot batasan ada justru supaya permintaan yang terdengar masuk akal bisa ditolak <em>sebelum</em> ia merusak data produksi.</p>
+  </div>
+
+  <h4>Pagar pengaman yang dibawa di dalam prompt</h4>
+  <p class="muted">Batasan yang diperoleh dengan susah payah ditulis ke memori persisten proyek dan dinyatakan ulang di prompt, sehingga sesi berikutnya tidak bisa diam-diam membatalkannya.</p>
+  <div class="grid g3">
+    <div class="card hot"><h4>Jangan pernah percaya nama petugas dari klien</h4><p>Piket adalah relasi, bukan string — nama dari klien akan membuat salah ketik menciptakan “siswa” baru.</p></div>
+    <div class="card hot"><h4>Jangan pernah membangun ulang tabel dalam migrasi D1</h4><p><code>PRAGMA foreign_keys=OFF</code> tidak berefek di dalam transaksi, sementara <code>d1 migrations apply</code> memakainya.</p></div>
+    <div class="card hot"><h4>Jangan pernah biarkan <code>409</code> menjadi <code>skipped</code></h4><p>Melewati secara diam-diam adalah cara sebuah kelas terbit setengah jadi.</p></div>
+    <div class="card hot"><h4>Jangan pernah biarkan UI menjadi satu-satunya penegak</h4><p><code>&lt;RoleGate&gt;</code> menyembunyikan; <code>requireRole()</code> menegakkan.</p></div>
+    <div class="card hot"><h4>Selalu build sebelum deploy</h4><p><code>wrangler deploy</code> mengunggah <code>dist/</code> apa adanya — ia tidak mengompilasi.</p></div>
+    <div class="card hot"><h4>Jangan pernah percaya keluaran wrangler yang di-pipe</h4><p>Keluaran yang terpotong pernah menghasilkan kesimpulan keliru; tulis ke berkas lalu parsing JSON utuh.</p></div>
+  </div>
+
+  <h4>Kenapa generasinya bisa diaudit</h4>
+  <div class="grid g3">
+    <div class="card brand"><h4>Changelog PRD v1.1 → v1.21</h4>
+      <p>Setiap entri mencatat niat prompt, keputusan desain, dan setiap koreksi atas klaim sebelumnya. Beberapa entri secara eksplisit menarik kembali pernyataan sebelumnya, sehingga dokumen menunjukkan kesalahannya sendiri.</p></div>
+    <div class="card brand"><h4>113 commit</h4>
+      <p>Masing-masing bisa dilacak ke satu penambahan, dengan pembaruan dokumentasi di-commit bersama kode (<code>docs: selaraskan PRD ke v1.21</code>).</p></div>
+    <div class="card brand"><h4>Memori proyek</h4>
+      <p>Log harian plus berkas konvensi terkurasi, sehingga sesi yang mulai dari nol tidak mengulang masalah yang sudah dipecahkan.</p></div>
+  </div>
+</section>
+
+<!-- ══════════════════ 3 ══════════════════ -->
+<section id="value">
+  <h2><span class="num">03</span> — Nilai Bisnis</h2>
+  <p class="lede">Diukur dari repositori, bukan diperkirakan — dan dampaknya dinyatakan sebagai pasangan sebelum/sesudah yang bisa diverifikasi peninjau.</p>
+
+  <h3>3.1 &nbsp;Metrik Terukur</h3>
+
+  <div class="stats">
+    <div class="stat"><div class="v">113</div><div class="k">commit dalam 31 hari (17 Sep – 17 Okt 2026)</div></div>
+    <div class="stat"><div class="v">27,881</div><div class="k">baris TypeScript / TSX di 181 berkas sumber</div></div>
+    <div class="stat"><div class="v">65</div><div class="k">endpoint API di 9 domain</div></div>
+    <div class="stat"><div class="v">13</div><div class="k">tabel basis data · 9 migrasi</div></div>
+    <div class="stat green"><div class="v">540</div><div class="k">assertion integrasi API di 8 skrip</div></div>
+    <div class="stat green"><div class="v">85</div><div class="k">tes unit di 10 berkas / 23 suite</div></div>
+    <div class="stat green"><div class="v">21</div><div class="k">kasus UAT terdokumentasi</div></div>
+    <div class="stat hot"><div class="v">0</div><div class="k">biaya infrastruktur marginal (Workers + D1 tingkat gratis)</div></div>
+  </div>
+
+  <div class="grid g2">
+    <div class="chart">
+      <h4>Permukaan sistem, sebelum dan sesudah</h4>
+      <p class="cap">Artefak sumber versus sistem yang menggantikannya</p>
+      <div class="bars">
+        <div class="bar-row"><span class="lbl">Catatan menu</span><span class="track"><span class="fill" style="width:100%"></span></span><span class="val">43</span></div>
+        <div class="bar-row"><span class="lbl">Item menu</span><span class="track"><span class="fill" style="width:100%"></span></span><span class="val">85</span></div>
+        <div class="bar-row"><span class="lbl">Penugasan piket (bertipe)</span><span class="track"><span class="fill" style="width:100%"></span></span><span class="val">86</span></div>
+        <div class="bar-row"><span class="lbl">Siswa (tertaut ke orang tua)</span><span class="track"><span class="fill" style="width:44%"></span></span><span class="val">38</span></div>
+        <div class="bar-row"><span class="lbl">Pekan yang dimodelkan</span><span class="track"><span class="fill" style="width:13%"></span></span><span class="val">11</span></div>
+        <div class="bar-row"><span class="lbl">Endpoint yang bisa dikueri</span><span class="track"><span class="fill g" style="width:100%"></span></span><span class="val">65</span></div>
+        <div class="bar-row"><span class="lbl">Tampilan yang bisa dinavigasi</span><span class="track"><span class="fill g" style="width:17%"></span></span><span class="val">11</span></div>
+      </div>
+    </div>
+
+    <div class="chart">
+      <h4>Profil pengiriman</h4>
+      <p class="cap">Apa yang dihasilkan 31 hari penambahan berbasis prompt</p>
+      <div class="bars">
+        <div class="bar-row"><span class="lbl">Commit</span><span class="track"><span class="fill" style="width:100%"></span></span><span class="val">113</span></div>
+        <div class="bar-row"><span class="lbl">Berkas sumber</span><span class="track"><span class="fill" style="width:100%"></span></span><span class="val">181</span></div>
+        <div class="bar-row"><span class="lbl">Komponen</span><span class="track"><span class="fill" style="width:36%"></span></span><span class="val">65</span></div>
+        <div class="bar-row"><span class="lbl">Halaman untuk pengguna</span><span class="track"><span class="fill" style="width:8%"></span></span><span class="val">14</span></div>
+        <div class="bar-row"><span class="lbl">Label fitur (F1–F14)</span><span class="track"><span class="fill" style="width:8%"></span></span><span class="val">15</span></div>
+        <div class="bar-row"><span class="lbl">Fitur terkirim</span><span class="track"><span class="fill g" style="width:7%"></span></span><span class="val">12</span></div>
+        <div class="bar-row"><span class="lbl">Skrip pemeriksa peramban</span><span class="track"><span class="fill g" style="width:12%"></span></span><span class="val">20</span></div>
+      </div>
+      <div class="legend" style="margin-top:16px">
+        <span>Dari 15 label fitur: <strong>12 terkirim</strong>, 1 sebagian (ekspor PDF tertunda), 1 direncanakan (notifikasi), 1 ditinggalkan atas desain.</span>
+      </div>
+    </div>
+  </div>
+
+  <h3>3.2 &nbsp;Dampak yang Terdefinisi Jelas</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Dampak</th><th>Sebelum</th><th>Sesudah</th><th>Cara verifikasinya</th></tr></thead>
+      <tbody>
+        <tr><td><strong>I1</strong></td><td>Waktu menjawab “snack hari ini apa?”</td><td>Buka berkas teks, cari tanggalnya, baca satu baris</td><td>Satu layar setelah masuk</td><td><code>/hari-ini</code> kartu hari; <code>check-hari-ini-layout.mjs</code></td></tr>
+        <tr><td><strong>I2</strong></td><td>Keterlihatan petugas</td><td>Nama di dokumen yang tidak dimiliki siapa pun</td><td>Petugas adalah relasi bertipe; nomor telepon wali petugas jadi tautan <code>wa.me</code> , dengan “belum diperbarui” dibedakan dari “tanpa petugas”</td><td>Tes unit untuk <code>phone.ts</code> / <code>whatsapp.ts</code>; <code>petugasPhone</code> assertion di <code>test-petugas.mjs</code></td></tr>
+        <tr><td><strong>I3</strong></td><td>Beban koordinasi bulanan</td><td>Satu admin memelihara enam kelas</td><td>Enam korlas masing-masing memelihara satu kelas; admin tetap punya override seluruh sekolah</td><td>Tes peran di <code>test-auth.mjs</code>; <code>403</code> assertion untuk penulisan lintas kelas</td></tr>
+        <tr><td><strong>I4</strong></td><td>Kelas terbit separuh</td><td>Tidak terdeteksi — berkasnya dikirim atau tidak</td><td><span class="yes">Mustahil.</span> Publikasi menolak dengan <code>409 drafts_remaining</code> dan menyebut kelasnya</td><td><code>test-status.mjs</code> — 22 assertion</td></tr>
+        <tr><td><strong>I5</strong></td><td>Keadilan beban piket</td><td>Hanya perasaan, tak bisa diverifikasi</td><td>Laporan yang memeringkat setiap orang tua menurut piket yang diambil, plus daftar orang tua yang tidak mengambil sama sekali</td><td><code>GET /api/laporan</code>; berbasis klaim, sehingga tidak bisa bertentangan dengan yang dilihat orang tua</td></tr>
+        <tr><td><strong>I6</strong></td><td>Mengambil tanggal kosong</td><td>Balasan pertama di grup yang menang, tanpa jejak</td><td>Aman dari rebutan di level basis data lewat <code>UNIQUE(schedule_id)</code></td><td><code>test-claim-cross-class.mjs</code> — 9 assertion</td></tr>
+        <tr><td><strong>I7</strong></td><td>Masukan keliru dari sekolah</td><td>Pekan yang salah label diterima tanpa suara</td><td>Pengimpor mencocokkan label hari dengan kalender sungguhan, menggeser pekan yang salah label, memberi peringatan; <code>dryRun</code> untuk pratinjau sebelum menulis</td><td><code>test-api.mjs</code> seksi 24 — 38 assertion</td></tr>
+        <tr><td><strong>I8</strong></td><td>Administrasi akun</td><td>Satu akun satu waktu, dengan tangan</td><td>Ekspor Excel → sunting → impor, dengan pratinjau dan alasan per baris</td><td><code>test-api.mjs</code>; 34 tes unit untuk pengimpor / pengekspor</td></tr>
+        <tr><td><strong>I9</strong></td><td>Memori institusi</td><td>Berkasnya ditimpa; bulan lalu hilang</td><td>Riwayat append-only; dua bulan data sumber tersimpan dan bisa ditanyai</td><td><code>data/</code> plus tabel <code>weeks</code> dan <code>schedules</code> </td></tr>
+        <tr><td><strong>I10</strong></td><td>Biaya operasional</td><td>—</td><td>Biaya infrastruktur marginal nol, tanpa staf baru</td><td><code>wrangler.json</code>; deploy tingkat gratis</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>3.3 &nbsp;Rencana Pengukuran</h3>
+  <p class="muted">Sebagian besar klaim dampak sudah terinstrumentasi, karena data yang dibutuhkannya memang sudah tersimpan.</p>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Metrik yang dilacak</th><th>Sumber yang sudah ada</th><th>Apa yang masih perlu dibangun</th></tr></thead>
+      <tbody>
+        <tr><td>Distribusi piket per orang tua</td><td><code>schedule_claims</code> — sudah menjadi sumber <code>/laporan</code></td><td><span class="yes">tidak ada</span> — tampilkan laporan yang ada setiap bulan</td></tr>
+        <tr><td>Porsi tanggal yang diklaim orang tua vs yang ditugaskan korlas</td><td><code>schedule_claims</code> digabung dengan <code>schedules.petugas_*</code> asal</td><td>penghitung di halaman laporan</td></tr>
+        <tr><td>Latensi publikasi (draft → terbit per kelas)</td><td><code>schedules.locked_at</code>, <code>published_at</code></td><td>kueri agregat kecil</td></tr>
+        <tr><td>Kualitas impor (baris dilewati, rentang digeser)</td><td><code>import_logs</code> — ditulis tetapi belum ditampilkan</td><td>tampilan di area admin</td></tr>
+        <tr><td>Jangkauan orang tua</td><td><code>users.isActive</code>, peristiwa pemasangan PWA</td><td>penghitung sederhana</td></tr>
+        <tr><td>Tren keadilan beban piket antar-bulan</td><td>klaim per bulan</td><td>perbandingan bulanan di <code>/laporan</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="margin-top:14px"><code>import_logs</code> adalah contoh paling jelas dari tabel yang ditulis tetapi belum dibaca — data untuk I7 sudah ada hari ini; hanya penyajiannya yang belum.</p>
+
+  <h3 id="limits">3.4 &nbsp;Batasan yang Jujur</h3>
+  <p class="muted">Dinyatakan dengan sengaja: deskripsi yang mengklaim tanpa celah bukanlah deskripsi sistem nyata.</p>
+  <ul class="plain">
+    <li><strong>Ekspor PDF belum dibuat.</strong> Ekspor Excel sudah ada (jadwal dan akun); PDF berorientasi cetak masih terbuka (F5 sebagian).</li>
+    <li><strong>Tanpa notifikasi push.</strong> F6 masih direncanakan; saat ini aplikasi harus dibuka supaya bisa dibaca.</li>
+    <li><strong>Tanpa akun untuk siswa.</strong> Piket dimodelkan sebagai kewajiban keluarga, jadi akun wali adalah satu-satunya pintu masuk. Tampilan siswa akan menjadi keputusan baru, bukan sekadar pengaturan.</li>
+    <li><strong>Tanpa data offline.</strong> Aplikasi bisa dipasang sebagai PWA, tetapi jadwal tidak di-cache untuk dibaca offline — pilihan yang disengaja, karena jadwal basi lebih buruk daripada tidak ada jadwal.</li>
+    <li><strong>Tanpa analitik penggunaan.</strong> Tidak ada yang melacak halaman mana yang benar-benar dibuka orang tua, jadi klaim adopsi di §3.3 terukur tetapi belum diukur.</li>
+    <li><strong><code>import_logs</code> ditulis, tidak ditampilkan.</strong> Jejak auditnya ada; UI-nya tidak.</li>
+    <li><strong>Asumsi satu sekolah.</strong> Model data tidak punya <code>school_id</code>. Multi-penyewa akan menjadi migrasi, bukan perubahan konfigurasi.</li>
+  </ul>
+
+  <h3>Lampiran A — Indeks bukti</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Klaim</th><th>Di mana memverifikasi</th></tr></thead>
+      <tbody>
+        <tr><td>Inventaris fitur dan alasannya</td><td><code>docs/PRD_Pizza_Snack_Play.md</code> §4, changelog v1.1–v1.21</td></tr>
+        <tr><td>Volume data sumber (136 baris, 38 siswa, 86 penugasan)</td><td><code>data/output_jadwal_piket.txt</code></td></tr>
+        <tr><td>Inventaris tabel dan migrasi</td><td><code>drizzle/migrations/*.sql</code> — 9 berkas, 13 tabel</td></tr>
+        <tr><td>Inventaris endpoint (65)</td><td><code>src/api/*/route.ts</code></td></tr>
+        <tr><td>Batas peran</td><td><code>requireRole</code> di <code>src/api/*/route.ts</code> · <code>src/api/utils/classScope.ts</code> · <code>src/components/AdminOnly.tsx</code></td></tr>
+        <tr><td>Inventaris navigasi dan halaman</td><td><code>src/components/navItems.ts</code> · <code>src/routes/</code></td></tr>
+        <tr><td>Volume tes (85 unit · 540 integrasi)</td><td><code>src/**/*.test.ts</code> · <code>scripts/test-*.mjs</code></td></tr>
+        <tr><td>Kasus UAT (21)</td><td><code>docs/UAT_Result.md</code></td></tr>
+        <tr><td>Model deploy dan biaya</td><td><code>wrangler.json</code> · <code>package.json</code></td></tr>
+        <tr><td>Riwayat insiden produksi</td><td>Changelog PRD v1.10 (FK komposit) · v1.12 (pekan salah label)</td></tr>
+        <tr><td>Buku besar prompt-ke-artefak</td><td><code>git log</code> (113 commit) · changelog PRD · <code>.workbuddy-ai/memory/</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap row">
+    <span><strong style="color:#51277C">Pizza Snack Play</strong> — Deskripsi Proyek Visualisasi · v1.0 · 17 Oktober 2026</span>
+    <span>Setiap angka diukur dari repositori · <span style="font-family:ui-monospace,monospace">pizza-snack-play.topidesta.workers.dev</span></span>
+  </div>
+</footer>
+
+</body>
+</html>

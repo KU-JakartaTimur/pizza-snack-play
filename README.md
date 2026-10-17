@@ -224,6 +224,8 @@ pizza-snack-play/
 │   ├── generate-pwa-icons.py     # Bangkitkan ikon PWA + favicon dari logo.png
 │   ├── category-icons.html       # Sumber SVG ikon 8 kategori bawaan
 │   ├── generate-category-icons.mjs  # Raster ikon (Edge headless) -> scripts/sql/kategori-icons.sql
+│   ├── generate-cover.py         # Sampul 16:9 untuk etalase -> outputs/cover-380x216.{png,jpg} (+ 2x)
+│   ├── fonts/                    # Baloo 2 Bold + Inter Medium (subset) — huruf sampul
 │   ├── check-migrations.mjs      # Tolak titik-koma di komentar migrasi sebelum `db:migrate`
 │   ├── sql/                      # Semai ikon kategori & patch jadwal bulanan
 │   ├── test-auth.mjs             # 33 uji end-to-end auth

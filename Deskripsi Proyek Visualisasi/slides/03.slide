@@ -1,0 +1,100 @@
+<Slide
+    style={{
+        width: '1280px',
+        height: '720px',
+        background: 'linear-gradient(135deg, #51277C 0%, #7A45A8 100%)',
+        flexDirection: 'column',
+        paddingTop: 20,
+        paddingBottom: 20,
+        paddingLeft: 64,
+        paddingRight: 64,
+        position: 'relative',
+        overflow: 'hidden',
+    }}
+>
+    {/* dekorasi */}
+    <Box
+        style={{
+            position: 'absolute',
+            top: -150,
+            right: -110,
+            width: 420,
+            height: 420,
+            borderRadius: 210,
+            background: 'linear-gradient(135deg, #AFC440 0%, #F3B26C 100%)',
+            opacity: 0.16,
+        }}
+    />
+    <Box style={{ position: 'absolute', right: 40, bottom: 60, opacity: 0.10 }}>
+        <Text
+            style={{
+                fontSize: 300,
+                fontWeight: 'bold',
+                color: '#FFFFFF',
+                lineHeight: 1,
+                fontFamily: 'Trebuchet MS',
+            }}
+        >
+            01
+        </Text>
+    </Box>
+
+    {/* isi */}
+    <Box
+        style={{
+            position: 'relative',
+            zIndex: 1,
+            flex: 1,
+            justifyContent: 'center',
+            paddingTop: 40,
+        }}
+    >
+        <Text
+            style={{
+                fontSize: 18,
+                fontWeight: 'bold',
+                color: '#AFC440',
+                letterSpacing: 4,
+            }}
+        >BAB 01</Text>
+
+        <Text
+            style={{
+                fontSize: 60,
+                fontWeight: 'bold',
+                color: '#FFFFFF',
+                lineHeight: 1.15,
+                marginTop: 20,
+                fontFamily: 'Trebuchet MS',
+            }}
+        >Ringkasan Proyek</Text>
+
+        <Box style={{ width: 72, height: 6, background: '#AFC440', marginTop: 24 }} />
+
+        <Text
+            style={{
+                fontSize: 20,
+                color: 'rgba(255,255,255,0.84)',
+                lineHeight: 1.6,
+                marginTop: 26,
+                maxWidth: 620,
+                fontFamily: 'Verdana',
+            }}
+        >Dari mana titik nyerinya berasal, siapa penggunanya, dan satu masalah yang harus dipecahkan sistem.</Text>
+    </Box>
+
+    {/* footer */}
+    <Box
+        style={{
+            position: 'relative',
+            zIndex: 1,
+            height: 40,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+        }}
+    >
+        <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)' }}>Pizza Snack Play · Deskripsi Proyek Visualisasi</Text>
+        <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)' }}>03 / 16</Text>
+    </Box>
+</Slide>

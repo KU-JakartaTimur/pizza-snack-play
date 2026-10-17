@@ -1,0 +1,232 @@
+<Slide
+    style={{
+        width: '1280px',
+        height: '720px',
+        background: '#FAF7F2',
+        flexDirection: 'column',
+        paddingTop: 20,
+        paddingBottom: 20,
+        paddingLeft: 64,
+        paddingRight: 64,
+        position: 'relative',
+    }}
+>
+    {/* ── zona A · judul ── */}
+    <Box style={{ height: 110, justifyContent: 'flex-start' }}>
+        <Text
+            style={{
+                fontSize: 34,
+                fontWeight: 'bold',
+                color: '#2A2333',
+                lineHeight: 1.3,
+                fontFamily: 'Trebuchet MS',
+            }}
+        >Isi dek ini</Text>
+        <Box style={{ width: 72, height: 6, background: '#51277C', marginTop: 12 }} />
+    </Box>
+
+    {/* ── zona B · isi ── */}
+    <Box style={{ height: 530, flexDirection: 'column', gap: 18 }}>
+        <Box
+            style={{
+                flexDirection: 'row',
+                gap: 24,
+                background: '#FFFFFF',
+                borderRadius: 10,
+                paddingTop: 22,
+                paddingBottom: 22,
+                paddingLeft: 24,
+                paddingRight: 24,
+                boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                borderTop: '3px solid #AFC440',
+            }}
+        >
+            <Box
+                style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: 28,
+                    background: '#51277C',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                }}
+            >
+                <Text
+                    style={{
+                        fontSize: 22,
+                        fontWeight: 'bold',
+                        color: '#FFFFFF',
+                        fontFamily: 'Trebuchet MS',
+                    }}
+                >
+                    01
+                </Text>
+            </Box>
+            <Box style={{ flex: 1, flexDirection: 'column', gap: 6 }}>
+                <Box
+                    style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                    }}
+                >
+                    <Text
+                        style={{
+                            fontSize: 24,
+                            fontWeight: 'bold',
+                            color: '#2A2333',
+                            fontFamily: 'Trebuchet MS',
+                        }}
+                    >Ringkasan Proyek</Text>
+                    <Text style={{ fontSize: 14, color: '#6B6478' }}>halaman 03–07</Text>
+                </Box>
+                <Text style={{ fontSize: 17, color: '#6B6478', lineHeight: 1.5 }}>Artefak sumber dan masalah yang ditimbulkannya, delapan skenario berulang, tiga peran beserta batas di antaranya, dan satu masalah yang harus dipecahkan sistem.</Text>
+            </Box>
+        </Box>
+
+        <Box
+            style={{
+                flexDirection: 'row',
+                gap: 24,
+                background: '#FFFFFF',
+                borderRadius: 10,
+                paddingTop: 22,
+                paddingBottom: 22,
+                paddingLeft: 24,
+                paddingRight: 24,
+                boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                borderTop: '3px solid #AFC440',
+            }}
+        >
+            <Box
+                style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: 28,
+                    background: '#51277C',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                }}
+            >
+                <Text
+                    style={{
+                        fontSize: 22,
+                        fontWeight: 'bold',
+                        color: '#FFFFFF',
+                        fontFamily: 'Trebuchet MS',
+                    }}
+                >
+                    02
+                </Text>
+            </Box>
+            <Box style={{ flex: 1, flexDirection: 'column', gap: 6 }}>
+                <Box
+                    style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                    }}
+                >
+                    <Text
+                        style={{
+                            fontSize: 24,
+                            fontWeight: 'bold',
+                            color: '#2A2333',
+                            fontFamily: 'Trebuchet MS',
+                        }}
+                    >Desain Solusi</Text>
+                    <Text style={{ fontSize: 14, color: '#6B6478' }}>halaman 08–12</Text>
+                </Box>
+                <Text style={{ fontSize: 17, color: '#6B6478', lineHeight: 1.5 }}>Mesin jadwal tiga status, model wewenang dua lapis, tumpukan lapisan teknis, dan bagaimana prompt menggerakkan generasi AI di dalam loop yang bisa diverifikasi.</Text>
+            </Box>
+        </Box>
+
+        <Box
+            style={{
+                flexDirection: 'row',
+                gap: 24,
+                background: '#FFFFFF',
+                borderRadius: 10,
+                paddingTop: 22,
+                paddingBottom: 22,
+                paddingLeft: 24,
+                paddingRight: 24,
+                boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                borderTop: '3px solid #AFC440',
+            }}
+        >
+            <Box
+                style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: 28,
+                    background: '#51277C',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                }}
+            >
+                <Text
+                    style={{
+                        fontSize: 22,
+                        fontWeight: 'bold',
+                        color: '#FFFFFF',
+                        fontFamily: 'Trebuchet MS',
+                    }}
+                >
+                    03
+                </Text>
+            </Box>
+            <Box style={{ flex: 1, flexDirection: 'column', gap: 6 }}>
+                <Box
+                    style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                    }}
+                >
+                    <Text
+                        style={{
+                            fontSize: 24,
+                            fontWeight: 'bold',
+                            color: '#2A2333',
+                            fontFamily: 'Trebuchet MS',
+                        }}
+                    >Nilai Bisnis</Text>
+                    <Text style={{ fontSize: 14, color: '#6B6478' }}>halaman 13–16</Text>
+                </Box>
+                <Text style={{ fontSize: 17, color: '#6B6478', lineHeight: 1.5 }}>Metrik hasil pengukuran, bukan taksiran; sepuluh pasangan dampak sebelum/sesudah yang masing-masing menyebut verifiernya; dan batasan yang ditulis di halaman yang sama dengan klaimnya.</Text>
+            </Box>
+        </Box>
+
+        <Box
+            style={{
+                marginTop: 'auto',
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 12,
+                background: 'rgba(81,39,124,0.06)',
+                borderRadius: 8,
+                paddingTop: 14,
+                paddingBottom: 14,
+                paddingLeft: 20,
+                paddingRight: 20,
+            }}
+        >
+            <Box style={{ width: 6, height: 22, background: '#F3B26C' }} />
+            <Text style={{ fontSize: 16, color: '#51277C' }}>Setiap angka di dek ini diukur dari repositori, bukan ditaksir.</Text>
+        </Box>
+    </Box>
+
+    {/* ── zona C · footer ── */}
+    <Box
+        style={{
+            height: 40,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+        }}
+    >
+        <Text style={{ fontSize: 14, color: '#6B6478' }}>Pizza Snack Play · Deskripsi Proyek Visualisasi</Text>
+        <Text style={{ fontSize: 14, color: '#6B6478' }}>02 / 16</Text>
+    </Box>
+</Slide>

@@ -4,6 +4,7 @@ import type { ClaimInput } from "../../types/claim";
 import type { AuthEnv } from "../middleware/auth";
 import { resolveReadClass } from "../utils/classScope";
 import { parseId, validateRange } from "../utils/params";
+import { whatsappService } from "../whatsapp/service";
 import {
   responseBadRequest,
   responseConflict,
@@ -89,6 +90,36 @@ class ClaimController {
     });
 
     if (!result.ok) return mapError(c, result.error, result.takenBy);
+
+    /*
+     * Konfirmasi WhatsApp dikirim **di latar belakang**. Klaimnya sudah sah
+     * dan tersimpan; menahannya sampai gateway menjawab berarti orang tua
+     * menunggu beberapa detik hanya untuk hiasan. `waitUntil` dipakai supaya
+     * Worker tidak mematikan permintaan sebelum pesannya sempat terkirim.
+     *
+     * `confirmClaimQuietly()` tidak pernah melempar, jadi jalur ini tidak bisa
+     * menggagalkan klaim — termasuk saat gateway belum dikonfigurasi.
+     */
+    const confirmation = whatsappService.confirmClaimQuietly(
+      getDb(c.env),
+      c.env,
+      {
+        parentId: result.data.parentId,
+        parentName: result.data.parentName,
+        studentName: result.data.studentName,
+        className: result.data.className,
+        date: result.data.scheduleDate,
+        menuName: result.data.menuName,
+      },
+    );
+
+    try {
+      c.executionCtx.waitUntil(confirmation);
+    } catch {
+      // Lingkungan tanpa ExecutionContext (mis. uji handler langsung).
+      await confirmation;
+    }
+
     return responseCreated(c, "Tanggal berhasil diambil", result.data);
   };
 

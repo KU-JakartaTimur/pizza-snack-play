@@ -11,6 +11,10 @@ import {
 import { AdminOnly } from "@/components/AdminOnly";
 import { PageHeader } from "@/components/AppShell";
 import { Card, CardHeader, ErrorState, Spinner } from "@/components/ui";
+import {
+  PushNotificationCard,
+  WhatsAppBroadcastCard,
+} from "@/components/notifications";
 import { api } from "@/lib/api";
 import { formatIndonesianDate } from "@/lib/date";
 
@@ -137,6 +141,11 @@ function DashboardContent() {
           Kelola kategori di menu <span className="font-medium text-slate-700">Kategori</span>.
         </p>
       </Card>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <PushNotificationCard />
+        <WhatsAppBroadcastCard />
+      </div>
     </>
   );
 }

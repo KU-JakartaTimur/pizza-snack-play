@@ -283,7 +283,7 @@ async function syncPendingRequests() {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Push Notification (placeholder)
+// Push Notification
 // ─────────────────────────────────────────────────────────────
 
 self.addEventListener("push", (event) => {

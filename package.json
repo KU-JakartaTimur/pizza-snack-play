@@ -12,6 +12,7 @@
     "publish": true
   },
   "dependencies": {
+    "@pushforge/builder": "^2.0.5",
     "@tailwindcss/vite": "^4.2.1",
     "@tanstack/react-query": "^5.90.21",
     "@tanstack/react-query-devtools": "^5.91.3",
@@ -25,6 +26,7 @@
     "lucide-react": "^0.577.0",
     "react": "19.2.0",
     "react-dom": "19.2.0",
+    "sikuwa": "^0.1.8",
     "tailwindcss": "^4.2.1"
   },
   "devDependencies": {
@@ -60,6 +62,7 @@
     "dev": "vite",
     "dev:prod": "tsc -b && vite build && wrangler dev --remote",
     "db:generate": "drizzle-kit generate",
+    "vapid:generate": "bun run scripts/generate-vapid.mjs",
     "db:migrate": "bun run scripts/check-migrations.mjs && wrangler d1 migrations apply pizza-snack-play --remote",
     "db:migrate:local": "bun run scripts/check-migrations.mjs && wrangler d1 migrations apply pizza-snack-play --local",
     "db:seed": "bun run scripts/seed.ts",

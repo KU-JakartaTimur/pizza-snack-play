@@ -64,6 +64,13 @@
       "when": 1791779715721,
       "tag": "0008_heavy_human_robot",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1799623200000,
+      "tag": "0009_notification_tables",
+      "breakpoints": true
     }
   ]
 }

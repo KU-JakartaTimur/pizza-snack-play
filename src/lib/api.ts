@@ -542,6 +542,112 @@ export const api = {
   stats: {
     summary: () => unwrap<StatsSummaryDto>(http.get("stats/summary")),
   },
+
+  notifications: {
+    /** Ambil VAPID public key untuk subscribe push notification. */
+    vapidKey: () =>
+      unwrap<{ publicKey: string }>(http.get("notifications/push/vapid-key")),
+
+    /** Subscribe browser ke push notification — bisa tanpa login. */
+    subscribePush: (body: {
+      endpoint: string;
+      keys: { p256dh: string; auth: string };
+    }) =>
+      unwrapFull<{ id: number }>(
+        http.post("notifications/push/subscribe", { json: body }),
+      ),
+
+    /** Unsubscribe browser dari push notification. */
+    unsubscribePush: (body: { endpoint: string }) =>
+      unwrapFull<null>(
+        http.post("notifications/push/unsubscribe", { json: body }),
+      ),
+
+    /**
+     * Kaitkan subscription yang sudah ada ke akun yang sedang login.
+     * Dipakai saat user subscribe dari halaman depan, lalu masuk.
+     */
+    linkPush: (body: { endpoint: string }) =>
+      unwrapFull<{ updated: boolean }>(
+        http.post("notifications/push/link", { json: body }),
+      ),
+
+    /** Kirim push notification — admin & korlas saja. */
+    sendPush: (body: {
+      title: string;
+      body: string;
+      icon?: string;
+      tag?: string;
+      url?: string;
+      className?: string;
+    }) =>
+      unwrapFull<{ sent: number; failed: number }>(
+        http.post("notifications/push/send", { json: body }),
+      ),
+  },
+
+  /**
+   * Notifikasi WhatsApp lewat `sikuwa` — admin & korlas.
+   *
+   * Status gateway dipisah dari pengiriman supaya UI bisa mematikan tombol
+   * kirim sebelum ditekan, alih-alih membiarkan pengguna menunggu lalu gagal.
+   */
+  whatsapp: {
+    /** Kesiapan gateway (tanpa token) — admin & korlas. */
+    status: () =>
+      unwrap<WhatsappStatus>(http.get("whatsapp/status")),
+
+    /** Kirim satu pesan uji ke nomor tertentu — admin saja. */
+    sendTest: (body: { destination: string; message?: string }) =>
+      unwrapFull<{ ok: boolean; provider: string; detail: string }>(
+        http.post("whatsapp/test", { json: body }),
+      ),
+
+    /** Broadcast bebas ke orang tua — admin & korlas. */
+    broadcast: (body: { message: string; targetScope?: string }) =>
+      unwrapFull<{
+        broadcastId: number;
+        targetCount: number;
+        sent: number;
+        failed: number;
+        skipped: number;
+      }>(http.post("whatsapp/broadcast", { json: body })),
+
+    /** Pengingat piket untuk satu tanggal — admin & korlas. */
+    remindPetugas: (body: { date?: string; className?: string }) =>
+      unwrapFull<{
+        broadcastId: number;
+        date: string;
+        targetCount: number;
+        sent: number;
+        failed: number;
+        skipped: number;
+      }>(http.post("whatsapp/petugas", { json: body })),
+
+    /** Riwayat pengiriman (50 terakhir) — admin & korlas. */
+    history: () => unwrap<WhatsappBroadcast[]>(http.get("whatsapp/history")),
+  },
 };
 
 export type { AuthUser };
+
+export interface WhatsappBroadcast {
+  id: number;
+  senderId: number;
+  message: string;
+  targetScope: string;
+  targetCount: number;
+  sentCount: number;
+  status: string;
+  errorMessage: string | null;
+  createdAt: string;
+}
+
+/** Kesiapan gateway WhatsApp — tidak memuat token. */
+export interface WhatsappStatus {
+  configured: boolean;
+  provider: string | null;
+  session: string | null;
+  /** Alasan belum siap, siap ditampilkan apa adanya ke admin. */
+  reason: string | null;
+}

@@ -425,6 +425,62 @@ export const importLogs = sqliteTable("import_logs", {
 });
 
 // ─────────────────────────────────────────────────────────────
+// Push subscription — Web Push API untuk PWA notification.
+//
+// Satu endpoint unik per browser/device. `user_id` opsional: bila user
+// belum login saat subscribe (mis. di halaman depan), kolom ini NULL.
+// `class_name` digunakan untuk mengirim notifikasi ke kelas tertentu.
+// ─────────────────────────────────────────────────────────────
+export const pushSubscriptions = sqliteTable(
+  "push_subscriptions",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    endpoint: text("endpoint").notNull(),
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    userId: integer("user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    className: text("class_name"),
+    createdAt: text("created_at").notNull().default(now),
+  },
+  (table) => [
+    uniqueIndex("idx_push_sub_endpoint").on(table.endpoint),
+    index("idx_push_sub_user").on(table.userId),
+    index("idx_push_sub_class").on(table.className),
+  ],
+);
+
+// ─────────────────────────────────────────────────────────────
+// Riwayat broadcast WhatsApp.
+//
+// `target_count` = jumlah orang tua yang punya nomor HP aktif.
+// `sent_count`   = jumlah yang berhasil dikirim (tergantung gateway).
+// `status`: 'pending' | 'sending' | 'completed' | 'failed'
+// ─────────────────────────────────────────────────────────────
+export const whatsappBroadcasts = sqliteTable(
+  "whatsapp_broadcasts",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    senderId: integer("sender_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    message: text("message").notNull(),
+    /** 'all' | nama kelas tertentu */
+    targetScope: text("target_scope").notNull().default("all"),
+    targetCount: integer("target_count").notNull().default(0),
+    sentCount: integer("sent_count").notNull().default(0),
+    status: text("status").notNull().default("pending"),
+    errorMessage: text("error_message"),
+    createdAt: text("created_at").notNull().default(now),
+  },
+  (table) => [
+    index("idx_wa_broadcast_sender").on(table.senderId),
+    index("idx_wa_broadcast_status").on(table.status),
+  ],
+);
+
+// ─────────────────────────────────────────────────────────────
 // Tipe inferensi
 // ─────────────────────────────────────────────────────────────
 export type Category = typeof categories.$inferSelect;
@@ -465,3 +521,9 @@ export type NewSetting = typeof settings.$inferInsert;
 
 export type ImportLog = typeof importLogs.$inferSelect;
 export type NewImportLog = typeof importLogs.$inferInsert;
+
+export type PushSubscription = typeof pushSubscriptions.$inferSelect;
+export type NewPushSubscription = typeof pushSubscriptions.$inferInsert;
+
+export type WhatsappBroadcast = typeof whatsappBroadcasts.$inferSelect;
+export type NewWhatsappBroadcast = typeof whatsappBroadcasts.$inferInsert;

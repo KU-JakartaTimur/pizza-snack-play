@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/AppShell";
 import { AccountInfoCard } from "@/components/profile/AccountInfoCard";
 import { ChangePasswordCard } from "@/components/profile/ChangePasswordCard";
 import { ChildrenCard } from "@/components/profile/ChildrenCard";
+import { PushNotificationCard } from "@/components/notifications";
 import { useAuth } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/_app/profil")({
@@ -30,6 +31,8 @@ function ProfilePage() {
       <div className="space-y-6">
         {/* Admin tidak punya profil orang tua, jadi tidak ada anak yang dikelola. */}
         {!isAdmin && <ChildrenCard />}
+
+        <PushNotificationCard />
 
         <div className="grid gap-6 lg:grid-cols-2">
           <AccountInfoCard />

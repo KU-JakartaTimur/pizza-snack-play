@@ -13,6 +13,8 @@ import {
   weeksRoute,
 } from "./schedules/route";
 import { statsRoute } from "./stats/route";
+import { notificationsRoute } from "./notifications/route";
+import { whatsappRoute } from "./whatsapp/route";
 import { responseOK } from "./utils/response";
 
 const app = new Hono<{ Bindings: Env }>().basePath("/api");
@@ -40,5 +42,7 @@ app.route("/categories", categoriesRoute);
 app.route("/parents", parentsRoute);
 app.route("/profile", profileRoute);
 app.route("/stats", statsRoute);
+app.route("/notifications", notificationsRoute);
+app.route("/whatsapp", whatsappRoute);
 
 export default app;

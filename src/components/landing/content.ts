@@ -452,9 +452,9 @@ export const LANDING_TECH: LandingTechLayer[] = [
 
 /** Angka isi aplikasi — dihitung dari route API dan migrasi Drizzle. */
 export const LANDING_ABOUT_STATS = [
-  { value: "9", label: "modul API" },
-  { value: "65", label: "endpoint" },
-  { value: "13", label: "tabel D1" },
+  { value: "11", label: "modul API" },
+  { value: "75", label: "endpoint" },
+  { value: "15", label: "tabel D1" },
   { value: "3", label: "peran pengguna" },
 ] as const;
 
@@ -475,6 +475,8 @@ export const LANDING_ABOUT_MODULES = [
   { name: "profile", label: "Profil & anak" },
   { name: "laporan", label: "Laporan piket" },
   { name: "stats", label: "Statistik" },
+  { name: "notifications", label: "Notifikasi push" },
+  { name: "whatsapp", label: "Kabar WhatsApp" },
 ] as const;
 
 /** Satu kalimat penutup: apa yang **tidak** ada di aplikasi ini. */

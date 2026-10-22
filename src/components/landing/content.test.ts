@@ -102,7 +102,7 @@ describe("teks halaman depan", () => {
   });
 
   test("modul yang disebut di bagian tentang benar-benar ada di src/api", () => {
-    // Bagian ini menyebut sembilan modul API dengan namanya. Menyebut modul
+    // Bagian ini menyebut setiap modul API dengan namanya. Menyebut modul
     // yang tidak ada — atau melewatkan yang ada — membuat keterangannya bohong,
     // dan itu jenis kebohongan yang tidak terlihat sampai ada yang membuka kode.
     const apiDir = join(import.meta.dir, "../../api");

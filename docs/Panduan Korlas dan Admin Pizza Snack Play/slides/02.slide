@@ -96,8 +96,8 @@
                 {
                     n: '04',
                     t: 'Kunci, publikasi & laporan',
-                    d: 'Kunci–terbit, aksi massal, pantauan, lalu rekap piket.',
-                    p: '13–17',
+                    d: 'Kunci–terbit, aksi massal, pantauan, rekap piket, lalu pengingat WhatsApp.',
+                    p: '13–18',
                 },
             ].map((it, i) => (
                 <Box
@@ -187,6 +187,6 @@
         <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>
             Pizza Snack Play · Panduan Korlas &amp; Admin
         </Text>
-        <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>02 / 18</Text>
+        <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>02 / 19</Text>
     </Box>
 </Slide>

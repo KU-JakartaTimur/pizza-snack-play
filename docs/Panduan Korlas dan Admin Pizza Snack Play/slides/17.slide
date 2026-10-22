@@ -20,138 +20,250 @@
                 lineHeight: 1.3,
             }}
         >
-            Empat hal yang perlu diingat
+            Mengabari orang tua lewat WhatsApp
         </Text>
-        <Box style={{ marginTop: 10, width: 72, height: 6, borderRadius: 3, background: '#51277C' }} />
+        <Box style={{ marginTop: 10, width: 72, height: 6, borderRadius: 3, background: '#AFC440' }} />
     </Box>
 
     {/* ── B · area konten ── */}
-    <Box style={{ height: 530 }}>
-        <Box style={{ height: 470, flexDirection: 'row', gap: 18 }}>
-            {[
-                {
-                    d: 'M7 2v3M17 2v3M3 9h18M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM8 13h8',
-                    t: 'Kosongkan petugas sebelum terbit',
-                    d: 'Bila tanggalnya ingin direbut orang tua, biarkan petugas kosong sebelum dipublikasikan. Setelah terbit, yang masih bisa diisi hanya petugas — menu & catatan tetap terkunci.',
-                    g: 'Tentukan sebelum kunci',
-                },
-                {
-                    d: 'M7 4h10a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3zM7 11l2 2 3-4M8 16h7',
-                    t: 'Selesaikan semua dulu',
-                    d: 'Publikasi menolak selama masih ada hari yang belum dikunci. Periksa kartu status per kelas sebelum menekan tombolnya.',
-                    g: 'Jangan separuh jadi',
-                },
-                {
-                    d: 'M7 11h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2zM8 11V8a4 4 0 0 1 7.5-2',
-                    t: 'Revisi sesudah terbit: minta admin',
-                    d: 'Membuka kunci jadwal wewenang admin. Korlas tidak bisa mencairkan jadwal yang sudah dikunci atau terbit.',
-                    g: 'Sampaikan ke admin',
-                },
-                {
-                    d: 'M7 2v3M17 2v3M3 9h18M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM9 14l6 6M15 14l-6 6',
-                    t: 'Hari libur sekolah wewenang admin',
-                    d: 'Korlas bisa menandai libur pada jadwal kelasnya sendiri. Hari libur yang berlaku untuk semua kelas ditambahkan admin.',
-                    g: 'Berlaku sekolah',
-                },
-            ].map((c, idx) => (
-                <Box
-                    key={idx}
+    <Box style={{ height: 530, flexDirection: 'row', gap: 26 }}>
+        {/* kiri 55% · tiruan kartu Notifikasi WhatsApp di Dashboard */}
+        <Box
+            style={{
+                width: '55%',
+                height: '100%',
+                background: '#FFFFFF',
+                borderRadius: 18,
+                boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                borderTop: '8px solid #AFC440',
+                padding: 22,
+            }}
+        >
+            {/* kepala kartu */}
+            <Box style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Text
                     style={{
-                        flex: 1,
-                        height: '100%',
-                        background: '#FFFFFF',
-                        borderRadius: 16,
-                        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                        padding: 24,
-                        borderTop: '8px solid #AFC440',
+                        fontSize: 22,
+                        fontWeight: 'bold',
+                        color: '#51277C',
+                        fontFamily: 'Trebuchet MS',
+                        lineHeight: 1.3,
                     }}
                 >
-                    <Box
-                        style={{
-                            width: 60,
-                            height: 60,
-                            borderRadius: 30,
-                            background: 'rgba(81,39,124,0.10)',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                        }}
-                    >
-                        <svg width={30} height={30} viewBox='0 0 24 24' xmlns="http://www.w3.org/2000/svg">
-                            <path
-                                fill='none'
-                                stroke='#51277C'
-                                strokeWidth='2'
-                                strokeLinecap='round'
-                                strokeLinejoin='round'
-                                d={c.d}
-                            />
-                        </svg>
-                    </Box>
+                    Notifikasi WhatsApp
+                </Text>
+                <Box
+                    style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 6,
+                        paddingLeft: 12,
+                        paddingRight: 12,
+                        paddingTop: 5,
+                        paddingBottom: 5,
+                        borderRadius: 12,
+                        background: 'rgba(175,196,64,0.18)',
+                    }}
+                >
+                    <Box style={{ width: 8, height: 8, borderRadius: 4, background: '#8FA32E' }} />
+                    <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#5E6B1E', fontFamily: 'Verdana' }}>
+                        Aktif
+                    </Text>
+                </Box>
+            </Box>
+            <Text
+                style={{
+                    marginTop: 4,
+                    fontSize: 14,
+                    color: '#6B6478',
+                    fontFamily: 'Verdana',
+                    lineHeight: 1.4,
+                }}
+            >
+                Nomor sekolah sudah tersambung
+            </Text>
 
+            {/* dua tab */}
+            <Box style={{ marginTop: 14, flexDirection: 'row', gap: 8 }}>
+                <Box
+                    style={{
+                        paddingLeft: 16,
+                        paddingRight: 16,
+                        paddingTop: 8,
+                        paddingBottom: 8,
+                        borderRadius: 10,
+                        background: 'rgba(81,39,124,0.10)',
+                    }}
+                >
+                    <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#51277C', fontFamily: 'Verdana' }}>
+                        Broadcast
+                    </Text>
+                </Box>
+                <Box
+                    style={{
+                        paddingLeft: 16,
+                        paddingRight: 16,
+                        paddingTop: 8,
+                        paddingBottom: 8,
+                        borderRadius: 10,
+                        background: '#51277C',
+                    }}
+                >
+                    <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#FFFFFF', fontFamily: 'Verdana' }}>
+                        Pengingat piket
+                    </Text>
+                </Box>
+            </Box>
+
+            {/* baris tanggal */}
+            <Box style={{ marginTop: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>Tanggal</Text>
+                <Box
+                    style={{
+                        flex: 1,
+                        height: 38,
+                        borderRadius: 10,
+                        border: '1px solid #E3DCD2',
+                        justifyContent: 'center',
+                        paddingLeft: 12,
+                    }}
+                >
+                    <Text style={{ fontSize: 15, color: '#2A2333', fontFamily: 'Verdana' }}>
+                        1 September 2026
+                    </Text>
+                </Box>
+                <Box
+                    style={{
+                        height: 38,
+                        paddingLeft: 14,
+                        paddingRight: 14,
+                        borderRadius: 10,
+                        background: '#51277C',
+                        justifyContent: 'center',
+                    }}
+                >
+                    <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#FFFFFF', fontFamily: 'Verdana' }}>
+                        Kirim
+                    </Text>
+                </Box>
+            </Box>
+
+            {/* pratinjau pesan */}
+            <Box
+                style={{
+                    marginTop: 14,
+                    height: 168,
+                    background: 'rgba(175,196,64,0.10)',
+                    borderRadius: 14,
+                    borderLeft: '5px solid #AFC440',
+                    padding: 14,
+                }}
+            >
+                <Text style={{ fontSize: 13, color: '#6B6478', fontFamily: 'Verdana', lineHeight: 1.4 }}>
+                    Pesan yang akan terkirim
+                </Text>
+                <Text
+                    style={{
+                        marginTop: 8,
+                        fontSize: 15,
+                        color: '#2A2333',
+                        fontFamily: 'Verdana',
+                        lineHeight: 1.5,
+                    }}
+                >
+                    Assalamualaikum Bu Ani, Ani bertugas membawa snack pada Selasa, 1 September 2026
+                    (Roti Abon + Susu). Terima kasih.
+                </Text>
+            </Box>
+
+            {/* hasil kirim */}
+            <Box style={{ marginTop: 14, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#51277C', fontFamily: 'Verdana' }}>
+                    1 terkirim · 0 gagal
+                </Text>
+                <Text style={{ fontSize: 13, color: '#6B6478', fontFamily: 'Verdana' }}>
+                    tersimpan di riwayat
+                </Text>
+            </Box>
+
+            {/* riwayat singkat */}
+            <Box style={{ marginTop: 16, height: 1, background: '#EFEAE1' }} />
+            <Text style={{ marginTop: 12, fontSize: 13, color: '#6B6478', fontFamily: 'Verdana' }}>
+                Riwayat
+            </Text>
+            <Box style={{ marginTop: 8, flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ fontSize: 13, color: '#2A2333', fontFamily: 'Verdana' }}>
+                    1 Sep 2026 · 1 terkirim
+                </Text>
+                <Text style={{ fontSize: 13, color: '#5E6B1E', fontFamily: 'Verdana' }}>selesai</Text>
+            </Box>
+            <Box style={{ marginTop: 7, flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ fontSize: 13, color: '#2A2333', fontFamily: 'Verdana' }}>
+                    30 Agu 2026 · gagal
+                </Text>
+                <Text style={{ fontSize: 13, color: '#A8452C', fontFamily: 'Verdana' }}>
+                    nomor tidak terdaftar
+                </Text>
+            </Box>
+        </Box>
+
+        {/* kanan 45% · empat hal yang perlu diketahui */}
+        <Box style={{ width: '45%', height: '100%', justifyContent: 'space-between' }}>
+            {[
+                {
+                    t: 'Pilih tanggal, tekan Kirim',
+                    d: 'Pengingat berangkat ke wali petugas pada tanggal itu. Bawaannya besok — biasanya tinggal satu tekan.',
+                },
+                {
+                    t: 'Kelas Anda sendiri',
+                    d: 'Korlas hanya bisa mengirim untuk kelasnya. Admin boleh memilih semua kelas sekaligus.',
+                },
+                {
+                    t: 'Konfirmasi berjalan sendiri',
+                    d: 'Begitu orang tua mengambil tanggal, wali langsung menerima konfirmasi — Anda tidak perlu mengabari lagi.',
+                },
+                {
+                    t: 'Kalau gagal, alasannya tertulis',
+                    d: 'Riwayat menyimpan sebabnya, misalnya nomor wali belum terdaftar di WhatsApp.',
+                },
+            ].map((it, i) => (
+                <Box
+                    key={i}
+                    style={{
+                        flex: 1,
+                        background: 'rgba(81,39,124,0.06)',
+                        borderRadius: 14,
+                        borderLeft: '6px solid #F3B26C',
+                        paddingTop: 12,
+                        paddingBottom: 12,
+                        paddingLeft: 16,
+                        paddingRight: 16,
+                    }}
+                >
                     <Text
                         style={{
-                            marginTop: 16,
-                            fontSize: 23,
+                            fontSize: 19,
                             fontWeight: 'bold',
                             color: '#51277C',
                             fontFamily: 'Trebuchet MS',
-                            lineHeight: 1.32,
+                            lineHeight: 1.3,
                         }}
                     >
-                        {c.t}
+                        {it.t}
                     </Text>
-
-                    <Box style={{ marginTop: 12, width: 44, height: 3, borderRadius: 2, background: '#AFC440' }} />
-
                     <Text
                         style={{
-                            marginTop: 12,
-                            fontSize: 17,
-                            color: '#6B6478',
+                            marginTop: 5,
+                            fontSize: 15,
+                            color: '#2A2333',
                             fontFamily: 'Verdana',
-                            lineHeight: 1.5,
+                            lineHeight: 1.45,
                         }}
                     >
-                        {c.d}
+                        {it.d}
                     </Text>
-
-                    <Box style={{ marginTop: 'auto' }}>
-                        <Text
-                            style={{
-                                fontSize: 16,
-                                color: '#51277C',
-                                fontFamily: 'Verdana',
-                                fontWeight: 'bold',
-                            }}
-                        >
-                            {c.g}
-                        </Text>
-                    </Box>
                 </Box>
             ))}
-        </Box>
-
-        {/* simpulan */}
-        <Box
-            style={{
-                marginTop: 14,
-                height: 46,
-                background: '#51277C',
-                borderRadius: 14,
-                justifyContent: 'center',
-                alignItems: 'center',
-            }}
-        >
-            <Text
-                style={{
-                    fontSize: 19,
-                    color: '#FFFFFF',
-                    fontFamily: 'Verdana',
-                    fontWeight: 'bold',
-                }}
-            >
-                Intinya: susun, tentukan petugas, kunci, lalu terbitkan.
-            </Text>
         </Box>
     </Box>
 
@@ -167,6 +279,6 @@
         <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>
             Pizza Snack Play · Panduan Korlas &amp; Admin
         </Text>
-        <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>17 / 18</Text>
+        <Text style={{ fontSize: 14, color: '#6B6478', fontFamily: 'Verdana' }}>17 / 19</Text>
     </Box>
 </Slide>

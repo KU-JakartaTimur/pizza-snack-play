@@ -8,8 +8,8 @@
 | Field               | Value                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Nama Produk**     | Pizza Snack Play                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| **Versi Dokumen**   | 1.22                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| **Tanggal**         | 17 Oktober 2026                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| **Versi Dokumen**   | 1.23                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **Tanggal**         | 21 Oktober 2026                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | **Stack Teknologi** | BHVR — Bun + Hono + Vite + React (Cloudflare Workers + D1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | **Status**          | Draft for Review                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | **Sumber Data**     | `data/output_jadwal_piket.txt` — Jadwal Piket Snack September 2026 (menu + penugasan siswa per kelas); `data/jadwal_piket_snack.txt` — arsip Agustus & September 2026 (menu saja)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
@@ -37,6 +37,7 @@
 | **Perubahan v1.20**  | **Nomor WhatsApp wali petugas jadi tautan di daftar petugas.** Setiap baris petugas pada kartu "Petugas Piket" (`/hari-ini`) dan panel "Petugas kelas lain" (`/pilih-jadwal`) kini mencetak nomor WhatsApp walinya sebagai tautan `wa.me`, karena alasan orang membuka daftar itu justru untuk menghubungi petugasnya — mis. menitipkan snack ke kelas lain. **(a) Satu left join, tanpa endpoint baru:** field `petugasPhone` pada `ClassPetugasDto` diisi `parents.phone` lewat `parents.id = schedules.petugas_parent_id` di `findPublishedPetugasBetween()`; kolom itu sudah terisi untuk **kedua** asal petugas (klaim orang tua di `claims/service.ts` dan penunjukan korlas lewat `resolvePetugas`), jadi jalur klaim tidak perlu disentuh. Kedua join tetap bertemu paling banyak satu baris (`parents.id` primary key, `idx_schedule_claims_schedule` unik), sehingga jumlah barisnya tidak berlipat. **(b) "Tidak ada nomor" dibedakan dari "tidak ada petugas":** wali yang belum mengisi nomornya mendapat baris "Nomor handphone belum di update" — justru keterangan itulah yang memberi tahu bahwa nomornya masih bisa dilengkapi dari menu Profil — sedangkan kelas yang belum punya petugas tetap "Belum ada petugas" saja, sebab tidak ada orang yang nomornya bisa dilengkapi. **(c) Nomor tampil apa adanya** seperti yang disimpan (wali mengetiknya bebas — `0812-3456-7890` pun boleh); hanya `href`-nya yang dinormalisasi `whatsAppLink()` menjadi bentuk yang diterima `wa.me` (`62812…`), supaya wali tetap mengenali nomornya sendiri — bentuk `62812…` di layar tampak seperti salah ketik. **(d) Refactor:** `PetugasRow` dipecah menjadi `PetugasSourceIcon` + `PetugasNames` + `PetugasPhone`, sehingga menambah bagian keempat tidak lagi menuntut menulis ulang seluruh baris; `groupPetugasByDate()` dipecah menjadi `toClassPetugasDto()` + `compareByClass()`. Uji: 2 uji unit baru di `src/api/schedules/petugas.test.ts` (total `bun test src/` 80 lulus), assertion bentuk `petugasPhone` di `scripts/test-petugas.mjs` (23 skenario), dan `outputs/check-petugas-wa.mjs` (10 assertion di peramban nyata untuk ketiga keadaan — fixture D1 dibuat & dihapus oleh skrip itu sendiri) |
 | **Perubahan v1.21**  | **Halaman depan publik (F14).** Sebelumnya `/` hanya melempar pengunjung ke `/hari-ini`, sehingga orang tua yang **belum punya akun** tidak punya cara tahu aplikasi ini untuk apa — satu-satunya halaman yang terbuka (`/login`) hanya meminta username & password. Kini `/` berisi halaman depan: **manfaat**, **fitur per peran** (orang tua, korlas, admin), **alur empat langkah**, dan **tanya jawab**, dengan satu ajakan masuk. **(a) Halamannya tetap tanpa data:** isinya teks statis — tidak ada satu pun permintaan API, tidak ada menu, nama petugas, atau jadwal. **(b) Rute `/` pindah keluar layout `_app`** — `src/routes/_app/index.tsx` (berisi redirect) dihapus, digantikan `src/routes/index.tsx`; pengalihan ke `/hari-ini` dilakukan halaman itu sendiri sesudah sesi terverifikasi, sebab `start_url` di `public/manifest.json` masih `"/"` dan tanpa itu setiap kali PWA dibuka orang tua akan mendarat di halaman promosi. **(c) Teks dipisah dari tampilannya** ke `src/components/landing/content.ts`; `content.test.ts` (5 uji) menjaga butir yang tertinggal kosong, judul kembar, dan — yang paling penting — **contoh kartu di hero memakai menu, komponen, dan nama petugas yang benar-benar ada di `drizzle/seed.sql`**, sebab contoh karangan menjanjikan sesuatu yang tidak pernah muncul di aplikasi. **(d) `buttonClasses()` pindah ke `src/components/buttonStyles.ts`** supaya tautan "Masuk" tampak seperti tombol tanpa menyalin kelasnya, sekaligus memenuhi aturan fast-refresh (berkas `ui.tsx` hanya boleh mengekspor komponen); varian baru `inverse` ditambahkan untuk tombol di atas permukaan gelap. **(e) Koreksi dokumen:** §10.2, AC3, dan §8.2 masih menyatakan bahwa sebelum login pengguna "hanya melihat halaman login" — tidak lagi benar sejak v1.21. Intinya tetap berlaku: **jadwal dan data anak tidak pernah terbuka sebelum login**. **(f) Judul hero memakai util baru `.brand-text-gradient-strong`**, sebab ujung persik gradien lama hanya berkontras ±2,4:1 di atas latar kanvas sedangkan judul besar pun perlu 3:1. Uji: 5 uji unit (`bun test src/`) + `outputs/check-landing.mjs` (17 assertion di peramban nyata, termasuk tamu yang ditolak di `/hari-ini` dan pengguna yang sudah masuk yang tetap diantar ke jadwal) |
 | **Perubahan v1.22**  | **Bagian "Tentang" di halaman depan (F14).** Halaman depan kini menjawab pertanyaan yang tersisa setelah manfaat dan fitur: **dengan apa dibangun, oleh siapa, dan dengan biaya berapa**. Bagian baru `#tentang` — setelah tanya-jawab, sebelum ajakan masuk — memuat empat alasan (dibangun lewat **WorkBuddy**, **biaya operasional nol**, satu bahasa dari ujung ke ujung, diuji di peramban nyata) dan dua kartu rincian: **tumpukan teknologi** per lapisan (klien · API · data · bangun & kirim · pelengkap) dan **isi aplikasi** (9 modul API, 65 endpoint, 13 tabel D1, 3 peran) beserta daftar modulnya. **(a) Angkanya diuji, bukan diklaim:** `content.test.ts` menghitung ulang jumlah modul, endpoint, dan tabel dari `src/api/*/route.ts` serta `drizzle/migrations/`, sehingga menambah endpoint tanpa memperbarui halaman depan akan menggagalkan uji. **(b) Klaim gratis dibatasi pada yang bisa diperiksa:** yang nol adalah **biaya operasional** (Cloudflare Workers + D1 tingkat gratis), bukan biaya pengembangan; tidak ada iklan, pelacakan pihak ketiga, atau langganan. **(c) Bilah atas mendapat jangkar kelima** sehingga menu tengahnya baru muncul di `lg` — pada 768px lima butir meluap 10px (diukur di peramban), dan menu lipat yang bekerja lebih baik daripada tautan berdesakan. **(d) Berkas baru** `src/components/landing/About.tsx`, seluruh teksnya tetap di `content.ts` sesuai pola v1.21. Uji: `outputs/check-about-landing.mjs` (11 assertion — bagian ter-render, isi kartu, bilah atas tidak meluap pada 768/1024/1440) + 2 uji unit baru |
+| **Perubahan v1.23**  | **Notifikasi WhatsApp lewat paket `sikuwa` (F6).** Sebelumnya satu-satunya kabar yang bisa dikirim aplikasi adalah *push* PWA — dan itu pun hanya sampai ke perangkat yang sudah memasang aplikasi serta memberi izin; orang tua yang membuka lewat peramban biasa tidak pernah menerima apa pun. Kini server bisa mengirim **tiga jenis pesan** ke nomor WhatsApp wali: pengingat piket H-1, konfirmasi sesudah orang tua mengambil tanggal, dan pesan uji. **(a) Satu modul pemilik:** `src/api/whatsapp/` (`client` → `templates` → `recipients` → `delivery` → `service` → `controller` → `route`); kode WhatsApp **dikeluarkan** dari `notifications/`, yang kembali murni push — riwayat pengiriman kini punya satu pemilik, bukan dua. **(b) Gateway tidak dikunci ke satu vendor:** `sikuwa` menyalurkan Fonnte, OpenWA, ApiMe, EvolutionAPI, Wuzapi, Wwebjs, dan Waxum; pilih lewat `WHATSAPP_PROVIDER`, kredensialnya lewat `WHATSAPP_TOKEN` atau `WHATSAPP_TOKEN_<Provider>`. Nama gateway yang salah **ditolak dengan pesan yang menyebut daftar yang sah**, bukan gagal senyap. **(c) `Client` dibangun per permintaan dari `c.env`**, bukan disimpan sebagai singleton — `Config.useResolver()` sengaja tidak dipakai sebab nilainya global per isolate dan akan membocorkan kredensial antar-permintaan. **(d) Satu permintaan HTTP per penerima**, bukan satu panggilan borongan: satu nomor yang salah tidak boleh menggagalkan seluruh kelas, dan jumlah sukses/gagal harus jujur. Nomor ganda dideteksi dalam bentuk internasional (`0812…` ≡ `+62 812…`), jadi wali yang tercatat dua kali hanya menerima satu pesan. **(e) Konfirmasi klaim tidak menahan respons:** dikirim lewat `c.executionCtx.waitUntil()`, dan `confirmClaimQuietly()` tidak pernah melempar — gagal kirim WhatsApp tidak boleh membatalkan klaim yang sudah tersimpan. **(f) Kegagalan tidak disembunyikan:** alasan penolakan gateway disimpan di `whatsapp_broadcasts.error_message` dan ikut ditampilkan di kartu dashboard, dipotong 300 karakter. Uji: 46 uji unit baru (`bun test src/`) — termasuk 11 uji rute dan 5 uji layanan dengan basis data "tak tersentuh" berbasis `Proxy` — pengiriman sungguhan ke gateway OpenWA tiruan (`POST /api/sessions/sekolah/messages/send-text`, `X-API-Key`, `chatId` berbentuk `628…@c.us`), dan `outputs/check-whatsapp.mjs` (6 assertion di peramban nyata). **(g) Halaman depan ikut menyesuaikan:** kartu "Isi aplikasinya" di bagian *Tentang* kini menyebut **11 modul API · 75 endpoint · 15 tabel D1**, dan daftar modulnya menambahkan `notifications` serta `whatsapp`. Angka itu tidak diketik sembarangan — `content.test.ts` menghitung ulang dari `src/api/*/route.ts` dan `drizzle/migrations/`, dan justru uji itulah yang menangkap migrasi `0009` memakai kutip ganda sehingga kedua tabelnya tidak terhitung (kini diseragamkan ke backtick seperti migrasi lain) |
 
 ---
 
@@ -220,10 +221,42 @@ Saat ini jadwal piket snack disusun dalam format teks manual (lihat lampiran), d
   `src/api/utils/xlsxRead.ts` — keduanya **tanpa dependency**, karena `.xlsx` hanyalah ZIP
   berisi XML (lihat catatan teknis di `README.md`).
 
-### F6: Notifikasi (Opsional / Future)
+### F6: Notifikasi — ✅ TERIMPLEMENTASI (WhatsApp & push), pengingat terjadwal belum
 
-- **Push notification** — pengingat menu hari ini (opsional, phase 2).
-- **Broadcast WhatsApp** — integrasi opsional.
+Dua saluran, keduanya **tidak wajib** bagi jalannya aplikasi: bila kredensialnya kosong, semua
+fitur lain tetap bekerja dan UI hanya memberi tahu bahwa salurannya belum aktif.
+
+#### 1. WhatsApp lewat `sikuwa` — ✅ Terimplementasi
+
+| Pesan | Kapan dikirim | Penerima |
+| --- | --- | --- |
+| Pengingat piket | Admin/korlas menekan **Kirim pengingat** untuk satu tanggal (bawaan: besok) | Wali petugas pada tanggal itu — semua kelas, atau satu kelas bila korlas |
+| Konfirmasi ambil | Sesudah orang tua berhasil mengambil satu tanggal | Wali yang mengambil |
+| Pesan uji | Admin menekan **Kirim pesan uji** | Nomor admin sendiri |
+
+- **Gateway tidak dikunci ke satu vendor.** `WHATSAPP_PROVIDER` memilih salah satu dari
+  Fonnte, OpenWA, ApiMe, EvolutionAPI, Wuzapi, Wwebjs, Waxum. Nama yang salah **ditolak dengan
+  daftar pilihan yang sah**, bukan gagal senyap.
+- **Satu permintaan HTTP per penerima**, berurutan. Satu nomor yang salah tidak menggagalkan
+  seluruh kelas, dan hitungan "sukses/gagal" tetap jujur.
+- **Nomor dinormalkan sebelum dikirim**; nomor ganda dalam penulisan berbeda (`0812…` ≡
+  `+62 812…`) hanya dikirimi satu pesan.
+- **Riwayat tersimpan** di `whatsapp_broadcasts` beserta alasan kegagalan, dan alasan itu
+  ikut ditampilkan di UI — bukan disembunyikan.
+- Konfirmasi ambil dikirim di latar belakang (`waitUntil`) dan **tidak pernah** membatalkan
+  klaim yang sudah tersimpan.
+
+#### 2. Push notification (PWA) — ✅ Terimplementasi
+
+Langganan perangkat disimpan di `push_subscriptions`, pengiriman memakai VAPID
+(`@pushforge/builder`). Tetap opsional: tanpa kunci VAPID, aplikasi berjalan normal.
+
+#### 3. Yang belum ada
+
+- **Pengiriman terjadwal (cron).** Pengingat piket masih dipicu manusia — belum ada tugas
+  otomatis yang mengirim tiap sore untuk hari berikutnya.
+- **Status terkirim/dibaca dari pihak WhatsApp.** Yang dicatat hanya hasil serah-terima ke
+  gateway, bukan centang biru.
 
 ### F7: Penugasan Piket Siswa (Admin & Korlas — Per Kelas) — ⚠ DIREVISI, tabelnya tidak jadi dibuat
 
@@ -608,21 +641,24 @@ pizza-snack-play/
 │   │   ├── claims/               # Pilih jadwal — klaim tanggal oleh orang tua & korlas
 │   │   ├── classes/              # Daftar kelas + roster siswa per kelas (dropdown petugas)
 │   │   ├── laporan/              # Laporan jadwal — rekap ambil per orang tua (admin & korlas)
+│   │   ├── notifications/        # Notifikasi push PWA — langganan perangkat & pengiriman
 │   │   ├── parents/              # CRUD akun orang tua + anak + korlas + ekspor/impor Excel
 │   │   ├── profile/              # Layanan mandiri: orang tua mengelola akun & anaknya sendiri
 │   │   ├── schedules/            # Jadwal per kelas, minggu, hari libur, kunci & publikasi
 │   │   ├── stats/                # Ringkasan dashboard (admin)
+│   │   ├── whatsapp/             # Notifikasi WhatsApp (`sikuwa`) — pengingat, konfirmasi, riwayat
 │   │   ├── middleware/           # requireAuth, requireRole
 │   │   └── utils/                # response, password, date, slug, params, sql, classScope, xlsx, xlsxRead, base64
 │   ├── database/
 │   │   ├── db.ts                 # Inisialisasi Drizzle + D1 binding + tipe Db
-│   │   └── schema.ts             # Drizzle schema (13 tabel)
+│   │   └── schema.ts             # Drizzle schema (15 tabel)
 │   ├── components/               # AppShell, ScheduleDayCard, ClassSwitcher, ui.tsx
 │   │   ├── buttonStyles.ts       # Bentuk visual tombol (dipakai Button & tautan bergaya tombol)
 │   │   ├── jadwal/               # Bagian jadwal: MonthToolbar, ImportDialog, BulkActionBar, selection.ts
 │   │   ├── kategori/             # CategoryThumb + CategoryPreview (penanda gambar kategori)
 │   │   ├── landing/              # Halaman depan: Hero, Benefits, Features, HowItWorks, Faq,
 │   │   │                         # Closing, MasukLink, Section.tsx, content.ts (+ uji unit)
+│   │   ├── notifications/        # Kartu notifikasi: PushNotificationCard, WhatsAppBroadcastCard
 │   │   ├── parents/              # Bagian akun orang tua: ParentTable, ParentFormModal, ParentBulkBar
 │   │   └── pilih-jadwal/         # MonthSnapshot, ClaimAction, ConflictDialog, PickToolbar, summary.ts
 │   ├── hooks/                    # useClaimActions, useClassRoster, useClasses, useMonthNavigator, usePWA
@@ -712,6 +748,21 @@ CLOUDFLARE_ACCOUNT_ID=
 CLOUDFLARE_DATABASE_ID=
 CLOUDFLARE_D1_TOKEN=
 JWT_SECRET=              # (BARU) untuk signing JWT
+
+# Push notification PWA — opsional, tanpa ini aplikasi tetap jalan
+VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=       # JWK JSON string
+VAPID_SUBJECT=           # mailto: atau https:
+
+# Notifikasi WhatsApp lewat sikuwa — opsional
+WHATSAPP_PROVIDER=       # fonnte | openwa | apime | evolution | wuzapi | wwebjs | waxum
+WHATSAPP_TOKEN=          # token gateway; bentuk per-provider WHATSAPP_TOKEN_<Provider> dibaca lebih dulu
+WHATSAPP_URL=            # alamat server gateway, untuk gateway yang butuh (OpenWA, Wuzapi, ...)
+WHATSAPP_SESSION=        # nama sesi, mis. sekolah
+WHATSAPP_PACING_CYCLE=   # jeda antar pesan (detik) — opsional
+WHATSAPP_TYPING=         # indikator "sedang menulis" — opsional
+WHATSAPP_RETRIES=        # percobaan ulang per pesan — opsional
+WHATSAPP_CHECK_NUMBERS=  # verifikasi nomor terdaftar WhatsApp — opsional
 ```
 
 ---
@@ -962,6 +1013,32 @@ Semua pembacaan menerima query **`?class=`** opsional seperti endpoint jadwal. P
 | DELETE | `/api/schedules/:id/piket/:piketId` | Hapus penugasan piket                                                            | Admin, **Korlas**     |
 
 > **Aturan tulis:** korlas hanya boleh mengelola penugasan pada baris `schedules` yang `class_name` sama dengan kelasnya. Sistem memuat baris jadwal lebih dulu, lalu memanggil `canWriteClass(user, row.className)` — sama seperti `PUT`/`DELETE /schedules/:id`. Admin boleh mengelola penugasan untuk kelas mana pun.
+
+---
+
+### 7.10 WhatsApp Endpoints (`sikuwa`) — ✅ Terimplementasi
+
+Semua rute butuh login. Korlas hanya boleh menyentuh kelasnya sendiri; pengiriman pesan uji
+khusus admin karena menyangkut konfigurasi server, bukan isi pesan.
+
+| Method | Path                      | Deskripsi                                                       | Role          |
+| ------ | ------------------------- | --------------------------------------------------------------- | ------------- |
+| GET    | `/api/whatsapp/status`    | Kesiapan gateway: nama provider, aktif/tidak, alasan bila belum | Admin, Korlas |
+| POST   | `/api/whatsapp/test`      | Kirim satu pesan uji ke nomor sendiri                           | **Admin**     |
+| POST   | `/api/whatsapp/broadcast` | Pesan bebas ke wali satu kelas (`class`) atau semua kelas       | Admin, Korlas |
+| POST   | `/api/whatsapp/petugas`   | Pengingat piket untuk satu tanggal (`date`, bawaan besok)       | Admin, Korlas |
+| GET    | `/api/whatsapp/history`   | Riwayat pengiriman terakhir                                     | Admin, Korlas |
+
+**Body `POST /api/whatsapp/petugas`:** `{ "date": "2026-09-01", "class": "Kelas 1" }` —
+`class` opsional dan wajib diisi korlas. Bila `date` kosong, dipakai tanggal besok (WIB).
+
+**Kode galat:** `400` pesan kosong / nomor tak sah / tidak ada penerima · `403` korlas
+menyentuh kelas lain · `500` gateway belum dikonfigurasi atau gateway menolak mengirim.
+
+**Riwayat** disimpan di `whatsapp_broadcasts`: `target_scope` (`all`, `Kelas 1`, atau
+`petugas:2026-09-01`), `sent_count`, `status` (`completed`/`failed`), dan `error_message`
+(alasan penolakan pertama, dipotong 300 karakter). Endpoint lama
+`/api/notifications/whatsapp/*` **dihapus** — modul `notifications/` kini murni push.
 
 ---
 
@@ -1386,6 +1463,37 @@ Formulir tambah/ubah kategori:
 > Panel ini **hanya dirender untuk korlas & admin** (`isAdmin || isKorlas`). Orang tua tidak
 > melihatnya; admin melihat panelnya tanpa papan tanggal, karena ia tidak ikut mengambil.
 
+### 9.7 Dashboard Admin: Kartu Notifikasi WhatsApp
+
+Kartu ini menempati kolom kanan dashboard, bersebelahan dengan kartu notifikasi push. Isinya
+berubah menurut kesiapan gateway: bila `WHATSAPP_PROVIDER` atau tokennya belum diisi, seluruh
+tombol kirim dimatikan dan yang tampil hanya pemberitahuan — bukan formulir yang pasti gagal.
+
+```
+┌───────────────────────────────────────────────────────────────┐
+│  Notifikasi WhatsApp                                          │
+│  Gateway: OpenWA · sesi sekolah                      ● Aktif  │
+├───────────────────────────────────────────────────────────────┤
+│  [ Broadcast ] [ Pengingat piket ]                            │
+│                                                               │
+│  Kelas:   [ Semua kelas ▾ ]                                   │
+│  Tanggal: [ 2026-09-01 ]                                      │
+│  ┌───────────────────────────────────────────────────────┐    │
+│  │ Pengingat piket Selasa, 1 September 2026              │    │
+│  └───────────────────────────────────────────────────────┘    │
+│  [ Kirim pengingat ]                       1 sukses, 0 gagal  │
+├───────────────────────────────────────────────────────────────┤
+│  Riwayat                                                      │
+│  01 Sep 2026 · petugas:2026-09-01 · 1 terkirim     completed  │
+│  31 Agu 2026 · Kelas 2 · 3 terkirim                completed  │
+│  30 Agu 2026 · all · 0 terkirim                       failed  │
+│     ↳ nomor 0812… tidak terdaftar di WhatsApp                 │
+└───────────────────────────────────────────────────────────────┘
+```
+
+> Baris riwayat yang `failed` **selalu** menampilkan alasannya. Kartu yang hanya menulis
+> "gagal" memaksa admin menebak apakah masalahnya nomor, sesi gateway, atau token.
+
 ---
 
 ## 10. Non-Functional Requirements
@@ -1735,11 +1843,15 @@ bunx wrangler secret put JWT_SECRET
       (33 skenario) + `outputs/check-import-akun-ui.mjs` (17 skenario)
 - [ ] Cetak langsung dari browser
 
-### Phase 6: Notifikasi (Opsional)
+### Phase 6: Notifikasi — ✅ SELESAI (kirim manual), terjadwal belum
 
-- [ ] Push notification (PWA)
-- [ ] Pengingat piket H-1 untuk siswa/orang tua
-- [ ] WhatsApp broadcast (opsional, integrasi pihak ketiga)
+- [x] Push notification (PWA) — langganan perangkat di `push_subscriptions`, pengiriman VAPID lewat `@pushforge/builder`
+- [x] Pengingat piket H-1 untuk wali petugas — tombol di dashboard, tanggal bawaan besok (WIB)
+- [x] WhatsApp broadcast lewat `sikuwa` — Fonnte, OpenWA, ApiMe, EvolutionAPI, Wuzapi, Wwebjs, Waxum
+- [x] Konfirmasi otomatis sesudah orang tua mengambil tanggal (dikirim di latar belakang)
+- [x] Riwayat pengiriman + alasan kegagalan (`whatsapp_broadcasts`)
+- [ ] Pengiriman terjadwal (cron) — pengingat masih dipicu manual oleh admin/korlas
+- [ ] Laporan "sudah dibaca" dari pihak WhatsApp
 
 ---
 
@@ -1833,6 +1945,12 @@ bunx wrangler secret put JWT_SECRET
 | AC82  | Membuka halaman depan **tidak membocorkan data** jadwal maupun nama petugas sekolah | ✅ Done — isinya teks statis tanpa satu pun permintaan API; contoh kartu di hero memakai menu/komponen/petugas dari `drizzle/seed.sql`, bukan data sekolah sungguhan, dan itu dijaga `content.test.ts` |
 | AC83  | Pengguna yang **sudah masuk** tidak mendarat di halaman promosi saat membuka `/` (PWA `start_url`) | ✅ Done — dialihkan ke `/hari-ini` dengan `replace`; diperiksa di peramban nyata untuk sesi orang tua |
 | AC84  | Setelah `/` dibuka untuk publik, halaman berisi data tetap tertutup bagi tamu | ✅ Done — `/hari-ini` melempar tamu ke `/login` (guard layout `_app`), endpoint tetap `401` tanpa token; diuji ulang di peramban nyata |
+| AC85  | Pengingat piket sampai ke nomor WhatsApp wali petugas untuk satu tanggal | ✅ Done — `POST /api/whatsapp/petugas`; nama siswa, nama wali, kelas, dan menu diturunkan server dari `schedules` → `students`/`parents`/`menus`; diverifikasi ke gateway OpenWA tiruan (`1 sukses, 0 gagal`, `chatId` berbentuk `628…@c.us`) |
+| AC86  | Satu nomor yang salah **tidak** menggagalkan seluruh kelas, dan hitungan sukses/gagal jujur | ✅ Done — `deliver()` mengirim satu permintaan HTTP per penerima dengan `try/catch` per item; `sentCount` dihitung dari hasil nyata dan alasan kegagalan pertama disimpan |
+| AC87  | Wali yang nomornya tercatat ganda (`0812…` dan `+62 812…`) hanya menerima **satu** pesan | ✅ Done — `canonicalKey()` menormalkan ke bentuk internasional sebelum dedup; dijaga `recipients.test.ts` |
+| AC88  | Konfirmasi ambil tidak menahan respons dan **tidak pernah** membatalkan klaim yang sudah tersimpan | ✅ Done — dikirim lewat `c.executionCtx.waitUntil()`; `confirmClaimQuietly()` menelan semua galat dan hanya `console.warn` |
+| AC89  | Tanpa kredensial WhatsApp aplikasi tetap berjalan penuh dan UI memberi tahu | ✅ Done — `whatsappStatus()` mengembalikan `configured:false`; kartu menampilkan "WhatsApp belum aktif" dan tombol kirim dimatikan; rute kirim menjawab `500` dengan pesan yang menyebut cara memperbaikinya; diperiksa di peramban nyata (`outputs/check-whatsapp.mjs`, 6 assertion) |
+| AC90  | Korlas tidak dapat mengirim pesan ke kelas lain | ✅ Done — controller memaksa `class` ke kelas korlas dan menolak `403` bila menyimpang; 11 uji rute menutup `admin`/`korlas`/`parent` |
 
 ---
 

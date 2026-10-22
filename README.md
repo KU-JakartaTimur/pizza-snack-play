@@ -150,7 +150,7 @@ pizza-snack-play/
 │   │   └── utils/                # response, password, date, slug, params, classScope, sql, xlsx, xlsxRead, base64
 │   ├── database/
 │   │   ├── db.ts                 # Inisialisasi Drizzle + D1 binding + tipe Db
-│   │   └── schema.ts             # Drizzle schema (13 tabel)
+│   │   └── schema.ts             # Drizzle schema (15 tabel)
 │   ├── components/               # Komponen UI bersama
 │   │   ├── AppShell.tsx          # Header, navigasi, footer
 │   │   ├── AdminOnly.tsx         # RoleGate (admin / schedule / catalog)
@@ -628,7 +628,7 @@ D1 lokal berjalan lewat miniflare dan dipakai bersama oleh dev server dan
 `wrangler d1 execute --local`:
 
 ```bash
-bun run db:migrate:local   # buat 13 tabel di D1 lokal
+bun run db:migrate:local   # buat 15 tabel di D1 lokal
 bun run db:seed:local      # isi data dari data/jadwal_piket_snack.txt
 bun run dev                # http://localhost:5173
 ```
@@ -851,11 +851,11 @@ jadwal maupun memakai Pilih Jadwal sampai `students`-nya diisi.
 
 ## Dokumentasi
 
-- [PRD — Product Requirements Document v1.21](docs/PRD_Pizza_Snack_Play.md)
+- [PRD — Product Requirements Document v1.23](docs/PRD_Pizza_Snack_Play.md)
 - [Struktur Tabel — DDL + Drizzle + Seed + Queries](docs/Struktur_Tabel_Pizza_Snack_Play.md)
 - [UAT Result](docs/UAT_Result.md)
-- [Panduan Orang Tua — dek sosialisasi 15 halaman](Panduan%20Orang%20Tua%20Pizza%20Snack%20Play/STORY.md) (`.pptx` + sumber `slides/*.slide`)
-- [Panduan Korlas & Admin — dek pembekalan 18 halaman](Panduan%20Korlas%20dan%20Admin%20Pizza%20Snack%20Play/STORY.md) (`.pptx` + sumber `slides/*.slide`)
+- [Panduan Orang Tua — dek sosialisasi 16 halaman](docs/Panduan%20Orang%20Tua%20Pizza%20Snack%20Play/STORY.md) (`.pptx` + sumber `slides/*.slide`)
+- [Panduan Korlas & Admin — dek pembekalan 19 halaman](docs/Panduan%20Korlas%20dan%20Admin%20Pizza%20Snack%20Play/STORY.md) (`.pptx` + sumber `slides/*.slide`)
 
 ## Testing
 
